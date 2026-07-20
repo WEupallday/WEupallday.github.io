@@ -1395,11 +1395,16 @@
     var alts=['#4a7ab5','#b53c78','#c9781e','#6b4fc9','#16988a','#a3281a','#7a3cb5','#2e8a5a','#b58a2e','#3c6ab5','#8a3c2e','#4f6b7a'];
     var order=['jay','marisol','dex','priya','tobin','coachf','marisol','jay','tobin','priya','dex','coachf'];
     var tiles=[];
-    Object.keys(USERS||{}).forEach(function(k){
-      var u=USERS[k];
-      var av=u.avatar_url?'<img src="'+esc(u.avatar_url)+'" alt="">':userPortrait(u.name);
-      tiles.push('<div class="tile" style="cursor:pointer" onclick="showUserProfile(\''+esc(u.name).replace(/'/g,'')+'\')" title="'+esc(u.name)+'">'+av+'</div>');
-    });
+    Object.keys(USERS||{}).map(function(k){return USERS[k];})
+      .sort(function(a,b){
+        var pa=a.avatar_url?1:0,pb=b.avatar_url?1:0;
+        if(pa!==pb)return pb-pa;                                   /* real-photo members first */
+        return (b.last_seen?Date.parse(b.last_seen):0)-(a.last_seen?Date.parse(a.last_seen):0);
+      })
+      .forEach(function(u){
+        var av=u.avatar_url?'<img src="'+esc(u.avatar_url)+'" alt="">':userPortrait(u.name);
+        tiles.push('<div class="tile" style="cursor:pointer" onclick="showUserProfile(\''+esc(u.name).replace(/'/g,'')+'\')" title="'+esc(u.name)+'">'+av+'</div>');
+      });
     for(var i=0;tiles.length<12;i++){
       var k=order[i%order.length];
       tiles.push('<div class="tile" title="'+CAST[k].full+'">'+portrait(k,alts[i%alts.length],i%3===1)+'</div>');
