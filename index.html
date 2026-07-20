@@ -226,6 +226,28 @@
   /* small inline mood face — match the original archive scale, not an oversized sticker */
   .moodbox .emo{width:26px;height:26px;margin:2px auto 0;}
   #emoPreview .emo{width:24px;height:24px;display:inline-block;vertical-align:middle;}
+  /* moderation / report modal */
+  #reportModal{display:none;position:fixed;inset:0;background:rgba(10,16,40,.6);z-index:300;align-items:center;justify-content:center;padding:16px;}
+  #reportModal.open{display:flex;}
+  .report-card{background:#fff;border:3px solid var(--card-border);border-radius:14px;max-width:340px;width:100%;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.5);}
+  .report-h{font-weight:bold;font-size:15px;color:var(--name-navy);}
+  .report-sub{font-size:11px;color:#556;line-height:1.4;margin:6px 0 12px;}
+  .report-reasons{display:flex;flex-direction:column;gap:6px;}
+  .report-reasons button{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:12px;text-align:left;padding:9px 12px;border:1.5px solid var(--card-border);border-radius:8px;background:#f4f7ff;color:#22305e;cursor:pointer;}
+  .report-reasons button:hover{background:#ffe08a;border-color:var(--orange);}
+  .report-cancel{margin-top:10px;width:100%;font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:12px;padding:8px;border:none;border-radius:8px;background:#e7e9f2;color:#444;cursor:pointer;}
+  .post-mod{display:inline-flex;gap:10px;margin-left:8px;}
+  .post-mod a{font-size:9px;font-weight:bold;color:#9aa3c8;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;}
+  .post-mod a:hover{color:var(--red);text-decoration:underline;}
+  .pc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
+  .pc-actions button{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:11px;padding:7px 12px;border-radius:8px;border:1.5px solid var(--card-border);background:#f4f7ff;color:#22305e;cursor:pointer;}
+  .pc-actions button.danger{background:#ffe4e0;border-color:var(--red);color:#a3160b;}
+  .danger-btn{background:linear-gradient(180deg,#c22a1a,#8f1408)!important;}
+  .modrow{border:2px solid #f0c0b8;background:#fff6f4;border-radius:8px;padding:8px;margin-bottom:7px;font-size:11px;}
+  .modrow .mr-reason{font-weight:bold;color:var(--red);}
+  .modrow .mr-actions{display:flex;gap:6px;margin-top:6px;}
+  .modrow .mr-actions button{font-size:10px;font-weight:bold;padding:5px 9px;border-radius:6px;border:1px solid var(--card-border);cursor:pointer;background:#fff;}
+  .privacy-link{font-size:9px;color:#8a94c8;text-decoration:underline;cursor:pointer;}
   @keyframes emoQueasy{0%,100%{transform:rotate(-3deg) translateY(0);}25%{transform:rotate(2deg) translateY(-1px);}50%{transform:rotate(-2deg) translateY(1px);}75%{transform:rotate(3deg) translateY(0);}}
   @keyframes emoTap{0%,72%,100%{transform:translateY(0);}80%{transform:translateY(-2px);}88%{transform:translateY(0);}}
   @keyframes emoPanic{0%{transform:translateX(-1.6px) rotate(-1.5deg);}100%{transform:translateX(1.6px) rotate(1.5deg);}}
@@ -729,7 +751,9 @@
         <div class="you-stats"><b id="youCount">0</b> flaps posted</div>
         <div class="hint">upload your real pic to replace the cartoon!</div>
         <button class="you-update" type="button" style="background:linear-gradient(180deg,#4a4a5e,#2c2c3a);margin-top:8px;" onclick="logOut()">LOG OUT</button>
+        <button class="you-update danger-btn" type="button" style="margin-top:8px;" onclick="deleteAccount()">DELETE ACCOUNT</button>
         <button class="adminbtn" id="adminBtn" type="button" onclick="showAdmin()">👑 ADMIN PANEL</button>
+        <div style="margin-top:8px;"><a class="privacy-link" onclick="openPrivacy()">Privacy Policy</a></div>
       </div>
       <input type="file" id="avatarFile" accept="image/*" hidden>
     </div>
@@ -796,7 +820,8 @@
 <div class="pagefoot">
   <span class="blink">★ FRIENDS ONLY ★</span> You are visitor <span class="counter">0073842</span><br>
   TheFlap.com™ — a private fan-made site for friends · original name, fan logo, characters &amp; hand-drawn art ·
-  zero affiliation with any real or fictional network · be cool to each other
+  zero affiliation with any real or fictional network · be cool to each other<br>
+  <a class="privacy-link" onclick="openPrivacy()">Privacy Policy &amp; Community Guidelines</a>
 </div>
 
 <!-- PEAR PHONE COMPOSER -->
@@ -882,6 +907,22 @@
 <!-- profile / admin popup -->
 <div id="profModal" onclick="if(event.target===this)closeProfile()">
   <div class="profcard" id="profCardBox"></div>
+</div>
+
+<div id="reportModal" onclick="if(event.target===this)closeReport()">
+  <div class="report-card">
+    <div class="report-h">⚑ Report <span id="reportWho">this</span></div>
+    <p class="report-sub">Why are you reporting this? Our team reviews reports within 24 hours and removes violating content.</p>
+    <div class="report-reasons">
+      <button type="button" onclick="submitReport('Spam or scam')">Spam or scam</button>
+      <button type="button" onclick="submitReport('Harassment or bullying')">Harassment or bullying</button>
+      <button type="button" onclick="submitReport('Hate speech')">Hate speech</button>
+      <button type="button" onclick="submitReport('Nudity or sexual content')">Nudity / sexual content</button>
+      <button type="button" onclick="submitReport('Violence or threats')">Violence or threats</button>
+      <button type="button" onclick="submitReport('Other')">Something else</button>
+    </div>
+    <button class="report-cancel" type="button" onclick="closeReport()">Cancel</button>
+  </div>
 </div>
 
 <div id="toast">Flap!</div>
@@ -1267,6 +1308,11 @@
     if(o.liveId){
       h+='<button class="likebtn" type="button" data-n="'+(o.likes||0)+'" data-id="'+o.liveId+'" onclick="likeLive(this)">👍 Flap This! ('+(o.likes||0)+')</button>';
       if(ME.admin)h+='<button class="delbtn" type="button" onclick="delLive('+o.liveId+')">DELETE</button>';
+      if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
+        var pn=esc(o.name).replace(/'/g,'');
+        h+='<span class="post-mod"><a onclick="openReport(\'post\','+o.liveId+',\''+pn+'\')" title="Report this flap">⚑ report</a>'+
+           '<a onclick="blockUser(\''+pn+'\')" title="Block this user">🚫 block</a></span>';
+      }
     }else{
       h+='<button class="likebtn" type="button" data-n="'+(o.likes||0)+'" onclick="likeFlap(this)">👍 Flap This! ('+(o.likes||0)+')</button>';
     }
@@ -1420,7 +1466,7 @@
     initMe();
     document.getElementById('gate').classList.add('hidden');
     if(ME.admin)toast(ME.name+' — admin mode ON');
-    loadFeed();
+    loadBlocks().then(function(){loadFeed();});
     loadNotifs();
     try{
       if('Notification' in window && Notification.permission==='default'){
@@ -1480,6 +1526,15 @@
       h+='<div class="pc-meta">'+(u?'joined '+new Date(u.created_at).toLocaleDateString()+' · ':'')+posts.length+(posts.length===10?'+':'')+' flaps</div>';
       h+='<div class="pc-feel">feeling: '+emoHTML(feeling,true)+' '+esc(feeling)+'</div>';
       h+='</div></div>';
+      if((name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
+        var pn2=esc(name).replace(/'/g,'');
+        h+='<div class="pc-actions">'+
+           '<button type="button" onclick="openReport(\'user\',null,\''+pn2+'\')">⚑ Report user</button>'+
+           (isBlocked(name)
+             ?'<button type="button" onclick="unblockUser(\''+pn2+'\')">✓ Unblock</button>'
+             :'<button type="button" class="danger" onclick="blockUser(\''+pn2+'\')">🚫 Block user</button>')+
+           '</div>';
+      }
       h+='<div class="pc-flaps-h">Their Flaps</div>';
       h+=posts.length?posts.map(liveCard).join(''):'<div style="font-size:11px;">no flaps yet!</div>';
       h+='</div>';
@@ -1499,6 +1554,9 @@
       var us=(await sb.from('flap_users').select('*').order('created_at',{ascending:true})).data||[];
       var fl=(await sb.from('flaps').select('id,name').limit(1000)).data||[];
       var rc=await sb.from('flap_replies').select('*',{count:'exact',head:true});
+      var reports=[];try{reports=(await sb.from('flap_reports').select('*').eq('resolved',false).order('id',{ascending:false})).data||[];}catch(e){}
+      var repIds=reports.filter(function(r){return r.target_type==='post'&&r.target_id;}).map(function(r){return r.target_id;});
+      var repPosts={};if(repIds.length){try{((await sb.from('flaps').select('id,body,name').in('id',repIds)).data||[]).forEach(function(p){repPosts[p.id]=p;});}catch(e){}}
       var counts={};fl.forEach(function(f){counts[f.name]=(counts[f.name]||0)+1;});
       var now=Date.now(),online=0;
       us.forEach(function(u){if(u.last_seen&&now-new Date(u.last_seen).getTime()<2*60*1000)online++;});
@@ -1508,6 +1566,19 @@
         '<div><b>'+online+'</b><span>Online Now</span></div>'+
         '<div><b>'+fl.length+'</b><span>Flaps</span></div>'+
         '<div><b>'+(rc.count||0)+'</b><span>Replies</span></div></div>';
+      h+='<div class="pc-flaps-h">⚑ Reports ('+reports.length+')</div>';
+      if(!reports.length){h+='<div style="font-size:11px;color:#2a8a2a;margin-bottom:10px;">No open reports right now. 🎉</div>';}
+      else{h+=reports.map(function(r){
+        var tgt=r.target_type==='post'
+          ? 'flap by <b>'+esc((repPosts[r.target_id]||{}).name||r.target_name||'?')+'</b>: “'+esc(((repPosts[r.target_id]||{}).body||'(already deleted)').replace(/<[^>]+>/g,'').slice(0,120))+'”'
+          : 'user <b>'+esc(r.target_name||'?')+'</b>';
+        var act=(r.target_type==='post'&&r.target_id)
+          ? '<button onclick="modDeletePost('+r.target_id+','+r.id+')">Delete flap</button>'
+          : '<button onclick="showUserProfile(\''+esc(r.target_name||'').replace(/\x27/g,'')+'\')">View user</button>';
+        return '<div class="modrow"><div class="mr-reason">'+esc(r.reason||'reported')+'</div><div>'+tgt+'</div>'+
+          '<div style="color:#888;font-size:10px;">by '+esc(r.reporter||'?')+' · '+new Date(r.created_at).toLocaleString()+'</div>'+
+          '<div class="mr-actions">'+act+'<button onclick="resolveReport('+r.id+')">Dismiss</button></div></div>';
+      }).join('');}
       h+='<div class="pc-flaps-h">Members ('+us.length+') — click one to see their posts</div>';
       h+=us.map(function(u){
         var on=u.last_seen&&now-new Date(u.last_seen).getTime()<2*60*1000;
@@ -1523,6 +1594,79 @@
       box.innerHTML='<div class="pc-strip"><span>👑 Admin Panel</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">could not load admin data — try again.</div>';
     }
   }
+  /* ================= moderation: report, block, account deletion (App Store requirements) ================= */
+  var BLOCKED={};
+  async function loadBlocks(){
+    if(!ONLINE||!ME.name){BLOCKED={};return;}
+    try{var r=await sb.from('flap_blocks').select('blocked').eq('blocker',ME.name);
+      BLOCKED={};(r.data||[]).forEach(function(b){BLOCKED[(b.blocked||'').toLowerCase()]=true;});
+    }catch(e){}
+  }
+  function isBlocked(name){return !!BLOCKED[(name||'').toLowerCase()];}
+  async function blockUser(name){
+    if(!requireAuth())return;
+    if(!name||name.toLowerCase()===(ME.name||'').toLowerCase()){toast("You can't block yourself!");return;}
+    if(!confirm('Block '+name+"?\nYou won't see their flaps or replies anymore."))return;
+    BLOCKED[name.toLowerCase()]=true;
+    if(ONLINE){try{await sb.from('flap_blocks').insert({blocker:ME.name,blocked:name});}catch(e){}}
+    closeProfile();loadFeed();toast('Blocked '+name+'.');
+  }
+  async function unblockUser(name){
+    if(ONLINE){try{await sb.from('flap_blocks').delete().eq('blocker',ME.name).eq('blocked',name);}catch(e){}}
+    delete BLOCKED[(name||'').toLowerCase()];
+    closeProfile();loadFeed();toast('Unblocked '+name+'.');
+  }
+  var REPORT_CTX=null;
+  function openReport(type,id,name){
+    if(!requireAuth())return;
+    REPORT_CTX={type:type,id:id,name:name};
+    document.getElementById('reportWho').textContent = type==='post' ? ('this flap'+(name?' by '+name:'')) : name;
+    document.getElementById('reportModal').classList.add('open');
+  }
+  function closeReport(){document.getElementById('reportModal').classList.remove('open');REPORT_CTX=null;}
+  async function submitReport(reason){
+    var c=REPORT_CTX;closeReport();
+    if(!c)return;
+    if(ONLINE){
+      try{
+        var row={reporter:ME.name||'guest',reason:reason,target_type:c.type,target_name:c.name||null,resolved:false};
+        if(c.type==='post')row.target_id=c.id;
+        await sb.from('flap_reports').insert(row);
+      }catch(e){}
+    }
+    toast('Thanks — reported. Our team reviews reports within 24 hours.');
+  }
+  async function deleteAccount(){
+    if(!ME.name){toast('Not signed in.');return;}
+    if(!confirm('Delete your account?\nThis permanently removes your profile, your flaps, and your replies. This cannot be undone.'))return;
+    if(!confirm('Last check — this is PERMANENT. Delete '+ME.name+' for good?'))return;
+    var name=ME.name;
+    toast('Deleting your account…');
+    if(ONLINE){
+      try{
+        await sb.from('flaps').delete().ilike('name',name);
+        await sb.from('flap_replies').delete().ilike('name',name);
+        try{await sb.from('flap_notifs').delete().eq('recipient',name);}catch(e){}
+        try{await sb.from('flap_notifs').delete().eq('actor',name);}catch(e){}
+        try{await sb.from('push_subs').delete().eq('name',name);}catch(e){}
+        try{await sb.from('flap_blocks').delete().eq('blocker',name);}catch(e){}
+        await sb.from('flap_users').delete().ilike('name',name);
+      }catch(e){}
+    }
+    clearSession();
+    toast('Your account was deleted.');
+    setTimeout(function(){location.reload();},1000);
+  }
+  function openPrivacy(){window.open('privacy.html','_blank');}
+  async function resolveReport(id){if(!ME.admin)return;try{await sb.from('flap_reports').update({resolved:true}).eq('id',id);}catch(e){}showAdmin();}
+  async function modDeletePost(postId,reportId){
+    if(!ME.admin)return;
+    if(!confirm('Delete this flap for everyone?'))return;
+    try{await sb.from('flaps').delete().eq('id',postId);}catch(e){}
+    try{await sb.from('flap_reports').update({resolved:true}).eq('id',reportId);}catch(e){}
+    loadFeed();showAdmin();toast('Flap deleted.');
+  }
+
   function initMe(){
     var av=ME.pic?'<img src="'+esc(ME.pic)+'" alt="me">':userPortrait(ME.name);
     document.getElementById('youAva').innerHTML=av;
@@ -1594,7 +1738,7 @@
     return row.avatar_url?'<img src="'+esc(row.avatar_url)+'" alt="">':avatarFor(row.name);
   }
   function liveCard(row){
-    var reps=(REPLIES[row.id]||[]).map(function(r){
+    var reps=(REPLIES[row.id]||[]).filter(function(r){return !isBlocked(r.name);}).map(function(r){
       var p=splitReply(r.body);
       return '<div class="reply"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/'/g,'')+'\')">'+avatarFor(r.name)+'</div>'+
         replyRtxt(esc(r.name),p.emoji,parseTags(p.text||'').html)+'</div>';
@@ -1616,7 +1760,7 @@
   }
   function renderLive(){
     var box=document.getElementById('liveFeed');
-    var rows=LAST_ROWS||[],head='';
+    var rows=(LAST_ROWS||[]).filter(function(r){return !isBlocked(r.name);}),head='';
     if(FEED_FILTER){
       var f=FEED_FILTER.toLowerCase();
       if(f[0]==='#'){
@@ -2176,7 +2320,7 @@
     /* mark logged-in FIRST so nothing below can leave you on the sign-in screen */
     document.getElementById('gate').classList.add('hidden');
     try{initMe();}catch(e){/* profile UI failed to draw — you're still logged in */}
-    try{loadFeed();}catch(e){}
+    try{loadBlocks().then(function(){loadFeed();});}catch(e){try{loadFeed();}catch(e2){}}
     try{loadNotifs();}catch(e){}
     try{subscribePush();}catch(e){}
   })();
