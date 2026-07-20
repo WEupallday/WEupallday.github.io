@@ -1588,6 +1588,8 @@
       var reports=[];try{reports=(await sb.from('flap_reports').select('*').eq('resolved',false).order('id',{ascending:false})).data||[];}catch(e){}
       var repIds=reports.filter(function(r){return r.target_type==='post'&&r.target_id;}).map(function(r){return r.target_id;});
       var repPosts={};if(repIds.length){try{((await sb.from('flaps').select('id,body,name').in('id',repIds)).data||[]).forEach(function(p){repPosts[p.id]=p;});}catch(e){}}
+      var recent=[];try{recent=(await sb.from('flaps').select('id,name,body,pic_url,created_at').order('id',{ascending:false}).limit(30)).data||[];}catch(e){}
+      recent=recent.filter(function(r){return !parseReflap(r.body);}); /* hide reflap rows from the manage list */
       var counts={};fl.forEach(function(f){counts[f.name]=(counts[f.name]||0)+1;});
       var now=Date.now(),online=0;
       us.forEach(function(u){if(u.last_seen&&now-new Date(u.last_seen).getTime()<2*60*1000)online++;});
@@ -1610,6 +1612,17 @@
           '<div style="color:#888;font-size:10px;">by '+esc(r.reporter||'?')+' · '+new Date(r.created_at).toLocaleString()+'</div>'+
           '<div class="mr-actions">'+act+'<button onclick="resolveReport('+r.id+')">Dismiss</button></div></div>';
       }).join('');}
+      h+='<div class="pc-flaps-h">🗂 Manage Flaps — remove anything</div>';
+      h+=recent.length?recent.map(function(r){
+        var txt=esc((r.body||'').replace(/<[^>]+>/g,'').slice(0,90))||'(photo)';
+        return '<div class="modrow" style="border-color:#c9d4f0;background:#f7faff;">'+
+          '<div><b>'+esc(r.name)+'</b> · <span style="color:#888;font-size:10px;">'+new Date(r.created_at).toLocaleString()+'</span></div>'+
+          '<div style="margin:3px 0;">'+txt+(r.pic_url?' <span style="color:#2a6fb0;">📷 photo</span>':'')+'</div>'+
+          '<div class="mr-actions">'+
+            (r.pic_url?'<button onclick="adminRemovePhoto('+r.id+')">Remove photo</button>':'')+
+            '<button style="background:#ffe4e0;border-color:#c22a1a;color:#a3160b;" onclick="adminDeleteFlap('+r.id+')">Delete flap</button>'+
+          '</div></div>';
+      }).join(''):'<div style="font-size:11px;color:#777;margin-bottom:8px;">No flaps yet.</div>';
       h+='<div class="pc-flaps-h">Members ('+us.length+') — click one to see their posts</div>';
       h+=us.map(function(u){
         var on=u.last_seen&&now-new Date(u.last_seen).getTime()<2*60*1000;
@@ -1696,6 +1709,18 @@
     try{await sb.from('flaps').delete().eq('id',postId);}catch(e){}
     try{await sb.from('flap_reports').update({resolved:true}).eq('id',reportId);}catch(e){}
     loadFeed();showAdmin();toast('Flap deleted.');
+  }
+  async function adminDeleteFlap(id){
+    if(!ME.admin)return;
+    if(!confirm('Delete this flap (and its photo) for everyone?'))return;
+    try{await sb.from('flaps').delete().eq('id',id);}catch(e){}
+    await loadFeed();showAdmin();toast('Flap deleted.');
+  }
+  async function adminRemovePhoto(id){
+    if(!ME.admin)return;
+    if(!confirm('Remove just the photo from this flap? The text stays.'))return;
+    try{await sb.from('flaps').update({pic_url:null}).eq('id',id);}catch(e){}
+    await loadFeed();showAdmin();toast('Photo removed.');
   }
 
   function initMe(){
