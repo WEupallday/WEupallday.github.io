@@ -126,7 +126,7 @@
   .attag{color:#8f1408;background:#ffe9b0;border:1px solid #f0b040;border-radius:6px;padding:0 4px;font-weight:bold;font-size:12px;text-decoration:none;cursor:pointer;white-space:nowrap;}
   .attag:hover{background:#ffd23f;}
   .post-pic{clear:both;margin:12px auto 2px;max-width:340px;background:#fdfdf6;padding:7px 7px 10px;box-shadow:0 4px 12px rgba(0,0,0,.35);transform:rotate(-1deg);}
-  .post-pic img{width:100%;display:block;max-height:250px;object-fit:cover;}
+  .post-pic img{width:100%;height:auto;display:block;max-height:70vh;object-fit:contain;background:#fff;}
   .replies{clear:both;margin-left:40px;padding-top:8px;}
   .reply{display:flex;align-items:flex-start;gap:10px;padding:7px 6px;border-top:1px solid rgba(255,255,255,.45);}
   .reply .rava{width:46px;height:50px;flex:none;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);overflow:hidden;background:#123;}
@@ -242,6 +242,10 @@
   .pc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
   .pc-actions button{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:11px;padding:7px 12px;border-radius:8px;border:1.5px solid var(--card-border);background:#f4f7ff;color:#22305e;cursor:pointer;}
   .pc-actions button.danger{background:#ffe4e0;border-color:var(--red);color:#a3160b;}
+  .pc-tabs{display:flex;gap:6px;margin:12px 0 0;}
+  .pc-tab{flex:1;font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:11px;padding:8px 6px;border-radius:8px 8px 0 0;border:2px solid var(--card-border);border-bottom:none;background:#eef2fb;color:#4a5680;cursor:pointer;}
+  .pc-tab.on{background:var(--orange);color:#fff;border-color:var(--orange-dark);}
+  #profList{border-top:2px solid var(--card-border);padding-top:8px;}
   .danger-btn{background:linear-gradient(180deg,#c22a1a,#8f1408)!important;}
   .modrow{border:2px solid #f0c0b8;background:#fff6f4;border-radius:8px;padding:8px;margin-bottom:7px;font-size:11px;}
   .modrow .mr-reason{font-weight:bold;color:var(--red);}
@@ -1533,6 +1537,15 @@
 
   /* ============ user profile pages ============ */
   function closeProfile(){document.getElementById('profModal').classList.remove('open');}
+  var PROFILE_DATA={posts:[],reflaps:[]};
+  function profileTab(which){
+    var lst=document.getElementById('profList');if(!lst)return;
+    var pe=document.getElementById('ptab-posts'),re=document.getElementById('ptab-reflaps');
+    if(pe)pe.classList.toggle('on',which==='posts');
+    if(re)re.classList.toggle('on',which==='reflaps');
+    var arr=which==='reflaps'?PROFILE_DATA.reflaps:PROFILE_DATA.posts;
+    lst.innerHTML=arr.length?arr.map(liveCard).join(''):'<div style="font-size:11px;padding:8px;">'+(which==='reflaps'?'No reflaps yet!':'No flaps yet!')+'</div>';
+  }
   async function showUserProfile(name){
     var box=document.getElementById('profCardBox');
     box.innerHTML='<div class="pc-strip"><span>'+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">loading…</div>';
@@ -1542,19 +1555,22 @@
       if(ONLINE){
         var ur=await sb.from('flap_users').select('*').ilike('name',name).maybeSingle();
         u=ur.data;
-        var pr=await sb.from('flaps').select('*').ilike('name',name).order('id',{ascending:false}).limit(10);
+        var pr=await sb.from('flaps').select('*').ilike('name',name).order('id',{ascending:false}).limit(40);
         posts=pr.data||[];
       }else{
         posts=(localPosts||[]).filter(function(p){return p.name===name;});
       }
+      var mine=posts.filter(function(p){return !parseReflap(p.body);});
+      var refl=posts.filter(function(p){return parseReflap(p.body);});
+      PROFILE_DATA={posts:mine,reflaps:refl};
       var av=(u&&u.avatar_url)?'<img src="'+esc(u.avatar_url)+'">':userPortrait(name);
-      var feeling=posts[0]?posts[0].mood:'flappy';
+      var feeling=mine[0]?mine[0].mood:'flappy';
       var on=u&&u.last_seen&&(Date.now()-new Date(u.last_seen).getTime()<2*60*1000);
       var h='<div class="pc-strip"><span>'+esc(name)+' — Profile</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>';
       h+='<div class="pc-body">';
       h+='<div class="pc-head"><div class="pc-ava">'+av+'</div><div>';
       h+='<div class="pc-name">'+esc(name)+(on?' <span style="font-size:9px;color:#1a8a1a;">● online</span>':'')+'</div>';
-      h+='<div class="pc-meta">'+(u?'joined '+new Date(u.created_at).toLocaleDateString()+' · ':'')+posts.length+(posts.length===10?'+':'')+' flaps</div>';
+      h+='<div class="pc-meta">'+(u?'joined '+new Date(u.created_at).toLocaleDateString()+' · ':'')+mine.length+' flaps · '+refl.length+' reflaps</div>';
       h+='<div class="pc-feel">feeling: '+emoHTML(feeling,true)+' '+esc(feeling)+'</div>';
       h+='</div></div>';
       if((name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
@@ -1566,8 +1582,10 @@
              :'<button type="button" class="danger" onclick="blockUser(\''+pn2+'\')">🚫 Block user</button>')+
            '</div>';
       }
-      h+='<div class="pc-flaps-h">Their Flaps</div>';
-      h+=posts.length?posts.map(liveCard).join(''):'<div style="font-size:11px;">no flaps yet!</div>';
+      h+='<div class="pc-tabs">'+
+         '<button class="pc-tab on" id="ptab-posts" onclick="profileTab(\'posts\')">📝 Flaps ('+mine.length+')</button>'+
+         '<button class="pc-tab" id="ptab-reflaps" onclick="profileTab(\'reflaps\')">🔁 Reflaps ('+refl.length+')</button></div>';
+      h+='<div id="profList">'+(mine.length?mine.map(liveCard).join(''):'<div style="font-size:11px;padding:8px;">no flaps yet!</div>')+'</div>';
       h+='</div>';
       box.innerHTML=h;
     }catch(e){
