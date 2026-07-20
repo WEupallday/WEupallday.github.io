@@ -248,6 +248,14 @@
   .modrow .mr-actions{display:flex;gap:6px;margin-top:6px;}
   .modrow .mr-actions button{font-size:10px;font-weight:bold;padding:5px 9px;border-radius:6px;border:1px solid var(--card-border);cursor:pointer;background:#fff;}
   .privacy-link{font-size:9px;color:#8a94c8;text-decoration:underline;cursor:pointer;}
+  /* ReFlap */
+  .reflap-tag{background:#eaf6ff;border:2px solid #cfe6ff;border-bottom:none;color:#2a6fb0;font-weight:bold;font-size:10px;padding:5px 12px;border-radius:6px 6px 0 0;}
+  .reflapbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:10px;color:#fff;background:linear-gradient(180deg,#2f9e5a,#1c7a42);border:1px solid #145c31;border-radius:5px;padding:5px 10px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;text-shadow:0 1px 1px rgba(0,0,0,.4);margin-left:6px;}
+  .reflapbtn:hover{filter:brightness(1.09);}
+  /* real-member Flappers sidebar */
+  .flapper-row{display:flex;align-items:center;gap:8px;}
+  .flapper-row .fl-ava{width:26px;height:26px;border-radius:50%;overflow:hidden;border:2px solid var(--card-border);flex:none;background:#123;}
+  .flapper-row .fl-ava img,.flapper-row .fl-ava svg{width:100%;height:100%;object-fit:cover;display:block;}
   @keyframes emoQueasy{0%,100%{transform:rotate(-3deg) translateY(0);}25%{transform:rotate(2deg) translateY(-1px);}50%{transform:rotate(-2deg) translateY(1px);}75%{transform:rotate(3deg) translateY(0);}}
   @keyframes emoTap{0%,72%,100%{transform:translateY(0);}80%{transform:translateY(-2px);}88%{transform:translateY(0);}}
   @keyframes emoPanic{0%{transform:translateX(-1.6px) rotate(-1.5deg);}100%{transform:translateX(1.6px) rotate(1.5deg);}}
@@ -779,7 +787,7 @@
       <div id="liveFeed"><div class="card"><div class="card-body" style="text-align:center;font-size:11px;">loading flaps…</div></div></div>
     </div>
 
-    <div class="colhead">🔥 Flapping Right Now</div>
+    <div class="colhead" id="classicHead">🔥 Classic Crew — fan favorites</div>
     <div id="feed"></div>
   </main>
 
@@ -1286,6 +1294,7 @@
   }
   function cardHTML(o){
     var h='<div class="card">';
+    if(o.reflapBy)h+='<div class="reflap-tag">🔁 <b>'+esc(o.reflapBy)+'</b> reflapped '+esc(o.name)+"'s flap</div>";
     h+='<div class="card-strip">'+o.date+' &nbsp;·&nbsp; <span class="rate">Rating: '+o.rating+' Flaps</span></div>';
     h+='<div class="card-body">';
     h+='<div class="moodbox"><div class="mlabel">Mood</div>'+emoHTML(o.mood)+'<div class="mword">'+esc(o.mood)+'</div></div>';
@@ -1307,6 +1316,7 @@
     h+='<div class="card-foot"><span class="tags">Tagged: '+o.tags.map(function(t){return '<span class="tg">'+esc(String(t).toLowerCase())+'</span>';}).join('')+'</span>';
     if(o.liveId){
       h+='<button class="likebtn" type="button" data-n="'+(o.likes||0)+'" data-id="'+o.liveId+'" onclick="likeLive(this)">👍 Flap This! ('+(o.likes||0)+')</button>';
+      if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase())h+='<button class="reflapbtn" type="button" onclick="reflapPost('+o.liveId+')">🔁 Reflap</button>';
       if(ME.admin)h+='<button class="delbtn" type="button" onclick="delLive('+o.liveId+')">DELETE</button>';
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
         var pn=esc(o.name).replace(/'/g,'');
@@ -1398,14 +1408,29 @@
   }
   renderBanner();
 
-  /* flappers sidebar — the starter crew, click to see their flaps */
-  (function(){
-    var p=document.getElementById('profilesList');
-    var names=[];seeds.forEach(function(s){if(names.indexOf(s.name)<0)names.push(s.name);});
-    names.forEach(function(n){
-      p.insertAdjacentHTML('beforeend','<a class="siderow" onclick="document.getElementById(\'feed\').scrollIntoView({behavior:\'smooth\'});toast(\'@'+n+' is flapping below!\')">@'+esc(n)+'</a>');
-    });
-  })();
+  /* flappers sidebar — REAL members first (with their real pics); seeds only as fallback */
+  function renderFlappers(){
+    var p=document.getElementById('profilesList');if(!p)return;
+    var us=Object.keys(USERS||{}).map(function(k){return USERS[k];})
+      .sort(function(a,b){return (b.last_seen?Date.parse(b.last_seen):0)-(a.last_seen?Date.parse(a.last_seen):0);});
+    if(us.length){
+      p.innerHTML=us.slice(0,24).map(function(u){
+        var av=u.avatar_url?'<img src="'+esc(u.avatar_url)+'" alt="">':userPortrait(u.name);
+        return '<a class="siderow flapper-row" onclick="showUserProfile(\''+esc(u.name).replace(/\x27/g,'')+'\')"><span class="fl-ava">'+av+'</span>@'+esc(u.name)+'</a>';
+      }).join('');
+    }else{
+      var names=[];seeds.forEach(function(s){if(names.indexOf(s.name)<0)names.push(s.name);});
+      p.innerHTML=names.map(function(n){return '<a class="siderow" onclick="document.getElementById(\'feed\').scrollIntoView({behavior:\'smooth\'});toast(\'@'+n+' is flapping below!\')">@'+esc(n)+'</a>';}).join('');
+    }
+  }
+  renderFlappers();
+  /* hide the fictional "classic crew" feed once real members are posting */
+  function updateClassicVisibility(){
+    var real=(LAST_ROWS||[]).length>0;
+    var f=document.getElementById('feed'),hh=document.getElementById('classicHead');
+    if(f)f.style.display=real?'none':'';
+    if(hh)hh.style.display=real?'none':'';
+  }
 
   /* ================= invite gate ================= */
   async function sha256(s){
@@ -1737,7 +1762,35 @@
   function avaHTML(row){
     return row.avatar_url?'<img src="'+esc(row.avatar_url)+'" alt="">':avatarFor(row.name);
   }
+  /* ---------- ReFlap (repost) ---------- */
+  function parseReflap(body){
+    if(!body||body.indexOf('RF␟')!==0)return null;
+    var parts=body.split('␟');
+    return {name:parts[1]||'', id:parts[2]||'', body:parts.slice(3).join('␟')};
+  }
+  async function reflapPost(id){
+    if(!requireAuth())return;
+    var o=null;
+    try{o=(await sb.from('flaps').select('*').eq('id',id).single()).data;}catch(e){}
+    if(!o){toast('Could not reflap that.');return;}
+    var origName=o.name,origBody=o.body||'',origId=o.id;
+    var rf=parseReflap(o.body);
+    if(rf){origName=rf.name;origBody=rf.body;origId=rf.id;}
+    if((origName||'').toLowerCase()===(ME.name||'').toLowerCase()){toast("You can't reflap your own flap!");return;}
+    var dup=(LAST_ROWS||[]).some(function(r){var p=parseReflap(r.body);return p&&r.name===ME.name&&String(p.id)===String(origId);});
+    if(dup){toast('You already reflapped this!');return;}
+    var body='RF␟'+origName+'␟'+origId+'␟'+origBody;
+    try{
+      await sb.from('flaps').insert({name:ME.name,avatar_url:o.avatar_url,mood:o.mood||'happy',body:body,pic_url:o.pic_url,likes:0});
+      addNotif(origName,ME.name,'reflap',origId,origBody.replace(/<[^>]+>/g,'').slice(0,80));
+      await loadFeed();
+      toast('Reflapped! 🔁');
+    }catch(e){toast('Reflap failed — try again.');}
+  }
   function liveCard(row){
+    var rf=parseReflap(row.body);
+    var authorName=rf?rf.name:row.name;
+    var bodyText=rf?rf.body:(row.body||'');
     var reps=(REPLIES[row.id]||[]).filter(function(r){return !isBlocked(r.name);}).map(function(r){
       var p=splitReply(r.body);
       return '<div class="reply"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/'/g,'')+'\')">'+avatarFor(r.name)+'</div>'+
@@ -1752,10 +1805,10 @@
         '<div class="remoji-bar moodrow">'+replyMoodBtns('L'+row.id)+'</div>'+
       '</div></div>');
     return cardHTML({
-      liveId:row.id,name:row.name,profileName:row.name,ava:avaHTML(row),mood:row.mood||'flappy',
+      liveId:row.id,name:authorName,profileName:authorName,ava:(rf?avatarFor(rf.name):avaHTML(row)),mood:row.mood||'happy',
       date:new Date(row.created_at).toLocaleString(),rating:row.likes||0,likes:row.likes||0,
-      body:parseTags(row.body||'').html,pic:row.pic_url,replies:reps,
-      tags:[row.name,'theflap']
+      body:parseTags(bodyText).html,pic:row.pic_url,replies:reps,reflapBy:(rf?row.name:null),
+      tags:[authorName,'theflap']
     });
   }
   function renderLive(){
@@ -1830,7 +1883,7 @@
     try{await sb.from('flap_notifs').insert({recipient:recipient,actor:actor,kind:kind,flap_id:flap_id||null,excerpt:(excerpt||'').slice(0,120)});}catch(e){}
     /* also fire a phone push to the recipient */
     var ex=excerpt?(' "'+String(excerpt).slice(0,60)+'"'):'';
-    var body=kind==='reply'?(actor+' replied to your flap:'+ex):kind==='like'?(actor+' flapped your post 👍'):kind==='tag'?(actor+' tagged you in a flap:'+ex):(actor+' interacted with you');
+    var body=kind==='reply'?(actor+' replied to your flap:'+ex):kind==='like'?(actor+' flapped your post 👍'):kind==='tag'?(actor+' tagged you in a flap:'+ex):kind==='reflap'?(actor+' reflapped your flap 🔁'):(actor+' interacted with you');
     sendPush(recipient,'TheFlap 🐦',body);
   }
   function notifText(n){
@@ -1839,6 +1892,7 @@
     if(n.kind==='reply')return who+' replied to your flap:'+ex;
     if(n.kind==='like') return who+' flapped your post 👍';
     if(n.kind==='tag')  return who+' tagged you in a flap:'+ex;
+    if(n.kind==='reflap')return who+' reflapped your flap 🔁';
     return who+' interacted with you';
   }
   function renderBell(){
@@ -2066,6 +2120,8 @@
       renderLive();
       renderSidebar();
       renderBanner();
+      renderFlappers();
+      updateClassicVisibility();
       checkNotifications();
       if(manual)toast('Feed refreshed!');
     }catch(e){
