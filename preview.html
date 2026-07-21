@@ -2725,20 +2725,39 @@
 (function(){
   var mq = window.matchMedia('(max-width:760px)');
   var drawerBody = document.getElementById('drawerBody');
+  if(!drawerBody) return;
   var asides = Array.prototype.slice.call(document.querySelectorAll('.wrap > aside'));
-  if(!drawerBody || !asides.length) return;
-  // remember each aside's home so we can put it back on desktop
-  var anchors = asides.map(function(a){
-    var c = document.createComment('aside-home');
-    a.parentNode.insertBefore(c, a);
-    return c;
+  if(!asides.length) return;
+  // collect each panel with an anchor so we can restore it on desktop
+  var boxes = [];
+  asides.forEach(function(a){
+    Array.prototype.slice.call(a.children).forEach(function(el){
+      var c = document.createComment('box-home');
+      a.insertBefore(c, el);
+      boxes.push({el:el, anchor:c});
+    });
   });
+  function head(el){ var h=el.querySelector('.sidehead'); return h? h.textContent.trim() : ''; }
+  // drawer order: Your Page first, poll + flapper high, flappers/rules lower, blurb last
+  function rank(el){
+    if(el.classList && el.classList.contains('logobox')) return 99;
+    var t=head(el);
+    if(t==='Your Page') return 1;
+    if(/Poll of the Day/i.test(t)) return 2;
+    if(/Flapper of the Week/i.test(t)) return 3;
+    if(/Trending/i.test(t)) return 4;
+    if(/The Flappers/i.test(t)) return 5;
+    if(/House Rules/i.test(t)) return 6;
+    if(/Oh! You Mean/i.test(t)) return 8;
+    return 7;
+  }
   function place(){
     if(mq.matches){
-      asides.forEach(function(a){ if(a.parentNode !== drawerBody) drawerBody.appendChild(a); });
+      boxes.slice().sort(function(a,b){ return rank(a.el)-rank(b.el); })
+           .forEach(function(b){ drawerBody.appendChild(b.el); });
     } else {
       toggleDrawer(false);
-      asides.forEach(function(a,i){ var c=anchors[i]; if(a.parentNode!==c.parentNode) c.parentNode.insertBefore(a, c.nextSibling); });
+      boxes.forEach(function(b){ if(b.el.parentNode !== b.anchor.parentNode) b.anchor.parentNode.insertBefore(b.el, b.anchor.nextSibling); });
     }
   }
   place();
