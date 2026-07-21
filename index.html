@@ -51,7 +51,7 @@
   .navbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:9px;letter-spacing:.5px;color:#fff;text-transform:uppercase;cursor:pointer;background:linear-gradient(180deg,#c22a1a 0%,#8f1408 100%);border:1px solid #6b0e04;border-radius:4px;padding:4px 9px;text-shadow:0 1px 1px rgba(0,0,0,.5);}
   .navbtn:hover{background:linear-gradient(180deg,#e03a26 0%,#a81a0a 100%);}
 
-  .banner{width:1010px;margin:0 auto;background:var(--orange);border:4px solid var(--orange-dark);border-top:none;border-radius:0 0 8px 8px;padding:7px;display:grid;grid-template-columns:repeat(8,1fr);gap:6px;box-shadow:0 6px 16px rgba(0,0,0,.45);}
+  .banner{width:1010px;margin:-2px auto 0;background:var(--orange);border:4px solid var(--orange-dark);border-top:none;border-radius:0 0 8px 8px;padding:8px;display:grid;grid-template-columns:repeat(7,1fr);gap:7px;box-shadow:0 6px 16px rgba(0,0,0,.45);}
   .tile{aspect-ratio:1/1.15;border:3px solid #fff;overflow:hidden;cursor:pointer;position:relative;background:#123;box-shadow:0 3px 7px rgba(0,0,0,.4);}
   .tile::after{content:"";position:absolute;inset:0;background:linear-gradient(160deg,rgba(255,255,255,.35),transparent 45%);pointer-events:none;}
   .tile:hover{border-color:#ffd23f;}
@@ -260,6 +260,10 @@
   .reflap-tag{background:#eaf6ff;border:2px solid #cfe6ff;border-bottom:none;color:#2a6fb0;font-weight:bold;font-size:10px;padding:5px 12px;border-radius:6px 6px 0 0;}
   .reflapbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:10px;color:#fff;background:linear-gradient(180deg,#2f9e5a,#1c7a42);border:1px solid #145c31;border-radius:5px;padding:5px 10px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;text-shadow:0 1px 1px rgba(0,0,0,.4);margin-left:6px;}
   .reflapbtn:hover{filter:brightness(1.09);}
+  .pinned-tag{background:linear-gradient(180deg,#ffe08a,#f5c542);color:#7a4a00;font-weight:bold;font-size:10px;padding:4px 12px;border:2px solid #d9a72a;border-bottom:none;border-radius:6px 6px 0 0;letter-spacing:.5px;}
+  .pinned-card{box-shadow:0 0 0 2px #f5c542,0 5px 14px rgba(0,0,0,.35);}
+  .pinbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:10px;color:#7a4a00;background:linear-gradient(180deg,#ffe08a,#f5c542);border:1px solid #d9a72a;border-radius:5px;padding:5px 9px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;margin-left:6px;}
+  .pinbtn:hover{filter:brightness(1.05);}
   .reflapbtn.on{background:linear-gradient(180deg,#1c7a42,#12592f);box-shadow:inset 0 2px 4px rgba(0,0,0,.35);}
   .reflap-count-line{font-size:11px;font-weight:bold;color:#2f9e5a;padding:4px 4px 0;}
   .vbadge{display:inline-block;width:17px;height:17px;vertical-align:-4px;margin-left:3px;cursor:pointer;transition:transform .1s;}
@@ -1326,7 +1330,8 @@
       '<div class="rtxt"><span class="rn">'+CAST[who].name+'</span> '+text+'</div></div>';
   }
   function cardHTML(o){
-    var h='<div class="card">';
+    var h='<div class="card'+(o.pinned?' pinned-card':'')+'">';
+    if(o.pinned)h+='<div class="pinned-tag">📌 Pinned</div>';
     if(o.reflapBy)h+='<div class="reflap-tag">🔁 <b>'+esc(o.reflapBy)+'</b> reflapped '+esc(o.name)+"'s flap</div>";
     h+='<div class="card-strip">'+o.date+' &nbsp;·&nbsp; <span class="rate">Rating: '+o.rating+' Flaps</span></div>';
     h+='<div class="card-body">';
@@ -1351,6 +1356,7 @@
     if(o.liveId){
       h+='<button class="likebtn" type="button" data-n="'+(o.likes||0)+'" data-id="'+o.liveId+'" onclick="likeLive(this)">👍 Flap This! ('+(o.likes||0)+')</button>';
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase())h+='<button class="reflapbtn'+(o.reflapped?' on':'')+'" type="button" onclick="reflapPost('+o.liveId+')">🔁 '+(o.reflapped?'Reflapped':'Reflap')+'</button>';
+      if(ME.admin)h+='<button class="pinbtn" type="button" onclick="pinPost('+o.liveId+')">'+(o.pinned?'📌 Unpin':'📌 Pin')+'</button>';
       if(ME.admin)h+='<button class="delbtn" type="button" onclick="delLive('+o.liveId+')">DELETE</button>';
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
         var pn=esc(o.name).replace(/'/g,'');
@@ -1442,7 +1448,7 @@
         tiles.push('<div class="tile" title="'+CAST[k].full+'">'+portrait(k,alts[i%alts.length],i%3===1)+'</div>');
       }
     }
-    b.innerHTML=tiles.slice(0,8).join('');
+    b.innerHTML=tiles.slice(0,7).join('');
   }
   renderBanner();
 
@@ -1635,7 +1641,7 @@
       var repIds=reports.filter(function(r){return r.target_type==='post'&&r.target_id;}).map(function(r){return r.target_id;});
       var repPosts={};if(repIds.length){try{((await sb.from('flaps').select('id,body,name').in('id',repIds)).data||[]).forEach(function(p){repPosts[p.id]=p;});}catch(e){}}
       var recent=[];try{recent=(await sb.from('flaps').select('id,name,body,pic_url,created_at').order('id',{ascending:false}).limit(30)).data||[];}catch(e){}
-      recent=recent.filter(function(r){var n=(r.name||'');return !parseReflap(r.body) && n!=='::ticker::' && n!=='::verified::';}); /* hide reflap + sentinel rows */
+      recent=recent.filter(function(r){var n=(r.name||'');return !parseReflap(r.body) && n!=='::ticker::' && n!=='::verified::' && n!=='::pinned::';}); /* hide reflap + sentinel rows */
       var tickerCur='';try{var tk=await sb.from('flaps').select('body').eq('name','::ticker::').order('id',{ascending:false}).limit(1);if(tk.data&&tk.data[0])tickerCur=tk.data[0].body;}catch(e){}
       var verCur='';try{var vk=await sb.from('flaps').select('body').eq('name','::verified::').order('id',{ascending:false}).limit(1);if(vk.data&&vk.data[0])verCur=vk.data[0].body;}catch(e){}
       var counts={};fl.forEach(function(f){counts[f.name]=(counts[f.name]||0)+1;});
@@ -1909,6 +1915,7 @@
       date:new Date(row.created_at).toLocaleString(),rating:row.likes||0,likes:row.likes||0,
       body:parseTags(bodyText).html,pic:row.pic_url,replies:reps,reflapBy:(rf?row.name:null),
       reflapCount:(rf?0:(REFLAP_COUNTS[row.id]||0)),reflapped:(rf?false:!!MY_REFLAPS[row.id]),
+      pinned:!!row.__pinned,
       tags:[authorName,'theflap']
     });
   }
@@ -1927,6 +1934,11 @@
         head='<div class="filterbar">showing flaps for <b>@'+esc(FEED_FILTER)+'</b> — <a onclick="clearFilter()">show all</a></div>';
       }
     }
+    if(!FEED_FILTER && PINNED_ID){
+      var pi=-1; for(var i=0;i<rows.length;i++){ if(String(rows[i].id)===String(PINNED_ID)){pi=i;break;} }
+      if(pi>0){ var pr=rows.splice(pi,1)[0]; rows.unshift(pr); }
+    }
+    rows.forEach(function(r){ r.__pinned=(!FEED_FILTER && String(r.id)===String(PINNED_ID)); });
     box.innerHTML=head+(rows.length
       ? rows.map(liveCard).join('')
       : '<div class="card"><div class="card-body" style="text-align:center;font-size:11px;">'+
@@ -2124,7 +2136,7 @@
     }
     if(!rows.length) rows=LAST_ROWS||[];
     /* count only REAL original flaps — drop reflap copies and hidden sentinel rows */
-    rows=rows.filter(function(r){var n=(r.name||'');return !parseReflap(r.body) && n!=='::ticker::' && n!=='::verified::';});
+    rows=rows.filter(function(r){var n=(r.name||'');return !parseReflap(r.body) && n!=='::ticker::' && n!=='::verified::' && n!=='::pinned::';});
 
     /* ---- trending hashtags: accumulated across ALL flaps (one count per flap that uses the tag) ---- */
     var counts={};
@@ -2241,6 +2253,26 @@
       toast('✔ Verified list updated!');
     }catch(e){toast('Could not save — try again.');}
   }
+  /* ===== pin a flap to the top (admin) — persisted as a hidden sentinel row ===== */
+  var PINNED_ID=null;
+  async function loadPinned(){
+    if(!ONLINE)return;
+    try{ var r=await sb.from('flaps').select('body').eq('name','::pinned::').order('id',{ascending:false}).limit(1);
+      PINNED_ID=(r.data && r.data[0] && String(r.data[0].body||'').trim())?String(r.data[0].body).trim():null;
+    }catch(e){}
+  }
+  async function pinPost(id){
+    if(!ME.admin)return;
+    var cur=String(id), newVal=(PINNED_ID===cur)?'':cur;
+    try{
+      var ex=await sb.from('flaps').select('id').eq('name','::pinned::').order('id',{ascending:false}).limit(1);
+      if(ex.data && ex.data[0]){ await sb.from('flaps').update({body:newVal}).eq('id',ex.data[0].id); }
+      else { await sb.from('flaps').insert({name:'::pinned::',body:newVal,mood:'flappy',likes:0}); }
+      PINNED_ID=newVal||null;
+      await loadFeed();
+      toast(newVal?'📌 Pinned to the top!':'Unpinned.');
+    }catch(e){toast('Could not pin — try again.');}
+  }
   async function loadPoll(){
     if(!ONLINE){renderPoll();return;}
     try{
@@ -2293,9 +2325,10 @@
     try{
       var res=await sb.from('flaps').select('*').order('id',{ascending:false}).limit(50);
       if(res.error)throw res.error;
-      LAST_ROWS=(res.data||[]).filter(function(r){var n=(r.name||'');return n!=='::ticker::' && n!=='::verified::';}); /* keep hidden sentinel rows out of the feed */
+      LAST_ROWS=(res.data||[]).filter(function(r){var n=(r.name||'');return n!=='::ticker::' && n!=='::verified::' && n!=='::pinned::';}); /* keep hidden sentinel rows out of the feed */
       loadTicker();
       loadVerified();
+      await loadPinned();
       myFlapCount=res.data.filter(function(r){return r.name===ME.name;}).length;
       document.getElementById('youCount').textContent=myFlapCount;
       /* members list — powers real photos everywhere + the banner */
