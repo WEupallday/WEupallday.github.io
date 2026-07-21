@@ -1,0 +1,2687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TheFlap.com — Friends Edition</title>
+<!-- PWA: installable, standalone, themed -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#f5820a">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TheFlap">
+<link href="https://fonts.googleapis.com/css2?family=Chewy&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --page-bg:#2a3480; --card-border:#2f7ac9; --strip-navy:#16255e;
+    --body-top:#c9ecf5; --body-mid:#8fdfc8; --body-bot:#46c795;
+    --navy:#1a2440; --name-navy:#123a8f; --red:#e01818;
+    --orange:#f5820a; --orange-dark:#c05e00; --tag-pink:#e8125e;
+    --side-blue:#2f7ac9; --side-row:#3c8ad6;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    font-family:Verdana,Arial,sans-serif;
+    background-color:#241035;
+    color:var(--navy); padding-bottom:60px;
+    position:relative;
+  }
+  body::before{
+    content:"";position:fixed;inset:-24px;z-index:-1;
+    background-color:#241035;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cpath d='M30 60 C60 20 110 25 120 65 C128 98 90 115 65 98 C45 84 50 60 72 55' stroke='%23ff2fa0' stroke-width='13' opacity='.85'/%3E%3Cpath d='M180 30 l15 32 34 5 -25 24 6 34 -30 -16 -30 16 6 -34 -25 -24 34 -5 z' fill='%23ffd23f' stroke='%23c99400' stroke-width='4' opacity='.9'/%3E%3Ccircle cx='320' cy='70' r='38' fill='%232f7ac9' opacity='.75'/%3E%3Ccircle cx='320' cy='70' r='22' fill='%235ba8e8' opacity='.8'/%3E%3Cpath d='M300 115 l0 42 M320 118 l0 30 M338 112 l0 50' stroke='%232f7ac9' stroke-width='9' opacity='.7'/%3E%3Cpath d='M40 180 q30 -40 60 0 t60 0' stroke='%238dff3a' stroke-width='11' opacity='.8'/%3E%3Cpath d='M230 170 h60 m-20 -20 l24 20 -24 20' stroke='%23ff8a1e' stroke-width='10' opacity='.85'/%3E%3Ccircle cx='90' cy='280' r='42' fill='%23ff2fa0' opacity='.6'/%3E%3Ccircle cx='90' cy='280' r='24' fill='%23ff7cc4' opacity='.7'/%3E%3Cpath d='M70 330 l0 38 M92 335 l0 26 M112 328 l0 44' stroke='%23ff2fa0' stroke-width='8' opacity='.6'/%3E%3Cpath d='M190 260 C230 230 280 240 290 280 C298 315 260 335 235 315' stroke='%2300d8c8' stroke-width='12' opacity='.8'/%3E%3Cpath d='M330 250 l12 26 28 4 -20 20 5 28 -25 -13 -25 13 5 -28 -20 -20 28 -4 z' fill='%238dff3a' stroke='%233f8a1a' stroke-width='4' opacity='.8'/%3E%3Cpath d='M40 390 q40 -30 80 0' stroke='%23ffd23f' stroke-width='11' opacity='.8'/%3E%3Cpath d='M200 380 C220 350 260 355 265 385' stroke='%23ff8a1e' stroke-width='10' opacity='.75'/%3E%3Ccircle cx='350' cy='380' r='16' stroke='%23fff' stroke-width='6' opacity='.5'/%3E%3Ccircle cx='30' cy='120' r='4' fill='%23fff' opacity='.6'/%3E%3Ccircle cx='260' cy='90' r='5' fill='%23fff' opacity='.5'/%3E%3Ccircle cx='160' cy='340' r='4' fill='%23fff' opacity='.5'/%3E%3C/g%3E%3C/svg%3E"),
+      radial-gradient(circle at 12% 18%, rgba(255,30,130,.42), transparent 34%),
+      radial-gradient(circle at 82% 12%, rgba(40,130,255,.45), transparent 36%),
+      radial-gradient(circle at 65% 78%, rgba(0,200,180,.32), transparent 32%),
+      radial-gradient(circle at 28% 82%, rgba(255,140,30,.35), transparent 30%),
+      radial-gradient(circle at 90% 60%, rgba(140,60,220,.4), transparent 38%),
+      linear-gradient(160deg,#321447 0%,#241035 55%,#1a0c28 100%);
+    background-size:420px 420px,auto,auto,auto,auto,auto,auto;
+    filter:blur(1.2px) saturate(1.2);
+    transform:translateZ(0);will-change:transform;
+  }
+
+  .topbar{background:linear-gradient(180deg,#ff9a2e 0%,var(--orange) 55%,#d96f00 100%);border-bottom:3px solid #a85400;padding:5px 0;box-shadow:0 3px 10px rgba(0,0,0,.4);}
+  .topbar-inner{width:1010px;margin:0 auto;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+  .navbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:9px;letter-spacing:.5px;color:#fff;text-transform:uppercase;cursor:pointer;background:linear-gradient(180deg,#c22a1a 0%,#8f1408 100%);border:1px solid #6b0e04;border-radius:4px;padding:4px 9px;text-shadow:0 1px 1px rgba(0,0,0,.5);}
+  .navbtn:hover{background:linear-gradient(180deg,#e03a26 0%,#a81a0a 100%);}
+
+  .banner{width:1010px;margin:-2px auto 0;background:var(--orange);border:4px solid var(--orange-dark);border-top:none;border-radius:0 0 8px 8px;padding:8px;display:grid;grid-template-columns:repeat(7,1fr);gap:7px;box-shadow:0 6px 16px rgba(0,0,0,.45);}
+  .tile{aspect-ratio:1/1.15;border:3px solid #fff;overflow:hidden;cursor:pointer;position:relative;background:#123;box-shadow:0 3px 7px rgba(0,0,0,.4);}
+  .tile::after{content:"";position:absolute;inset:0;background:linear-gradient(160deg,rgba(255,255,255,.35),transparent 45%);pointer-events:none;}
+  .tile:hover{border-color:#ffd23f;}
+  .tile img{width:100%;height:100%;object-fit:cover;object-position:center 38%;display:block;}
+  /* "old webcam pic" treatment for every portrait */
+  .pava,.rava,.you-ava,.photo2{position:relative;}
+  .pava svg,.rava svg,.tile svg,.you-ava svg,.photo2 svg{filter:saturate(.75) contrast(.95) sepia(.16) blur(.35px);}
+  .pava::after,.rava::after,.you-ava::after,.photo2::after{
+    content:"";position:absolute;inset:0;pointer-events:none;opacity:.16;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .tile::before{
+    content:"";position:absolute;inset:0;pointer-events:none;opacity:.16;z-index:1;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .tile svg,.pava svg,.rava svg,.you-ava svg{display:block;width:100%;height:100%;}
+
+  .ticker{width:1010px;margin:0 auto;background:#0d1a4a;border:3px solid #2f7ac9;border-top:none;overflow:hidden;white-space:nowrap;position:relative;height:38px;}
+  .ticker span{display:inline-block;padding-left:100%;color:#8dff3a;font-size:17px;font-weight:bold;line-height:38px;letter-spacing:1px;animation:tickerScroll 22s linear infinite;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+  @keyframes tickerScroll{from{transform:translateX(0);}to{transform:translateX(-100%);}}
+  .blink{animation:blinker 1s steps(2,start) infinite;color:#ffd23f;}
+  @keyframes blinker{to{visibility:hidden;}}
+  .counter{display:inline-block;background:#000;color:#3f3;border:2px inset #888;font-family:'Courier New',monospace;font-weight:bold;font-size:11px;letter-spacing:2px;padding:1px 6px;}
+
+  .wrap{width:1010px;margin:18px auto 0;display:grid;grid-template-columns:180px 590px 216px;gap:12px;align-items:start;}
+  .sidebox{margin-bottom:14px;border:2px solid #1a2a6e;box-shadow:0 4px 10px rgba(0,0,0,.4);}
+  .sidehead{background:linear-gradient(180deg,#ff9a2e,var(--orange) 60%,#d96f00);color:#8f1408;font-weight:bold;font-size:10px;letter-spacing:1px;text-transform:uppercase;text-align:center;padding:4px 6px;text-shadow:0 1px 0 rgba(255,255,255,.35);border-bottom:2px solid var(--orange-dark);}
+  .sidebody{background:var(--side-blue);}
+  .siderow{display:block;color:#0d1a4a;font-size:9px;font-weight:bold;letter-spacing:.5px;text-transform:uppercase;padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.35);cursor:pointer;text-decoration:none;}
+  .siderow:hover{background:var(--side-row);color:#fff;}
+  .sidetext{background:var(--side-blue);color:#eaf6ff;font-size:10px;line-height:1.5;padding:8px;}
+  .sidetext a{color:#ffd23f;font-weight:bold;cursor:pointer;}
+  .logobox{position:relative;overflow:hidden;background:radial-gradient(circle at 70% 80%, rgba(90,180,255,.35), transparent 50%),radial-gradient(circle at 30% 25%, #3c6ec9, #16255e 75%);border:2px solid #0d1a4a;padding:14px 8px;text-align:center;box-shadow:0 4px 10px rgba(0,0,0,.4);margin-bottom:14px;}
+  .logobox::before,.logobox::after{content:"";position:absolute;border-radius:50%;filter:blur(6px);opacity:.5;}
+  .logobox::before{width:70px;height:46px;left:-14px;top:8px;background:#2fa7e0;transform:rotate(-18deg);}
+  .logobox::after{width:60px;height:40px;right:-12px;bottom:10px;background:#1a5fb8;transform:rotate(14deg);}
+  .fanstack{position:relative;width:78px;height:68px;margin:0 auto 4px;z-index:2;}
+  .fanburst{position:absolute;inset:-2px;opacity:.9;animation:burstPulse 2.4s ease-in-out infinite;}
+  .fanstack .fan{position:absolute;left:5px;top:2px;width:68px;height:62px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));transform-origin:50% 92%;animation:fanFlap 2.4s ease-in-out infinite;}
+  .fanline{position:absolute;width:100%;height:100%;left:0;top:0;}
+  .fanline path{animation:lineFlash 2.4s ease-in-out infinite;opacity:0;}
+  @keyframes fanFlap{0%,46%{transform:rotate(0);}52%{transform:rotate(-26deg);}60%{transform:rotate(20deg);}68%{transform:rotate(-14deg);}76%{transform:rotate(8deg);}84%,100%{transform:rotate(0);}}
+  @keyframes burstPulse{0%,44%,90%,100%{transform:scale(1);opacity:.9;}55%{transform:scale(1.22) rotate(8deg);opacity:1;}70%{transform:scale(1.08) rotate(-4deg);}}
+  @keyframes lineFlash{0%,46%,86%,100%{opacity:0;}54%,76%{opacity:1;}}
+  .wordmark{position:relative;z-index:2;font-family:'Chewy',cursive;color:#fff;font-size:30px;line-height:1;-webkit-text-stroke:1.5px var(--orange);text-shadow:0 3px 0 var(--orange-dark), 0 5px 8px rgba(0,0,0,.5);}
+  .wordmark .the{font-size:16px;color:#fff;-webkit-text-stroke:1px var(--orange);}
+  .wordmark .com{font-size:15px;color:#ffd23f;-webkit-text-stroke:1px var(--orange-dark);}
+  .logobox .slogan{position:relative;z-index:2;color:#9fc4ff;font-size:8px;letter-spacing:1px;text-transform:uppercase;margin-top:4px;}
+  .youbox{background:var(--side-blue);padding:10px;text-align:center;}
+  .you-ava{width:92px;height:100px;margin:0 auto;border:3px solid #fff;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,.4);overflow:hidden;background:#123;}
+  .you-ava img{width:100%;height:100%;object-fit:cover;display:block;}
+  .youbox .nm{color:#fff;font-weight:bold;font-size:12px;margin-top:6px;}
+  .youbox .hint{color:#cfe6ff;font-size:8px;margin-top:3px;letter-spacing:.5px;}
+  .you-update{position:relative;z-index:2;margin-top:-12px;cursor:pointer;background:linear-gradient(180deg,#ff5cb5,var(--tag-pink) 60%,#c40063);color:#fff;font-weight:bold;font-size:9px;letter-spacing:2px;border:2px solid #fff;border-radius:3px;padding:2px 16px;transform:rotate(-2deg);box-shadow:0 2px 5px rgba(0,0,0,.4);}
+  .you-update:hover{background:linear-gradient(180deg,#ff7cc4,#ff2fa0 60%,#d40e7f);}
+  .you-stats{color:#eaf6ff;font-size:9px;margin-top:2px;}
+  .you-stats b{color:#ffd23f;}
+
+  .card{border:3px solid var(--card-border);border-radius:3px;margin-bottom:16px;box-shadow:0 5px 14px rgba(0,0,0,.45);background:#fff;}
+  .card-strip{background:linear-gradient(180deg,#22398f,var(--strip-navy));padding:3px 8px;font-size:9px;color:#b8c4e8;text-align:right;font-weight:bold;}
+  .card-strip .rate{color:#ff4030;margin-left:6px;}
+  .card-body{background:linear-gradient(180deg,var(--body-top) 0%,var(--body-mid) 55%,var(--body-bot) 100%);padding:12px;overflow:hidden;}
+  .poster{float:left;width:78px;margin-right:12px;text-align:center;}
+  .poster .pava{width:70px;height:76px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);margin:0 auto;overflow:hidden;background:#123;}
+  .poster .pava img{width:100%;height:100%;object-fit:cover;display:block;}
+  .poster .pname{color:var(--name-navy);font-weight:bold;font-size:12px;margin-top:4px;}
+  .poster.clickable{cursor:pointer;}
+  .poster.clickable:hover .pava{box-shadow:0 0 0 2px var(--orange), 0 2px 6px rgba(0,0,0,.35);}
+  .moodbox{float:right;width:106px;background:#fff;border:3px solid var(--red);border-radius:10px;text-align:center;padding:5px 4px 7px;margin-left:10px;box-shadow:0 3px 8px rgba(0,0,0,.3);}
+  .moodbox .mlabel{color:var(--red);font-weight:bold;font-size:15px;font-family:'Comic Sans MS','Chewy',cursive;}
+  .moodbox .mword{color:var(--red);font-weight:bold;font-size:11px;text-transform:lowercase;}
+  .statustxt{font-size:13px;line-height:1.5;color:var(--navy);padding-top:2px;}
+  .attag{color:#8f1408;background:#ffe9b0;border:1px solid #f0b040;border-radius:6px;padding:0 4px;font-weight:bold;font-size:12px;text-decoration:none;cursor:pointer;white-space:nowrap;}
+  .attag:hover{background:#ffd23f;}
+  .post-pic{clear:both;margin:12px auto 2px;max-width:340px;background:#fdfdf6;padding:7px 7px 10px;box-shadow:0 4px 12px rgba(0,0,0,.35);transform:rotate(-1deg);}
+  .post-pic img{width:100%;display:block;max-height:250px;object-fit:cover;}
+  .replies{clear:both;margin-left:40px;padding-top:8px;}
+  .reply{display:flex;align-items:flex-start;gap:10px;padding:7px 6px;border-top:1px solid rgba(255,255,255,.45);}
+  .reply .rava{width:46px;height:50px;flex:none;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);overflow:hidden;background:#123;}
+  .reply .rtxt{font-size:12px;line-height:1.45;color:#11202e;padding-top:4px;}
+  .reply .rtxt .rn{color:var(--name-navy);font-weight:bold;}
+  .reply .rtxt .remoji{display:inline-block;font-size:15px;line-height:1;margin:0 3px;vertical-align:-2px;}
+  .rcol{flex:1;min-width:0;}
+  .remoji-bar{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+  .remoji-bar button{font-size:15px;line-height:1;background:#fff;border:1.5px solid var(--card-border);border-radius:7px;padding:2px 5px;cursor:pointer;transition:transform .08s;}
+  .remoji-bar button:hover{transform:scale(1.15);}
+  .remoji-bar button.sel{background:#ffe08a;border-color:var(--orange);transform:scale(1.18);}
+  .remoji-bar.moodrow{gap:3px;}
+  .remoji-bar .moodbtn{padding:1px;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;}
+  .remoji-bar .moodbtn .emo{width:20px;height:20px;display:block;pointer-events:none;}
+  .remoji-bar .moodbtn .emo svg{width:100%;height:100%;display:block;}
+  .reply .rtxt .remoji-anim{width:22px;height:22px;vertical-align:-6px;margin:0 2px;font-size:0;}
+  .reply .rtxt .remoji-anim .emo{width:22px;height:22px;display:inline-block;}
+  .reply .rtxt .remoji-anim .emo svg{width:100%;height:100%;display:block;}
+  .gate-ava-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;margin:8px 0 10px;}
+  .gate-ava{width:76px;height:76px;border-radius:50%;border:3px dashed var(--orange);background:#fff center/cover no-repeat;color:var(--orange);font-size:32px;font-weight:bold;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.25);}
+  .gate-ava.has{border-style:solid;color:transparent;}
+  .gate-ava-label{font-size:10.5px;color:#556;font-weight:bold;text-align:center;}
+  .card-foot{background:var(--card-border);padding:4px 8px;font-size:9px;color:#0d1a4a;font-weight:bold;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+  .card-foot .tags{flex:1;min-width:120px;}
+  .card-foot .tg{color:var(--tag-pink);margin-right:6px;}
+  .card-foot .tg::before{content:"#";color:#0d1a4a;}
+  .likebtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:9px;letter-spacing:.5px;color:#fff;cursor:pointer;background:linear-gradient(180deg,#5ec1f5 0%,#2f7ac9 45%,#1a5fa8 100%);border:1px solid #0d3a6e;border-radius:10px;padding:3px 10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.6), 0 2px 3px rgba(0,0,0,.35);text-shadow:0 1px 1px rgba(0,0,0,.4);white-space:nowrap;}
+  .likebtn:hover{background:linear-gradient(180deg,#7fd0ff 0%,#3c8ad6 45%,#2268b5 100%);}
+  .likebtn.liked{background:linear-gradient(180deg,#ffb14d 0%,var(--orange) 45%,#c05e00 100%);border-color:#8a4400;}
+  .delbtn{font-size:8px;font-weight:bold;color:#fff;background:#8f1408;border:1px solid #6b0e04;border-radius:8px;padding:3px 8px;cursor:pointer;margin-left:4px;}
+  .delbtn:hover{background:#c22a1a;}
+
+  .emo{display:block;width:40px;height:40px;margin:3px auto;}
+  .emo svg{width:100%;height:100%;overflow:visible;display:block;}
+  .emo svg *{transform-box:fill-box;transform-origin:center;}
+  .emo-sm{width:26px;height:26px;margin:0;display:inline-block;vertical-align:middle;}
+  .emo.flappy{animation:emoHop 1s steps(3,end) infinite;}
+  @keyframes emoHop{0%,100%{transform:translateY(0) scale(1,1);}30%{transform:translateY(-5px) scale(.97,1.05);}50%{transform:translateY(-5px) scale(1,1);}70%{transform:translateY(0) scale(1.05,.94);}82%{transform:translateY(0) scale(.98,1.02);}}
+  .emo.bleh{animation:emoTilt 1.6s steps(2,end) infinite;}
+  .emo.bleh .tng{animation:tngWag .8s steps(2,end) infinite;transform-origin:top center;}
+  @keyframes emoTilt{0%,100%{transform:rotate(-4deg);}50%{transform:rotate(4deg);}}
+  @keyframes tngWag{0%,100%{transform:rotate(-10deg) scaleY(1);}50%{transform:rotate(10deg) scaleY(1.15);}}
+  .emo.hangry{animation:emoFume 2.2s steps(14) infinite;}
+  .emo.hangry .brows{animation:browKnit 2.2s steps(4) infinite;}
+  @keyframes emoFume{0%,68%{transform:translateX(0) rotate(0);}71%{transform:translateX(-2px) rotate(-2deg);}74%{transform:translateX(2px) rotate(2deg);}77%{transform:translateX(-2px) rotate(-1deg);}80%{transform:translateX(1px) rotate(1deg);}83%,100%{transform:translateX(0) rotate(0);}}
+  @keyframes browKnit{0%,60%,100%{transform:translateY(0);}70%,90%{transform:translateY(1.2px);}}
+  .emo.sparkly{animation:emoFloat 1.4s steps(2,end) infinite;}
+  .emo.sparkly .st1{animation:twinkle 1s steps(2) infinite;}
+  .emo.sparkly .st2{animation:twinkle 1s steps(2) .5s infinite;}
+  @keyframes emoFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
+  @keyframes twinkle{0%,100%{transform:scale(1) rotate(0);opacity:1;}50%{transform:scale(.6) rotate(20deg);opacity:.65;}}
+  .emo.weepy{animation:emoSway 2s steps(3,end) infinite;}
+  .emo.weepy .tear{animation:tearFall 1.4s steps(5) infinite;}
+  .emo.weepy .tear2{animation:tearFall 1.4s steps(5) .7s infinite;}
+  @keyframes emoSway{0%,100%{transform:rotate(-2.5deg);}50%{transform:rotate(2.5deg);}}
+  @keyframes tearFall{0%{opacity:0;transform:translateY(0) scaleY(.7);}25%{opacity:1;}80%{opacity:1;transform:translateY(9px) scaleY(1.15);}100%{opacity:0;transform:translateY(12px) scaleY(1);}}
+  .emo.zonked{animation:emoPendulum 2s steps(4,end) infinite;}
+  .emo.zonked .dz1{animation:dizzy 1.2s steps(8) infinite;}
+  .emo.zonked .dz2{animation:dizzy 1.2s steps(8) reverse infinite;}
+  @keyframes emoPendulum{0%,100%{transform:rotate(-7deg);}50%{transform:rotate(7deg);}}
+  @keyframes dizzy{from{transform:rotate(0);}to{transform:rotate(360deg);}}
+  .emo.angry{animation:emoFume 2.2s steps(14) infinite;}
+  .emo.angry .brows{animation:browKnit 2.2s steps(4) infinite;}
+  .emo.excited{animation:emoHop .7s steps(3,end) infinite;}
+  .emo.confused{animation:emoTilt 2s steps(3,end) infinite;}
+  .emo.uncomfortable{animation:emoSway 1.8s steps(3,end) infinite;}
+  .emo.uncomfortable .tear{animation:tearFall 1.6s steps(5) infinite;}
+  .emo.irritated{animation:emoFume 2.4s steps(14) infinite;}
+  .emo.irritated .tick{animation:twinkle 1s steps(2) infinite;}
+  .emo.grossed{animation:emoQueasy 1.8s steps(4,end) infinite;}
+  .emo.grossed .tng{animation:tngWag .7s steps(2,end) infinite;transform-origin:top center;}
+  .emo.impatient{animation:emoTap 1.1s steps(6,end) infinite;}
+  .emo.impatient .tick{animation:twinkle .7s steps(2) infinite;}
+  .emo.sad{animation:emoSway 2.6s steps(3,end) infinite;}
+  .emo.freaking{animation:emoPanic .28s steps(2,end) infinite;}
+  .emo.freaking .tear,.emo.freaking .tear2{animation:tearFall 1.1s steps(5) infinite;}
+  .emo.freaking .tear2{animation-delay:.55s;}
+  .emo.unhappy{animation:emoSway 2.6s steps(3,end) infinite;}
+  .emo.pumped{animation:emoHop .55s steps(3,end) infinite;}
+  .emo.bored{animation:emoTilt 3s steps(3,end) infinite;}
+  .emo.bored .bz{animation:emoZ 2.2s steps(6) infinite;transform-origin:center;}
+  .emo.hopeful{animation:emoFloat 1.8s steps(2,end) infinite;}
+  .emo.hopeful .st1{animation:twinkle 1.1s steps(2) infinite;}
+  .emo.funky{animation:emoGroove 1s steps(4,end) infinite;}
+  .emo.funky .note{animation:noteBob .8s steps(2,end) infinite;transform-origin:center;}
+  .emo.styling{animation:emoTilt 2.4s steps(3,end) infinite;}
+  .emo.styling .st1{animation:twinkle .9s steps(2) infinite;}
+  .emo.victorious{animation:emoHop .7s steps(3,end) infinite;}
+  .emo.victorious .st1{animation:twinkle .8s steps(2) infinite;}
+  .emo.victorious .st2{animation:twinkle .8s steps(2) .4s infinite;}
+  .emo.happy{animation:emoFloat 1.6s steps(2,end) infinite;}
+  .emo.thinky{animation:emoTilt 2.6s steps(3,end) infinite;}
+  .emo.thinky .tick{animation:twinkle 1.2s steps(2) infinite;}
+  .emo.evil{animation:emoTilt 1.6s steps(2,end) infinite;}
+  .emo.evil .st1{animation:twinkle .9s steps(2) infinite;}
+  .emo.dorky{animation:emoTilt 1.2s steps(2,end) infinite;}
+  .emo.tired{animation:emoNod 3.2s steps(10,end) infinite;}
+  .emo.tired .bz{animation:emoZ 2.4s steps(6) infinite;transform-origin:center;}
+  @keyframes emoNod{0%,55%{transform:translateY(0) rotate(0);}78%{transform:translateY(3px) rotate(7deg);}84%{transform:translateY(0) rotate(0);}100%{transform:translateY(0) rotate(0);}}
+  /* small inline mood face — match the original archive scale, not an oversized sticker */
+  .moodbox .emo{width:26px;height:26px;margin:2px auto 0;}
+  #emoPreview .emo{width:24px;height:24px;display:inline-block;vertical-align:middle;}
+  /* moderation / report modal */
+  #reportModal,#supportModal{display:none;position:fixed;inset:0;background:rgba(10,16,40,.6);z-index:300;align-items:center;justify-content:center;padding:16px;}
+  #reportModal.open,#supportModal.open{display:flex;}
+  .report-card{background:#fff;border:3px solid var(--card-border);border-radius:14px;max-width:340px;width:100%;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.5);}
+  .report-h{font-weight:bold;font-size:15px;color:var(--name-navy);}
+  .report-sub{font-size:11px;color:#556;line-height:1.4;margin:6px 0 12px;}
+  .report-reasons{display:flex;flex-direction:column;gap:6px;}
+  .report-reasons button{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:12px;text-align:left;padding:9px 12px;border:1.5px solid var(--card-border);border-radius:8px;background:#f4f7ff;color:#22305e;cursor:pointer;}
+  .report-reasons button:hover{background:#ffe08a;border-color:var(--orange);}
+  .report-cancel{margin-top:10px;width:100%;font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:12px;padding:8px;border:none;border-radius:8px;background:#e7e9f2;color:#444;cursor:pointer;}
+  .post-mod{display:inline-flex;gap:10px;margin-left:8px;}
+  .post-mod a{font-size:9px;font-weight:bold;color:#9aa3c8;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;}
+  .post-mod a:hover{color:var(--red);text-decoration:underline;}
+  .pc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
+  .pc-actions button{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:11px;padding:7px 12px;border-radius:8px;border:1.5px solid var(--card-border);background:#f4f7ff;color:#22305e;cursor:pointer;}
+  .pc-actions button.danger{background:#ffe4e0;border-color:var(--red);color:#a3160b;}
+  .pc-tabs{display:flex;gap:6px;margin:12px 0 0;}
+  .pc-tab{flex:1;font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:11px;padding:8px 6px;border-radius:8px 8px 0 0;border:2px solid var(--card-border);border-bottom:none;background:#eef2fb;color:#4a5680;cursor:pointer;}
+  .pc-tab.on{background:var(--orange);color:#fff;border-color:var(--orange-dark);}
+  #profList{border-top:2px solid var(--card-border);padding-top:8px;}
+  .danger-btn{background:linear-gradient(180deg,#c22a1a,#8f1408)!important;}
+  .modrow{border:2px solid #f0c0b8;background:#fff6f4;border-radius:8px;padding:8px;margin-bottom:7px;font-size:11px;}
+  .modrow .mr-reason{font-weight:bold;color:var(--red);}
+  .modrow .mr-actions{display:flex;gap:6px;margin-top:6px;}
+  .modrow .mr-actions button{font-size:10px;font-weight:bold;padding:5px 9px;border-radius:6px;border:1px solid var(--card-border);cursor:pointer;background:#fff;}
+  .privacy-link{font-size:9px;color:#8a94c8;text-decoration:underline;cursor:pointer;}
+  /* ReFlap */
+  .reflap-tag{background:#eaf6ff;border:2px solid #cfe6ff;border-bottom:none;color:#2a6fb0;font-weight:bold;font-size:10px;padding:5px 12px;border-radius:6px 6px 0 0;}
+  .reflapbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:10px;color:#fff;background:linear-gradient(180deg,#2f9e5a,#1c7a42);border:1px solid #145c31;border-radius:5px;padding:5px 10px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;text-shadow:0 1px 1px rgba(0,0,0,.4);margin-left:6px;}
+  .reflapbtn:hover{filter:brightness(1.09);}
+  .pinned-tag{background:linear-gradient(180deg,#ffe08a,#f5c542);color:#7a4a00;font-weight:bold;font-size:10px;padding:4px 12px;border:2px solid #d9a72a;border-bottom:none;border-radius:6px 6px 0 0;letter-spacing:.5px;}
+  .pinned-card{box-shadow:0 0 0 2px #f5c542,0 5px 14px rgba(0,0,0,.35);}
+  .pinbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:10px;color:#7a4a00;background:linear-gradient(180deg,#ffe08a,#f5c542);border:1px solid #d9a72a;border-radius:5px;padding:5px 9px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;margin-left:6px;}
+  .pinbtn:hover{filter:brightness(1.05);}
+  .reflapbtn.on{background:linear-gradient(180deg,#1c7a42,#12592f);box-shadow:inset 0 2px 4px rgba(0,0,0,.35);}
+  .reflap-count-line{font-size:11px;font-weight:bold;color:#2f9e5a;padding:4px 4px 0;}
+  .vbadge{display:inline-block;width:17px;height:17px;vertical-align:-4px;margin-left:3px;cursor:pointer;transition:transform .1s;}
+  .vbadge svg{width:100%;height:100%;display:block;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));}
+  .vbadge:hover,.vbadge:active{transform:scale(1.2) rotate(-6deg);}
+  .pc-name .vbadge{width:23px;height:23px;vertical-align:-5px;}
+  .tile .vcheck{position:absolute;right:0;bottom:0;width:18px;height:18px;z-index:3;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4));}
+  .tile .vcheck svg{width:100%;height:100%;display:block;}
+  /* real-member Flappers sidebar */
+  .flapper-row{display:flex;align-items:center;gap:8px;}
+  .flapper-row .fl-ava{width:26px;height:26px;border-radius:50%;overflow:hidden;border:2px solid var(--card-border);flex:none;background:#123;}
+  .flapper-row .fl-ava img,.flapper-row .fl-ava svg{width:100%;height:100%;object-fit:cover;display:block;}
+  @keyframes emoQueasy{0%,100%{transform:rotate(-3deg) translateY(0);}25%{transform:rotate(2deg) translateY(-1px);}50%{transform:rotate(-2deg) translateY(1px);}75%{transform:rotate(3deg) translateY(0);}}
+  @keyframes emoTap{0%,72%,100%{transform:translateY(0);}80%{transform:translateY(-2px);}88%{transform:translateY(0);}}
+  @keyframes emoPanic{0%{transform:translateX(-1.6px) rotate(-1.5deg);}100%{transform:translateX(1.6px) rotate(1.5deg);}}
+  @keyframes emoZ{0%{opacity:0;transform:translateY(2px) scale(.7);}30%{opacity:1;}100%{opacity:0;transform:translateY(-4px) scale(1.1);}}
+  @keyframes emoGroove{0%,100%{transform:translateY(0) rotate(-5deg);}50%{transform:translateY(-3px) rotate(5deg);}}
+  @keyframes noteBob{0%,100%{transform:translateY(0) rotate(-6deg);}50%{transform:translateY(-2px) rotate(6deg);}}
+
+  .composer .card-body{background:linear-gradient(180deg,#d8f2fa 0%,#a8e2f2 100%);}
+  .comp-row{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;}
+  .comp-btn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:10px;letter-spacing:.5px;color:#fff;text-transform:uppercase;background:linear-gradient(180deg,#c22a1a,#8f1408);border:1px solid #6b0e04;border-radius:5px;padding:5px 12px;cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.5);}
+  .comp-btn:hover{background:linear-gradient(180deg,#e03a26,#a81a0a);}
+  .comp-btn.go{background:linear-gradient(180deg,#ff9a2e,var(--orange) 60%,#d96f00);border-color:#a85400;margin-left:auto;font-size:11px;}
+  .comp-btn.go:hover{background:linear-gradient(180deg,#ffae52,#f08a1a);}
+  .attach-preview{display:none;align-items:center;gap:8px;margin-top:4px;font-size:10px;font-weight:bold;color:var(--name-navy);}
+  .attach-preview img{width:36px;height:36px;object-fit:cover;border:2px solid var(--card-border);}
+  .attach-preview .x{cursor:pointer;color:var(--red);}
+
+  .colhead{background:linear-gradient(180deg,#22398f,var(--strip-navy));border:3px solid var(--card-border);border-bottom:none;border-radius:3px 3px 0 0;color:#fff;font-weight:bold;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:5px 10px;text-shadow:0 1px 2px rgba(0,0,0,.5);}
+  .colhead+.card{border-radius:0 0 3px 3px;margin-top:0;}
+
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--red);color:#fff;font-weight:bold;font-size:12px;padding:8px 20px;border-radius:999px;border:2px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.5);z-index:120;transition:transform .25s ease;}
+  #toast.show{transform:translateX(-50%) translateY(0);}
+  .pagefoot{width:1010px;margin:26px auto 0;text-align:center;color:#8a94c8;font-size:9px;letter-spacing:.5px;line-height:1.6;}
+
+  .launcher{display:flex;align-items:center;gap:14px;padding:12px;cursor:pointer;}
+  .pearmini{width:56px;height:36px;flex:none;filter:drop-shadow(0 3px 5px rgba(0,0,0,.35));}
+  .launcher .ltxt b{display:block;color:var(--name-navy);font-size:13px;}
+  .launcher .ltxt span{font-size:10px;color:#2a4a6e;}
+  .launcher .comp-btn.go{margin-left:auto;}
+
+  #pearOverlay{position:fixed;inset:0;z-index:100;display:none;background:rgba(20,8,40,.5);align-items:center;justify-content:center;}
+  #pearOverlay.open{display:flex;}
+  .pearwrap{position:relative;width:min(840px,95vw);animation:pearIn .3s cubic-bezier(.2,1.4,.4,1);}
+  @keyframes pearIn{from{transform:scale(.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .pearwrap svg.pearshell{display:block;width:100%;height:auto;filter:drop-shadow(0 24px 40px rgba(0,0,0,.7));}
+  .pearscreen{position:absolute;left:36%;top:25%;width:46%;height:52%;display:flex;flex-direction:column;gap:5px;}
+  .pearlogo{position:absolute;top:15%;left:36%;width:46%;pointer-events:none;display:flex;align-items:center;justify-content:center;gap:6px;}
+  .pearlogo svg{width:26px;height:24px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));}
+  .pearlogo .mini-wordmark{font-family:'Chewy',cursive;font-size:21px;color:#fff;-webkit-text-stroke:1px var(--orange);text-shadow:0 2px 0 var(--orange-dark);}
+  .pear-top{display:flex;align-items:center;gap:8px;flex:1;min-height:0;}
+  .pearbottom{justify-content:center;}
+  .pear-polaroid{width:72px;flex:none;background:#fdfdf6;padding:4px 4px 9px;box-shadow:0 4px 10px rgba(0,0,0,.5);transform:rotate(-3deg);position:relative;cursor:pointer;}
+  .pear-polaroid .photo2{height:66px;overflow:hidden;background:#123;position:relative;}
+  .pear-polaroid .photo2 svg,.pear-polaroid .photo2 img{width:100%;height:100%;object-fit:cover;display:block;}
+  .pearcard{flex:1;min-height:0;background:#fff;border:4px solid #ff2fa0;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:4px;box-shadow:0 4px 12px rgba(0,0,0,.4);}
+  .pearcard .pcname{color:#1a6fd4;font-weight:bold;font-size:13px;text-transform:uppercase;letter-spacing:.5px;}
+  .pearcard textarea{flex:1;border:none;outline:none;resize:none;font-family:Verdana,Arial,sans-serif;font-size:12px;line-height:1.55;color:#222;background:transparent;min-height:100px;}
+  .tagbar{min-height:15px;font-size:9px;color:#1a6fd4;font-weight:bold;}
+  .tagbar .attag{font-size:10px;}
+  .pearfeel{display:flex;align-items:center;gap:6px;border-top:1px dotted #f0b0d0;padding-top:4px;}
+  .pearfeel .fl{color:#ff2fa0;font-weight:bold;font-size:11px;letter-spacing:1px;}
+  .pearfeel select{font-family:'Comic Sans MS','Chewy',cursive;font-size:13px;font-weight:bold;color:#1a6fd4;border:none;background:transparent;outline:none;cursor:pointer;}
+  .pearbottom{display:flex;align-items:center;gap:8px;}
+  .dockbtns{display:flex;gap:6px;margin-left:auto;}
+  .dockbig{display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;background:linear-gradient(180deg,#2c2545,#171225);border:2px solid rgba(255,255,255,.6);border-radius:8px;color:#fff;font-family:Verdana,Arial,sans-serif;font-size:7px;font-weight:bold;letter-spacing:1px;padding:3px 9px;box-shadow:0 2px 5px rgba(0,0,0,.4);transition:transform .12s ease;}
+  .dockbig:hover{background:linear-gradient(180deg,#3c3560,#241f38);}
+  .dockbig svg{width:18px;height:16px;}
+  .dockbig.home svg{filter:drop-shadow(0 0 4px #4fc3ff);}
+  .pearclose{position:absolute;right:-14px;top:6px;width:34px;height:34px;border-radius:50%;background:#8f1408;color:#fff;border:2px solid #fff;font-weight:bold;font-size:14px;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,.5);}
+  .pearclose:hover{background:#c22a1a;}
+
+  /* ============ INVITE GATE ============ */
+  #gate{position:fixed;inset:0;z-index:200;background:rgba(15,8,32,.92);display:flex;align-items:center;justify-content:center;}
+  #gate.hidden{display:none;}
+  .gatecard{width:340px;background:linear-gradient(180deg,#fff,#eaf4fc);border:4px solid var(--orange);border-radius:14px;padding:22px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.7);}
+  .gatecard h2{font-family:'Chewy',cursive;color:var(--orange-dark);font-size:26px;}
+  .gatecard p{font-size:10px;color:#2a4a6e;margin:6px 0 12px;line-height:1.5;}
+  .gatecard input{width:100%;border:2px solid var(--card-border);border-radius:6px;padding:8px 10px;font-family:Verdana,Arial,sans-serif;font-size:12px;margin-bottom:8px;outline:none;}
+  .gatecard input:focus{border-color:var(--orange);}
+  .gatecard .comp-btn.go{width:100%;margin:4px 0 0;font-size:12px;padding:8px;}
+  .gate-err{color:var(--red);font-size:10px;font-weight:bold;min-height:14px;}
+  /* replies + tag filter */
+  .replyrow{display:flex;gap:6px;flex:1;align-items:center;}
+  .replyrow input{flex:1;border:2px solid var(--card-border);border-radius:4px;font-family:Verdana,Arial,sans-serif;font-size:10px;padding:4px 6px;outline:none;background:#fff;}
+  .replyrow input:focus{border-color:var(--orange);}
+  .replyrow .comp-btn{font-size:8px;padding:4px 8px;}
+  .reply .rava img{width:100%;height:100%;object-fit:cover;display:block;}
+  .pava img,.you-ava img,.photo2 img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.85) contrast(.97) sepia(.08);}
+  .filterbar{background:#ffe9b0;border:2px solid #f0b040;border-radius:6px;font-size:10px;font-weight:bold;color:#7a5200;padding:5px 10px;margin-bottom:10px;}
+  .filterbar a{color:var(--red);cursor:pointer;text-decoration:underline;}
+  /* ============ PROFILE / ADMIN POPUP ============ */
+  #profModal{position:fixed;inset:0;z-index:110;display:none;background:rgba(20,8,40,.6);align-items:center;justify-content:center;}
+  #profModal.open{display:flex;}
+  .profcard{width:560px;max-width:95vw;background:#fff;border:3px solid var(--card-border);border-radius:4px;box-shadow:0 16px 40px rgba(0,0,0,.6);animation:pearIn .25s ease;}
+  .pc-strip{background:linear-gradient(180deg,#22398f,var(--strip-navy));color:#fff;font-weight:bold;font-size:10px;letter-spacing:1.5px;padding:5px 10px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
+  .pc-x{cursor:pointer;color:#ff9080;font-weight:bold;}
+  .pc-x:hover{color:#fff;}
+  .pc-body{background:linear-gradient(180deg,var(--body-top),var(--body-mid) 70%,var(--body-bot));padding:12px;max-height:74vh;overflow:auto;}
+  .pc-head{display:flex;gap:12px;align-items:center;margin-bottom:8px;}
+  .pc-ava{width:70px;height:76px;border:3px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.35);overflow:hidden;background:#123;flex:none;position:relative;}
+  .pc-ava svg,.pc-ava img{width:100%;height:100%;display:block;object-fit:cover;}
+  .pc-name{color:var(--name-navy);font-weight:bold;font-size:16px;}
+  .pc-meta{font-size:10px;color:#2a4a6e;font-weight:bold;}
+  .pc-feel{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:bold;color:var(--red);text-transform:lowercase;margin-top:2px;}
+  .pc-flaps-h{font-size:9px;color:var(--name-navy);letter-spacing:2px;text-transform:uppercase;font-weight:bold;margin:8px 0 4px;border-bottom:2px dotted var(--card-border);padding-bottom:2px;}
+  .poster.clickable{cursor:pointer;}
+  .poster.clickable:hover .pava{box-shadow:0 0 0 2px var(--orange), 0 2px 6px rgba(0,0,0,.35);}
+  /* admin panel */
+  .admin-stats{display:flex;gap:14px;justify-content:center;margin-bottom:10px;}
+  .admin-stats div{text-align:center;}
+  .admin-stats b{display:block;font-size:16px;color:var(--orange-dark);}
+  .admin-stats span{font-size:8px;font-weight:bold;color:#2a4a6e;text-transform:uppercase;letter-spacing:1px;}
+  .adminrow{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.8);border:2px solid var(--card-border);border-radius:6px;padding:5px 8px;margin-bottom:5px;font-size:11px;color:var(--name-navy);cursor:pointer;}
+  .adminrow:hover{border-color:var(--orange);}
+  .adminrow .ar-ava{width:30px;height:34px;flex:none;overflow:hidden;border:2px solid #fff;background:#123;}
+  .adminrow .ar-ava svg,.adminrow .ar-ava img{width:100%;height:100%;display:block;object-fit:cover;}
+  .adminrow b{min-width:80px;}
+  .adminrow i{font-style:normal;font-size:9px;color:#2a4a6e;margin-left:auto;text-align:right;}
+  .dot-on{width:8px;height:8px;border-radius:50%;background:#35d235;box-shadow:0 0 5px #35d235;flex:none;}
+  .dot-off{width:8px;height:8px;border-radius:50%;background:#99a;flex:none;}
+  .adminbtn{display:none;width:100%;margin-top:8px;cursor:pointer;background:linear-gradient(180deg,#c22a1a,#8f1408);color:#fff;font-weight:bold;font-size:10px;letter-spacing:1px;border:2px solid #fff;border-radius:4px;padding:4px;}
+  .adminbtn.show{display:block;}
+  .htag{background:#dcf2ff;border-color:#7cc0f0;color:#0d5a9e;}
+  /* ============ INSTALL PROMPT ============ */
+  #installBar{display:none;position:fixed;left:10px;right:10px;bottom:12px;z-index:150;
+    align-items:center;gap:10px;max-width:520px;margin:0 auto;
+    background:linear-gradient(180deg,#fff,#eef6ff);border:3px solid var(--orange);border-radius:14px;
+    padding:9px 10px;box-shadow:0 12px 30px rgba(0,0,0,.5);animation:notifPop .3s ease;}
+  #installBar.show{display:flex;}
+  #installBar .ib-icon{width:40px;height:40px;flex:none;border-radius:9px;box-shadow:0 2px 5px rgba(0,0,0,.3);}
+  #installBar .ib-txt{flex:1;min-width:0;}
+  #installBar .ib-txt b{display:block;color:var(--name-navy);font-size:12px;}
+  #installBar .ib-txt span{font-size:10px;color:#2a4a6e;}
+  #installBar .ib-go{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:12px;color:#fff;
+    background:linear-gradient(180deg,#ff9a2e,var(--orange) 60%,#d96f00);border:2px solid #a85400;border-radius:8px;
+    padding:8px 16px;cursor:pointer;flex:none;}
+  #installBar .ib-x{background:none;border:none;color:#889;font-size:15px;cursor:pointer;flex:none;padding:2px 4px;}
+  #iosSheet{display:none;position:fixed;inset:0;z-index:160;background:rgba(15,8,32,.7);align-items:flex-end;justify-content:center;}
+  #iosSheet.open{display:flex;}
+  .ios-card{width:100%;max-width:460px;background:#fff;border-radius:16px 16px 0 0;border:3px solid var(--card-border);border-bottom:none;padding:18px 18px 24px;box-shadow:0 -10px 40px rgba(0,0,0,.5);}
+  .ios-card>b{display:block;font-size:16px;color:var(--name-navy);margin-bottom:10px;}
+  .ios-card ol{margin:0 0 10px 18px;font-size:13px;color:#222;line-height:1.7;}
+  .ios-card .ios-share{display:inline-block;}
+  .ios-note{font-size:11px;color:#7a5200;background:#fff8e0;border:2px dashed var(--orange);border-radius:8px;padding:7px 9px;margin-bottom:12px;line-height:1.5;}
+  .ios-card .comp-btn.go{width:100%;font-size:14px;padding:10px;}
+  .bell{position:relative;font-size:11px !important;}
+  .bell-count{position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;font-size:8px;font-weight:bold;border-radius:999px;padding:0 4px;line-height:13px;border:1px solid #fff;display:none;}
+  .bell-count.show{display:inline-block;}
+  .notif-panel{display:none;position:fixed;top:36px;right:8px;width:320px;max-width:94vw;max-height:72vh;overflow-y:auto;background:#fff;border:3px solid var(--card-border);border-radius:8px;box-shadow:0 14px 34px rgba(0,0,0,.55);z-index:140;}
+  .notif-panel.open{display:block;}
+  .notif-head{position:sticky;top:0;background:linear-gradient(180deg,#22398f,var(--strip-navy));color:#fff;font-weight:bold;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:7px 10px;display:flex;justify-content:space-between;align-items:center;}
+  .notif-head span[onclick]{cursor:pointer;color:#ffd23f;text-decoration:underline;font-size:9px;}
+  .notif-item{display:flex;gap:8px;align-items:flex-start;padding:9px 10px;border-bottom:1px solid #e6eef6;font-size:11.5px;line-height:1.4;color:#1a2440;cursor:pointer;}
+  .notif-item:hover{background:#f2f9ff;}
+  .notif-item.unseen{background:#fff6e0;}
+  .notif-item .ni-ava{width:32px;height:36px;flex:none;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3);overflow:hidden;background:#123;}
+  .notif-item .ni-ava svg,.notif-item .ni-ava img{width:100%;height:100%;display:block;object-fit:cover;}
+  .notif-item .ni-when{color:#7a89a8;font-size:9px;}
+  .notif-item b{color:var(--name-navy);}
+  .notif-empty{padding:16px;text-align:center;font-size:11px;color:#889;line-height:1.5;}
+  @media(max-width:760px){.notif-panel{top:auto;bottom:8px;right:3vw;left:3vw;width:auto;max-width:none;max-height:66vh;}}
+  #notifBar{display:none;cursor:pointer;background:linear-gradient(180deg,#ffd23f,#f5a623);border:3px solid #c05e00;border-radius:8px;color:#5a2c00;font-weight:bold;font-size:12px;padding:8px 12px;margin-bottom:12px;box-shadow:0 3px 8px rgba(0,0,0,.35);animation:notifPop .3s ease;}
+  #notifBar a{color:#8f1408;text-decoration:underline;margin-left:6px;font-size:11px;}
+  @keyframes notifPop{from{transform:scale(.9);opacity:0;}to{transform:scale(1);opacity:1;}}
+  /* ============ TRENDING / POLL / FLAPPER ============ */
+  .trend-list{list-style:none;padding:4px 0;background:var(--side-blue);}
+  .trend-list li{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.3);cursor:pointer;}
+  .trend-list li:hover{background:var(--side-row);}
+  .trend-tag{color:#fff;font-weight:bold;font-size:12px;}
+  .trend-tag .hot{background:var(--tag-pink);color:#fff;font-size:8px;border-radius:4px;padding:1px 5px;margin-left:5px;}
+  .trend-cnt{display:block;font-size:9px;color:#cfe6ff;font-weight:bold;}
+  .trend-empty{color:#eaf6ff;font-size:10px;padding:8px;line-height:1.5;}
+  .poll{background:var(--side-blue);padding:9px;}
+  .poll-q{color:#fff;font-weight:bold;font-size:11px;margin-bottom:6px;}
+  .poll-opt{display:block;width:100%;text-align:left;position:relative;overflow:hidden;margin-bottom:5px;border:2px solid #fff;border-radius:5px;background:#eaf4fc;color:var(--navy);font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:10px;padding:5px 8px;cursor:pointer;}
+  .poll-opt .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(245,130,10,.35);transition:width .5s ease;z-index:0;}
+  .poll-opt .lbl{position:relative;z-index:1;}
+  .poll-opt .pct{position:relative;z-index:1;float:right;color:var(--orange-dark);}
+  .poll.voted .poll-opt{cursor:default;}
+  .poll-note{color:#cfe6ff;font-size:8px;font-weight:bold;margin-top:3px;}
+  .flapper{background:var(--side-blue);padding:10px;text-align:center;cursor:pointer;}
+  .flapper .fw-ava{width:64px;height:70px;margin:0 auto;border:3px solid #fff;overflow:hidden;background:#123;box-shadow:0 3px 8px rgba(0,0,0,.35);}
+  .flapper .fw-ava svg,.flapper .fw-ava img{width:100%;height:100%;display:block;object-fit:cover;}
+  .flapper .fw-name{color:#fff;font-weight:bold;font-size:13px;margin-top:5px;}
+  .flapper .fw-cnt{color:#ffd23f;font-size:10px;font-weight:bold;}
+  .flapper:hover .fw-ava{box-shadow:0 0 0 2px var(--orange),0 3px 8px rgba(0,0,0,.35);}
+  .offline-note{background:#fff8e0;border:2px dashed var(--orange);border-radius:8px;font-size:9px;color:#7a5200;padding:6px;margin-top:10px;line-height:1.5;}
+
+  /* ============ VINTAGE 2010s CRT FILTER (whole screen) ============ */
+  #retro{
+    position:fixed;inset:0;pointer-events:none;z-index:300;
+    background:
+      rgba(255,235,180,.045),
+      repeating-linear-gradient(0deg, rgba(0,0,0,.05) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at center, transparent 52%, rgba(10,5,25,.4) 100%);
+  }
+  #retro::after{
+    content:"";position:absolute;inset:0;opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  /* slow CRT shimmer band */
+  #retro::before{
+    content:"";position:absolute;left:0;right:0;height:90px;
+    background:linear-gradient(180deg,transparent,rgba(255,255,255,.03) 50%,transparent);
+    animation:crtBand 9s linear infinite;
+  }
+  @keyframes crtBand{from{top:-90px;}to{top:100%;}}
+
+  /* ============ RESPONSIVE / MOBILE ============ */
+  @media(max-width:1040px){
+    .topbar-inner,.banner,.ticker,.wrap,.pagefoot{width:auto;max-width:1010px;margin-left:8px;margin-right:8px;}
+    .wrap{margin-top:14px;grid-template-columns:1fr;}
+    .banner{margin-left:auto;margin-right:auto;}
+  }
+  /* long mood words shrink to fit their box instead of breaking mid-word */
+  .moodbox .mword{overflow-wrap:break-word;hyphens:none;}
+  .statustxt{overflow-wrap:break-word;}
+
+  @media(max-width:760px){
+    html,body{overflow-x:hidden;}
+    body{padding-bottom:36px;}
+    .topbar-inner{padding:5px 5px;gap:4px;justify-content:center;}
+    .navbtn{font-size:9px;padding:5px 9px;border-radius:5px;}
+    .banner{grid-template-columns:repeat(4,1fr);gap:5px;}
+    .ticker{height:34px;}
+    .ticker span{font-size:15px;line-height:34px;}
+    .wrap{margin:12px 8px 0;gap:14px;}
+    /* stack: feed first, then sidebars */
+    .wrap>main{order:1;}
+    .wrap>aside{order:2;}
+    .colhead{font-size:12px;padding:6px 10px;}
+    .card{margin-bottom:12px;}
+    .card-body{padding:11px 11px 13px;}
+    /* post cards: compact mood box that fits long words, roomier readable text */
+    .poster{width:52px;margin-right:9px;}
+    .poster .pava{width:48px;height:54px;}
+    .poster .pname{font-size:10px;}
+    .moodbox{width:72px;padding:4px 2px 6px;margin-left:7px;border-radius:9px;}
+    .moodbox .mlabel{font-size:12px;}
+    .moodbox .mword{font-size:8px;line-height:1.15;letter-spacing:-.3px;}
+    .emo{width:30px;height:30px;margin:2px auto;}
+    .statustxt{font-size:13.5px;line-height:1.55;padding-top:0;}
+    .attag{font-size:12px;}
+    .post-pic{max-width:100%;}
+    /* replies: comfortable, tappable */
+    .replies{margin-left:6px;}
+    .reply{padding:8px 8px 8px 4px;}
+    .reply .rava{width:42px;height:46px;}
+    .reply .rtxt{font-size:12.5px;line-height:1.5;padding-right:2px;}
+    .replyrow input{font-size:16px;padding:7px 8px;}   /* 16px stops iOS zoom-on-focus */
+    .replyrow .comp-btn{font-size:11px;padding:7px 11px;}
+    /* footer bar wraps cleanly */
+    .card-foot{flex-wrap:wrap;gap:5px;padding:6px 8px;}
+    .card-foot .tags{min-width:0;flex:1 1 100%;}
+    .likebtn{font-size:11px;padding:6px 12px;}
+    .delbtn{font-size:10px;padding:5px 10px;}
+    /* your page + sidebar boxes: readable, tappable */
+    .sidehead{font-size:11px;padding:6px;}
+    .siderow{font-size:11px;padding:7px 9px;}
+    .sidetext{font-size:11px;}
+    .youbox .nm{font-size:14px;}
+    .you-ava{width:100px;height:108px;}
+    .trend-tag{font-size:14px;}
+    .trend-cnt{font-size:11px;}
+    .trend-list li{padding:8px 10px;}
+    .poll-q{font-size:12px;}
+    .poll-opt{font-size:12px;padding:8px 10px;}
+    .flapper .fw-name{font-size:14px;}
+    /* notification bar */
+    #notifBar{font-size:13px;padding:10px 12px;}
+    /* composer launcher wraps nicely */
+    .launcher{flex-wrap:wrap;gap:10px;}
+    .launcher .ltxt b{font-size:14px;}
+    .launcher .comp-btn.go{margin-left:auto;}
+    /* mobile: composer opens inside an ORIGINAL pear-phone frame — keyboard-safe (top-aligned + scrollable) */
+    #pearOverlay{align-items:flex-start;justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:44px 0 24px;}
+    #pearOverlay.open{display:flex;}
+    .pearwrap{
+      position:relative;width:94vw;max-width:392px;margin:0 auto;
+      background:linear-gradient(150deg,#e8a05a 0%,#b5692a 38%,#8a4a18 78%,#6b3410 100%);
+      border:3px solid #4a2c14;border-radius:44px/52px;
+      padding:20px 15px 40px;
+      box-shadow:0 22px 50px rgba(0,0,0,.65), inset 0 2px 6px rgba(255,255,255,.28);
+    }
+    .pearwrap svg.pearshell{display:none;}
+    /* stem + leaf poking out the top (own drawing) */
+    .pearwrap::before{
+      content:"";position:absolute;top:-29px;left:50%;transform:translateX(-50%);
+      width:96px;height:38px;background-repeat:no-repeat;background-size:contain;background-position:center;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 38'%3E%3Cpath d='M46 38 C46 24 50 14 47 4' stroke='%237a5230' stroke-width='8' fill='none' stroke-linecap='round'/%3E%3Cpath d='M50 16 C64 0 88 3 93 18 C77 30 55 27 50 16 Z' fill='%236fbf3a' stroke='%233f8a1a' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E");
+      filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));
+    }
+    /* home button on the bottom bezel */
+    .pearwrap::after{
+      content:"";position:absolute;bottom:9px;left:50%;transform:translateX(-50%);
+      width:26px;height:26px;border-radius:50%;
+      background:radial-gradient(circle at 35% 30%,#ffc98a,#f5820a 60%,#b55600);
+      border:2px solid #4a2c14;box-shadow:inset 0 1px 2px rgba(255,255,255,.5);
+    }
+    /* the glass screen holds the compose UI */
+    .pearscreen{
+      position:static;width:100%;height:auto;
+      background:linear-gradient(180deg,#2a4a8f,#122a5e);
+      border:3px solid #0a1c3e;border-radius:20px;
+      padding:12px 11px;display:flex;flex-direction:column;gap:8px;
+      box-shadow:inset 0 3px 10px rgba(0,0,0,.45);
+    }
+    .pearlogo{position:static;width:auto;justify-content:center;margin-bottom:2px;}
+    .pear-top{flex-direction:column;align-items:stretch;gap:8px;}
+    .pear-polaroid{display:none;}   /* no room on the pear screen — your pic lives on Your Page */
+    .pearcard{padding:11px;order:-1;}   /* compose card leads (textarea visible first) */
+    .pearcard .pcname{font-size:15px;}
+    .pearcard textarea{min-height:120px;font-size:16px;line-height:1.5;}   /* 16px stops iOS zoom */
+    .pearfeel select{font-size:16px;}
+    .pearclose{right:3px;top:3px;width:38px;height:38px;font-size:16px;z-index:5;}
+    .pearbottom{flex-wrap:wrap;justify-content:center;gap:8px;margin-top:2px;}
+    .comp-btn{padding:9px 14px;font-size:13px;}
+    .dockbig{padding:4px 11px;font-size:8px;}
+    .dockbig svg{width:22px;height:20px;}
+    /* profile + gate cards */
+    .profcard{width:94vw;}
+    .profcard .pc-ava{width:80px;height:88px;}
+    .gatecard{width:92vw;max-width:360px;padding:20px 18px;}
+    .gatecard h2{font-size:28px;}
+    .gatecard p{font-size:11px;}
+    .gatecard input{font-size:16px;padding:10px 12px;}   /* 16px stops iOS zoom */
+    .gatecard .comp-btn.go{font-size:14px;padding:11px;}
+    #retro{display:none;}   /* skip heavy filter on phones for speed */
+  }
+  /* small phones */
+  @media(max-width:380px){
+    .banner{grid-template-columns:repeat(3,1fr);}
+    .navbtn{font-size:8px;padding:5px 7px;}
+    .poster{width:46px;margin-right:7px;}
+    .poster .pava{width:44px;height:50px;}
+    .moodbox{width:62px;}
+    .moodbox .mword{font-size:8.5px;}
+    .statustxt{font-size:13px;}
+  }
+  @media(hover:none) and (pointer:coarse){
+    /* touch devices: bigger tap targets everywhere clickable */
+    .likebtn,.siderow,.navbtn,.trend-list li,.poll-opt{padding-top:7px;padding-bottom:7px;}
+  }
+  /* brand hidden on desktop (logo lives in the sidebar there) */
+  .topbrand{display:none;}
+  /* ===== PHONE: tight, feed-first, scannable (real-app density) ===== */
+  @media(max-width:760px){
+    /* brand header + one compact scrollable row of nav */
+    .topbar{position:sticky;top:0;z-index:90;}
+    .topbar-inner{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start;gap:5px;padding:5px 8px;scrollbar-width:none;}
+    .topbar-inner::-webkit-scrollbar{display:none;}
+    .topbrand{display:inline-block;flex:none;font-family:'Chewy','Comic Sans MS',cursive;font-size:20px;line-height:1;color:#fff;letter-spacing:.5px;margin-right:6px;cursor:pointer;text-shadow:0 2px 0 var(--orange-dark);}
+    .topbrand b{color:#ffe08a;}
+    .navbtn{flex:none;font-size:9px;padding:4px 8px;}
+    /* smaller, less shouty banner */
+    .banner{grid-template-columns:repeat(6,1fr);gap:4px;padding:5px;}
+    .tile{aspect-ratio:1/1;border-width:2px;}
+    .ticker{height:30px;}
+    .ticker span{font-size:14px;line-height:30px;}
+    /* denser post cards, round avatars (Twitter-ish) */
+    .wrap{gap:10px;margin-top:8px;}
+    .sidebox{margin-bottom:10px;}
+    .card{margin-bottom:8px;border-width:2px;}
+    .card-strip{font-size:9px;padding:3px 8px;}
+    .card-body{padding:8px 9px 9px;}
+    .poster{width:40px;margin-right:8px;}
+    .poster .pava{width:38px;height:38px;border-radius:50%;border-width:2px;}
+    .poster .pava::after{border-radius:50%;}
+    .poster .pname{font-size:11px;}
+    .moodbox{width:52px;padding:2px 2px 3px;border-width:2px;border-radius:8px;margin-left:6px;}
+    .moodbox .mlabel{font-size:9px;}
+    .moodbox .mword{font-size:8px;}
+    .moodbox .emo{width:22px;height:22px;}
+    .statustxt{font-size:14px;line-height:1.45;}
+    .reply{padding:6px 4px 6px 2px;}
+    .reply .rava{width:32px;height:32px;border-radius:50%;}
+    .reply .rtxt{font-size:12.5px;}
+    .card-foot{padding:5px 8px;}
+    .colhead{font-size:11px;padding:5px 9px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- shared SVG defs -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <radialGradient id="emoGrad" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#ffe97a"/><stop offset="60%" stop-color="#ffce1f"/><stop offset="100%" stop-color="#e0a800"/>
+    </radialGradient>
+    <linearGradient id="screenGrad" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#2a4a8f"/><stop offset="1" stop-color="#122a5e"/>
+    </linearGradient>
+    <radialGradient id="pearGloss" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".8"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="btnGrad" cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0" stop-color="#ffc98a"/><stop offset="0.6" stop-color="#f5820a"/><stop offset="1" stop-color="#b55600"/>
+    </radialGradient>
+    <linearGradient id="phoneBezel" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#565664"/><stop offset="0.4" stop-color="#2e2e38"/><stop offset="1" stop-color="#121218"/>
+    </linearGradient>
+    <g id="pearBodyUse">
+      <path d="M 240 38
+               C 298 38 332 82 326 132
+               C 321 172 306 200 318 230
+               C 354 274 424 322 424 478
+               C 424 620 348 716 240 716
+               C 132 716 56 620 56 478
+               C 56 322 126 274 162 230
+               C 174 200 159 172 154 132
+               C 148 82 182 38 240 38 Z"
+            fill="url(#phoneBezel)" stroke="#08080c" stroke-width="7" stroke-linejoin="round"/>
+      <g transform="translate(16.8 26.4) scale(.93)">
+        <path d="M 240 38
+                 C 298 38 332 82 326 132
+                 C 321 172 306 200 318 230
+                 C 354 274 424 322 424 478
+                 C 424 620 348 716 240 716
+                 C 132 716 56 620 56 478
+                 C 56 322 126 274 162 230
+                 C 174 200 159 172 154 132
+                 C 148 82 182 38 240 38 Z"
+              fill="url(#screenGrad)" stroke="#000000" stroke-width="4" stroke-linejoin="round"/>
+      </g>
+      <path d="M 245 40 C 250 22 262 12 280 8 C 292 5 300 12 297 22 C 294 31 284 34 275 34 C 262 34 252 36 246 44 Z"
+            fill="#7a5230" stroke="#4a2c14" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M 290 26 C 330 2 380 8 400 34 C 366 58 312 52 290 26 Z"
+            fill="#6fbf3a" stroke="#3f8a1a" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M 300 28 C 330 26 360 28 392 34" fill="none" stroke="#3f8a1a" stroke-width="3.5" stroke-linecap="round"/>
+      <rect x="205" y="66" width="70" height="9" rx="4.5" fill="#0c1c3e" opacity=".85"/>
+      <circle cx="296" cy="70" r="4" fill="#0c1c3e"/>
+      <circle cx="297" cy="69" r="1.4" fill="#4a6ab5"/>
+      <circle cx="240" cy="688" r="15" fill="url(#btnGrad)" stroke="#08080c" stroke-width="3"/>
+      <rect x="233" y="681" width="14" height="14" rx="3" fill="none" stroke="#8a4a18" stroke-width="2"/>
+      <rect x="50" y="380" width="7" height="46" rx="3.5" fill="#08080c"/>
+      <rect x="50" y="440" width="7" height="30" rx="3.5" fill="#08080c"/>
+      <ellipse cx="180" cy="180" rx="60" ry="120" fill="url(#pearGloss)" opacity=".35" transform="rotate(18 180 180)"/>
+      <ellipse cx="150" cy="430" rx="34" ry="80" fill="url(#pearGloss)" opacity=".22" transform="rotate(10 150 430)"/>
+    </g>
+  </defs>
+</svg>
+
+<!-- INVITE GATE -->
+<div id="gate">
+  <div class="gatecard">
+    <h2>theFLAP.com</h2>
+    <p>First time? Pick a name, a password + <b>a profile pic</b> — that makes your account. Coming back? Same name + password logs you in. Your profile follows you.</p>
+    <input type="text" id="gateName" maxlength="20" placeholder="Your name (what everyone sees)">
+    <input type="password" id="gatePass" maxlength="40" placeholder="Your password">
+    <div class="gate-ava-wrap">
+      <div class="gate-ava" id="gateAva" onclick="document.getElementById('gateAvatarFile').click()" title="Add your profile pic">＋</div>
+      <div class="gate-ava-label">New here? Tap the circle to add your <b>profile pic</b></div>
+    </div>
+    <input type="file" id="gateAvatarFile" accept="image/*" hidden>
+    <div class="gate-err" id="gateErr"></div>
+    <button class="comp-btn go" type="button" onclick="enterGate()">Let Me In!</button>
+    <a onclick="browseGuest()" style="display:block;margin-top:10px;font-size:11px;color:var(--card-border);font-weight:bold;cursor:pointer;text-decoration:underline;">👀 just browse for now</a>
+    <div class="offline-note" id="offlineNote" style="display:none;">
+      ⚠ Backend not configured yet — you can look around in demo mode, but posts won't be shared.
+      (See TheFlap_online_SETUP.md)
+    </div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="topbrand" onclick="window.scrollTo({top:0,behavior:'smooth'})">the<b>FLAP</b></span>
+    <button class="navbtn" onclick="toast('You are home!')">Home</button>
+    <button class="navbtn" onclick="loadFeed(true)">Refresh Feed</button>
+    <button class="navbtn support-nav" onclick="openSupport()">🎫 Support</button>
+    <button class="navbtn" onclick="toast('Coming soon!')">What's On TheFlap?</button>
+    <button class="navbtn" onclick="toast('Coming soon!')">Tunes</button>
+    <button class="navbtn" onclick="toast('Coming soon!')">Profiles</button>
+    <button class="navbtn" onclick="toast('Coming soon!')">Statuses</button>
+    <button class="navbtn" onclick="toast('Coming soon!')">Pix</button>
+    <button class="navbtn bell" id="bellBtn" type="button" onclick="toggleNotifs(event)">🔔<span id="bellCount" class="bell-count"></span></button>
+  </div>
+</div>
+<div id="notifPanel" class="notif-panel"></div>
+
+<!-- install-to-home-screen prompt -->
+<div id="installBar">
+  <svg viewBox="0 0 512 512" class="ib-icon"><rect width="512" height="512" rx="112" fill="#186fd6"/><path d="M120 300 A160 160 0 0 1 392 300 Z" fill="#f5820a" stroke="#fff" stroke-width="10"/><circle cx="256" cy="300" r="28" fill="#c05e00" stroke="#fff" stroke-width="7"/></svg>
+  <div class="ib-txt"><b>📲 Add TheFlap to your home screen</b><span id="ibHint">Get it as a real app with notifications!</span></div>
+  <button class="ib-go" id="ibGo" type="button" onclick="doInstall()">Add</button>
+  <button class="ib-x" type="button" onclick="dismissInstall()">✕</button>
+</div>
+<div id="iosSheet" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="ios-card">
+    <b>Add TheFlap to your Home Screen</b>
+    <ol>
+      <li>Tap the <b>Share</b> button <span class="ios-share">⬆️</span> at the bottom of Safari</li>
+      <li>Scroll down and tap <b>“Add to Home Screen”</b></li>
+      <li>Tap <b>Add</b> — TheFlap appears as an app icon 🐦</li>
+    </ol>
+    <p class="ios-note">On iPhone, notifications only work after you add TheFlap to your Home Screen and open it from there (iOS 16.4+).</p>
+    <button class="comp-btn go" type="button" onclick="document.getElementById('iosSheet').classList.remove('open')">Got it!</button>
+  </div>
+</div>
+
+<div class="banner" id="banner"></div>
+
+<div class="ticker"><span id="tickerText">★ WELCOME TO THEFLAP.COM — FRIENDS EDITION ★ INVITE ONLY ★ BE NICE OR LOCK DELETES YOU ★ OPEN MIC NIGHT THIS FRIDAY ★ WHAT'S FLAPPENING? ★</span></div>
+
+<div class="wrap">
+
+  <aside>
+    <div class="logobox" onclick="toast('Welcome to TheFlap! Stay breezy.')">
+      <div class="fanstack">
+        <svg class="fanburst" viewBox="0 0 100 100">
+          <polygon points="50,2 58,30 86,14 68,38 98,44 70,52 90,74 62,62 60,94 50,68 40,94 38,62 10,74 30,52 2,44 32,38 14,14 42,30"
+                   fill="#ffd23f" stroke="#e0a800" stroke-width="2" stroke-linejoin="round" opacity=".95"/>
+        </svg>
+        <svg class="fanline" viewBox="0 0 100 100">
+          <path d="M12 30 C22 18 34 12 46 10" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M88 30 C78 18 66 12 54 10" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </svg>
+        <svg class="fan" viewBox="0 0 130 110" xmlns="http://www.w3.org/2000/svg">
+          <g stroke="#ffffff" stroke-width="4" stroke-linejoin="round">
+            <path transform="rotate(-56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/>
+            <path transform="rotate(-28 65 96)" d="M65 96 C 53 60 51 26 65 12 C 79 26 77 60 65 96 Z" fill="#ff8a1e"/>
+            <path d="M65 96 C 52 58 50 22 65 8 C 80 22 78 58 65 96 Z" fill="#ff8a1e"/>
+            <path transform="rotate(28 65 96)" d="M65 96 C 53 60 51 26 65 12 C 79 26 77 60 65 96 Z" fill="#ff8a1e"/>
+            <path transform="rotate(56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/>
+            <circle cx="65" cy="96" r="9" fill="#e05e00"/>
+          </g>
+        </svg>
+      </div>
+      <div class="wordmark"><span class="the">the</span>FLAP<span class="com">.com</span></div>
+      <div class="slogan">where everybody flaps!</div>
+    </div>
+
+    <div class="sidebox">
+      <div class="sidehead">Oh! You Mean TheFlap.com!</div>
+      <div class="sidetext">
+        Welcome to TheFlap.com — where you'll find all the hottest pics, clips, and flaps
+        from your favorite Westbrook High students (and teachers!). The friends-only edition:
+        real flaps from real friends, plus the classic crew below.<br><br>
+        Run by: <a onclick="toast('That would be Lock. Obviously.')">@lock</a>
+      </div>
+    </div>
+
+    <div class="sidebox">
+      <div class="sidehead">Your Page</div>
+      <div class="sidebody youbox">
+        <div class="you-ava" id="youAva" onclick="document.getElementById('avatarFile').click()" title="Click to upload your real pic"></div>
+        <button class="you-update" type="button" onclick="document.getElementById('avatarFile').click()">UPDATE</button>
+        <div class="nm" id="youName">—</div>
+        <div class="you-stats"><b id="youCount">0</b> flaps posted</div>
+        <button class="you-update" type="button" style="margin-top:8px;background:linear-gradient(180deg,#3c6ec9,#22398f);" onclick="if(ME.name)showUserProfile(ME.name);else requireAuth();">👤 VIEW MY PROFILE</button>
+        <div class="hint">upload your real pic to replace the cartoon!</div>
+        <button class="you-update" type="button" style="background:linear-gradient(180deg,#4a4a5e,#2c2c3a);margin-top:8px;" onclick="logOut()">LOG OUT</button>
+        <button class="you-update danger-btn" type="button" style="margin-top:8px;" onclick="deleteAccount()">DELETE ACCOUNT</button>
+        <button class="adminbtn" id="adminBtn" type="button" onclick="showAdmin()">👑 ADMIN PANEL</button>
+        <div style="margin-top:8px;"><a class="privacy-link" onclick="openPrivacy()">Privacy Policy</a></div>
+      </div>
+      <input type="file" id="avatarFile" accept="image/*" hidden>
+    </div>
+  </aside>
+
+  <main>
+    <div id="notifBar" onclick="dismissNotif()"></div>
+    <div class="colhead">Post A New Flap</div>
+    <div class="card composer">
+      <div class="card-body launcher" onclick="openPear()">
+        <svg class="pearmini" viewBox="0 0 760 480"><g transform="translate(0 480) rotate(-90)"><use href="#pearBodyUse"/></g></svg>
+        <div class="ltxt">
+          <b>Grab your FlapPad to post!</b>
+          <span>your flap goes live for all your friends</span>
+        </div>
+        <button class="comp-btn go" type="button">Open</button>
+      </div>
+    </div>
+    <input type="file" id="postFile" accept="image/*" hidden>
+
+    <div class="colhead">Live Flaps — The Friends Feed <span class="blink">● LIVE</span></div>
+    <div id="liveWrap">
+      <div id="liveFeed"><div class="card"><div class="card-body" style="text-align:center;font-size:11px;">loading flaps…</div></div></div>
+    </div>
+
+    <div class="colhead" id="classicHead">🔥 Classic Crew — fan favorites</div>
+    <div id="feed"></div>
+  </main>
+
+  <aside>
+    <div class="sidebox">
+      <div class="sidehead">🔥 Trending on TheFlap</div>
+      <ul class="trend-list" id="trendBox"><li class="trend-empty">loading…</li></ul>
+    </div>
+
+    <div class="sidebox">
+      <div class="sidehead">🗳️ Flap Poll of the Day</div>
+      <div class="poll" id="pollBox">loading…</div>
+    </div>
+
+    <div class="sidebox">
+      <div class="sidehead">💫 Flapper of the Week</div>
+      <div class="flapper" id="flapperBox">loading…</div>
+    </div>
+
+    <div class="sidebox">
+      <div class="sidehead">House Rules</div>
+      <div class="sidetext">
+        1. be nice.<br>
+        2. no last names, phone numbers, addresses.<br>
+        3. what flaps here stays here.<br>
+        4. lock can delete anything. lock is the law.<br>
+        5. taco tuesday is sacred.
+      </div>
+    </div>
+    <div class="sidebox">
+      <div class="sidehead">✨ The Flappers</div>
+      <div class="sidebody" id="profilesList"></div>
+    </div>
+  </aside>
+
+</div>
+
+<div class="pagefoot">
+  <span class="blink">★ FRIENDS ONLY ★</span> You are visitor <span class="counter">0073842</span><br>
+  TheFlap.com™ — a private fan-made site for friends · original name, fan logo, characters &amp; hand-drawn art ·
+  zero affiliation with any real or fictional network · be cool to each other<br>
+  <a class="privacy-link" onclick="openPrivacy()">Privacy Policy &amp; Community Guidelines</a>
+</div>
+
+<!-- PEAR PHONE COMPOSER -->
+<div id="pearOverlay" onclick="if(event.target===this)closePear()">
+  <div class="pearwrap">
+    <svg class="pearshell" viewBox="0 0 760 480"><g transform="translate(0 480) rotate(-90)"><use href="#pearBodyUse"/></g></svg>
+    <button class="pearclose" onclick="closePear()" title="Close">✕</button>
+    <div class="pearlogo">
+      <svg viewBox="0 0 130 110"><g stroke="#ffffff" stroke-width="6" stroke-linejoin="round">
+        <path transform="rotate(-48 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ff8a1e"/>
+        <path d="M65 96 C 52 58 50 22 65 8 C 80 22 78 58 65 96 Z" fill="#ff8a1e"/>
+        <path transform="rotate(48 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ff8a1e"/>
+        <circle cx="65" cy="96" r="9" fill="#e05e00"/>
+      </g></svg>
+      <span class="mini-wordmark">theFLAP.com</span>
+    </div>
+    <div class="pearscreen">
+      <div class="pear-top">
+        <div class="pear-polaroid" title="That's you!">
+          <div class="photo2" id="pearAva"></div>
+        </div>
+        <div class="pearcard">
+          <div class="pcname" id="pearName">You</div>
+          <textarea id="composeText" maxlength="300" placeholder="What's flappening? Type @name to tag a friend"></textarea>
+          <div class="tagbar" id="tagBar"></div>
+          <div class="attach-preview" id="attachPreview">
+            <img id="attachThumb" alt="attached pic"><span>pic attached!</span>
+            <span class="x" onclick="clearAttach(event)">✖ remove</span>
+          </div>
+          <div class="pearfeel">
+            <span class="fl">FEELING:</span>
+            <select id="moodSel">
+              <option value="happy">happy</option>
+              <option value="excited">excited</option>
+              <option value="pumped">pumped</option>
+              <option value="blissful">blissful</option>
+              <option value="chillin">chillin'</option>
+              <option value="hopeful">hopeful</option>
+              <option value="funky">funky</option>
+              <option value="fierce">fierce</option>
+              <option value="victorious">victorious</option>
+              <option value="thinky">thinky</option>
+              <option value="wondering">wondering</option>
+              <option value="bored">bored</option>
+              <option value="tired">tired</option>
+              <option value="blah">blah</option>
+              <option value="beat">beat</option>
+              <option value="hungry">hungry</option>
+              <option value="bummed">bummed</option>
+              <option value="crushed">crushed</option>
+              <option value="upset">upset</option>
+              <option value="anxious">anxious</option>
+              <option value="freakin">freakin'</option>
+              <option value="cranky">cranky</option>
+              <option value="irritated">irritated</option>
+              <option value="suspicious">suspicious</option>
+              <option value="yuck">yuck</option>
+              <option value="evil">evil</option>
+              <option value="dorky">dorky</option>
+            </select>
+            <span id="emoPreview"></span>
+          </div>
+        </div>
+      </div>
+      <div class="pearbottom">
+        <button class="comp-btn" type="button" onclick="insertAt()">@ Tag</button>
+        <button class="comp-btn" type="button" onclick="document.getElementById('postFile').click()">Add Pic</button>
+        <button class="comp-btn go" type="button" onclick="postFlap()">Flap It!</button>
+        <div class="dockbtns">
+          <button class="dockbig home" type="button" onclick="closePear();toast('Back home to the feed!')">
+            <svg viewBox="0 0 32 28"><path d="M16 2 L30 14 L26 14 L26 26 L19 26 L19 18 L13 18 L13 26 L6 26 L6 14 L2 14 Z" fill="#7fd4ff" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            HOME
+          </button>
+          <button class="dockbig friends" type="button" onclick="closePear();toast('Everyone on this site is your friend. That is the point.')">
+            <svg viewBox="0 0 34 28"><circle cx="11" cy="9" r="6" fill="#fff"/><path d="M1 27 C1 18 21 18 21 27 Z" fill="#fff"/><circle cx="25" cy="10" r="5" fill="#d9d9e8"/><path d="M18 27 C19 20 33 20 33 27 Z" fill="#d9d9e8"/></svg>
+            FRIENDS
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- profile / admin popup -->
+<div id="profModal" onclick="if(event.target===this)closeProfile()">
+  <div class="profcard" id="profCardBox"></div>
+</div>
+
+<div id="reportModal" onclick="if(event.target===this)closeReport()">
+  <div class="report-card">
+    <div class="report-h">⚑ Report <span id="reportWho">this</span></div>
+    <p class="report-sub">Why are you reporting this? Our team reviews reports within 24 hours and removes violating content.</p>
+    <div class="report-reasons">
+      <button type="button" onclick="submitReport('Spam or scam')">Spam or scam</button>
+      <button type="button" onclick="submitReport('Harassment or bullying')">Harassment or bullying</button>
+      <button type="button" onclick="submitReport('Hate speech')">Hate speech</button>
+      <button type="button" onclick="submitReport('Nudity or sexual content')">Nudity / sexual content</button>
+      <button type="button" onclick="submitReport('Violence or threats')">Violence or threats</button>
+      <button type="button" onclick="submitReport('Other')">Something else</button>
+    </div>
+    <button class="report-cancel" type="button" onclick="closeReport()">Cancel</button>
+  </div>
+</div>
+
+<div id="supportModal" onclick="if(event.target===this)closeSupport()">
+  <div class="report-card">
+    <div class="report-h">🎫 Support &amp; Help</div>
+    <p class="report-sub">Having a problem, a bug, or an idea? Send us a ticket and we'll get on it. Tell us what happened.</p>
+    <textarea id="supportMsg" maxlength="600" placeholder="Describe the problem or suggestion…" style="width:100%;box-sizing:border-box;min-height:96px;font-family:Verdana,Arial,sans-serif;font-size:13px;padding:9px;border:2px solid var(--card-border);border-radius:8px;"></textarea>
+    <button class="comp-btn go" type="button" style="width:100%;margin-top:8px;text-align:center;" onclick="submitTicket()">Send Ticket</button>
+    <button class="report-cancel" type="button" onclick="closeSupport()">Cancel</button>
+  </div>
+</div>
+
+<div id="toast">Flap!</div>
+<div id="retro"></div>
+
+<script>
+  /* ################################################################
+     CONFIG — fill these in! See TheFlap_online_SETUP.md
+     ################################################################ */
+  var CONFIG={
+    SUPABASE_URL:"https://zclappstgkjebltkdzlq.supabase.co",
+    SUPABASE_ANON_KEY:"sb_publishable_fn7Fzyx9B95U8FY_5cSO3Q_Mn43ce1H",
+    INVITE_CODE:"",                   /* not used — signup is open */
+    ADMIN_CODE:""                     /* not used — admin is silently tied to the "lock" account */
+  };
+
+  var sb=null, ONLINE=false, ME={name:"",admin:false}, myFlapCount=0;
+  /* ===== resilient session storage: keep you logged in across reloads =====
+     saves to BOTH localStorage and a 1-year cookie, and restores from either,
+     so a wiped store in one place doesn't log you out. */
+  function saveSession(obj){
+    var s=JSON.stringify(obj);
+    try{localStorage.setItem('flap_me',s);}catch(e){}
+    try{document.cookie='flap_me='+encodeURIComponent(s)+';path=/;max-age=31536000;samesite=lax';}catch(e){}
+  }
+  function readSession(){
+    var s=null;
+    try{s=localStorage.getItem('flap_me');}catch(e){}
+    if(!s){try{var m=document.cookie.match(/(?:^|;\s*)flap_me=([^;]+)/);if(m)s=decodeURIComponent(m[1]);}catch(e){}}
+    if(s){try{localStorage.setItem('flap_me',s);}catch(e){}
+          try{document.cookie='flap_me='+encodeURIComponent(s)+';path=/;max-age=31536000;samesite=lax';}catch(e){}}
+    return s;
+  }
+  function clearSession(){
+    try{localStorage.removeItem('flap_me');}catch(e){}
+    try{document.cookie='flap_me=;path=/;max-age=0';}catch(e){}
+  }
+  /* in-app browsers (opening the link inside IG / Snap / TikTok / Discord) wipe your
+     login when they close — warn once and point people to a real browser. */
+  function isInAppBrowser(){
+    var ua=navigator.userAgent||'';
+    return /FBAN|FBAV|Instagram|Line\/|Snapchat|TikTok|musical_ly|Pinterest|GSA\/|; wv\)/i.test(ua);
+  }
+  function inAppTip(){
+    if(!isInAppBrowser()||document.getElementById('inappTip'))return;
+    var b=document.createElement('div');
+    b.id='inappTip';
+    b.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:200;background:#22398f;color:#fff;font:bold 12px Verdana,Arial,sans-serif;padding:10px 12px;border:2px solid #fff;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.45);line-height:1.45;';
+    b.innerHTML='🐦 You opened TheFlap inside another app — that can log you out. Tap the ••• menu and pick <b>Open in Browser</b>, or add TheFlap to your Home Screen, to stay signed in. <span style="text-decoration:underline;cursor:pointer;white-space:nowrap" onclick="this.parentNode.remove()">Got it ✕</span>';
+    document.body.appendChild(b);
+  }
+  if(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase){
+    sb=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY);
+    ONLINE=true;
+  }
+
+  /* ================= fictional cast (the "classics") ================= */
+  var CAST={
+    jay:    {name:"Jay",    full:"Jay Navarro",   bg:"#4a7ab5", skin:"#e0a26a", skinD:"#c8854e", hair:"#2e1c10", shirt:"#2f7ac9", style:"short",  blurb:"runs this place."},
+    marisol:{name:"Marisol",full:"Marisol Vega",  bg:"#b53c78", skin:"#c98a5b", skinD:"#a96e42", hair:"#241430", shirt:"#ff2fa0", style:"long",   blurb:"6-minute ballads only."},
+    dex:    {name:"Dex",    full:"Dexter Cho",    bg:"#c9781e", skin:"#f0c48e", skinD:"#d4a468", hair:"#141414", shirt:"#f5820a", style:"spiky",  blurb:"documentary legend.", glasses:true},
+    priya:  {name:"Priya",  full:"Priya Raman",   bg:"#6b4fc9", skin:"#b5763f", skinD:"#96602f", hair:"#1c0f04", shirt:"#8a5cf6", style:"bun",    blurb:"relentless. 2 stars."},
+    tobin:  {name:"Tobin",  full:"Tobin Blake",   bg:"#16988a", skin:"#f5d5a8", skinD:"#dbb684", hair:"#c9812a", shirt:"#19c3b1", style:"curly",  blurb:"keeping a list."},
+    coachf: {name:"Coach F",full:"Coach Ferrelli",bg:"#a3281a", skin:"#d99a6a", skinD:"#bd7e4e", hair:"#5a5a5a", shirt:"#8f1408", style:"cap",    blurb:"6 AM. Bring hustle."}
+  };
+
+  /* ============ portrait generator (hand-drawn, original) ============ */
+  function portraitC(c,bg,zoom){
+    var s='';
+    s+='<svg viewBox="'+(zoom?'10 8 80 90':'0 0 100 110')+'" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">';
+    s+='<rect width="100" height="110" fill="'+bg+'"/>';
+    s+='<circle cx="32" cy="22" r="52" fill="#fff" opacity=".12"/>';
+    s+='<rect width="100" height="110" fill="#000" opacity=".05"/>';
+    if(c.style==='long'){s+='<path d="M27 40 C25 16 75 16 73 40 L76 82 C64 90 36 90 24 82 Z" fill="'+c.hair+'"/>';}
+    if(c.style==='curly'){s+='<circle cx="32" cy="34" r="9" fill="'+c.hair+'"/><circle cx="68" cy="34" r="9" fill="'+c.hair+'"/>';}
+    s+='<path d="M14 110 C16 84 32 76 50 76 C68 76 84 84 86 110 Z" fill="'+c.shirt+'"/>';
+    s+='<path d="M14 110 C16 84 32 76 50 76 C68 76 84 84 86 110 Z" fill="#fff" opacity=".12"/>';
+    s+='<path d="M40 78 L50 88 L60 78 L57 76 L50 82 L43 76 Z" fill="#fff" opacity=".35"/>';
+    s+='<path d="M43 62 L43 78 C43 82 57 82 57 78 L57 62 Z" fill="'+c.skinD+'"/>';
+    s+='<ellipse cx="30" cy="46" rx="4" ry="5.5" fill="'+c.skin+'"/><ellipse cx="70" cy="46" rx="4" ry="5.5" fill="'+c.skin+'"/>';
+    s+='<path d="M31 42 C31 24 69 24 69 42 C69 58 62 68 50 68 C38 68 31 58 31 42 Z" fill="'+c.skin+'"/>';
+    if(c.style==='short'){s+='<path d="M31 42 C29 22 71 22 69 42 C67 32 61 27 50 27 C39 27 33 32 31 42 Z" fill="'+c.hair+'"/>';}
+    else if(c.style==='long'){s+='<path d="M31 44 C28 20 72 20 69 44 C68 33 63 30 57 32 C52 34 40 34 36 31 C33 33 32 38 31 44 Z" fill="'+c.hair+'"/>';}
+    else if(c.style==='spiky'){s+='<path d="M31 40 C31 26 38 21 50 21 C62 21 69 26 69 40 L64 31 L61 37 L56 27 L50 34 L45 26 L40 36 L35 30 Z" fill="'+c.hair+'"/>';}
+    else if(c.style==='bun'){s+='<circle cx="50" cy="18" r="8" fill="'+c.hair+'"/><path d="M31 44 C29 22 71 22 69 44 C66 30 60 28 50 28 C40 28 34 30 31 44 Z" fill="'+c.hair+'"/>';}
+    else if(c.style==='curly'){s+='<circle cx="38" cy="26" r="8" fill="'+c.hair+'"/><circle cx="50" cy="22" r="9" fill="'+c.hair+'"/><circle cx="62" cy="26" r="8" fill="'+c.hair+'"/><path d="M32 40 C33 30 40 27 50 27 C60 27 67 30 68 40 C64 32 58 30 50 30 C42 30 36 32 32 40 Z" fill="'+c.hair+'"/>';}
+    else if(c.style==='cap'){s+='<path d="M31 38 C31 24 69 24 69 38 L69 34 C69 22 31 22 31 34 Z" fill="#c22a1a"/><path d="M30 36 C30 25 70 25 70 36 C70 30 62 26 50 26 C38 26 30 30 30 36 Z" fill="#c22a1a"/><path d="M26 37 C38 31 62 31 78 36 L76 41 C60 36 40 36 28 42 Z" fill="#8f1408"/><circle cx="50" cy="30" r="2.4" fill="#ffd23f"/>';}
+    s+='<path d="M38 40 Q42 38 46 40" stroke="'+c.hair+'" stroke-width="2" fill="none" stroke-linecap="round"/>';
+    s+='<path d="M54 40 Q58 38 62 40" stroke="'+c.hair+'" stroke-width="2" fill="none" stroke-linecap="round"/>';
+    s+='<ellipse cx="42" cy="46" rx="4" ry="3.2" fill="#fff"/><ellipse cx="58" cy="46" rx="4" ry="3.2" fill="#fff"/>';
+    s+='<circle cx="42.5" cy="46.5" r="1.9" fill="#2a1a0c"/><circle cx="58.5" cy="46.5" r="1.9" fill="#2a1a0c"/>';
+    s+='<circle cx="43.2" cy="45.8" r=".7" fill="#fff"/><circle cx="59.2" cy="45.8" r=".7" fill="#fff"/>';
+    if(c.glasses){s+='<rect x="36" y="41.5" width="12" height="9" rx="3" fill="none" stroke="#222" stroke-width="1.6"/><rect x="52" y="41.5" width="12" height="9" rx="3" fill="none" stroke="#222" stroke-width="1.6"/><path d="M48 45.5 L52 45.5" stroke="#222" stroke-width="1.6"/>';}
+    s+='<path d="M50 48 C49 51 48.6 53 51 54.4" stroke="'+c.skinD+'" stroke-width="1.6" fill="none" stroke-linecap="round"/>';
+    s+='<path d="M42 58 Q50 65 58 58 Q50 61.5 42 58 Z" fill="#fff" stroke="#8c3b1f" stroke-width="1.4" stroke-linejoin="round"/>';
+    s+='<ellipse cx="36" cy="53" rx="3" ry="1.8" fill="#e86a5a" opacity=".28"/><ellipse cx="64" cy="53" rx="3" ry="1.8" fill="#e86a5a" opacity=".28"/>';
+    s+='<path d="M0 0 L100 0 L0 60 Z" fill="#fff" opacity=".06"/>';
+    s+='</svg>';
+    return s;
+  }
+  function portrait(key,bgAlt,zoom){return portraitC(CAST[key],bgAlt||CAST[key].bg,zoom);}
+
+  /* auto-generated look for real users, hashed from their name */
+  var UP_STYLES=['short','long','spiky','bun','curly'];
+  var UP_BGS=['#4a7ab5','#b53c78','#c9781e','#6b4fc9','#16988a','#2e8a5a','#b58a2e','#8a3c2e'];
+  var UP_SKINS=[['#e0a26a','#c8854e'],['#c98a5b','#a96e42'],['#f0c48e','#d4a468'],['#b5763f','#96602f'],['#f5d5a8','#dbb684'],['#8a5a3a','#6e4429']];
+  var UP_HAIRS=['#2e1c10','#241430','#141414','#c9812a','#5a5a5a','#7a2f10'];
+  var UP_SHIRTS=['#2f7ac9','#ff2fa0','#f5820a','#8a5cf6','#19c3b1','#c22a1a'];
+  function nameHash(s){var h=5381;for(var i=0;i<s.length;i++){h=((h<<5)+h+s.charCodeAt(i))>>>0;}return h;}
+  function userPortrait(name){
+    var h=nameHash((name||'friend').toLowerCase());
+    var sk=UP_SKINS[h%UP_SKINS.length];
+    var c={style:UP_STYLES[(h>>3)%UP_STYLES.length],skin:sk[0],skinD:sk[1],
+           hair:UP_HAIRS[(h>>6)%UP_HAIRS.length],shirt:UP_SHIRTS[(h>>9)%UP_SHIRTS.length],
+           glasses:((h>>12)%4)===0};
+    return portraitC(c,UP_BGS[(h>>15)%UP_BGS.length]);
+  }
+  function userColor(name){return UP_BGS[nameHash((name||'x').toLowerCase())>>15%UP_BGS.length]||UP_BGS[0];}
+
+  /* ============ animated mood emoticons ============ */
+  function emoHTML(mood,small){
+    var base='<circle cx="20" cy="20" r="16.5" fill="url(#emoGrad)" stroke="#c98f00" stroke-width="2"/>'+
+             '<ellipse cx="14" cy="12" rx="6" ry="3.6" fill="#fff" opacity=".5"/>';
+    var f='';
+    /* authentic TheSlap mood words map onto our animated faces */
+    mood=({blissful:'sparkly',chillin:'flappy',fierce:'styling',wondering:'confused',blah:'bleh',beat:'zonked',hungry:'hangry',bummed:'sad',crushed:'weepy',upset:'unhappy',anxious:'uncomfortable',freakin:'freaking',cranky:'angry',suspicious:'impatient',yuck:'grossed'})[mood]||mood;
+    if(mood==='flappy'){
+      f='<ellipse cx="14" cy="17" rx="1.9" ry="2.7" fill="#4a2c00"/><ellipse cx="26" cy="17" rx="1.9" ry="2.7" fill="#4a2c00"/>'+
+        '<path d="M12 24 Q20 31 28 24" stroke="#7a4a00" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
+    }else if(mood==='bleh'){
+      f='<path d="M11 16 L17 16" stroke="#4a2c00" stroke-width="2.2" stroke-linecap="round"/>'+
+        '<path d="M23 16 L29 16" stroke="#4a2c00" stroke-width="2.2" stroke-linecap="round"/>'+
+        '<path d="M13 24 Q20 27 27 24" stroke="#7a4a00" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
+        '<g class="tng"><path d="M16.5 25.5 Q20 34 23.5 25.5 Z" fill="#ff5c8a" stroke="#d42a60" stroke-width="1.2" stroke-linejoin="round"/></g>';
+    }else if(mood==='hangry'){
+      f='<g class="brows"><path d="M10.5 13 L17 16" stroke="#4a2c00" stroke-width="2.4" stroke-linecap="round"/>'+
+        '<path d="M29.5 13 L23 16" stroke="#4a2c00" stroke-width="2.4" stroke-linecap="round"/></g>'+
+        '<circle cx="14.5" cy="18.5" r="1.8" fill="#4a2c00"/><circle cx="25.5" cy="18.5" r="1.8" fill="#4a2c00"/>'+
+        '<path d="M12.5 27 L16 25 L20 27.5 L24 25 L27.5 27" stroke="#7a4a00" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+    }else if(mood==='sparkly'){
+      f='<path class="st1" d="M14 13.4 L15.2 16.2 L18 17.4 L15.2 18.6 L14 21.4 L12.8 18.6 L10 17.4 L12.8 16.2 Z" fill="#fff" stroke="#e0a800" stroke-width=".8"/>'+
+        '<path class="st2" d="M26 13.4 L27.2 16.2 L30 17.4 L27.2 18.6 L26 21.4 L24.8 18.6 L22 17.4 L24.8 16.2 Z" fill="#fff" stroke="#e0a800" stroke-width=".8"/>'+
+        '<path d="M12 24.5 Q20 31.5 28 24.5" stroke="#7a4a00" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
+    }else if(mood==='weepy'){
+      f='<path d="M11 14.5 Q14 12.5 17 14.5" stroke="#4a2c00" stroke-width="2" fill="none" stroke-linecap="round"/>'+
+        '<path d="M23 14.5 Q26 12.5 29 14.5" stroke="#4a2c00" stroke-width="2" fill="none" stroke-linecap="round"/>'+
+        '<ellipse cx="14" cy="18.5" rx="1.8" ry="2.4" fill="#4a2c00"/><ellipse cx="26" cy="18.5" rx="1.8" ry="2.4" fill="#4a2c00"/>'+
+        '<path d="M14.5 27.5 Q20 24.5 25.5 27.5" stroke="#7a4a00" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
+        '<ellipse class="tear" cx="11.5" cy="22.5" rx="1.7" ry="2.6" fill="#5bc6ff"/>'+
+        '<ellipse class="tear2" cx="28.5" cy="22.5" rx="1.7" ry="2.6" fill="#5bc6ff"/>';
+    }else if(mood==='zonked'){
+      f='<g class="dz1"><path d="M11 17 L17 17 M14 14 L14 20" stroke="#4a2c00" stroke-width="1.8" stroke-linecap="round" transform="rotate(45 14 17)"/></g>'+
+        '<g class="dz2"><path d="M23 17 L29 17 M26 14 L26 20" stroke="#4a2c00" stroke-width="1.8" stroke-linecap="round" transform="rotate(45 26 17)"/></g>'+
+        '<path d="M13 26.5 Q16.5 24.5 20 26.5 T27 26.5" stroke="#7a4a00" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+    }else if(mood==='angry'){
+      f='<g class="brows"><path d="M10.5 12.5 L17 15.5" stroke="#4a2c00" stroke-width="2.6" stroke-linecap="round"/>'+
+        '<path d="M29.5 12.5 L23 15.5" stroke="#4a2c00" stroke-width="2.6" stroke-linecap="round"/></g>'+
+        '<circle cx="14.5" cy="19" r="1.9" fill="#4a2c00"/><circle cx="25.5" cy="19" r="1.9" fill="#4a2c00"/>'+
+        '<path d="M13 28 Q20 23.5 27 28" stroke="#7a4a00" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
+        '<path d="M31 13 q1 3 -1 4 M33 12 q1 3 -1 4" stroke="#c22a1a" stroke-width="1.4" fill="none" stroke-linecap="round"/>';
+    }else if(mood==='excited'){
+      f='<circle cx="14" cy="16.5" r="2.5" fill="#4a2c00"/><circle cx="26" cy="16.5" r="2.5" fill="#4a2c00"/>'+
+        '<circle cx="14.8" cy="15.7" r=".8" fill="#fff"/><circle cx="26.8" cy="15.7" r=".8" fill="#fff"/>'+
+        '<path d="M11 22.5 Q20 33 29 22.5 Z" fill="#8c3b1f" stroke="#7a4a00" stroke-width="1.5" stroke-linejoin="round"/>'+
+        '<path d="M11.5 22.8 L28.5 22.8" stroke="#fff" stroke-width="2.2"/>'+
+        '<path d="M8 12 l1.4 2.6 M32 12 l-1.4 2.6" stroke="#ffd23f" stroke-width="1.6" stroke-linecap="round"/>';
+    }else if(mood==='confused'){
+      f='<path d="M11 13.8 Q14 11.4 17 13.8" stroke="#4a2c00" stroke-width="2" fill="none" stroke-linecap="round"/>'+
+        '<path d="M23 15.2 L29 13.6" stroke="#4a2c00" stroke-width="2" stroke-linecap="round"/>'+
+        '<circle cx="14" cy="18.6" r="1.8" fill="#4a2c00"/><circle cx="26" cy="18.6" r="1.8" fill="#4a2c00"/>'+
+        '<path d="M13 27 Q16 25 19 27 T25 26.2" stroke="#7a4a00" stroke-width="2.2" fill="none" stroke-linecap="round"/>'+
+        '<text x="28.5" y="14" font-family="Verdana" font-size="9" font-weight="bold" fill="#7a4a00">?</text>';
+    }else if(mood==='uncomfortable'){
+      f='<path d="M11 14.5 L17 14.5" stroke="#4a2c00" stroke-width="2" stroke-linecap="round"/>'+
+        '<path d="M23 14.5 L29 14.5" stroke="#4a2c00" stroke-width="2" stroke-linecap="round"/>'+
+        '<circle cx="15.5" cy="18.5" r="1.7" fill="#4a2c00"/><circle cx="25.5" cy="18.5" r="1.7" fill="#4a2c00"/>'+
+        '<rect x="12.5" y="24.5" width="15" height="5.5" rx="1.6" fill="#fff" stroke="#8c3b1f" stroke-width="1.3"/>'+
+        '<path d="M16.5 24.5 L16.5 30 M20 24.5 L20 30 M23.5 24.5 L23.5 30" stroke="#8c3b1f" stroke-width="1"/>'+
+        '<path class="tear" d="M30.5 15 q2.5 3.5 0 5.5 q-2.5 -2 0 -5.5 z" fill="#5bc6ff"/>';
+    }else if(mood==='irritated'){
+      f='<path d="M10.5 13.5 L17 15.5" stroke="#4a2c00" stroke-width="2.2" stroke-linecap="round"/>'+
+        '<path d="M29.5 13.5 L23 15.5" stroke="#4a2c00" stroke-width="2.2" stroke-linecap="round"/>'+
+        /* half-lidded annoyed eyes */
+        '<path d="M11.5 18.5 A3.2 3.2 0 0 1 17.5 18.5" fill="none" stroke="#4a2c00" stroke-width="1.8" stroke-linecap="round"/>'+
+        '<path d="M22.5 18.5 A3.2 3.2 0 0 1 28.5 18.5" fill="none" stroke="#4a2c00" stroke-width="1.8" stroke-linecap="round"/>'+
+        '<circle cx="14.5" cy="19.4" r="1.5" fill="#4a2c00"/><circle cx="25.5" cy="19.4" r="1.5" fill="#4a2c00"/>'+
+        /* flat, side-pushed unamused mouth */
+        '<path d="M13 27 L25 26.4" stroke="#7a4a00" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
+        /* anger-tick vein */
+        '<g class="tick"><path d="M28 11 q3 0 3 3 M31 11 q0 3 -3 3" stroke="#c22a1a" stroke-width="1.5" fill="none" stroke-linecap="round"/></g>';
+    }else if(mood==='grossed'){
+      f='<path d="M10.5 14 L16.5 15.5" stroke="#4a2c00" stroke-width="2.2" stroke-linecap="round"/>'+
+        '<path d="M29.5 14 L23.5 15.5" stroke="#4a2c00" stroke-width="2.2" stroke-linecap="round"/>'+
+        '<path d="M12 19.5 L17 17.5 M12 17.5 L17 19.5" stroke="#4a2c00" stroke-width="1.7" stroke-linecap="round"/>'+
+        '<path d="M23 17.5 L28 19.5 M23 19.5 L28 17.5" stroke="#4a2c00" stroke-width="1.7" stroke-linecap="round"/>'+
+        '<path d="M12.5 26 q2 -2.6 4 0 t4 0 t3 0" stroke="#7a4a00" stroke-width="2.2" fill="none" stroke-linecap="round"/>'+
+        '<g class="tng"><path d="M21.5 27 q4.5 1 3.5 5.4 q-3.5 1 -4 -2.4 Z" fill="#ff5c8a" stroke="#d42a60" stroke-width="1.1" stroke-linejoin="round"/></g>'+
+        '<path d="M30 22 q2 3 0 5 q-2 -2 0 -5 z" fill="#6fcf3f"/>';
+    }else if(mood==='impatient'){
+      f='<path d="M10.5 13.5 L17 14.8" stroke="#4a2c00" stroke-width="2.2" stroke-linecap="round"/>'+
+        '<path d="M29.5 14.8 L23 13.5" stroke="#4a2c00" stroke-width="2.2" stroke-linecap="round"/>'+
+        '<path d="M11.5 18.3 L17.5 18.3" fill="none" stroke="#4a2c00" stroke-width="1.7" stroke-linecap="round"/>'+
+        '<path d="M22.5 18.3 L28.5 18.3" fill="none" stroke="#4a2c00" stroke-width="1.7" stroke-linecap="round"/>'+
+        '<circle cx="16.4" cy="19" r="1.6" fill="#4a2c00"/><circle cx="27.4" cy="19" r="1.6" fill="#4a2c00"/>'+
+        '<path d="M13 27 L26 27" stroke="#7a4a00" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
+        '<g class="tick"><path d="M28.5 23.5 L32 23.5 M30.25 23.5 L30.25 27" stroke="#c22a1a" stroke-width="1.5" stroke-linecap="round"/></g>';
+    }else if(mood==='sad'){
+      f='<path d="M11 15.5 Q14 12.5 17 14" stroke="#4a2c00" stroke-width="2" fill="none" stroke-linecap="round"/>'+
+        '<path d="M23 14 Q26 12.5 29 15.5" stroke="#4a2c00" stroke-width="2" fill="none" stroke-linecap="round"/>'+
+        '<ellipse cx="14" cy="19.2" rx="1.8" ry="2.4" fill="#4a2c00"/><ellipse cx="26" cy="19.2" rx="1.8" ry="2.4" fill="#4a2c00"/>'+
+        '<path d="M13.5 28 Q20 24 26.5 28" stroke="#7a4a00" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+    }else if(mood==='freaking'){
+      f='<circle cx="14" cy="18" r="4" fill="#fff" stroke="#4a2c00" stroke-width="1.4"/>'+
+        '<circle cx="26" cy="18" r="4" fill="#fff" stroke="#4a2c00" stroke-width="1.4"/>'+
+        '<circle cx="14" cy="18.4" r="1.3" fill="#4a2c00"/><circle cx="26" cy="18.4" r="1.3" fill="#4a2c00"/>'+
+        '<path d="M10.5 11.5 L16 14.5 M29.5 11.5 L24 14.5" stroke="#4a2c00" stroke-width="2" stroke-linecap="round"/>'+
+        '<ellipse cx="20" cy="28" rx="4.4" ry="3.6" fill="#8c3b1f" stroke="#7a4a00" stroke-width="1.3"/>'+
+        '<path class="tear" d="M31 16 q2.5 3.5 0 5.5 q-2.5 -2 0 -5.5 z" fill="#5bc6ff"/>'+
+        '<path class="tear2" d="M9 17 q-2.5 3.5 0 5.5 q2.5 -2 0 -5.5 z" fill="#5bc6ff"/>';
+    }else if(mood==='unhappy'){
+      f='<path d="M11 14.5 L17 14.5" stroke="#4a2c00" stroke-width="2.2" stroke-linecap="round"/>'+
+        '<path d="M23 14.5 L29 14.5" stroke="#4a2c00" stroke-width="2.2" stroke-linecap="round"/>'+
+        '<path d="M11.5 18.5 A3 3 0 0 1 17 18.5" fill="none" stroke="#4a2c00" stroke-width="1.7" stroke-linecap="round"/>'+
+        '<path d="M23 18.5 A3 3 0 0 1 28.5 18.5" fill="none" stroke="#4a2c00" stroke-width="1.7" stroke-linecap="round"/>'+
+        '<circle cx="14.2" cy="19.3" r="1.4" fill="#4a2c00"/><circle cx="25.8" cy="19.3" r="1.4" fill="#4a2c00"/>'+
+        '<path d="M14 28 Q20 25 26 28" stroke="#7a4a00" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+    }else if(mood==='pumped'){
+      f='<path d="M10.5 13 L17 15 M29.5 13 L23 15" stroke="#4a2c00" stroke-width="2.2" stroke-linecap="round"/>'+
+        '<path d="M11.5 18.5 L16.5 18.5" stroke="#4a2c00" stroke-width="2.6" stroke-linecap="round"/>'+
+        '<path d="M23.5 18.5 L28.5 18.5" stroke="#4a2c00" stroke-width="2.6" stroke-linecap="round"/>'+
+        '<path d="M12 23.5 Q20 32 28 23.5 Z" fill="#8c3b1f" stroke="#7a4a00" stroke-width="1.4" stroke-linejoin="round"/>'+
+        '<path d="M12.5 23.8 L27.5 23.8" stroke="#fff" stroke-width="2.2"/>'+
+        '<path d="M7 12 l2 -1.6 M6 15.5 l2.6 -.4 M33 12 l-2 -1.6 M34 15.5 l-2.6 -.4" stroke="#ff8a1e" stroke-width="1.6" stroke-linecap="round"/>';
+    }else if(mood==='bored'){
+      f='<path d="M11 14.5 L17 14.5" stroke="#4a2c00" stroke-width="2" stroke-linecap="round"/>'+
+        '<path d="M23 14.5 L29 14.5" stroke="#4a2c00" stroke-width="2" stroke-linecap="round"/>'+
+        '<path d="M11.5 18 L16.5 18" stroke="#4a2c00" stroke-width="1.8" stroke-linecap="round"/>'+
+        '<path d="M23.5 18 L28.5 18" stroke="#4a2c00" stroke-width="1.8" stroke-linecap="round"/>'+
+        '<circle cx="14" cy="19.4" r="1.3" fill="#4a2c00"/><circle cx="26" cy="19.4" r="1.3" fill="#4a2c00"/>'+
+        '<path d="M14 26.8 L25 26.8" stroke="#7a4a00" stroke-width="2.2" stroke-linecap="round"/>'+
+        '<text class="bz" x="27" y="13.5" font-family="Verdana" font-size="8" font-weight="bold" fill="#7a4a00">z</text>';
+    }else if(mood==='hopeful'){
+      f='<path d="M11 14 Q14 12 17 14" stroke="#4a2c00" stroke-width="2" fill="none" stroke-linecap="round"/>'+
+        '<path d="M23 14 Q26 12 29 14" stroke="#4a2c00" stroke-width="2" fill="none" stroke-linecap="round"/>'+
+        '<circle cx="14" cy="18.6" r="2.6" fill="#4a2c00"/><circle cx="26" cy="18.6" r="2.6" fill="#4a2c00"/>'+
+        '<circle cx="15" cy="17.5" r=".9" fill="#fff"/><circle cx="27" cy="17.5" r=".9" fill="#fff"/>'+
+        '<circle cx="13.2" cy="19.4" r=".5" fill="#fff"/><circle cx="25.2" cy="19.4" r=".5" fill="#fff"/>'+
+        '<path d="M14.5 26 Q20 29.5 25.5 26" stroke="#7a4a00" stroke-width="2.2" fill="none" stroke-linecap="round"/>'+
+        '<path class="st1" d="M20 6.5 l.9 2 2 .9 -2 .9 -.9 2 -.9 -2 -2 -.9 2 -.9 Z" fill="#fff" stroke="#e0a800" stroke-width=".7"/>';
+    }else if(mood==='funky'){
+      f='<rect x="9.5" y="15.3" width="8" height="5" rx="1.2" fill="#20242e"/>'+
+        '<rect x="22.5" y="15.3" width="8" height="5" rx="1.2" fill="#20242e"/>'+
+        '<path d="M17.5 16.8 L22.5 16.8" stroke="#20242e" stroke-width="1.6"/>'+
+        '<path d="M10.7 16.4 l2 1.1 M23.7 16.4 l2 1.1" stroke="#8fd3ff" stroke-width="1" stroke-linecap="round"/>'+
+        '<path d="M13 26 Q18 29 23 25.5" stroke="#7a4a00" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
+        '<g class="note"><path d="M27 23.5 L27 30 M27 23.5 L31 22 L31 28.5" stroke="#8a5cf6" stroke-width="1.6" fill="none" stroke-linecap="round"/>'+
+        '<circle cx="25.5" cy="30.2" r="1.6" fill="#8a5cf6"/><circle cx="29.5" cy="28.7" r="1.6" fill="#8a5cf6"/></g>';
+    }else if(mood==='styling'){
+      f='<path d="M11 14 Q14 12.5 17 13.6" stroke="#4a2c00" stroke-width="2" fill="none" stroke-linecap="round"/>'+
+        '<path d="M23 13.6 Q26 12.5 29 14" stroke="#4a2c00" stroke-width="2" fill="none" stroke-linecap="round"/>'+
+        '<path d="M11.5 18.8 Q14 16.6 16.5 18.8" fill="none" stroke="#4a2c00" stroke-width="1.9" stroke-linecap="round"/>'+
+        '<circle cx="26" cy="18.5" r="2" fill="#4a2c00"/><circle cx="26.9" cy="17.6" r=".7" fill="#fff"/>'+
+        '<path d="M14 26 Q19 30 24.5 26" stroke="#7a4a00" stroke-width="2.2" fill="none" stroke-linecap="round"/>'+
+        '<circle cx="24" cy="28.6" r=".9" fill="#7a4a00"/>'+
+        '<path class="st1" d="M30 11.5 l.8 1.8 1.8 .8 -1.8 .8 -.8 1.8 -.8 -1.8 -1.8 -.8 1.8 -.8 Z" fill="#fff" stroke="#e0a800" stroke-width=".7"/>';
+    }else if(mood==='victorious'){
+      f='<path d="M11 18 Q14 15 17 18" fill="none" stroke="#4a2c00" stroke-width="2" stroke-linecap="round"/>'+
+        '<path d="M23 18 Q26 15 29 18" fill="none" stroke="#4a2c00" stroke-width="2" stroke-linecap="round"/>'+
+        '<path d="M12 24 Q20 33 28 24 Z" fill="#8c3b1f" stroke="#7a4a00" stroke-width="1.4" stroke-linejoin="round"/>'+
+        '<path d="M12.5 24.3 L27.5 24.3" stroke="#fff" stroke-width="2.2"/>'+
+        '<path d="M14 9 L16.5 12.8 L20 8 L23.5 12.8 L26 9 L25 14.5 L15 14.5 Z" fill="#ffd23f" stroke="#e0a800" stroke-width="1" stroke-linejoin="round"/>'+
+        '<circle class="st1" cx="7.5" cy="20" r="1.3" fill="#ff5c8a"/><circle class="st2" cx="32.5" cy="20" r="1.3" fill="#5bc6ff"/>'+
+        '<circle class="st1" cx="10" cy="27" r="1.1" fill="#6fcf3f"/><circle class="st2" cx="30" cy="27" r="1.1" fill="#8a5cf6"/>';
+    }else if(mood==='happy'){
+      f='<circle cx="14" cy="17.5" r="2.2" fill="#4a2c00"/><circle cx="26" cy="17.5" r="2.2" fill="#4a2c00"/>'+
+        '<circle cx="14.8" cy="16.8" r=".7" fill="#fff"/><circle cx="26.8" cy="16.8" r=".7" fill="#fff"/>'+
+        '<circle cx="10.5" cy="23" r="2.3" fill="#ff9a8a" opacity=".5"/><circle cx="29.5" cy="23" r="2.3" fill="#ff9a8a" opacity=".5"/>'+
+        '<path d="M12 24 Q20 31 28 24" stroke="#7a4a00" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
+    }else if(mood==='thinky'){
+      f='<path d="M10.5 14.5 Q13.5 12.3 16.5 14" stroke="#4a2c00" stroke-width="2" fill="none" stroke-linecap="round"/>'+
+        '<path d="M23.5 15 L29 15" stroke="#4a2c00" stroke-width="2" stroke-linecap="round"/>'+
+        '<circle cx="14.5" cy="18.8" r="1.7" fill="#4a2c00"/><circle cx="25.5" cy="18.8" r="1.7" fill="#4a2c00"/>'+
+        '<circle cx="14.5" cy="18" r=".6" fill="#fff"/><circle cx="25.5" cy="18" r=".6" fill="#fff"/>'+
+        '<path d="M15 27.5 L22 27" stroke="#7a4a00" stroke-width="2.2" fill="none" stroke-linecap="round"/>'+
+        '<g class="tick"><circle cx="30.5" cy="12" r="1.4" fill="#8ab4ff"/><circle cx="33.5" cy="8.5" r="1" fill="#8ab4ff"/></g>';
+    }else if(mood==='evil'){
+      f='<path d="M10.5 13.5 L17 16" stroke="#4a2c00" stroke-width="2.4" stroke-linecap="round"/>'+
+        '<path d="M29.5 13.5 L23 16" stroke="#4a2c00" stroke-width="2.4" stroke-linecap="round"/>'+
+        '<path d="M11.5 19 Q14.5 17 17 19" fill="none" stroke="#4a2c00" stroke-width="1.8" stroke-linecap="round"/>'+
+        '<path d="M23 19 Q25.5 17 28.5 19" fill="none" stroke="#4a2c00" stroke-width="1.8" stroke-linecap="round"/>'+
+        '<circle cx="14.5" cy="18.4" r="1.3" fill="#4a2c00"/><circle cx="25.5" cy="18.4" r="1.3" fill="#4a2c00"/>'+
+        '<path d="M12 25.5 Q20 30 28 24" stroke="#7a4a00" stroke-width="2.2" fill="none" stroke-linecap="round"/>'+
+        '<path d="M13.5 25.8 L26.5 24.4" stroke="#fff" stroke-width="1.5"/>'+
+        '<path class="st1" d="M30 21.5 l.6 1.4 1.4 .6 -1.4 .6 -.6 1.4 -.6 -1.4 -1.4 -.6 1.4 -.6 Z" fill="#fff" stroke="#e0a800" stroke-width=".6"/>';
+    }else if(mood==='dorky'){
+      f='<path d="M11 14.5 L17 14" stroke="#4a2c00" stroke-width="2" stroke-linecap="round"/>'+
+        '<path d="M23 14 L29 14.5" stroke="#4a2c00" stroke-width="2" stroke-linecap="round"/>'+
+        '<circle cx="14" cy="18" r="3.3" fill="#fff" stroke="#4a2c00" stroke-width="1.2"/>'+
+        '<circle cx="26" cy="18" r="3.3" fill="#fff" stroke="#4a2c00" stroke-width="1.2"/>'+
+        '<circle cx="15.8" cy="18.6" r="1.4" fill="#4a2c00"/><circle cx="24.2" cy="18.6" r="1.4" fill="#4a2c00"/>'+
+        '<path d="M13 24.5 Q20 29 27 24.5" stroke="#7a4a00" stroke-width="2.2" fill="none" stroke-linecap="round"/>'+
+        '<rect x="18.4" y="25.3" width="3.2" height="4" rx="0.6" fill="#fff" stroke="#c9a24a" stroke-width=".8"/>';
+    }else if(mood==='tired'){
+      f='<path d="M11 15 L17 15.6" stroke="#4a2c00" stroke-width="1.8" stroke-linecap="round"/>'+
+        '<path d="M23 15.6 L29 15" stroke="#4a2c00" stroke-width="1.8" stroke-linecap="round"/>'+
+        /* heavy half-closed lids */
+        '<path d="M11.5 18 Q14.5 20.2 17.5 18" fill="none" stroke="#4a2c00" stroke-width="2" stroke-linecap="round"/>'+
+        '<path d="M22.5 18 Q25.5 20.2 28.5 18" fill="none" stroke="#4a2c00" stroke-width="2" stroke-linecap="round"/>'+
+        '<circle cx="14.5" cy="19.3" r="1.1" fill="#4a2c00"/><circle cx="25.5" cy="19.3" r="1.1" fill="#4a2c00"/>'+
+        /* tired under-eye bags */
+        '<path d="M12.5 21.6 Q14.5 22.5 16.5 21.6" stroke="#cc9a8a" stroke-width="1" fill="none" stroke-linecap="round"/>'+
+        '<path d="M23.5 21.6 Q25.5 22.5 27.5 21.6" stroke="#cc9a8a" stroke-width="1" fill="none" stroke-linecap="round"/>'+
+        /* little yawn */
+        '<ellipse cx="20" cy="27.5" rx="3" ry="3.7" fill="#8c3b1f" stroke="#7a4a00" stroke-width="1.2"/>'+
+        '<path d="M17.5 27 Q20 28.5 22.5 27" stroke="#ffb0a0" stroke-width="1" fill="none"/>'+
+        /* floating z */
+        '<text class="bz" x="28.5" y="13" font-family="Verdana" font-size="8" font-weight="bold" fill="#7a4a00">z</text>';
+    }
+    return '<span class="emo '+mood+(small?' emo-sm':'')+'"><svg viewBox="0 0 40 40">'+base+f+'</svg></span>';
+  }
+
+  /* ================= helpers ================= */
+  var toastTimer;
+  function toast(msg){
+    var t=document.getElementById('toast');
+    t.textContent=msg;t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){t.classList.remove('show');},2200);
+  }
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function parseTags(text){
+    var tags=[];
+    var html=esc(text)
+      .replace(/@([a-z0-9_]+)/gi,function(_,n){
+        tags.push(n);
+        return '<a class="attag" onclick="tagFilter(\''+n+'\')">@'+n+'</a>';
+      })
+      .replace(/#([a-z0-9_]+)/gi,function(_,n){
+        return '<a class="attag htag" onclick="tagFilter(\'#'+n+'\')">#'+n+'</a>';
+      });
+    return {html:html,tags:tags};
+  }
+  /* ===== emoji + animated-mood reactions on replies ===== */
+  var REPLY_EMOJI={};
+  var RE_EMOJIS=['😂','💀','🔥','😭','🐦','❤️','👀','🙏','✨','😍','🤡','😳'];
+  var RE_MOODS=['happy','excited','pumped','blissful','chillin','hopeful','funky','fierce','victorious','thinky','wondering','bored','tired','blah','beat','hungry','bummed','crushed','upset','anxious','freakin','cranky','irritated','suspicious','yuck','evil','dorky'];
+  var RE_SEP='␞';
+  function replyEmojiBtns(key){
+    return RE_EMOJIS.map(function(e,i){return '<button type="button" title="add an emoji" onclick="pickReplyEmoji(\''+key+'\','+i+',this)">'+e+'</button>';}).join('');
+  }
+  function replyMoodBtns(key){
+    return RE_MOODS.map(function(m){return '<button type="button" class="moodbtn" title="'+m+'" onclick="pickReplyMood(\''+key+'\',\''+m+'\',this)">'+emoHTML(m,true)+'</button>';}).join('');
+  }
+  function reactPick(key,token,btn){
+    var scope=btn.closest('.rcol')||btn.parentNode;
+    var already=(REPLY_EMOJI[key]===token);
+    var all=scope.querySelectorAll('.remoji-bar button');
+    for(var i=0;i<all.length;i++)all[i].classList.remove('sel');
+    if(already){delete REPLY_EMOJI[key];return;}
+    REPLY_EMOJI[key]=token; btn.classList.add('sel');
+  }
+  function pickReplyEmoji(key,idx,btn){reactPick(key,RE_EMOJIS[idx],btn);}
+  function pickReplyMood(key,mood,btn){reactPick(key,'~'+mood,btn);}
+  function splitReply(body){var b=body||'';var i=b.indexOf(RE_SEP);return i>-1?{emoji:b.slice(0,i),text:b.slice(i+1)}:{emoji:'',text:b};}
+  function reactionHTML(token){
+    if(!token)return '';
+    if(token.charAt(0)==='~')return ' <span class="remoji remoji-anim">'+emoHTML(token.slice(1),true)+'</span>';
+    return ' <span class="remoji">'+esc(token)+'</span>';
+  }
+  function replyRtxt(whoHTML,token,textHTML){
+    return '<div class="rtxt"><span class="rn">'+whoHTML+'</span>'+reactionHTML(token)+' '+textHTML+'</div>';
+  }
+  function replyHTML(who,text){
+    return '<div class="reply"><div class="rava">'+portrait(who)+'</div>'+
+      '<div class="rtxt"><span class="rn">'+CAST[who].name+'</span> '+text+'</div></div>';
+  }
+  function cardHTML(o){
+    var h='<div class="card'+(o.pinned?' pinned-card':'')+'">';
+    if(o.pinned)h+='<div class="pinned-tag">📌 Pinned</div>';
+    if(o.reflapBy)h+='<div class="reflap-tag">🔁 <b>'+esc(o.reflapBy)+'</b> reflapped '+esc(o.name)+"'s flap</div>";
+    h+='<div class="card-strip">'+o.date+' &nbsp;·&nbsp; <span class="rate">Rating: '+o.rating+' Flaps</span></div>';
+    h+='<div class="card-body">';
+    h+='<div class="moodbox"><div class="mlabel">Mood</div>'+emoHTML(o.mood)+'<div class="mword">'+esc(o.mood)+'</div></div>';
+    h+='<div class="poster'+(o.profileName?' clickable" onclick="showUserProfile(\''+esc(o.profileName).replace(/'/g,'')+'\')" title="View profile':'')+'"><div class="pava">'+o.ava+'</div><div class="pname">'+esc(o.name)+vbadge(o.name)+'</div></div>';
+    h+='<div class="statustxt">'+o.body+'</div>';
+    if(o.pic)h+='<div class="post-pic"><img src="'+esc(o.pic)+'" alt="flap pic" loading="lazy" onerror="this.closest(\'.post-pic\').style.display=\'none\'"></div>';
+    var reps=(o.replies||[]).join('');
+    if(!o.liveId){
+      reps+='<div class="reply"><div class="rava">'+myAva()+'</div>'+
+        '<div class="rcol">'+
+          '<div class="replyrow"><input maxlength="200" placeholder="reply…" onkeydown="if(event.key===\'Enter\')demoReply(this)">'+
+          '<button class="comp-btn" type="button" onclick="demoReply(this)">Reply</button></div>'+
+          '<div class="remoji-bar">'+replyEmojiBtns('demo')+'</div>'+
+          '<div class="remoji-bar moodrow">'+replyMoodBtns('demo')+'</div>'+
+        '</div></div>';
+    }
+    if(reps)h+='<div class="replies">'+reps+'</div>';
+    h+='</div>';
+    if(o.reflapCount)h+='<div class="reflap-count-line">🔁 <b>'+o.reflapCount+'</b> '+(o.reflapCount===1?'person':'people')+' reflapped this</div>';
+    h+='<div class="card-foot"><span class="tags">Tagged: '+o.tags.map(function(t){return '<span class="tg">'+esc(String(t).toLowerCase())+'</span>';}).join('')+'</span>';
+    if(o.liveId){
+      h+='<button class="likebtn" type="button" data-n="'+(o.likes||0)+'" data-id="'+o.liveId+'" onclick="likeLive(this)">👍 Flap This! ('+(o.likes||0)+')</button>';
+      if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase())h+='<button class="reflapbtn'+(o.reflapped?' on':'')+'" type="button" onclick="reflapPost('+o.liveId+')">🔁 '+(o.reflapped?'Reflapped':'Reflap')+'</button>';
+      if(ME.admin)h+='<button class="pinbtn" type="button" onclick="pinPost('+o.liveId+')">'+(o.pinned?'📌 Unpin':'📌 Pin')+'</button>';
+      if(ME.admin)h+='<button class="delbtn" type="button" onclick="delLive('+o.liveId+')">DELETE</button>';
+      if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
+        var pn=esc(o.name).replace(/'/g,'');
+        h+='<span class="post-mod"><a onclick="openReport(\'post\','+o.liveId+',\''+pn+'\')" title="Report this flap">⚑ report</a>'+
+           '<a onclick="blockUser(\''+pn+'\')" title="Block this user">🚫 block</a></span>';
+      }
+    }else{
+      h+='<button class="likebtn" type="button" data-n="'+(o.likes||0)+'" onclick="likeFlap(this)">👍 Flap This! ('+(o.likes||0)+')</button>';
+    }
+    h+='</div></div>';
+    return h;
+  }
+  function likeFlap(btn){
+    var n=parseInt(btn.getAttribute('data-n'),10)||0;
+    if(btn.classList.contains('liked')){n--;btn.classList.remove('liked');btn.textContent='👍 Flap This! ('+n+')';}
+    else{n++;btn.classList.add('liked');btn.textContent='✔ Flapped! ('+n+')';toast('You flapped it!');}
+    btn.setAttribute('data-n',n);
+  }
+  /* reply on classic (fictional) posts — local, just for fun */
+  function demoReply(el){
+    if(!requireAuth())return;
+    var rr=el.closest('.replyrow');
+    var inp=rr.querySelector('input');
+    var t=(inp.value||'').trim();
+    if(!t){toast('Type a reply first!');return;}
+    var emo=REPLY_EMOJI['demo']||'';
+    var wrap=el.closest('.reply');
+    wrap.insertAdjacentHTML('beforebegin',
+      '<div class="reply"><div class="rava">'+myAva()+'</div>'+
+      replyRtxt(esc(ME.name||'You')+vbadge(ME.name),emo,parseTags(t).html)+'</div>');
+    inp.value='';
+    delete REPLY_EMOJI['demo'];
+    var col=el.closest('.rcol'), bar=col&&col.querySelector('.remoji-bar');
+    if(bar){for(var i=0;i<bar.children.length;i++)bar.children[i].classList.remove('sel');}
+    toast('Replied!');
+  }
+
+  /* ================= starter flaps (fictional, to make the feed feel alive) ================= */
+  function fr(name,text){
+    return '<div class="reply"><div class="rava">'+userPortrait(name)+'</div>'+
+      '<div class="rtxt"><span class="rn">'+esc(name)+'</span> '+parseTags(text).html+'</div></div>';
+  }
+  var seeds=[
+    {name:"zaria",ava:userPortrait("zaria"),mood:"confused",date:"Jul. 18th, 2026",rating:0,likes:214,
+     body:parseTags("my situationship just did a soft launch on their story and the hand in the pic was NOT mine 🧍‍♀️ so we been done?? since WHEN #situationship #softlaunch").html,
+     replies:[fr("kai","bestie block AND delete you deserve a hard launch"),fr("bre","show us the hand. we are investigating this as a team.")],
+     tags:["situationship","soft launch","drama"]},
+    {name:"kai",ava:userPortrait("kai"),mood:"excited",date:"Jul. 18th, 2026",rating:0,likes:389,
+     body:parseTags("UPDATE: got over my ex so hard my skin cleared, i got a 4.0, AND i finally learned to parallel park. he was the problem the WHOLE time 💅 #glowup #healingera").html,
+     replies:[fr("mila","not the parallel parking that is GROWTH"),fr("zaria","teach me your ways sensei 🙏")],
+     tags:["glowup","healing era","exes"]},
+    {name:"bre",ava:userPortrait("bre"),mood:"angry",date:"Jul. 17th, 2026",rating:0,likes:156,
+     body:parseTags("the group chat went silent for 3 HOURS and then someone typed 'anyway' like we did not all just witness a crime. i need answers immediately #groupchatdrama").html,
+     replies:[fr("devon","what happened i was napping i missed the entire lore"),fr("kai","i am too scared to open it check the vibes for me")],
+     tags:["groupchat","drama","lore"]},
+    {name:"devon",ava:userPortrait("devon"),mood:"uncomfortable",date:"Jul. 17th, 2026",rating:0,likes:301,
+     body:parseTags("ran into my ex at target holding hands with someone new and i said 'slay' out loud to literally no one and then walked into the automatic doors before they opened #iwanttoleave").html,
+     replies:[fr("bre","SLAY out loud is crazy i am deceased 💀"),fr("zaria","the doors adding insult to injury is diabolical")],
+     tags:["target","exes","cringe"]},
+    {name:"mila",ava:userPortrait("mila"),mood:"bleh",date:"Jul. 16th, 2026",rating:0,likes:178,
+     body:parseTags("why do i catch the ICK the second they start being nice to me. he texted good morning and i felt my soul leave my body. i am the problem it is me #theick").html,
+     replies:[fr("theo","diagnosis: allergic to being loved. very common in 2026."),fr("kai","kindness? in THIS economy? suspicious behavior tbh")],
+     tags:["theick","dating","itsme"]},
+    {name:"theo",ava:userPortrait("theo"),mood:"sparkly",date:"Jul. 16th, 2026",rating:0,likes:266,
+     body:parseTags("it is 3am and i have decided i am moving cities, getting bangs, and never speaking to anyone from high school again. this is a legally binding contract #newera #3amdecisions").html,
+     replies:[fr("mila","NOT the bangs we literally talked about this 😭"),fr("devon","see you in the new city king 🫡")],
+     tags:["newera","3am","bangs"]}
+  ];
+  var feed=document.getElementById('feed');
+  function renderClassics(){feed.innerHTML=seeds.map(cardHTML).join('');}
+  renderClassics();
+
+  /* banner — REAL members first, padded with the classic crew so the bar stays full */
+  function renderBanner(){
+    var b=document.getElementById('banner');
+    var alts=['#4a7ab5','#b53c78','#c9781e','#6b4fc9','#16988a','#a3281a','#7a3cb5','#2e8a5a','#b58a2e','#3c6ab5','#8a3c2e','#4f6b7a'];
+    var order=['jay','marisol','dex','priya','tobin','coachf','marisol','jay','tobin','priya','dex','coachf'];
+    var tiles=[];
+    Object.keys(USERS||{}).map(function(k){return USERS[k];})
+      .filter(function(u){return u.avatar_url;})                  /* ONLY members with a real profile photo */
+      .sort(function(a,b){return (b.last_seen?Date.parse(b.last_seen):0)-(a.last_seen?Date.parse(a.last_seen):0);})
+      .forEach(function(u){
+        var vc=isVerified(u.name)?'<span class="vcheck">'+VBADGE_SVG+'</span>':'';
+        tiles.push('<div class="tile" style="cursor:pointer" onclick="showUserProfile(\''+esc(u.name).replace(/'/g,'')+'\')" title="'+esc(u.name)+'"><img src="'+esc(u.avatar_url)+'" alt="">'+vc+'</div>');
+      });
+    if(tiles.length===0){                                         /* fall back to the classic crew only if nobody has a photo yet */
+      for(var i=0;tiles.length<12;i++){
+        var k=order[i%order.length];
+        tiles.push('<div class="tile" title="'+CAST[k].full+'">'+portrait(k,alts[i%alts.length],i%3===1)+'</div>');
+      }
+    }
+    b.innerHTML=tiles.slice(0,7).join('');
+  }
+  renderBanner();
+
+  /* flappers sidebar — REAL members first (with their real pics); seeds only as fallback */
+  function renderFlappers(){
+    var p=document.getElementById('profilesList');if(!p)return;
+    var us=Object.keys(USERS||{}).map(function(k){return USERS[k];})
+      .sort(function(a,b){return (b.last_seen?Date.parse(b.last_seen):0)-(a.last_seen?Date.parse(a.last_seen):0);});
+    if(us.length){
+      p.innerHTML=us.slice(0,24).map(function(u){
+        var av=u.avatar_url?'<img src="'+esc(u.avatar_url)+'" alt="">':userPortrait(u.name);
+        return '<a class="siderow flapper-row" onclick="showUserProfile(\''+esc(u.name).replace(/\x27/g,'')+'\')"><span class="fl-ava">'+av+'</span>@'+esc(u.name)+'</a>';
+      }).join('');
+    }else{
+      var names=[];seeds.forEach(function(s){if(names.indexOf(s.name)<0)names.push(s.name);});
+      p.innerHTML=names.map(function(n){return '<a class="siderow" onclick="document.getElementById(\'feed\').scrollIntoView({behavior:\'smooth\'});toast(\'@'+n+' is flapping below!\')">@'+esc(n)+'</a>';}).join('');
+    }
+  }
+  renderFlappers();
+  /* hide the fictional "classic crew" feed once real members are posting */
+  function updateClassicVisibility(){
+    var real=(LAST_ROWS||[]).length>0;
+    var f=document.getElementById('feed'),hh=document.getElementById('classicHead');
+    if(f)f.style.display=real?'none':'';
+    if(hh)hh.style.display=real?'none':'';
+  }
+
+  /* ================= invite gate ================= */
+  async function sha256(s){
+    var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+    return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');
+  }
+  async function enterGate(){
+    var name=document.getElementById('gateName').value.trim();
+    var pass=document.getElementById('gatePass').value;
+    var err=document.getElementById('gateErr');
+    err.textContent='';
+    if(!name){err.textContent='Pick a name first!';return;}
+    if(ONLINE){
+      if(!pass){err.textContent='Password too! (It protects your name.)';return;}
+      if(pass.length<4){err.textContent='Password needs at least 4 characters.';return;}
+      err.textContent='checking…';
+      try{
+        var hash=await sha256('flapsalt:'+name.toLowerCase()+':'+pass);
+        var res=await sb.from('flap_users').select('*').ilike('name',name).maybeSingle();
+        if(res.error)throw res.error;
+        if(res.data){
+          /* existing account — password must match */
+          if(res.data.pass_hash!==hash){err.textContent='Wrong password for '+res.data.name+'. (Names are one-per-person!)';return;}
+          ME.name=res.data.name;
+          ME.pic=res.data.avatar_url||null;
+          toast('Welcome back, '+ME.name+'!');
+        }else{
+          /* new account — a profile pic is REQUIRED to sign up */
+          if(!GATE_PIC_BLOB){
+            err.textContent='📸 Add a profile pic to finish signing up!';
+            document.getElementById('gateAvatarFile').click();
+            return;
+          }
+          ME.name=name.slice(0,20);
+          err.textContent='creating your account…';
+          var picUrl=null;
+          try{
+            var path='avatar-'+Date.now()+'-'+Math.random().toString(36).slice(2,6)+'.jpg';
+            var up=await sb.storage.from('pics').upload(path,GATE_PIC_BLOB,{contentType:'image/jpeg',upsert:false});
+            if(!up.error)picUrl=sb.storage.from('pics').getPublicUrl(path).data.publicUrl;
+          }catch(e4){}
+          ME.pic=picUrl;
+          var ins=await sb.from('flap_users').insert({name:ME.name,pass_hash:hash,avatar_url:picUrl});
+          if(ins.error)throw ins.error;
+          GATE_PIC_BLOB=null;
+          discordPing('join',ME.name);   /* ping the admin's Discord on a real new signup */
+          sendPush('lock','TheFlap 🐦',ME.name+' just joined TheFlap! 🎉');   /* + phone push to admin */
+          toast('Account created! Welcome to TheFlap, '+ME.name+'!');
+        }
+      }catch(e){err.textContent='Could not reach the flap server — try again.';return;}
+    }else{
+      ME.name=name.slice(0,20);
+      if(GATE_PIC_BLOB){ME.pic=URL.createObjectURL(GATE_PIC_BLOB);}
+    }
+    ME.admin=(ME.name.toLowerCase()==='lock'); /* admin is silently tied to the "lock" account */
+    err.textContent='';
+    saveSession(ME);
+    initMe();
+    document.getElementById('gate').classList.add('hidden');
+    if(ME.admin)toast(ME.name+' — admin mode ON');
+    loadBlocks().then(function(){loadFeed();});
+    loadNotifs();
+    try{
+      if('Notification' in window && Notification.permission==='default'){
+        Notification.requestPermission().then(function(){subscribePush();});
+      }else{subscribePush();}
+    }catch(e){}
+  }
+  function browseGuest(){
+    document.getElementById('gate').classList.add('hidden');
+    ME={name:'',admin:false};
+    loadFeed();
+    toast('👀 Just looking? Sign up anytime to join in!');
+  }
+  /* called before any action that needs an account — pops the sign-up if guest */
+  function requireAuth(){
+    if(ME.name)return true;
+    document.getElementById('gate').classList.remove('hidden');
+    toast('Sign up (free!) to join the fun 🐦');
+    return false;
+  }
+  function logOut(){
+    clearSession();
+    location.reload();
+  }
+
+  /* ============ presence heartbeat (powers the online-now count) ============ */
+  async function heartbeat(){
+    if(ONLINE&&ME.name){
+      try{await sb.from('flap_users').update({last_seen:new Date().toISOString()}).eq('name',ME.name);}catch(e){}
+    }
+  }
+  setInterval(heartbeat,60000);
+
+  /* ============ user profile pages ============ */
+  function closeProfile(){document.getElementById('profModal').classList.remove('open');}
+  var PROFILE_DATA={posts:[],reflaps:[]};
+  function profileTab(which){
+    var lst=document.getElementById('profList');if(!lst)return;
+    var pe=document.getElementById('ptab-posts'),re=document.getElementById('ptab-reflaps');
+    if(pe)pe.classList.toggle('on',which==='posts');
+    if(re)re.classList.toggle('on',which==='reflaps');
+    var arr=which==='reflaps'?PROFILE_DATA.reflaps:PROFILE_DATA.posts;
+    lst.innerHTML=arr.length?arr.map(liveCard).join(''):'<div style="font-size:11px;padding:8px;">'+(which==='reflaps'?'No reflaps yet!':'No flaps yet!')+'</div>';
+  }
+  async function showUserProfile(name){
+    var box=document.getElementById('profCardBox');
+    box.innerHTML='<div class="pc-strip"><span>'+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">loading…</div>';
+    document.getElementById('profModal').classList.add('open');
+    try{
+      var u=null,posts=[];
+      if(ONLINE){
+        var ur=await sb.from('flap_users').select('*').ilike('name',name).maybeSingle();
+        u=ur.data;
+        var pr=await sb.from('flaps').select('*').ilike('name',name).order('id',{ascending:false}).limit(40);
+        posts=pr.data||[];
+      }else{
+        posts=(localPosts||[]).filter(function(p){return p.name===name;});
+      }
+      var mine=posts.filter(function(p){return !parseReflap(p.body);});
+      var refl=posts.filter(function(p){return parseReflap(p.body);});
+      PROFILE_DATA={posts:mine,reflaps:refl};
+      var av=(u&&u.avatar_url)?'<img src="'+esc(u.avatar_url)+'">':userPortrait(name);
+      var feeling=mine[0]?mine[0].mood:'flappy';
+      var on=u&&u.last_seen&&(Date.now()-new Date(u.last_seen).getTime()<2*60*1000);
+      var h='<div class="pc-strip"><span>'+esc(name)+' — Profile</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>';
+      h+='<div class="pc-body">';
+      h+='<div class="pc-head"><div class="pc-ava">'+av+'</div><div>';
+      h+='<div class="pc-name">'+esc(name)+vbadge(name)+(on?' <span style="font-size:9px;color:#1a8a1a;">● online</span>':'')+'</div>';
+      h+='<div class="pc-meta">'+(u?'joined '+new Date(u.created_at).toLocaleDateString()+' · ':'')+mine.length+' flaps · '+refl.length+' reflaps</div>';
+      h+='<div class="pc-feel">feeling: '+emoHTML(feeling,true)+' '+esc(feeling)+'</div>';
+      h+='</div></div>';
+      if((name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
+        var pn2=esc(name).replace(/'/g,'');
+        h+='<div class="pc-actions">'+
+           '<button type="button" onclick="openReport(\'user\',null,\''+pn2+'\')">⚑ Report user</button>'+
+           (isBlocked(name)
+             ?'<button type="button" onclick="unblockUser(\''+pn2+'\')">✓ Unblock</button>'
+             :'<button type="button" class="danger" onclick="blockUser(\''+pn2+'\')">🚫 Block user</button>')+
+           '</div>';
+      }
+      h+='<div class="pc-tabs">'+
+         '<button class="pc-tab on" id="ptab-posts" onclick="profileTab(\'posts\')">📝 Flaps ('+mine.length+')</button>'+
+         '<button class="pc-tab" id="ptab-reflaps" onclick="profileTab(\'reflaps\')">🔁 Reflaps ('+refl.length+')</button></div>';
+      h+='<div id="profList">'+(mine.length?mine.map(liveCard).join(''):'<div style="font-size:11px;padding:8px;">no flaps yet!</div>')+'</div>';
+      h+='</div>';
+      box.innerHTML=h;
+    }catch(e){
+      box.innerHTML='<div class="pc-strip"><span>Profile</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">could not load profile — try again.</div>';
+    }
+  }
+
+  /* ============ admin panel (Lock only) ============ */
+  async function showAdmin(){
+    if(!ME.admin)return;
+    var box=document.getElementById('profCardBox');
+    box.innerHTML='<div class="pc-strip"><span>👑 Admin Panel</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">loading…</div>';
+    document.getElementById('profModal').classList.add('open');
+    try{
+      var us=(await sb.from('flap_users').select('*').order('created_at',{ascending:true})).data||[];
+      var fl=(await sb.from('flaps').select('id,name').limit(1000)).data||[];
+      var rc=await sb.from('flap_replies').select('*',{count:'exact',head:true});
+      var reports=[];try{reports=(await sb.from('flap_reports').select('*').eq('resolved',false).order('id',{ascending:false})).data||[];}catch(e){}
+      var repIds=reports.filter(function(r){return r.target_type==='post'&&r.target_id;}).map(function(r){return r.target_id;});
+      var repPosts={};if(repIds.length){try{((await sb.from('flaps').select('id,body,name').in('id',repIds)).data||[]).forEach(function(p){repPosts[p.id]=p;});}catch(e){}}
+      var recent=[];try{recent=(await sb.from('flaps').select('id,name,body,pic_url,created_at').order('id',{ascending:false}).limit(30)).data||[];}catch(e){}
+      recent=recent.filter(function(r){var n=(r.name||'');return !parseReflap(r.body) && n!=='::ticker::' && n!=='::verified::' && n!=='::pinned::' && n!=='::ticket::';}); /* hide reflap + sentinel rows */
+      var tickerCur='';try{var tk=await sb.from('flaps').select('body').eq('name','::ticker::').order('id',{ascending:false}).limit(1);if(tk.data&&tk.data[0])tickerCur=tk.data[0].body;}catch(e){}
+      var verCur='';try{var vk=await sb.from('flaps').select('body').eq('name','::verified::').order('id',{ascending:false}).limit(1);if(vk.data&&vk.data[0])verCur=vk.data[0].body;}catch(e){}
+      var tickets=[];try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(60)).data||[];}catch(e){}
+      var counts={};fl.forEach(function(f){counts[f.name]=(counts[f.name]||0)+1;});
+      var now=Date.now(),online=0;
+      us.forEach(function(u){if(u.last_seen&&now-new Date(u.last_seen).getTime()<2*60*1000)online++;});
+      var h='<div class="pc-strip"><span>👑 Admin Panel</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">';
+      h+='<div class="admin-stats">'+
+        '<div><b>'+us.length+'</b><span>Members</span></div>'+
+        '<div><b>'+online+'</b><span>Online Now</span></div>'+
+        '<div><b>'+fl.length+'</b><span>Flaps</span></div>'+
+        '<div><b>'+(rc.count||0)+'</b><span>Replies</span></div></div>';
+      h+='<div class="pc-flaps-h">🎫 Support Tickets ('+tickets.length+')</div>';
+      if(!tickets.length){h+='<div style="font-size:11px;color:#2a8a2a;margin-bottom:10px;">No open tickets. 🎉</div>';}
+      else{h+=tickets.map(function(tk){
+        var parts=String(tk.body||'').split('␟'); var who=parts[0]||'?'; var msg=parts.slice(2).join('␟')||parts[1]||'';
+        return '<div class="modrow"><div class="mr-reason">🎫 from <b>'+esc(who)+'</b></div><div>'+esc(msg.slice(0,400))+'</div>'+
+          '<div style="color:#888;font-size:10px;">'+new Date(tk.created_at).toLocaleString()+'</div>'+
+          '<div class="mr-actions"><button onclick="resolveTicket('+tk.id+')">Resolve &amp; remove</button></div></div>';
+      }).join('');}
+      h+='<div class="pc-flaps-h">📢 Scrolling Ticker</div>';
+      h+='<div style="padding:2px 2px 10px;"><textarea id="adminTicker" style="width:100%;box-sizing:border-box;min-height:56px;font-family:Verdana,Arial,sans-serif;font-size:12px;padding:8px;border:2px solid var(--card-border);border-radius:8px;">'+esc(tickerCur||((document.getElementById('tickerText')||{}).textContent||''))+'</textarea>'+
+         '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#2f9e5a,#1c7a42);" onclick="saveTicker()">SAVE TICKER FOR EVERYONE</button>'+
+         '<div style="font-size:10px;color:#889;margin-top:4px;">The scrolling message at the top of the site. Separate phrases with ★ if you like.</div></div>';
+      h+='<div class="pc-flaps-h">✔ Verified Members</div>';
+      h+='<div style="padding:2px 2px 10px;"><textarea id="adminVerified" style="width:100%;box-sizing:border-box;min-height:44px;font-family:Verdana,Arial,sans-serif;font-size:12px;padding:8px;border:2px solid var(--card-border);border-radius:8px;">'+esc(verCur)+'</textarea>'+
+         '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#1fb6a6,#0e8577);" onclick="saveVerified()">SAVE VERIFIED LIST</button>'+
+         '<div style="font-size:10px;color:#889;margin-top:4px;">Usernames here (comma or space separated) get the ✔ badge. You (lock) are always verified.</div></div>';
+      h+='<div class="pc-flaps-h">⚑ Reports ('+reports.length+')</div>';
+      if(!reports.length){h+='<div style="font-size:11px;color:#2a8a2a;margin-bottom:10px;">No open reports right now. 🎉</div>';}
+      else{h+=reports.map(function(r){
+        var tgt=r.target_type==='post'
+          ? 'flap by <b>'+esc((repPosts[r.target_id]||{}).name||r.target_name||'?')+'</b>: “'+esc(((repPosts[r.target_id]||{}).body||'(already deleted)').replace(/<[^>]+>/g,'').slice(0,120))+'”'
+          : 'user <b>'+esc(r.target_name||'?')+'</b>';
+        var act=(r.target_type==='post'&&r.target_id)
+          ? '<button onclick="modDeletePost('+r.target_id+','+r.id+')">Delete flap</button>'
+          : '<button onclick="showUserProfile(\''+esc(r.target_name||'').replace(/\x27/g,'')+'\')">View user</button>';
+        return '<div class="modrow"><div class="mr-reason">'+esc(r.reason||'reported')+'</div><div>'+tgt+'</div>'+
+          '<div style="color:#888;font-size:10px;">by '+esc(r.reporter||'?')+' · '+new Date(r.created_at).toLocaleString()+'</div>'+
+          '<div class="mr-actions">'+act+'<button onclick="resolveReport('+r.id+')">Dismiss</button></div></div>';
+      }).join('');}
+      h+='<div class="pc-flaps-h">🗂 Manage Flaps — remove anything</div>';
+      h+=recent.length?recent.map(function(r){
+        var txt=esc((r.body||'').replace(/<[^>]+>/g,'').slice(0,90))||'(photo)';
+        return '<div class="modrow" style="border-color:#c9d4f0;background:#f7faff;">'+
+          '<div><b>'+esc(r.name)+'</b> · <span style="color:#888;font-size:10px;">'+new Date(r.created_at).toLocaleString()+'</span></div>'+
+          '<div style="margin:3px 0;">'+txt+(r.pic_url?' <span style="color:#2a6fb0;">📷 photo</span>':'')+'</div>'+
+          '<div class="mr-actions">'+
+            (r.pic_url?'<button onclick="adminRemovePhoto('+r.id+')">Remove photo</button>':'')+
+            '<button style="background:#ffe4e0;border-color:#c22a1a;color:#a3160b;" onclick="adminDeleteFlap('+r.id+')">Delete flap</button>'+
+          '</div></div>';
+      }).join(''):'<div style="font-size:11px;color:#777;margin-bottom:8px;">No flaps yet.</div>';
+      h+='<div class="pc-flaps-h">Members ('+us.length+') — click one to see their posts</div>';
+      h+=us.map(function(u){
+        var on=u.last_seen&&now-new Date(u.last_seen).getTime()<2*60*1000;
+        var av=u.avatar_url?'<img src="'+esc(u.avatar_url)+'">':userPortrait(u.name);
+        return '<div class="adminrow" onclick="showUserProfile(\''+esc(u.name).replace(/'/g,'')+'\')">'+
+          '<span class="'+(on?'dot-on':'dot-off')+'"></span>'+
+          '<span class="ar-ava">'+av+'</span><b>'+esc(u.name)+'</b>'+
+          '<i>'+(counts[u.name]||0)+' flaps · joined '+new Date(u.created_at).toLocaleDateString()+(on?' · ONLINE':'')+'</i></div>';
+      }).join('');
+      h+='</div>';
+      box.innerHTML=h;
+    }catch(e){
+      box.innerHTML='<div class="pc-strip"><span>👑 Admin Panel</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">could not load admin data — try again.</div>';
+    }
+  }
+  /* ================= moderation: report, block, account deletion (App Store requirements) ================= */
+  var BLOCKED={};
+  async function loadBlocks(){
+    if(!ONLINE||!ME.name){BLOCKED={};return;}
+    try{var r=await sb.from('flap_blocks').select('blocked').eq('blocker',ME.name);
+      BLOCKED={};(r.data||[]).forEach(function(b){BLOCKED[(b.blocked||'').toLowerCase()]=true;});
+    }catch(e){}
+  }
+  function isBlocked(name){return !!BLOCKED[(name||'').toLowerCase()];}
+  async function blockUser(name){
+    if(!requireAuth())return;
+    if(!name||name.toLowerCase()===(ME.name||'').toLowerCase()){toast("You can't block yourself!");return;}
+    if(!confirm('Block '+name+"?\nYou won't see their flaps or replies anymore."))return;
+    BLOCKED[name.toLowerCase()]=true;
+    if(ONLINE){try{await sb.from('flap_blocks').insert({blocker:ME.name,blocked:name});}catch(e){}}
+    closeProfile();loadFeed();toast('Blocked '+name+'.');
+  }
+  async function unblockUser(name){
+    if(ONLINE){try{await sb.from('flap_blocks').delete().eq('blocker',ME.name).eq('blocked',name);}catch(e){}}
+    delete BLOCKED[(name||'').toLowerCase()];
+    closeProfile();loadFeed();toast('Unblocked '+name+'.');
+  }
+  var REPORT_CTX=null;
+  function openReport(type,id,name){
+    if(!requireAuth())return;
+    REPORT_CTX={type:type,id:id,name:name};
+    document.getElementById('reportWho').textContent = type==='post' ? ('this flap'+(name?' by '+name:'')) : name;
+    document.getElementById('reportModal').classList.add('open');
+  }
+  function closeReport(){document.getElementById('reportModal').classList.remove('open');REPORT_CTX=null;}
+  async function submitReport(reason){
+    var c=REPORT_CTX;closeReport();
+    if(!c)return;
+    if(ONLINE){
+      try{
+        var row={reporter:ME.name||'guest',reason:reason,target_type:c.type,target_name:c.name||null,resolved:false};
+        if(c.type==='post')row.target_id=c.id;
+        await sb.from('flap_reports').insert(row);
+      }catch(e){}
+    }
+    toast('Thanks — reported. Our team reviews reports within 24 hours.');
+  }
+  async function deleteAccount(){
+    if(!ME.name){toast('Not signed in.');return;}
+    if(!confirm('Delete your account?\nThis permanently removes your profile, your flaps, and your replies. This cannot be undone.'))return;
+    if(!confirm('Last check — this is PERMANENT. Delete '+ME.name+' for good?'))return;
+    var name=ME.name;
+    toast('Deleting your account…');
+    if(ONLINE){
+      try{
+        await sb.from('flaps').delete().ilike('name',name);
+        await sb.from('flap_replies').delete().ilike('name',name);
+        try{await sb.from('flap_notifs').delete().eq('recipient',name);}catch(e){}
+        try{await sb.from('flap_notifs').delete().eq('actor',name);}catch(e){}
+        try{await sb.from('push_subs').delete().eq('name',name);}catch(e){}
+        try{await sb.from('flap_blocks').delete().eq('blocker',name);}catch(e){}
+        await sb.from('flap_users').delete().ilike('name',name);
+      }catch(e){}
+    }
+    clearSession();
+    toast('Your account was deleted.');
+    setTimeout(function(){location.reload();},1000);
+  }
+  function openPrivacy(){window.open('privacy.html','_blank');}
+  /* ===== support tickets (stored as hidden ::ticket:: rows) ===== */
+  function openSupport(){document.getElementById('supportModal').classList.add('open');}
+  function closeSupport(){document.getElementById('supportModal').classList.remove('open');}
+  async function submitTicket(){
+    var ta=document.getElementById('supportMsg'); var msg=(ta.value||'').trim();
+    if(!msg){toast('Type your problem or idea first!');return;}
+    var who=ME.name||'guest';
+    closeSupport(); ta.value='';
+    if(ONLINE){
+      try{ await sb.from('flaps').insert({name:'::ticket::', body: who+'␟OPEN␟'+msg, mood:'flappy', likes:0}); }catch(e){}
+    }
+    toast('🎫 Ticket sent! We\'ll take a look — thanks!');
+  }
+  async function resolveTicket(id){
+    if(!ME.admin)return;
+    try{ await sb.from('flaps').delete().eq('id',id); }catch(e){}
+    showAdmin();
+  }
+  async function resolveReport(id){if(!ME.admin)return;try{await sb.from('flap_reports').update({resolved:true}).eq('id',id);}catch(e){}showAdmin();}
+  async function modDeletePost(postId,reportId){
+    if(!ME.admin)return;
+    if(!confirm('Delete this flap for everyone?'))return;
+    try{await sb.from('flaps').delete().eq('id',postId);}catch(e){}
+    try{await sb.from('flap_reports').update({resolved:true}).eq('id',reportId);}catch(e){}
+    loadFeed();showAdmin();toast('Flap deleted.');
+  }
+  async function adminDeleteFlap(id){
+    if(!ME.admin)return;
+    if(!confirm('Delete this flap (and its photo) for everyone?'))return;
+    try{await sb.from('flaps').delete().eq('id',id);}catch(e){}
+    await loadFeed();showAdmin();toast('Flap deleted.');
+  }
+  async function adminRemovePhoto(id){
+    if(!ME.admin)return;
+    if(!confirm('Remove just the photo from this flap? The text stays.'))return;
+    try{await sb.from('flaps').update({pic_url:null}).eq('id',id);}catch(e){}
+    await loadFeed();showAdmin();toast('Photo removed.');
+  }
+
+  function initMe(){
+    var av=ME.pic?'<img src="'+esc(ME.pic)+'" alt="me">':userPortrait(ME.name);
+    document.getElementById('youAva').innerHTML=av;
+    document.getElementById('pearAva').innerHTML=av;
+    document.getElementById('youName').textContent=ME.name;
+    document.getElementById('pearName').textContent=ME.name;
+    renderClassics(); /* refresh reply boxes so they show YOUR pic everywhere */
+    renderLive();
+    renderSidebar();
+    loadPoll();
+    if(ME.admin)document.getElementById('adminBtn').classList.add('show');
+    heartbeat();
+  }
+  /* real profile pic upload — replaces the generated cartoon */
+  document.getElementById('avatarFile').addEventListener('change',async function(e){
+    var f=e.target.files[0];if(!f)return;
+    var blob;
+    try{blob=await compressImage(f);}
+    catch(err){toast('Could not read that photo. Try a screenshot or a JPEG.');document.getElementById('avatarFile').value='';return;}
+    if(!ONLINE){
+      ME.pic=URL.createObjectURL(blob);initMe();
+      toast('Pic set (demo mode — local only)');return;
+    }
+    toast('Uploading your pic…');
+    try{
+      var path='avatar-'+Date.now()+'-'+Math.random().toString(36).slice(2,6)+'.jpg';
+      var up=await sb.storage.from('pics').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+      if(up.error)throw up.error;
+      ME.pic=sb.storage.from('pics').getPublicUrl(path).data.publicUrl;
+      saveSession(ME);
+      try{await sb.from('flap_users').update({avatar_url:ME.pic}).eq('name',ME.name);}catch(e3){}
+      initMe();
+      toast('Real pic uploaded! It follows your account now.');
+    }catch(err){toast('Upload failed — check your connection and try again.');}
+    document.getElementById('avatarFile').value='';
+  });
+  /* profile pic chosen during sign-up */
+  var GATE_PIC_BLOB=null;
+  document.getElementById('gateAvatarFile').addEventListener('change',async function(e){
+    var f=e.target.files[0];if(!f)return;
+    try{GATE_PIC_BLOB=await compressImage(f);}
+    catch(err){toast('Could not read that photo. Try a JPEG or a screenshot.');e.target.value='';return;}
+    var av=document.getElementById('gateAva');
+    av.style.backgroundImage='url('+URL.createObjectURL(GATE_PIC_BLOB)+')';
+    av.classList.add('has');
+    var er=document.getElementById('gateErr'); if(er)er.textContent='';
+    e.target.value='';
+    toast('Nice pic! Now tap “Let Me In!”');
+  });
+  if(!ONLINE)document.getElementById('offlineNote').style.display='block';
+  /* session restore runs at the very end of the script — see restoreSession() */
+
+  /* ================= live feed ================= */
+  var localPosts=[];     /* offline-mode fallback */
+  var LAST_ROWS=[];      /* cached posts */
+  var REPLIES={};        /* flap_id -> replies */
+  var FEED_FILTER=null;  /* active @tag filter */
+  var USERS={};          /* lowercase name -> {name, avatar_url, ...} */
+
+  /* real profile pic for anyone, wherever they appear (posts, replies, banner) */
+  function avatarFor(name){
+    var u=(USERS||{})[(name||'').toLowerCase()];
+    if(u&&u.avatar_url)return '<img src="'+esc(u.avatar_url)+'" alt="">';
+    return userPortrait(name);
+  }
+  function myAva(){return ME.pic?'<img src="'+esc(ME.pic)+'" alt="">':avatarFor(ME.name);}
+
+  function avaHTML(row){
+    return row.avatar_url?'<img src="'+esc(row.avatar_url)+'" alt="">':avatarFor(row.name);
+  }
+  /* ---------- ReFlap (repost) ---------- */
+  function parseReflap(body){
+    if(!body||body.indexOf('RF␟')!==0)return null;
+    var parts=body.split('␟');
+    return {name:parts[1]||'', id:parts[2]||'', body:parts.slice(3).join('␟')};
+  }
+  /* reflaps are stored as hidden flap rows; the feed shows a COUNT on the original, not a copy */
+  var REFLAP_COUNTS={}, MY_REFLAPS={};
+  function computeReflaps(){
+    REFLAP_COUNTS={}; MY_REFLAPS={};
+    (LAST_ROWS||[]).forEach(function(r){
+      var p=parseReflap(r.body);
+      if(!p)return;
+      REFLAP_COUNTS[p.id]=(REFLAP_COUNTS[p.id]||0)+1;
+      if((r.name||'').toLowerCase()===(ME.name||'').toLowerCase())MY_REFLAPS[p.id]=r.id;
+    });
+  }
+  async function reflapPost(id){
+    if(!requireAuth())return;
+    var key=String(id);
+    if(MY_REFLAPS[key]){                         /* already reflapped -> toggle off */
+      try{await sb.from('flaps').delete().eq('id',MY_REFLAPS[key]);}catch(e){}
+      await loadFeed(); toast('Reflap removed.'); return;
+    }
+    var o=null;
+    try{o=(await sb.from('flaps').select('*').eq('id',id).single()).data;}catch(e){}
+    if(!o){toast('Could not reflap that.');return;}
+    var origName=o.name,origBody=o.body||'',origId=o.id;
+    var rf=parseReflap(o.body);
+    if(rf){origName=rf.name;origBody=rf.body;origId=rf.id;}
+    if((origName||'').toLowerCase()===(ME.name||'').toLowerCase()){toast("You can't reflap your own flap!");return;}
+    var body='RF␟'+origName+'␟'+origId+'␟'+origBody;
+    try{
+      await sb.from('flaps').insert({name:ME.name,avatar_url:o.avatar_url,mood:o.mood||'happy',body:body,pic_url:o.pic_url,likes:0});
+      addNotif(origName,ME.name,'reflap',origId,'');
+      await loadFeed(); toast('Reflapped! 🔁');
+    }catch(e){toast('Reflap failed — try again.');}
+  }
+  function liveCard(row){
+    var rf=parseReflap(row.body);
+    var authorName=rf?rf.name:row.name;
+    var bodyText=rf?rf.body:(row.body||'');
+    var reps=(REPLIES[row.id]||[]).filter(function(r){return !isBlocked(r.name);}).map(function(r){
+      var p=splitReply(r.body);
+      return '<div class="reply"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/'/g,'')+'\')">'+avatarFor(r.name)+'</div>'+
+        replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+'</div>';
+    });
+    reps.push('<div class="reply"><div class="rava">'+myAva()+'</div>'+
+      '<div class="rcol">'+
+        '<div class="replyrow"><input id="ri-'+row.id+'" maxlength="200" placeholder="reply as '+esc(ME.name)+'…" '+
+        'onkeydown="if(event.key===\'Enter\')sendReply('+row.id+')">'+
+        '<button class="comp-btn" type="button" onclick="sendReply('+row.id+')">Reply</button></div>'+
+        '<div class="remoji-bar">'+replyEmojiBtns('L'+row.id)+'</div>'+
+        '<div class="remoji-bar moodrow">'+replyMoodBtns('L'+row.id)+'</div>'+
+      '</div></div>');
+    return cardHTML({
+      liveId:row.id,name:authorName,profileName:authorName,ava:(rf?avatarFor(rf.name):avaHTML(row)),mood:row.mood||'happy',
+      date:new Date(row.created_at).toLocaleString(),rating:row.likes||0,likes:row.likes||0,
+      body:parseTags(bodyText).html,pic:row.pic_url,replies:reps,reflapBy:(rf?row.name:null),
+      reflapCount:(rf?0:(REFLAP_COUNTS[row.id]||0)),reflapped:(rf?false:!!MY_REFLAPS[row.id]),
+      pinned:!!row.__pinned,
+      tags:[authorName,'theflap']
+    });
+  }
+  function renderLive(){
+    var box=document.getElementById('liveFeed');
+    var rows=(LAST_ROWS||[]).filter(function(r){return !isBlocked(r.name)&&!parseReflap(r.body);}),head='';
+    if(FEED_FILTER){
+      var f=FEED_FILTER.toLowerCase();
+      if(f[0]==='#'){
+        rows=rows.filter(function(r){return (r.body||'').toLowerCase().indexOf(f)>-1;});
+        head='<div class="filterbar">showing flaps with <b>'+esc(FEED_FILTER)+'</b> — <a onclick="clearFilter()">show all</a></div>';
+      }else{
+        rows=rows.filter(function(r){
+          return (r.name||'').toLowerCase()===f||(r.body||'').toLowerCase().indexOf('@'+f)>-1;
+        });
+        head='<div class="filterbar">showing flaps for <b>@'+esc(FEED_FILTER)+'</b> — <a onclick="clearFilter()">show all</a></div>';
+      }
+    }
+    if(!FEED_FILTER && PINNED_ID){
+      var pi=-1; for(var i=0;i<rows.length;i++){ if(String(rows[i].id)===String(PINNED_ID)){pi=i;break;} }
+      if(pi>0){ var pr=rows.splice(pi,1)[0]; rows.unshift(pr); }
+    }
+    rows.forEach(function(r){ r.__pinned=(!FEED_FILTER && String(r.id)===String(PINNED_ID)); });
+    box.innerHTML=head+(rows.length
+      ? rows.map(liveCard).join('')
+      : '<div class="card"><div class="card-body" style="text-align:center;font-size:11px;">'+
+        (FEED_FILTER?'no flaps for @'+esc(FEED_FILTER)+' yet!':(ONLINE?'no flaps yet — be the first!':'demo mode — configure the backend (see setup file) and your friends\' flaps will appear here!'))+
+        '</div></div>');
+  }
+  function tagFilter(name){FEED_FILTER=name;renderLive();toast('Showing flaps for '+(name[0]==='#'?name:'@'+name));document.getElementById('liveFeed').scrollIntoView({behavior:'smooth',block:'nearest'});}
+  function clearFilter(){FEED_FILTER=null;renderLive();}
+
+  /* ============ reply notifications ("someone replied to your flap") ============ */
+  function checkNotifications(){
+    var bar=document.getElementById('notifBar');if(!bar)return;
+    if(!ME.name){bar.style.display='none';return;}
+    var last=parseInt((function(){try{return localStorage.getItem('flap_lastreply_'+ME.name);}catch(e){return 0;}})()||'0',10);
+    var myIds={};(LAST_ROWS||[]).forEach(function(r){if(r.name===ME.name)myIds[r.id]=1;});
+    var news=[];
+    Object.keys(REPLIES).forEach(function(pid){
+      if(myIds[pid])REPLIES[pid].forEach(function(rp){
+        if(rp.name!==ME.name && rp.id>last)news.push(rp);
+      });
+    });
+    if(news.length){
+      var who=news[news.length-1].name;
+      var extra=news.length>1?(' and '+(news.length-1)+' more'):'';
+      bar.innerHTML='🔔 <b>'+esc(who)+'</b>'+extra+' replied to your flap! <a onclick="dismissNotif()">tap to dismiss</a>';
+      bar.style.display='block';
+    }else{bar.style.display='none';}
+  }
+  function dismissNotif(){
+    var maxId=0;
+    Object.keys(REPLIES).forEach(function(pid){REPLIES[pid].forEach(function(rp){if(rp.id>maxId)maxId=rp.id;});});
+    try{localStorage.setItem('flap_lastreply_'+ME.name,String(maxId));}catch(e){}
+    document.getElementById('notifBar').style.display='none';
+    document.getElementById('liveFeed').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  /* ============ Discord admin pings (webhook is server-side in the edge fn) ============ */
+  function discordPing(kind,name,text){
+    if(!ONLINE)return;
+    try{
+      fetch(CONFIG.SUPABASE_URL+'/functions/v1/notify-join',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+CONFIG.SUPABASE_ANON_KEY,'apikey':CONFIG.SUPABASE_ANON_KEY},
+        body:JSON.stringify({kind:kind,name:name,text:text||''})
+      }).catch(function(){});
+    }catch(e){}
+  }
+
+  /* ============ member notification center (bell) ============ */
+  var NOTIFS=[];
+  function ownerOf(flapId){var r=(LAST_ROWS||[]).filter(function(x){return String(x.id)===String(flapId);})[0];return r?r.name:null;}
+  async function addNotif(recipient,actor,kind,flap_id,excerpt){
+    if(!ONLINE||!recipient||!actor)return;
+    if(recipient.toLowerCase()===actor.toLowerCase())return; /* never notify yourself */
+    try{await sb.from('flap_notifs').insert({recipient:recipient,actor:actor,kind:kind,flap_id:flap_id||null,excerpt:(excerpt||'').slice(0,120)});}catch(e){}
+    /* also fire a phone push to the recipient */
+    var ex=excerpt?(' "'+String(excerpt).slice(0,60)+'"'):'';
+    var body=kind==='reply'?(actor+' replied to your flap:'+ex):kind==='like'?(actor+' flapped your post 👍'):kind==='tag'?(actor+' tagged you in a flap:'+ex):kind==='reflap'?(actor+' reflapped your flap 🔁'):(actor+' interacted with you');
+    if(kind!=='reflap')sendPush(recipient,'TheFlap 🐦',body); /* reflaps: quiet — bell only, no phone push */
+  }
+  function notifText(n){
+    var who='<b>'+esc(n.actor)+'</b>'+vbadge(n.actor);
+    var ex=n.excerpt?(' "'+esc(String(n.excerpt).slice(0,70))+'"'):'';
+    if(n.kind==='reply')return who+' replied to your flap:'+ex;
+    if(n.kind==='like') return who+' flapped your post 👍';
+    if(n.kind==='tag')  return who+' tagged you in a flap:'+ex;
+    if(n.kind==='reflap')return who+' reflapped your flap 🔁';
+    return who+' interacted with you';
+  }
+  function renderBell(){
+    var unseen=NOTIFS.filter(function(n){return !n.seen;}).length;
+    var c=document.getElementById('bellCount');
+    if(c){c.textContent=unseen>9?'9+':unseen;c.classList.toggle('show',unseen>0);}
+    var p=document.getElementById('notifPanel');if(!p)return;
+    var h='<div class="notif-head"><span>🔔 Notifications</span>'+(NOTIFS.length?'<span onclick="markAllSeen()">mark all read</span>':'')+'</div>';
+    h+=NOTIFS.length?NOTIFS.map(function(n){
+      return '<div class="notif-item '+(n.seen?'':'unseen')+'" onclick="openNotif('+(n.flap_id||'null')+')">'+
+        '<span class="ni-ava">'+avatarFor(n.actor)+'</span>'+
+        '<span>'+notifText(n)+'<br><span class="ni-when">'+new Date(n.created_at).toLocaleString()+'</span></span></div>';
+    }).join(''):'<div class="notif-empty">No notifications yet.<br>When someone replies to, likes, or tags you, it shows up here 🔔</div>';
+    p.innerHTML=h;
+  }
+  async function loadNotifs(){
+    if(!ONLINE||!ME.name)return;
+    try{
+      var res=await sb.from('flap_notifs').select('*').eq('recipient',ME.name).order('id',{ascending:false}).limit(40);
+      if(res.error)return;
+      var prevUnseen=NOTIFS.filter(function(n){return !n.seen;}).length;
+      NOTIFS=res.data||[];
+      renderBell();
+      var unseen=NOTIFS.filter(function(n){return !n.seen;});
+      if(unseen.length>prevUnseen && 'Notification' in window && Notification.permission==='granted'){
+        var t=unseen[0];
+        try{new Notification('TheFlap 🐦',{body:t.actor+' '+(t.kind==='reply'?'replied to your flap':t.kind==='like'?'liked your post':'tagged you')});}catch(e){}
+      }
+    }catch(e){}
+  }
+  function toggleNotifs(ev){
+    if(ev)ev.stopPropagation();
+    if(!ME.name){requireAuth();return;}
+    var p=document.getElementById('notifPanel');
+    var open=p.classList.toggle('open');
+    if(open){renderBell();markAllSeen();}
+  }
+  async function markAllSeen(){
+    var uns=NOTIFS.filter(function(n){return !n.seen;}).map(function(n){return n.id;});
+    NOTIFS.forEach(function(n){n.seen=true;});renderBell();
+    if(ONLINE&&uns.length){try{await sb.from('flap_notifs').update({seen:true}).in('id',uns);}catch(e){}}
+  }
+  function openNotif(flapId){
+    document.getElementById('notifPanel').classList.remove('open');
+    var lf=document.getElementById('liveFeed');if(lf)lf.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  /* close the panel when tapping elsewhere */
+  document.addEventListener('click',function(e){
+    var p=document.getElementById('notifPanel');
+    if(p&&p.classList.contains('open')&&!p.contains(e.target)&&e.target.id!=='bellBtn'&&!(e.target.closest&&e.target.closest('#bellBtn'))){
+      p.classList.remove('open');
+    }
+  });
+
+  /* ============ PWA: service worker + install prompt ============ */
+  var VAPID_PUBLIC="BH2sXS39o3W5jR4HTY1KaxeUpPrdcvw0r6P2ZY_aDD3ClvkCIppDf8QgBhZ_Lfs0isVuXwctf6cz_SvaSEA4nu0";
+  var deferredInstall=null, swReg=null;
+  var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  var isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/sw.js').then(function(r){swReg=r;}).catch(function(){});
+  }
+  window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault();deferredInstall=e;maybeShowInstall();
+  });
+  window.addEventListener('appinstalled',function(){dismissInstall();toast('TheFlap installed! 🐦 Open it from your home screen.');});
+  function installDismissed(){try{return localStorage.getItem('flap_install_x')==='1';}catch(e){return false;}}
+  function maybeShowInstall(){
+    if(isStandalone||installDismissed()||window.Capacitor||/[?&]app=1/.test(location.search)||/(theflap-?app|capacitor)/i.test(navigator.userAgent))return; /* real app / installed: no bookmark prompt */
+    var bar=document.getElementById('installBar');
+    if(isIOS){ /* iOS never fires beforeinstallprompt — show share-sheet route */
+      document.getElementById('ibHint').textContent='Tap Add for home-screen + notifications (iOS)';
+      bar.classList.add('show');
+    }else if(deferredInstall){
+      bar.classList.add('show');
+    }
+  }
+  function doInstall(){
+    if(isIOS){document.getElementById('iosSheet').classList.add('open');return;}
+    if(deferredInstall){deferredInstall.prompt();deferredInstall.userChoice.finally(function(){deferredInstall=null;dismissInstall();});}
+  }
+  function dismissInstall(){document.getElementById('installBar').classList.remove('show');}
+  window.__flapDismissInstall=dismissInstall;
+  function dismissInstallForever(){try{localStorage.setItem('flap_install_x','1');}catch(e){}dismissInstall();}
+  document.querySelector('#installBar .ib-x').addEventListener('click',dismissInstallForever);
+  /* show the install nudge a few seconds after load, if eligible */
+  setTimeout(maybeShowInstall,3500);
+
+  /* ============ Web Push: subscribe this device + send helper ============ */
+  function urlB64ToUint8(b64){
+    var pad='='.repeat((4-b64.length%4)%4);
+    var s=(b64+pad).replace(/-/g,'+').replace(/_/g,'/');
+    var raw=atob(s);var out=new Uint8Array(raw.length);
+    for(var i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);
+    return out;
+  }
+  async function subscribePush(){
+    if(!ONLINE||!ME.name||!swReg||!('PushManager' in window))return;
+    if(!('Notification' in window)||Notification.permission!=='granted')return;
+    try{
+      var sub=await swReg.pushManager.getSubscription();
+      if(!sub){
+        sub=await swReg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlB64ToUint8(VAPID_PUBLIC)});
+      }
+      var j=sub.toJSON();
+      if(j&&j.keys){
+        await sb.from('push_subs').upsert({name:ME.name,endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth},{onConflict:'endpoint'});
+      }
+    }catch(e){}
+  }
+  function sendPush(recipient,title,body){
+    if(!ONLINE||!recipient)return;
+    try{
+      fetch(CONFIG.SUPABASE_URL+'/functions/v1/send-push',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+CONFIG.SUPABASE_ANON_KEY,'apikey':CONFIG.SUPABASE_ANON_KEY},
+        body:JSON.stringify({recipient:recipient,title:title||'TheFlap 🐦',body:body||'',url:'/'})
+      }).catch(function(){});
+    }catch(e){}
+  }
+
+  /* ============ Trending + Flapper of the Week (real, from live feed) ============ */
+  function renderSidebar(){ computeStats(); }
+  async function computeStats(){
+    var rows=[];
+    if(ONLINE){
+      try{ var res=await sb.from('flaps').select('name,created_at,body').order('id',{ascending:false}).limit(1000); if(!res.error) rows=res.data||[]; }catch(e){}
+    }
+    if(!rows.length) rows=LAST_ROWS||[];
+    /* count only REAL original flaps — drop reflap copies and hidden sentinel rows */
+    rows=rows.filter(function(r){var n=(r.name||'');return !parseReflap(r.body) && n!=='::ticker::' && n!=='::verified::' && n!=='::pinned::' && n!=='::ticket::';});
+
+    /* ---- trending hashtags: accumulated across ALL flaps (one count per flap that uses the tag) ---- */
+    var counts={};
+    rows.forEach(function(r){
+      var seen={};
+      (String(r.body||'').match(/#[a-z0-9_]+/gi)||[]).forEach(function(t){t=t.toLowerCase(); if(!seen[t]){seen[t]=1; counts[t]=(counts[t]||0)+1;}});
+    });
+    var arr=Object.keys(counts).map(function(k){return [k,counts[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+    var tb=document.getElementById('trendBox');
+    if(tb){
+      tb.innerHTML=arr.length
+        ? arr.map(function(x,i){return '<li onclick="tagFilter(\''+x[0]+'\')"><span class="trend-tag">'+esc(x[0])+(i===0?' <span class="hot">HOT</span>':'')+'</span><span class="trend-cnt">'+x[1]+' flap'+(x[1]===1?'':'s')+'</span></li>';}).join('')
+        : '<li class="trend-empty">No trends yet! Add <b>#hashtags</b> to your flaps and they\'ll show up here.</li>';
+    }
+
+    /* ---- flapper of the week: most flaps in the last 7 days (accurate, real count) ---- */
+    var weekAgo=Date.now()-7*24*60*60*1000, by={};
+    rows.forEach(function(r){
+      var t=r.created_at?Date.parse(r.created_at):0, n=(r.name||'');
+      if(n && t>=weekAgo) by[n]=(by[n]||0)+1;
+    });
+    var top=Object.keys(by).map(function(k){return [k,by[k]];}).sort(function(a,b){return b[1]-a[1];})[0];
+    var fb=document.getElementById('flapperBox');
+    if(fb){
+      if(top){
+        var name=top[0], cnt=top[1];
+        fb.setAttribute('onclick',"showUserProfile('"+String(name).replace(/['\\]/g,'')+"')");
+        fb.innerHTML='<div class="fw-ava">'+avatarFor(name)+'</div><div class="fw-name">'+esc(name)+vbadge(name)+'</div><div class="fw-cnt">'+cnt+' flap'+(cnt===1?'':'s')+' this week 🔥</div>';
+      }else{
+        fb.removeAttribute('onclick');
+        fb.innerHTML='<div style="color:#eaf6ff;font-size:10px;">Be the first to flap and claim this spot!</div>';
+      }
+    }
+  }
+
+  /* ============ Poll of the Day (shared via DB) ============ */
+  var POLL={q:"What kind of flapper are you?",opts:["All day, every day 📢","Only when it's dramatic 🎭","Silent lurker mode 👀"]};
+  var pollVotes=[0,0,0],myVote=null;
+  /* ===== editable scrolling ticker (admin) — persisted as a hidden sentinel row ===== */
+  function setTicker(text){
+    var el=document.getElementById('tickerText');
+    if(el && text!=null && String(text).trim()) el.textContent=String(text);
+  }
+  async function loadTicker(){
+    if(!ONLINE)return;
+    try{
+      var r=await sb.from('flaps').select('body').eq('name','::ticker::').order('id',{ascending:false}).limit(1);
+      if(!r.error && r.data && r.data[0]) setTicker(r.data[0].body);
+    }catch(e){}
+  }
+  async function saveTicker(){
+    if(!ME.admin)return;
+    var ta=document.getElementById('adminTicker'); if(!ta)return;
+    var text=(ta.value||'').trim();
+    if(!text){toast('Ticker text is empty.');return;}
+    try{
+      var ex=await sb.from('flaps').select('id').eq('name','::ticker::').order('id',{ascending:false}).limit(1);
+      if(!ex.error && ex.data && ex.data[0]){
+        await sb.from('flaps').update({body:text}).eq('id',ex.data[0].id);
+      }else{
+        await sb.from('flaps').insert({name:'::ticker::',body:text,mood:'flappy',likes:0});
+      }
+      setTicker(text);
+      toast('📢 Ticker updated for everyone!');
+    }catch(e){toast('Could not save ticker — try again.');}
+  }
+  /* ===== verified badges — admin-granted, persisted as a hidden sentinel row ===== */
+  var VERIFIED={};
+  function isVerified(n){n=(n||'').toLowerCase(); return n==='lock' || !!(VERIFIED && VERIFIED[n]);}
+  /* nostalgic glossy gold-star "seal" badge (built once) */
+  var VBADGE_SVG=(function(){
+    var cx=16,cy=16,n=11,R=15,r=11.6,pts='';
+    for(var i=0;i<n*2;i++){var a=(Math.PI*i/n)-Math.PI/2;var rad=(i%2===0)?R:r;pts+=(i===0?'M':'L')+(cx+rad*Math.cos(a)).toFixed(1)+' '+(cy+rad*Math.sin(a)).toFixed(1)+' ';}
+    pts+='Z';
+    var star='M16 9.2 L17.7 13.3 L22.1 13.6 L18.6 16.4 L19.9 20.6 L16 18.1 L12.1 20.6 L13.4 16.4 L9.9 13.6 L14.3 13.3 Z';
+    return '<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">'+
+      '<path d="'+pts+'" fill="#f5820a" stroke="#a85400" stroke-width="1.1" stroke-linejoin="round"/>'+
+      '<circle cx="16" cy="16" r="9.6" fill="#ffce4d" stroke="#fff" stroke-width="1.4"/>'+
+      '<path d="'+star+'" fill="#fff8e6" stroke="#e0a800" stroke-width=".6" stroke-linejoin="round"/>'+
+      '<ellipse cx="12" cy="10.5" rx="5" ry="2.3" fill="#fff" opacity=".45"/>'+
+      '</svg>';
+  })();
+  function vbadge(n){
+    if(!isVerified(n))return '';
+    var safe=String(n).replace(/['"]/g,'');
+    return ' <span class="vbadge" title="Verified member — tap" onclick="showVerified(event,\''+safe+'\')">'+VBADGE_SVG+'</span>';
+  }
+  function showVerified(e,name){
+    if(e){try{e.stopPropagation();e.preventDefault();}catch(_){}}
+    var who=(name||'This member');
+    toast('⭐ '+who+' is a Verified member of TheFlap!');
+  }
+  async function loadVerified(){
+    if(!ONLINE)return;
+    try{
+      var r=await sb.from('flaps').select('body').eq('name','::verified::').order('id',{ascending:false}).limit(1);
+      VERIFIED={};
+      if(!r.error && r.data && r.data[0]){
+        (r.data[0].body||'').split(/[\s,]+/).forEach(function(n){n=n.trim().toLowerCase(); if(n)VERIFIED[n]=1;});
+      }
+    }catch(e){}
+  }
+  async function saveVerified(){
+    if(!ME.admin)return;
+    var ta=document.getElementById('adminVerified'); if(!ta)return;
+    var list=(ta.value||'').split(/[\s,]+/).map(function(s){return s.trim();}).filter(Boolean);
+    var body=list.join(', ');
+    try{
+      var ex=await sb.from('flaps').select('id').eq('name','::verified::').order('id',{ascending:false}).limit(1);
+      if(ex.data&&ex.data[0]){ await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id); }
+      else { await sb.from('flaps').insert({name:'::verified::',body:body,mood:'flappy',likes:0}); }
+      await loadVerified();
+      loadFeed();
+      toast('✔ Verified list updated!');
+    }catch(e){toast('Could not save — try again.');}
+  }
+  /* ===== pin a flap to the top (admin) — persisted as a hidden sentinel row ===== */
+  var PINNED_ID=null;
+  async function loadPinned(){
+    if(!ONLINE)return;
+    try{ var r=await sb.from('flaps').select('body').eq('name','::pinned::').order('id',{ascending:false}).limit(1);
+      PINNED_ID=(r.data && r.data[0] && String(r.data[0].body||'').trim())?String(r.data[0].body).trim():null;
+    }catch(e){}
+  }
+  async function pinPost(id){
+    if(!ME.admin)return;
+    var cur=String(id), newVal=(PINNED_ID===cur)?'':cur;
+    try{
+      var ex=await sb.from('flaps').select('id').eq('name','::pinned::').order('id',{ascending:false}).limit(1);
+      if(ex.data && ex.data[0]){ await sb.from('flaps').update({body:newVal}).eq('id',ex.data[0].id); }
+      else { await sb.from('flaps').insert({name:'::pinned::',body:newVal,mood:'flappy',likes:0}); }
+      PINNED_ID=newVal||null;
+      await loadFeed();
+      toast(newVal?'📌 Pinned to the top!':'Unpinned.');
+    }catch(e){toast('Could not pin — try again.');}
+  }
+  async function loadPoll(){
+    if(!ONLINE){renderPoll();return;}
+    try{
+      var res=await sb.from('flap_poll').select('*');
+      if(res.error)throw res.error;
+      pollVotes=[0,0,0];myVote=null;
+      res.data.forEach(function(v){
+        if(v.choice>=0&&v.choice<3)pollVotes[v.choice]++;
+        if(ME.name&&v.name===ME.name)myVote=v.choice;
+      });
+      renderPoll();
+    }catch(e){renderPoll();}
+  }
+  function renderPoll(){
+    var box=document.getElementById('pollBox');if(!box)return;
+    var total=pollVotes[0]+pollVotes[1]+pollVotes[2];
+    var voted=myVote!==null;
+    var h='<div class="poll-q">'+esc(POLL.q)+'</div>';
+    h+='<div class="'+(voted?'voted':'')+'" id="pollOpts">';
+    POLL.opts.forEach(function(o,i){
+      var pct=total?Math.round(pollVotes[i]/total*100):0;
+      h+='<button class="poll-opt" '+(voted?'':'onclick="votePoll('+i+')"')+'>'+
+         (voted?'<span class="fill" style="width:'+pct+'%"></span>':'')+
+         '<span class="lbl">'+esc(o)+'</span>'+
+         (voted?'<span class="pct">'+pct+'%'+(myVote===i?' ✓':'')+'</span>':'')+
+         '</button>';
+    });
+    h+='</div><div class="poll-note">'+total+' vote'+(total===1?'':'s')+' · poll closes never</div>';
+    box.innerHTML=h;
+  }
+  async function votePoll(i){
+    if(myVote!==null)return;
+    if(!requireAuth())return;
+    myVote=i;pollVotes[i]++;renderPoll();
+    if(ONLINE){
+      try{await sb.from('flap_poll').upsert({name:ME.name,choice:i});}catch(e){}
+      loadPoll();
+    }
+    toast('Vote counted! 🗳️');
+  }
+
+  async function loadFeed(manual){
+    if(!ONLINE){
+      LAST_ROWS=localPosts;
+      renderLive();
+      renderSidebar();
+      if(manual)toast('Demo mode — no backend yet.');
+      return;
+    }
+    try{
+      var res=await sb.from('flaps').select('*').order('id',{ascending:false}).limit(50);
+      if(res.error)throw res.error;
+      LAST_ROWS=(res.data||[]).filter(function(r){var n=(r.name||'');return n!=='::ticker::' && n!=='::verified::' && n!=='::pinned::' && n!=='::ticket::';}); /* keep hidden sentinel rows out of the feed */
+      loadTicker();
+      loadVerified();
+      await loadPinned();
+      myFlapCount=res.data.filter(function(r){return r.name===ME.name;}).length;
+      document.getElementById('youCount').textContent=myFlapCount;
+      /* members list — powers real photos everywhere + the banner */
+      try{
+        var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at');
+        if(!um.error&&um.data){USERS={};um.data.forEach(function(u){USERS[u.name.toLowerCase()]=u;});}
+      }catch(eu){}
+      REPLIES={};
+      var ids=res.data.map(function(r){return r.id;});
+      if(ids.length){
+        var rr=await sb.from('flap_replies').select('*').in('flap_id',ids).order('id',{ascending:true});
+        if(!rr.error&&rr.data)rr.data.forEach(function(r){(REPLIES[r.flap_id]=REPLIES[r.flap_id]||[]).push(r);});
+      }
+      computeReflaps();
+      renderLive();
+      renderSidebar();
+      renderBanner();
+      renderFlappers();
+      updateClassicVisibility();
+      checkNotifications();
+      if(manual)toast('Feed refreshed!');
+    }catch(e){
+      document.getElementById('liveFeed').innerHTML='<div class="card"><div class="card-body" style="text-align:center;font-size:11px;color:#8f1408;">could not reach the flap server — check your keys / internet.</div></div>';
+    }
+  }
+  if(ONLINE)setInterval(function(){if(ME.name){loadFeed();loadNotifs();}},20000);
+
+  async function sendReply(id){
+    if(!requireAuth())return;
+    var inp=document.getElementById('ri-'+id);
+    var text=(inp&&inp.value||'').trim();
+    if(!text){toast('Type a reply first!');return;}
+    var ekey='L'+id, emo=REPLY_EMOJI[ekey]||'', body=emo?emo+RE_SEP+text:text;
+    if(!ONLINE){
+      (REPLIES[id]=REPLIES[id]||[]).push({flap_id:id,name:ME.name,body:body});
+      delete REPLY_EMOJI[ekey];
+      renderLive();toast('Replied (demo mode)');
+      return;
+    }
+    try{
+      var r=await sb.from('flap_replies').insert({flap_id:id,name:ME.name,body:body});
+      if(r.error)throw r.error;
+      delete REPLY_EMOJI[ekey];
+      addNotif(ownerOf(id),ME.name,'reply',id,text);   /* notify the flap's owner */
+      await loadFeed();
+      toast('Reply posted!');
+    }catch(e){toast('Reply failed — check connection.');}
+  }
+
+  async function likeLive(btn){
+    if(!requireAuth())return;
+    var id=btn.getAttribute('data-id');
+    var n=parseInt(btn.getAttribute('data-n'),10)||0;
+    if(btn.classList.contains('liked'))return;
+    btn.classList.add('liked');
+    n++;btn.textContent='✔ Flapped! ('+n+')';btn.setAttribute('data-n',n);
+    if(ONLINE){try{await sb.from('flaps').update({likes:n}).eq('id',id);}catch(e){}}
+    addNotif(ownerOf(id),ME.name,'like',id,'');   /* notify the post's owner */
+    toast('You flapped it!');
+  }
+  async function delLive(id){
+    if(!ME.admin)return;
+    if(!confirm('Delete this flap for everyone?'))return;
+    if(ONLINE){try{await sb.from('flaps').delete().eq('id',id);}catch(e){}}
+    loadFeed();
+    toast('Deleted.');
+  }
+
+  /* ================= pear composer ================= */
+  /* keep the composer inside the visible area (above the on-screen keyboard) */
+  function fitComposer(){
+    var ov=document.getElementById('pearOverlay');
+    if(!ov.classList.contains('open'))return;
+    if(window.visualViewport && window.matchMedia('(max-width:760px)').matches){
+      var vv=window.visualViewport;
+      ov.style.height=vv.height+'px';
+      ov.style.top=vv.offsetTop+'px';
+    }else{
+      ov.style.height='';ov.style.top='';
+    }
+  }
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize',fitComposer);
+    window.visualViewport.addEventListener('scroll',fitComposer);
+  }
+  function openPear(){
+    if(!requireAuth())return;
+    var ov=document.getElementById('pearOverlay');
+    ov.classList.add('open');
+    fitComposer();
+    setTimeout(function(){
+      var ta=document.getElementById('composeText');
+      ta.focus();
+      fitComposer();
+      try{ta.scrollIntoView({block:'center'});}catch(e){}
+    },300);
+  }
+  function closePear(){
+    var ov=document.getElementById('pearOverlay');
+    ov.classList.remove('open');
+    ov.style.height='';ov.style.top='';
+  }
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){closePear();closeProfile();}});
+  /* when the box is focused, make sure it's scrolled into the visible area */
+  (function(){
+    var ta=document.getElementById('composeText');
+    if(ta)ta.addEventListener('focus',function(){
+      setTimeout(function(){fitComposer();try{ta.scrollIntoView({block:'center'});}catch(e){}},300);
+    });
+  })();
+
+  function refreshPreview(){
+    document.getElementById('emoPreview').innerHTML=emoHTML(document.getElementById('moodSel').value,true);
+  }
+  document.getElementById('moodSel').addEventListener('change',refreshPreview);
+  refreshPreview();
+
+  /* live "tagging:" indicator while you type */
+  function updateTagBar(){
+    var v=document.getElementById('composeText').value;
+    var m=v.match(/@[a-z0-9_]+/gi)||[];
+    document.getElementById('tagBar').innerHTML=m.length
+      ? 'tagging: '+m.map(function(t){return '<span class="attag">'+esc(t)+'</span>';}).join(' ')
+      : '';
+  }
+  document.getElementById('composeText').addEventListener('input',updateTagBar);
+  /* @ Tag button — drops an @ right where your cursor is */
+  function insertAt(){
+    var ta=document.getElementById('composeText');
+    ta.focus();
+    var s=(typeof ta.selectionStart==='number')?ta.selectionStart:ta.value.length;
+    var e=(typeof ta.selectionEnd==='number')?ta.selectionEnd:s;
+    ta.value=ta.value.slice(0,s)+'@'+ta.value.slice(e);
+    ta.selectionStart=ta.selectionEnd=s+1;
+    updateTagBar();
+    toast('Type the name right after the @');
+  }
+
+  /* downscale + re-encode any camera photo to a small standard JPEG that uploads fast
+     and renders everywhere (handles giant iPhone/Android photos; HEIC works where the
+     browser can decode it, otherwise we surface a clear error). */
+  function compressImage(file){
+    return new Promise(function(resolve,reject){
+      var url=URL.createObjectURL(file);
+      var img=new Image();
+      img.onload=function(){
+        var w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+        if(!w||!h){URL.revokeObjectURL(url);return reject(new Error('empty image'));}
+        var MAX=1280, scale=Math.min(1,MAX/Math.max(w,h));
+        var cw=Math.max(1,Math.round(w*scale)), ch=Math.max(1,Math.round(h*scale));
+        try{
+          var c=document.createElement('canvas');c.width=cw;c.height=ch;
+          var ctx=c.getContext('2d');
+          ctx.fillStyle='#fff';ctx.fillRect(0,0,cw,ch);
+          ctx.drawImage(img,0,0,cw,ch);
+          URL.revokeObjectURL(url);
+          c.toBlob(function(blob){
+            if(blob&&blob.size)resolve(blob);
+            else reject(new Error('encode failed'));
+          },'image/jpeg',0.82);
+        }catch(err){URL.revokeObjectURL(url);reject(err);}
+      };
+      img.onerror=function(){URL.revokeObjectURL(url);reject(new Error('decode failed'));};
+      img.src=url;
+    });
+  }
+
+  var attachBlob=null,attachURL=null;
+  document.getElementById('postFile').addEventListener('change',async function(e){
+    var f=e.target.files[0];if(!f)return;
+    if(!/^image\//i.test(f.type||'') && !/\.(jpe?g|png|gif|webp|heic|heif)$/i.test(f.name||'')){
+      toast('That is not an image file!');document.getElementById('postFile').value='';return;
+    }
+    toast('Optimizing your pic…');
+    try{
+      var blob=await compressImage(f);
+      attachBlob=blob;
+      if(attachURL)URL.revokeObjectURL(attachURL);
+      attachURL=URL.createObjectURL(blob);
+      document.getElementById('attachThumb').src=attachURL;
+      document.getElementById('attachPreview').style.display='flex';
+      toast('Pic ready! ('+Math.round(blob.size/1024)+' KB)');
+    }catch(err){
+      attachBlob=null;
+      document.getElementById('postFile').value='';
+      document.getElementById('attachPreview').style.display='none';
+      toast('Could not read that photo. Try a screenshot or a JPEG.');
+    }
+  });
+  function clearAttach(ev){
+    if(ev)ev.stopPropagation();
+    attachBlob=null;
+    if(attachURL){URL.revokeObjectURL(attachURL);attachURL=null;}
+    document.getElementById('postFile').value='';
+    document.getElementById('attachPreview').style.display='none';
+  }
+
+  var posting=false;
+  function setFlapButtons(txt,disabled){
+    document.querySelectorAll('.comp-btn.go').forEach(function(b){
+      if(!b.dataset.orig)b.dataset.orig=b.textContent;
+      b.textContent=txt||b.dataset.orig;
+      b.style.opacity=disabled?'.6':'';b.style.pointerEvents=disabled?'none':'';
+    });
+  }
+  async function postFlap(){
+    if(posting)return;
+    var ta=document.getElementById('composeText');
+    var text=ta.value.trim();
+    if(!text&&!attachBlob){toast('Type something (or add a pic) first!');return;}
+    var mood=document.getElementById('moodSel').value;
+    if(!ONLINE){
+      localPosts.unshift({id:Date.now(),name:ME.name,avatar_url:ME.pic||null,mood:mood,body:text,pic_url:attachURL,likes:0,created_at:new Date().toISOString()});
+      finishPost(ta);loadFeed();
+      toast('Posted (demo mode — only you can see it)');
+      return;
+    }
+    posting=true;setFlapButtons(attachBlob?'Uploading…':'Posting…',true);
+    try{
+      var pic_url=null;
+      if(attachBlob){
+        var path=Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.jpg';
+        var up=await sb.storage.from('pics').upload(path,attachBlob,{contentType:'image/jpeg',upsert:false});
+        if(up.error)throw new Error('upload: '+(up.error.message||up.error));
+        pic_url=sb.storage.from('pics').getPublicUrl(path).data.publicUrl;
+        setFlapButtons('Posting…',true);
+      }
+      var ins=await sb.from('flaps').insert({name:ME.name,avatar_url:ME.pic||null,mood:mood,body:text,pic_url:pic_url,color:userColor(ME.name)}).select('id').single();
+      if(ins.error)throw new Error('post: '+(ins.error.message||ins.error));
+      var newId=ins.data&&ins.data.id;
+      /* ping the admin's Discord with the post + text */
+      discordPing('post',ME.name,text||'(photo)');
+      /* notify each real @-tagged member */
+      var tagged=text.match(/@([a-z0-9_]+)/gi)||[];
+      var seen={};
+      tagged.forEach(function(t){
+        var n=t.slice(1).toLowerCase();
+        if(seen[n])return;seen[n]=1;
+        if(USERS[n]&&n!==ME.name.toLowerCase())addNotif(USERS[n].name,ME.name,'tag',newId,text);
+      });
+      posting=false;setFlapButtons(null,false);
+      finishPost(ta);
+      await loadFeed();
+      toast(pic_url?'Flapped with your pic! 📸':'Flapped! Your friends can see it now.');
+    }catch(e){
+      posting=false;setFlapButtons(null,false);
+      var msg=(e&&e.message||'')+'';
+      if(msg.indexOf('upload:')===0)toast('Photo upload failed — the pic may be too big or the connection dropped. Try again.');
+      else if(msg.indexOf('post:')===0)toast('Could not save your flap — check your connection and retry.');
+      else toast('Post failed — check your connection and try again.');
+    }
+  }
+  function finishPost(ta){
+    ta.value='';updateTagBar();attachBlob=null;
+    if(attachURL){URL.revokeObjectURL(attachURL);attachURL=null;}
+    document.getElementById('postFile').value='';
+    document.getElementById('attachPreview').style.display='none';
+    closePear();
+  }
+
+  /* ================= SESSION RESTORE (keeps you logged in across refresh/restart) =================
+     Runs LAST, after every var + function is defined, so nothing can throw and drop the gate. */
+  try{setTimeout(inAppTip,1500);}catch(e){}
+  (function restoreSession(){
+    var saved=readSession();
+    if(!saved)return;
+    var m;
+    try{m=JSON.parse(saved);}catch(e){return;}
+    if(!m||!m.name)return;
+    ME={name:m.name,admin:(m.name||'').toLowerCase()==='lock',pic:m.pic||null};
+    /* mark logged-in FIRST so nothing below can leave you on the sign-in screen */
+    document.getElementById('gate').classList.add('hidden');
+    try{initMe();}catch(e){/* profile UI failed to draw — you're still logged in */}
+    try{loadBlocks().then(function(){loadFeed();});}catch(e){try{loadFeed();}catch(e2){}}
+    try{loadNotifs();}catch(e){}
+    try{subscribePush();}catch(e){}
+  })();
+</script>
+</body>
+</html>
