@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+/* Detect the native app (Capacitor wrapper, or ?app=1 for the preview) and tag <html> with
+   .is-app. Every app-only layout rule is gated on this class, so plain website visitors
+   (desktop or mobile browser) always get the original, unchanged site. Set ASAP to avoid flicker. */
+(function(){try{
+  var isApp = !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent);
+  if(isApp) document.documentElement.classList.add('is-app');
+}catch(e){}})();
+</script>
 <title>TheFlap.com — Friends Edition</title>
 <!-- PWA: installable, standalone, themed -->
 <link rel="manifest" href="/manifest.webmanifest">
@@ -615,8 +624,9 @@
   }
   /* brand hidden on desktop (logo lives in the sidebar there) */
   .topbrand{display:none;}
-  /* ===== PHONE: tight, feed-first, scannable (real-app density) ===== */
-  @media(max-width:760px){
+  /* ===== IN-APP ONLY (html.is-app): tight, feed-first, scannable real-app density.
+     Gated on the app so the public website — desktop AND mobile browser — is unchanged. ===== */
+  html.is-app{
     /* brand header + one compact scrollable row of nav */
     .topbar{position:sticky;top:0;z-index:90;}
     .topbar-inner{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start;gap:5px;padding:5px 8px;scrollbar-width:none;}
@@ -2723,7 +2733,7 @@
      Your Page / Poll / Flapper of the Week / House Rules / Flappers are one tap away. -->
 <script>
 (function(){
-  var mq = window.matchMedia('(max-width:760px)');
+  var isApp = document.documentElement.classList.contains('is-app');
   var drawerBody = document.getElementById('drawerBody');
   if(!drawerBody) return;
   var asides = Array.prototype.slice.call(document.querySelectorAll('.wrap > aside'));
@@ -2752,7 +2762,7 @@
     return 7;
   }
   function place(){
-    if(mq.matches){
+    if(isApp){
       boxes.slice().sort(function(a,b){ return rank(a.el)-rank(b.el); })
            .forEach(function(b){ drawerBody.appendChild(b.el); });
     } else {
@@ -2761,7 +2771,6 @@
     }
   }
   place();
-  if(mq.addEventListener) mq.addEventListener('change', place); else if(mq.addListener) mq.addListener(place);
   // tapping a button / link inside the drawer closes it (after the action fires)
   drawerBody.addEventListener('click', function(e){
     if(e.target.closest('button, a')) setTimeout(function(){ toggleDrawer(false); }, 120);

@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+/* Detect the native app (Capacitor wrapper, or ?app=1 for the preview) and tag <html> with
+   .is-app. Every app-only layout rule is gated on this class, so plain website visitors
+   (desktop or mobile browser) always get the original, unchanged site. Set ASAP to avoid flicker. */
+(function(){try{
+  var isApp = !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent);
+  if(isApp) document.documentElement.classList.add('is-app');
+}catch(e){}})();
+</script>
 <title>TheFlap.com — Friends Edition</title>
 <!-- PWA: installable, standalone, themed -->
 <link rel="manifest" href="/manifest.webmanifest">
@@ -50,6 +59,9 @@
   .topbar-inner{width:1010px;margin:0 auto;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
   .navbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:9px;letter-spacing:.5px;color:#fff;text-transform:uppercase;cursor:pointer;background:linear-gradient(180deg,#c22a1a 0%,#8f1408 100%);border:1px solid #6b0e04;border-radius:4px;padding:4px 9px;text-shadow:0 1px 1px rgba(0,0,0,.5);}
   .rf-short{display:none;}
+  /* side drawer + hamburger are mobile-only; hidden on desktop */
+  .menu-btn{display:none;}
+  #sideDrawer,#drawerScrim{display:none;}
   .navbtn:hover{background:linear-gradient(180deg,#e03a26 0%,#a81a0a 100%);}
 
   .banner{width:1010px;margin:-2px auto 0;background:var(--orange);border:4px solid var(--orange-dark);border-top:none;border-radius:0 0 8px 8px;padding:8px;display:grid;grid-template-columns:repeat(7,1fr);gap:7px;box-shadow:0 6px 16px rgba(0,0,0,.45);}
@@ -612,8 +624,9 @@
   }
   /* brand hidden on desktop (logo lives in the sidebar there) */
   .topbrand{display:none;}
-  /* ===== PHONE: tight, feed-first, scannable (real-app density) ===== */
-  @media(max-width:760px){
+  /* ===== IN-APP ONLY (html.is-app): tight, feed-first, scannable real-app density.
+     Gated on the app so the public website — desktop AND mobile browser — is unchanged. ===== */
+  html.is-app{
     /* brand header + one compact scrollable row of nav */
     .topbar{position:sticky;top:0;z-index:90;}
     .topbar-inner{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start;gap:5px;padding:5px 8px;scrollbar-width:none;}
@@ -623,7 +636,21 @@
     .navbtn{flex:none;font-size:11px;padding:5px 11px;}
     /* on phones keep only the essentials so nothing gets cut off */
     .nav-soon{display:none;}
+    .nav-refresh{display:none;}          /* lives in the drawer / feed is live anyway */
     .rf-long{display:none;} .rf-short{display:inline;}
+    /* hamburger + Twitter-style slide-in side panel */
+    .menu-btn{display:inline-block;flex:none;font-size:17px;line-height:1;padding:3px 9px;background:linear-gradient(180deg,#f5a623,#e07d0a);border-color:#b45c00;}
+    #drawerScrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:190;opacity:0;pointer-events:none;transition:opacity .2s ease;}
+    body.drawer-open #drawerScrim{opacity:1;pointer-events:auto;}
+    #sideDrawer{display:block;position:fixed;top:0;left:0;height:100%;width:84%;max-width:340px;z-index:200;background:linear-gradient(160deg,#1636a6 0%,#0f2570 100%);box-shadow:6px 0 26px rgba(0,0,0,.55);transform:translateX(-104%);transition:transform .26s ease;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px 24px;}
+    body.drawer-open #sideDrawer{transform:translateX(0);}
+    .drawer-head{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:11px 4px 9px;margin-bottom:6px;background:linear-gradient(160deg,#1636a6,#0f2570);border-bottom:2px solid #ffd23f;z-index:2;}
+    .drawer-title{font-family:'Chewy','Comic Sans MS',cursive;font-size:19px;color:#fff;}
+    .drawer-title b{color:#ffe08a;}
+    .drawer-close{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:15px;line-height:1;width:30px;height:30px;border-radius:50%;cursor:pointer;}
+    #drawerBody aside{display:block;}
+    #drawerBody .logobox{display:none;}   /* redundant with the header brand */
+    #drawerBody .sidebox{margin-bottom:12px;}
     /* drop the member-photo banner on phones — it ate too much space */
     .banner{display:none;}
     .ticker{height:30px;}
@@ -741,6 +768,7 @@
 
 <div class="topbar">
   <div class="topbar-inner">
+    <button class="navbtn menu-btn" type="button" onclick="toggleDrawer()" aria-label="Menu">☰</button>
     <span class="topbrand" onclick="window.scrollTo({top:0,behavior:'smooth'})">the<b>FLAP</b></span>
     <button class="navbtn" onclick="toast('You are home!')">Home</button>
     <button class="navbtn nav-refresh" onclick="loadFeed(true)"><span class="rf-long">Refresh Feed</span><span class="rf-short">🔄</span></button>
@@ -778,6 +806,15 @@
 <div class="banner" id="banner"></div>
 
 <div class="ticker"><span id="tickerText">★ WELCOME TO THEFLAP.COM — FRIENDS EDITION ★ INVITE ONLY ★ BE NICE OR LOCK DELETES YOU ★ OPEN MIC NIGHT THIS FRIDAY ★ WHAT'S FLAPPENING? ★</span></div>
+
+<div id="drawerScrim" onclick="toggleDrawer(false)"></div>
+<aside id="sideDrawer" aria-hidden="true">
+  <div class="drawer-head">
+    <span class="drawer-title">the<b>FLAP</b> menu</span>
+    <button class="drawer-close" type="button" onclick="toggleDrawer(false)" aria-label="Close">✕</button>
+  </div>
+  <div id="drawerBody"></div>
+</aside>
 
 <div class="wrap">
 
@@ -2690,6 +2727,63 @@
     try{loadNotifs();}catch(e){}
     try{subscribePush();}catch(e){}
   })();
+</script>
+
+<!-- Mobile side drawer: relocate the sidebars into a slide-in panel so
+     Your Page / Poll / Flapper of the Week / House Rules / Flappers are one tap away. -->
+<script>
+(function(){
+  var isApp = document.documentElement.classList.contains('is-app');
+  var drawerBody = document.getElementById('drawerBody');
+  if(!drawerBody) return;
+  var asides = Array.prototype.slice.call(document.querySelectorAll('.wrap > aside'));
+  if(!asides.length) return;
+  // collect each panel with an anchor so we can restore it on desktop
+  var boxes = [];
+  asides.forEach(function(a){
+    Array.prototype.slice.call(a.children).forEach(function(el){
+      var c = document.createComment('box-home');
+      a.insertBefore(c, el);
+      boxes.push({el:el, anchor:c});
+    });
+  });
+  function head(el){ var h=el.querySelector('.sidehead'); return h? h.textContent.trim() : ''; }
+  // drawer order: Your Page first, poll + flapper high, flappers/rules lower, blurb last
+  function rank(el){
+    if(el.classList && el.classList.contains('logobox')) return 99;
+    var t=head(el);
+    if(t==='Your Page') return 1;
+    if(/Poll of the Day/i.test(t)) return 2;
+    if(/Flapper of the Week/i.test(t)) return 3;
+    if(/Trending/i.test(t)) return 4;
+    if(/The Flappers/i.test(t)) return 5;
+    if(/House Rules/i.test(t)) return 6;
+    if(/Oh! You Mean/i.test(t)) return 8;
+    return 7;
+  }
+  function place(){
+    if(isApp){
+      boxes.slice().sort(function(a,b){ return rank(a.el)-rank(b.el); })
+           .forEach(function(b){ drawerBody.appendChild(b.el); });
+    } else {
+      toggleDrawer(false);
+      boxes.forEach(function(b){ if(b.el.parentNode !== b.anchor.parentNode) b.anchor.parentNode.insertBefore(b.el, b.anchor.nextSibling); });
+    }
+  }
+  place();
+  // tapping a button / link inside the drawer closes it (after the action fires)
+  drawerBody.addEventListener('click', function(e){
+    if(e.target.closest('button, a')) setTimeout(function(){ toggleDrawer(false); }, 120);
+  });
+  // close on Escape
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') toggleDrawer(false); });
+})();
+function toggleDrawer(force){
+  var open = (typeof force === 'boolean') ? force : !document.body.classList.contains('drawer-open');
+  document.body.classList.toggle('drawer-open', open);
+  var d = document.getElementById('sideDrawer');
+  if(d){ d.setAttribute('aria-hidden', open ? 'false' : 'true'); if(open) d.scrollTop = 0; }
+}
 </script>
 </body>
 </html>
