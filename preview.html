@@ -2497,7 +2497,7 @@
       var ex=await sb.from('flaps').select('id').eq('name','::poll::').order('id',{ascending:false}).limit(1);
       if(!ex.error && ex.data && ex.data[0]) await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id);
       else await sb.from('flaps').insert({name:'::poll::',body:body,mood:'flappy',likes:0});
-      try{await sb.from('flap_poll').delete().gte('choice',-1);}catch(e){}   /* new poll -> fresh votes */
+      try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){}   /* new poll -> fresh votes (update, since delete is RLS-locked) */
       POLL={q:q,opts:[o1,o2,o3]}; myVote=null; pollVotes=[0,0,0]; renderPoll(); loadPoll();
       toast('🗳️ Poll updated for everyone!');
     }catch(e){toast('Could not save poll — try again.');}
@@ -2505,7 +2505,7 @@
   async function resetPollVotes(){
     if(!ME.admin)return;
     if(!confirm('Reset ALL votes on this poll? The question stays the same.'))return;
-    try{await sb.from('flap_poll').delete().gte('choice',-1);}catch(e){}
+    try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){}
     myVote=null; pollVotes=[0,0,0]; renderPoll(); loadPoll();
     toast('🗳️ Poll votes reset!');
   }
@@ -2518,7 +2518,7 @@
       pollVotes=[0,0,0];myVote=null;
       res.data.forEach(function(v){
         if(v.choice>=0&&v.choice<3)pollVotes[v.choice]++;
-        if(ME.name&&v.name===ME.name)myVote=v.choice;
+        if(ME.name&&v.name===ME.name&&v.choice>=0&&v.choice<3)myVote=v.choice;
       });
       renderPoll();
     }catch(e){renderPoll();}
