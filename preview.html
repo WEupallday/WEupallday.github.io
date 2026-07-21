@@ -461,6 +461,9 @@
   .notif-item .ni-ava svg,.notif-item .ni-ava img{width:100%;height:100%;display:block;object-fit:cover;}
   .notif-item .ni-when{color:#7a89a8;font-size:9px;}
   .notif-item b{color:var(--name-navy);}
+  /* brief glow when you tap a notification and it jumps you to that flap */
+  .flap-highlight{animation:flapPulse 2.3s ease;}
+  @keyframes flapPulse{0%,100%{box-shadow:0 4px 10px rgba(0,0,0,.4);}22%,55%{box-shadow:0 0 0 4px #f5820a,0 0 20px 5px rgba(245,130,10,.75);}}
   .notif-empty{padding:16px;text-align:center;font-size:11px;color:#889;line-height:1.5;}
   @media(max-width:760px){.notif-panel{top:auto;bottom:8px;right:3vw;left:3vw;width:auto;max-width:none;max-height:66vh;}}
   #notifBar{display:none;cursor:pointer;background:linear-gradient(180deg,#ffd23f,#f5a623);border:3px solid #c05e00;border-radius:8px;color:#5a2c00;font-weight:bold;font-size:12px;padding:8px 12px;margin-bottom:12px;box-shadow:0 3px 8px rgba(0,0,0,.35);animation:notifPop .3s ease;}
@@ -1482,7 +1485,7 @@
       '<div class="rtxt"><span class="rn">'+CAST[who].name+'</span> '+text+'</div></div>';
   }
   function cardHTML(o){
-    var h='<div class="card'+(o.pinned?' pinned-card':'')+'">';
+    var h='<div class="card'+(o.pinned?' pinned-card':'')+'"'+(o.liveId?' id="flap-'+o.liveId+'"':'')+'>';
     if(o.pinned)h+='<div class="pinned-tag">📌 Pinned</div>';
     if(o.reflapBy)h+='<div class="reflap-tag">🔁 <b>'+esc(o.reflapBy)+'</b> reflapped '+esc(o.name)+"'s flap</div>";
     h+='<div class="card-strip">'+o.date+' &nbsp;·&nbsp; <span class="rate">Rating: '+o.rating+' Flaps</span></div>';
@@ -2256,7 +2259,22 @@
   }
   function openNotif(flapId){
     document.getElementById('notifPanel').classList.remove('open');
+    try{toggleDrawer(false);}catch(e){}
+    function jump(){
+      if(!flapId)return false;
+      var el=document.getElementById('flap-'+flapId);
+      if(el){
+        el.scrollIntoView({behavior:'smooth',block:'center'});
+        el.classList.add('flap-highlight');
+        setTimeout(function(){el.classList.remove('flap-highlight');},2300);
+        return true;
+      }
+      return false;
+    }
+    if(jump())return;
+    /* post isn't rendered yet — refresh the feed, then jump to it */
     var lf=document.getElementById('liveFeed');if(lf)lf.scrollIntoView({behavior:'smooth',block:'start'});
+    if(flapId&&typeof loadFeed==='function'){ try{ var p=loadFeed(); if(p&&p.then)p.then(function(){setTimeout(jump,350);}); else setTimeout(jump,350); }catch(e){} }
   }
   /* close the panel when tapping elsewhere */
   document.addEventListener('click',function(e){
