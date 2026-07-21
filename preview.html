@@ -619,10 +619,11 @@
     .topbar-inner::-webkit-scrollbar{display:none;}
     .topbrand{display:inline-block;flex:none;font-family:'Chewy','Comic Sans MS',cursive;font-size:20px;line-height:1;color:#fff;letter-spacing:.5px;margin-right:6px;cursor:pointer;text-shadow:0 2px 0 var(--orange-dark);}
     .topbrand b{color:#ffe08a;}
-    .navbtn{flex:none;font-size:9px;padding:4px 8px;}
-    /* smaller, less shouty banner */
-    .banner{grid-template-columns:repeat(6,1fr);gap:4px;padding:5px;}
-    .tile{aspect-ratio:1/1;border-width:2px;}
+    .navbtn{flex:none;font-size:11px;padding:5px 11px;}
+    /* on phones keep only the essentials so nothing gets cut off */
+    .nav-soon{display:none;}
+    /* drop the member-photo banner on phones — it ate too much space */
+    .banner{display:none;}
     .ticker{height:30px;}
     .ticker span{font-size:14px;line-height:30px;}
     /* denser post cards, round avatars (Twitter-ish) */
@@ -645,6 +646,11 @@
     .reply .rtxt{font-size:12.5px;}
     .card-foot{padding:5px 8px;}
     .colhead{font-size:11px;padding:5px 9px;}
+    /* stop the ~13px right-edge clipping: let grid children shrink to the screen */
+    .wrap{margin-left:7px;margin-right:7px;}
+    .wrap>main,.wrap>aside{min-width:0;max-width:100%;box-sizing:border-box;}
+    .card,.card-body,.sidebox,.logobox,.moodbox{max-width:100%;box-sizing:border-box;}
+    .card-strip{white-space:normal;}
   }
 </style>
 </head>
@@ -737,11 +743,11 @@
     <button class="navbtn" onclick="toast('You are home!')">Home</button>
     <button class="navbtn" onclick="loadFeed(true)">Refresh Feed</button>
     <button class="navbtn support-nav" onclick="openSupport()">🎫 Support</button>
-    <button class="navbtn" onclick="toast('Coming soon!')">What's On TheFlap?</button>
-    <button class="navbtn" onclick="toast('Coming soon!')">Tunes</button>
-    <button class="navbtn" onclick="toast('Coming soon!')">Profiles</button>
-    <button class="navbtn" onclick="toast('Coming soon!')">Statuses</button>
-    <button class="navbtn" onclick="toast('Coming soon!')">Pix</button>
+    <button class="navbtn nav-soon" onclick="toast('Coming soon!')">What's On TheFlap?</button>
+    <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Tunes</button>
+    <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Profiles</button>
+    <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Statuses</button>
+    <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Pix</button>
     <button class="navbtn bell" id="bellBtn" type="button" onclick="toggleNotifs(event)">🔔<span id="bellCount" class="bell-count"></span></button>
   </div>
 </div>
