@@ -67,6 +67,8 @@
   .menu-btn{display:none;}
   #sideDrawer,#drawerScrim{display:none;}
   .replybtn{display:none;}
+  .reply-del{cursor:pointer;color:#c22a1a;font-size:12px;margin-left:6px;opacity:.7;vertical-align:middle;}
+  .reply-del:hover{opacity:1;}
   /* delete-account confirmation modal (works everywhere) */
   #delModal{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:20px;box-sizing:border-box;}
   #delModal.open{display:flex;}
@@ -651,7 +653,7 @@
     .topbar-inner{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;padding:6px 12px 8px;overflow:visible;}
     .home-nav,.support-nav{display:none;}
     .menu-btn{justify-self:start;}
-    .topbrand{display:inline-block;justify-self:center;font-family:'Chewy','Comic Sans MS',cursive;font-size:24px;line-height:1;color:#fff;letter-spacing:.5px;margin:0;cursor:pointer;text-shadow:0 2px 0 var(--orange-dark);}
+    .topbrand{display:inline-block;justify-self:center;font-family:'Chewy','Comic Sans MS',cursive;font-size:27px;line-height:1;color:#fff;letter-spacing:.5px;margin:0;cursor:pointer;text-shadow:0 2px 0 var(--orange-dark);}
     .topbrand b{color:#ffe08a;}
     .bell{justify-self:end;}
     .navbtn{font-size:13.5px;padding:8px 13px;border-radius:6px;}
@@ -859,12 +861,11 @@
     <span class="drawer-title">the<b>FLAP</b> menu</span>
     <button class="drawer-close" type="button" onclick="toggleDrawer(false)" aria-label="Close">✕</button>
   </div>
+  <div id="drawerBody"></div>
   <div class="drawer-nav">
-    <button type="button" onclick="window.scrollTo({top:0,behavior:'smooth'});toggleDrawer(false);">🏠 Home</button>
     <button type="button" onclick="openSupport();toggleDrawer(false);">🎫 Support</button>
     <button type="button" onclick="loadFeed(true);toggleDrawer(false);">🔄 Refresh Feed</button>
   </div>
-  <div id="drawerBody"></div>
 </aside>
 
 <div class="wrap">
@@ -938,6 +939,7 @@
     </div>
     <input type="file" id="postFile" accept="image/*" hidden>
 
+    <div id="livePollSlot"></div>
     <div class="colhead">Live Flaps — The Friends Feed <span class="blink">● LIVE</span></div>
     <div id="liveWrap">
       <div id="liveFeed"><div class="card"><div class="card-body" style="text-align:center;font-size:11px;">loading flaps…</div></div></div>
@@ -2084,8 +2086,10 @@
     var bodyText=rf?rf.body:(row.body||'');
     var reps=(REPLIES[row.id]||[]).filter(function(r){return !isBlocked(r.name);}).map(function(r){
       var p=splitReply(r.body);
+      var canDel=(ME.admin||(r.name||'').toLowerCase()===(ME.name||'').toLowerCase())&&r.id;
+      var delLink=canDel?'<a class="reply-del" title="Delete this reply" onclick="delReply('+r.id+','+row.id+')">🗑</a>':'';
       return '<div class="reply"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/'/g,'')+'\')">'+avatarFor(r.name)+'</div>'+
-        replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+'</div>';
+        replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+delLink+'</div>';
     });
     reps.push('<div class="reply reply-compose"><div class="rava">'+myAva()+'</div>'+
       '<div class="rcol">'+
@@ -2541,6 +2545,14 @@
   }
   if(ONLINE)setInterval(function(){if(ME.name){loadFeed();loadNotifs();}},20000);
 
+  async function delReply(rid, fid){
+    if(!ME.name)return;
+    if(!confirm('Delete this reply? This can’t be undone.'))return;
+    if(REPLIES[fid])REPLIES[fid]=REPLIES[fid].filter(function(x){return x.id!==rid;});
+    renderLive();
+    if(ONLINE){ try{ await sb.from('flap_replies').delete().eq('id',rid); }catch(e){} }
+    toast('Reply deleted.');
+  }
   async function sendReply(id){
     if(!requireAuth())return;
     var inp=document.getElementById('ri-'+id);
@@ -2837,10 +2849,15 @@
     if(/Oh! You Mean/i.test(t)) return 8;
     return 7;
   }
+  var pollSlot = document.getElementById('livePollSlot');
   function place(){
     if(isApp){
       boxes.slice().sort(function(a,b){ return rank(a.el)-rank(b.el); })
-           .forEach(function(b){ drawerBody.appendChild(b.el); });
+           .forEach(function(b){
+             // Poll of the Day lives in the main feed (above Live Flaps), not the drawer
+             if(pollSlot && /Poll of the Day/i.test(head(b.el))) pollSlot.appendChild(b.el);
+             else drawerBody.appendChild(b.el);
+           });
     } else {
       toggleDrawer(false);
       boxes.forEach(function(b){ if(b.el.parentNode !== b.anchor.parentNode) b.anchor.parentNode.insertBefore(b.el, b.anchor.nextSibling); });
