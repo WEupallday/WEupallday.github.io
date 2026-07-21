@@ -9,7 +9,12 @@
    (desktop or mobile browser) always get the original, unchanged site. Set ASAP to avoid flicker. */
 (function(){try{
   var isApp = !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent);
-  if(isApp) document.documentElement.classList.add('is-app');
+  /* the compact, island-safe layout now applies in the app AND on phone-width browsers.
+     Desktop browsers (wider than 760px) keep the original site look. */
+  var mq = window.matchMedia('(max-width:760px)');
+  function apply(){ document.documentElement.classList.toggle('is-app', isApp || mq.matches); }
+  apply();
+  if(mq.addEventListener) mq.addEventListener('change', apply); else if(mq.addListener) mq.addListener(apply);
   /* the preview frame passes ?safe=NN to simulate the iPhone's Dynamic Island gap;
      on a real device this stays 0 and the true env(safe-area-inset-top) is used instead. */
   var sm = location.search.match(/[?&]safe=(\d+)/);
@@ -2869,7 +2874,9 @@
      Your Page / Poll / Flapper of the Week / House Rules / Flappers are one tap away. -->
 <script>
 (function(){
-  var isApp = document.documentElement.classList.contains('is-app');
+  var isAppReal = !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent);
+  var mq = window.matchMedia('(max-width:760px)');
+  function compact(){ return isAppReal || mq.matches; }   // app OR phone-width browser
   var drawerBody = document.getElementById('drawerBody');
   if(!drawerBody) return;
   var asides = Array.prototype.slice.call(document.querySelectorAll('.wrap > aside'));
@@ -2899,7 +2906,7 @@
   }
   var pollSlot = document.getElementById('livePollSlot');
   function place(){
-    if(isApp){
+    if(compact()){
       boxes.slice().sort(function(a,b){ return rank(a.el)-rank(b.el); })
            .forEach(function(b){
              // Poll of the Day lives in the main feed (above Live Flaps), not the drawer
@@ -2912,6 +2919,8 @@
     }
   }
   place();
+  // re-run when crossing the phone/desktop breakpoint (e.g. rotating or resizing)
+  if(mq.addEventListener) mq.addEventListener('change', place); else if(mq.addListener) mq.addListener(place);
   // tapping a button / link inside the drawer closes it (after the action fires)
   drawerBody.addEventListener('click', function(e){
     if(e.target.closest('button, a')) setTimeout(function(){ toggleDrawer(false); }, 120);

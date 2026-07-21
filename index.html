@@ -9,7 +9,16 @@
    (desktop or mobile browser) always get the original, unchanged site. Set ASAP to avoid flicker. */
 (function(){try{
   var isApp = !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent);
-  if(isApp) document.documentElement.classList.add('is-app');
+  /* the compact, island-safe layout now applies in the app AND on phone-width browsers.
+     Desktop browsers (wider than 760px) keep the original site look. */
+  var mq = window.matchMedia('(max-width:760px)');
+  function apply(){ document.documentElement.classList.toggle('is-app', isApp || mq.matches); }
+  apply();
+  if(mq.addEventListener) mq.addEventListener('change', apply); else if(mq.addListener) mq.addListener(apply);
+  /* the preview frame passes ?safe=NN to simulate the iPhone's Dynamic Island gap;
+     on a real device this stays 0 and the true env(safe-area-inset-top) is used instead. */
+  var sm = location.search.match(/[?&]safe=(\d+)/);
+  if(sm) document.documentElement.style.setProperty('--demo-safe', sm[1]+'px');
 }catch(e){}})();
 </script>
 <title>TheFlap.com — Friends Edition</title>
@@ -59,9 +68,23 @@
   .topbar-inner{width:1010px;margin:0 auto;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
   .navbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:9px;letter-spacing:.5px;color:#fff;text-transform:uppercase;cursor:pointer;background:linear-gradient(180deg,#c22a1a 0%,#8f1408 100%);border:1px solid #6b0e04;border-radius:4px;padding:4px 9px;text-shadow:0 1px 1px rgba(0,0,0,.5);}
   .rf-short{display:none;}
-  /* side drawer + hamburger are mobile-only; hidden on desktop */
+  /* side drawer + hamburger + reply toggle are app-only; hidden on the website */
   .menu-btn{display:none;}
   #sideDrawer,#drawerScrim{display:none;}
+  .replybtn{display:none;}
+  .reply-del{cursor:pointer;color:#c22a1a;font-size:12px;margin-left:6px;opacity:.7;vertical-align:middle;}
+  .reply-del:hover{opacity:1;}
+  /* delete-account confirmation modal (works everywhere) */
+  #delModal{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:20px;box-sizing:border-box;}
+  #delModal.open{display:flex;}
+  #delModal .dm-card{background:#fff;border:3px solid #c22a1a;border-radius:14px;max-width:340px;width:100%;padding:20px 18px;box-shadow:0 12px 40px rgba(0,0,0,.5);text-align:center;}
+  #delModal .dm-title{font-family:'Chewy','Comic Sans MS',cursive;font-size:22px;color:#c22a1a;margin-bottom:8px;}
+  #delModal .dm-text{font-size:13px;color:#333;line-height:1.5;margin-bottom:16px;}
+  #delModal .dm-text b{color:#111;}
+  #delModal .dm-btns{display:flex;gap:10px;justify-content:center;}
+  #delModal .dm-cancel,#delModal .dm-go{font-weight:bold;border:none;border-radius:9px;padding:12px 16px;cursor:pointer;font-size:13px;flex:1;}
+  #delModal .dm-cancel{background:#e6e8ef;color:#222;}
+  #delModal .dm-go{background:linear-gradient(180deg,#e23b2a,#a5140a);color:#fff;}
   .navbtn:hover{background:linear-gradient(180deg,#e03a26 0%,#a81a0a 100%);}
 
   .banner{width:1010px;margin:-2px auto 0;background:var(--orange);border:4px solid var(--orange-dark);border-top:none;border-radius:0 0 8px 8px;padding:8px;display:grid;grid-template-columns:repeat(7,1fr);gap:7px;box-shadow:0 6px 16px rgba(0,0,0,.45);}
@@ -627,19 +650,24 @@
   /* ===== IN-APP ONLY (html.is-app): tight, feed-first, scannable real-app density.
      Gated on the app so the public website — desktop AND mobile browser — is unchanged. ===== */
   html.is-app{
-    /* brand header + one compact scrollable row of nav */
-    .topbar{position:sticky;top:0;z-index:90;}
-    .topbar-inner{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start;gap:5px;padding:5px 8px;scrollbar-width:none;}
-    .topbar-inner::-webkit-scrollbar{display:none;}
-    .topbrand{display:inline-block;flex:none;font-family:'Chewy','Comic Sans MS',cursive;font-size:20px;line-height:1;color:#fff;letter-spacing:.5px;margin-right:6px;cursor:pointer;text-shadow:0 2px 0 var(--orange-dark);}
+    /* brand header + one compact scrollable row of nav.
+       padding-top clears the Dynamic Island / notch via the safe-area inset. */
+    .topbar{position:sticky;top:0;z-index:90;padding-top:calc(env(safe-area-inset-top, 0px) + var(--demo-safe, 0px) + 6px);}
+    /* Instagram-style minimal bar: ☰ menu (left) · theFLAP (centered) · 🔔 (right).
+       Home + Support live in the ☰ drawer instead of cluttering the top. */
+    .topbar-inner{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;padding:6px 12px 8px;overflow:visible;}
+    .home-nav,.support-nav{display:none;}
+    .menu-btn{justify-self:start;}
+    .topbrand{display:inline-block;justify-self:center;font-family:'Chewy','Comic Sans MS',cursive;font-size:27px;line-height:1;color:#fff;letter-spacing:.5px;margin:0;cursor:pointer;text-shadow:0 2px 0 var(--orange-dark);}
     .topbrand b{color:#ffe08a;}
-    .navbtn{flex:none;font-size:11px;padding:5px 11px;}
+    .bell{justify-self:end;}
+    .navbtn{font-size:13.5px;padding:8px 13px;border-radius:6px;}
     /* on phones keep only the essentials so nothing gets cut off */
     .nav-soon{display:none;}
     .nav-refresh{display:none;}          /* lives in the drawer / feed is live anyway */
     .rf-long{display:none;} .rf-short{display:inline;}
     /* hamburger + Twitter-style slide-in side panel */
-    .menu-btn{display:inline-block;flex:none;font-size:17px;line-height:1;padding:3px 9px;background:linear-gradient(180deg,#f5a623,#e07d0a);border-color:#b45c00;}
+    .menu-btn{display:inline-block;flex:none;font-size:20px;line-height:1;padding:6px 12px;background:linear-gradient(180deg,#f5a623,#e07d0a);border-color:#b45c00;}
     #drawerScrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:190;opacity:0;pointer-events:none;transition:opacity .2s ease;}
     body.drawer-open #drawerScrim{opacity:1;pointer-events:auto;}
     #sideDrawer{display:block;position:fixed;top:0;left:0;height:100%;width:84%;max-width:340px;z-index:200;background:linear-gradient(160deg,#1636a6 0%,#0f2570 100%);box-shadow:6px 0 26px rgba(0,0,0,.55);transform:translateX(-104%);transition:transform .26s ease;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px 24px;}
@@ -680,6 +708,31 @@
     .wrap>main,.wrap>aside{min-width:0;max-width:100%;box-sizing:border-box;}
     .card,.card-body,.sidebox,.logobox,.moodbox{max-width:100%;box-sizing:border-box;}
     .card-strip{white-space:normal;}
+    /* drop The Flappers panel in the app — it can't list everyone anyway */
+    .sidebox:has(#profilesList){display:none;}
+    /* Twitter-style: cards start compact; the reply box + reactions open on tap */
+    .replybtn{display:inline-block;flex:none;font-size:12px;padding:7px 13px;background:linear-gradient(180deg,#3c6ec9,#22398f);border-color:#1a2a6e;border-radius:6px;}
+    .reply-compose{display:none;}
+    .card.show-compose .reply-compose{display:flex;}
+    /* Home / Support / Refresh as tap-friendly rows inside the drawer */
+    .drawer-nav{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+    .drawer-nav button{width:100%;text-align:left;font-weight:bold;font-size:14px;padding:12px 14px;border-radius:10px;border:2px solid #ffd23f;background:linear-gradient(180deg,#2a56c9,#1a3aa0);color:#fff;cursor:pointer;}
+    /* smaller, tighter flaps so more fit on screen */
+    .card{margin-bottom:6px;}
+    .card-strip{font-size:9px;padding:2px 8px;}
+    .card-body{padding:6px 8px 7px;}
+    .poster{width:34px;margin-right:7px;}
+    .poster .pava{width:32px;height:32px;}
+    .poster .pname{font-size:10.5px;}
+    .statustxt{font-size:13px;line-height:1.4;}
+    .moodbox{width:44px;padding:2px;}
+    .moodbox .emo{width:20px;height:20px;}
+    .moodbox .mlabel{font-size:8px;}
+    .moodbox .mword{font-size:7.5px;}
+    .reply .rtxt{font-size:12px;}
+    .replies{margin-top:6px;}
+    .card-foot{padding:5px 7px;gap:4px;}
+    .colhead{font-size:10.5px;padding:4px 9px;}
   }
 </style>
 </head>
@@ -770,7 +823,7 @@
   <div class="topbar-inner">
     <button class="navbtn menu-btn" type="button" onclick="toggleDrawer()" aria-label="Menu">☰</button>
     <span class="topbrand" onclick="window.scrollTo({top:0,behavior:'smooth'})">the<b>FLAP</b></span>
-    <button class="navbtn" onclick="toast('You are home!')">Home</button>
+    <button class="navbtn home-nav" onclick="toast('You are home!')">Home</button>
     <button class="navbtn nav-refresh" onclick="loadFeed(true)"><span class="rf-long">Refresh Feed</span><span class="rf-short">🔄</span></button>
     <button class="navbtn support-nav" onclick="openSupport()">🎫 Support</button>
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">What's On TheFlap?</button>
@@ -814,6 +867,10 @@
     <button class="drawer-close" type="button" onclick="toggleDrawer(false)" aria-label="Close">✕</button>
   </div>
   <div id="drawerBody"></div>
+  <div class="drawer-nav">
+    <button type="button" onclick="openSupport();toggleDrawer(false);">🎫 Support</button>
+    <button type="button" onclick="loadFeed(true);toggleDrawer(false);">🔄 Refresh Feed</button>
+  </div>
 </aside>
 
 <div class="wrap">
@@ -887,6 +944,7 @@
     </div>
     <input type="file" id="postFile" accept="image/*" hidden>
 
+    <div id="livePollSlot"></div>
     <div class="colhead">Live Flaps — The Friends Feed <span class="blink">● LIVE</span></div>
     <div id="liveWrap">
       <div id="liveFeed"><div class="card"><div class="card-body" style="text-align:center;font-size:11px;">loading flaps…</div></div></div>
@@ -1435,7 +1493,7 @@
     if(o.pic)h+='<div class="post-pic"><img src="'+esc(o.pic)+'" alt="flap pic" loading="lazy" onerror="this.closest(\'.post-pic\').style.display=\'none\'"></div>';
     var reps=(o.replies||[]).join('');
     if(!o.liveId){
-      reps+='<div class="reply"><div class="rava">'+myAva()+'</div>'+
+      reps+='<div class="reply reply-compose"><div class="rava">'+myAva()+'</div>'+
         '<div class="rcol">'+
           '<div class="replyrow"><input maxlength="200" placeholder="reply…" onkeydown="if(event.key===\'Enter\')demoReply(this)">'+
           '<button class="comp-btn" type="button" onclick="demoReply(this)">Reply</button></div>'+
@@ -1447,6 +1505,7 @@
     h+='</div>';
     if(o.reflapCount)h+='<div class="reflap-count-line">🔁 <b>'+o.reflapCount+'</b> '+(o.reflapCount===1?'person':'people')+' reflapped this</div>';
     h+='<div class="card-foot"><span class="tags">Tagged: '+o.tags.map(function(t){return '<span class="tg">'+esc(String(t).toLowerCase())+'</span>';}).join('')+'</span>';
+    h+='<button class="replybtn" type="button" onclick="toggleCompose(this)">💬 Reply</button>';
     if(o.liveId){
       h+='<button class="likebtn" type="button" data-n="'+(o.likes||0)+'" data-id="'+o.liveId+'" onclick="likeLive(this)">👍 Flap This! ('+(o.likes||0)+')</button>';
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase())h+='<button class="reflapbtn'+(o.reflapped?' on':'')+'" type="button" onclick="reflapPost('+o.liveId+')">🔁 '+(o.reflapped?'Reflapped':'Reflap')+'</button>';
@@ -1462,6 +1521,13 @@
     }
     h+='</div></div>';
     return h;
+  }
+  /* Twitter-style: reveal a card's reply box + reactions only when tapped (app only) */
+  function toggleCompose(btn){
+    var card=btn.closest('.card'); if(!card)return;
+    var open=card.classList.toggle('show-compose');
+    btn.textContent = open ? '✕ Close' : '💬 Reply';
+    if(open){ var inp=card.querySelector('.reply-compose input'); if(inp)setTimeout(function(){try{inp.focus();}catch(e){}},60); }
   }
   function likeFlap(btn){
     var n=parseInt(btn.getAttribute('data-n'),10)||0;
@@ -1738,6 +1804,7 @@
       recent=recent.filter(function(r){var n=(r.name||'');return !parseReflap(r.body) && n!=='::ticker::' && n!=='::verified::' && n!=='::pinned::' && n!=='::ticket::';}); /* hide reflap + sentinel rows */
       var tickerCur='';try{var tk=await sb.from('flaps').select('body').eq('name','::ticker::').order('id',{ascending:false}).limit(1);if(tk.data&&tk.data[0])tickerCur=tk.data[0].body;}catch(e){}
       var verCur='';try{var vk=await sb.from('flaps').select('body').eq('name','::verified::').order('id',{ascending:false}).limit(1);if(vk.data&&vk.data[0])verCur=vk.data[0].body;}catch(e){}
+      var pollCur='';try{var pk=await sb.from('flaps').select('body').eq('name','::poll::').order('id',{ascending:false}).limit(1);if(pk.data&&pk.data[0])pollCur=pk.data[0].body;}catch(e){}
       var tickets=[];try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(60)).data||[];}catch(e){}
       var counts={};fl.forEach(function(f){counts[f.name]=(counts[f.name]||0)+1;});
       var now=Date.now(),online=0;
@@ -1760,6 +1827,17 @@
       h+='<div style="padding:2px 2px 10px;"><textarea id="adminTicker" style="width:100%;box-sizing:border-box;min-height:56px;font-family:Verdana,Arial,sans-serif;font-size:12px;padding:8px;border:2px solid var(--card-border);border-radius:8px;">'+esc(tickerCur||((document.getElementById('tickerText')||{}).textContent||''))+'</textarea>'+
          '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#2f9e5a,#1c7a42);" onclick="saveTicker()">SAVE TICKER FOR EVERYONE</button>'+
          '<div style="font-size:10px;color:#889;margin-top:4px;">The scrolling message at the top of the site. Separate phrases with ★ if you like.</div></div>';
+      var pp=pollCur?String(pollCur).split('␟'):[];
+      var pIn='width:100%;box-sizing:border-box;font-family:Verdana,Arial,sans-serif;font-size:12px;padding:8px;border:2px solid var(--card-border);border-radius:8px;margin-bottom:6px;';
+      h+='<div class="pc-flaps-h">🗳️ Flap Poll of the Day</div>';
+      h+='<div style="padding:2px 2px 10px;">'+
+         '<input id="adminPollQ" value="'+esc(pp[0]||POLL.q)+'" placeholder="Poll question (make it funny!)" style="'+pIn+'">'+
+         '<input id="adminPollO1" value="'+esc(pp[1]||POLL.opts[0])+'" placeholder="Option 1" style="'+pIn+'">'+
+         '<input id="adminPollO2" value="'+esc(pp[2]||POLL.opts[1])+'" placeholder="Option 2" style="'+pIn+'">'+
+         '<input id="adminPollO3" value="'+esc(pp[3]||POLL.opts[2])+'" placeholder="Option 3" style="'+pIn+'">'+
+         '<button class="you-update" type="button" style="margin-top:2px;width:100%;background:linear-gradient(180deg,#8a4fd8,#5f2ea0);" onclick="savePoll()">SAVE POLL (starts votes fresh)</button>'+
+         '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#c0603a,#8f3c1c);" onclick="resetPollVotes()">↺ RESET VOTES ONLY</button>'+
+         '<div style="font-size:10px;color:#889;margin-top:4px;">Set the question + 3 options. Saving a new poll clears old votes so everyone can vote again. Emojis welcome. 🍿</div></div>';
       h+='<div class="pc-flaps-h">✔ Verified Members</div>';
       h+='<div style="padding:2px 2px 10px;"><textarea id="adminVerified" style="width:100%;box-sizing:border-box;min-height:44px;font-family:Verdana,Arial,sans-serif;font-size:12px;padding:8px;border:2px solid var(--card-border);border-radius:8px;">'+esc(verCur)+'</textarea>'+
          '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#1fb6a6,#0e8577);" onclick="saveVerified()">SAVE VERIFIED LIST</button>'+
@@ -1845,10 +1923,15 @@
     }
     toast('Thanks — reported. Our team reviews reports within 24 hours.');
   }
-  async function deleteAccount(){
+  function deleteAccount(){
     if(!ME.name){toast('Not signed in.');return;}
-    if(!confirm('Delete your account?\nThis permanently removes your profile, your flaps, and your replies. This cannot be undone.'))return;
-    if(!confirm('Last check — this is PERMANENT. Delete '+ME.name+' for good?'))return;
+    var m=document.getElementById('delModal');
+    if(m){ document.getElementById('delModalName').textContent=ME.name; m.classList.add('open'); }
+  }
+  function closeDelModal(){ var m=document.getElementById('delModal'); if(m)m.classList.remove('open'); }
+  async function reallyDeleteAccount(){
+    closeDelModal();
+    if(!ME.name)return;
     var name=ME.name;
     toast('Deleting your account…');
     if(ONLINE){
@@ -2020,10 +2103,12 @@
     var bodyText=rf?rf.body:(row.body||'');
     var reps=(REPLIES[row.id]||[]).filter(function(r){return !isBlocked(r.name);}).map(function(r){
       var p=splitReply(r.body);
+      var canDel=(ME.admin||(r.name||'').toLowerCase()===(ME.name||'').toLowerCase())&&r.id;
+      var delLink=canDel?'<a class="reply-del" title="Delete this reply" onclick="delReply('+r.id+','+row.id+')">🗑</a>':'';
       return '<div class="reply"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/'/g,'')+'\')">'+avatarFor(r.name)+'</div>'+
-        replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+'</div>';
+        replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+delLink+'</div>';
     });
-    reps.push('<div class="reply"><div class="rava">'+myAva()+'</div>'+
+    reps.push('<div class="reply reply-compose"><div class="rava">'+myAva()+'</div>'+
       '<div class="rcol">'+
         '<div class="replyrow"><input id="ri-'+row.id+'" maxlength="200" placeholder="reply as '+esc(ME.name)+'…" '+
         'onkeydown="if(event.key===\'Enter\')sendReply('+row.id+')">'+
@@ -2294,7 +2379,7 @@
   }
 
   /* ============ Poll of the Day (shared via DB) ============ */
-  var POLL={q:"What kind of flapper are you?",opts:["All day, every day 📢","Only when it's dramatic 🎭","Silent lurker mode 👀"]};
+  var POLL={q:"What's your TheFlap red flag? 🚩",opts:["Leaves you on read, likes it 6 days later 😴","Reflaps everything, posts nothing 🔁","Shows up ONLY for the drama 🍿"]};
   var pollVotes=[0,0,0],myVote=null;
   /* ===== editable scrolling ticker (admin) — persisted as a hidden sentinel row ===== */
   function setTicker(text){
@@ -2394,7 +2479,43 @@
       toast(newVal?'📌 Pinned to the top!':'Unpinned.');
     }catch(e){toast('Could not pin — try again.');}
   }
+  /* the poll question + options are editable by admin, stored as a hidden ::poll:: sentinel row */
+  async function loadPollConfig(){
+    if(!ONLINE)return;
+    try{
+      var r=await sb.from('flaps').select('body').eq('name','::poll::').order('id',{ascending:false}).limit(1);
+      if(!r.error && r.data && r.data[0] && r.data[0].body){
+        var p=String(r.data[0].body).split('␟');
+        if(p.length>=4 && p[0] && p[1] && p[2] && p[3]) POLL={q:p[0],opts:[p[1],p[2],p[3]]};
+      }
+    }catch(e){}
+  }
+  async function savePoll(){
+    if(!ME.admin)return;
+    var q=((document.getElementById('adminPollQ')||{}).value||'').trim();
+    var o1=((document.getElementById('adminPollO1')||{}).value||'').trim();
+    var o2=((document.getElementById('adminPollO2')||{}).value||'').trim();
+    var o3=((document.getElementById('adminPollO3')||{}).value||'').trim();
+    if(!q||!o1||!o2||!o3){toast('Fill in the question and all 3 options.');return;}
+    var body=[q,o1,o2,o3].join('␟');
+    try{
+      var ex=await sb.from('flaps').select('id').eq('name','::poll::').order('id',{ascending:false}).limit(1);
+      if(!ex.error && ex.data && ex.data[0]) await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id);
+      else await sb.from('flaps').insert({name:'::poll::',body:body,mood:'flappy',likes:0});
+      try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){}   /* new poll -> fresh votes (update, since delete is RLS-locked) */
+      POLL={q:q,opts:[o1,o2,o3]}; myVote=null; pollVotes=[0,0,0]; renderPoll(); loadPoll();
+      toast('🗳️ Poll updated for everyone!');
+    }catch(e){toast('Could not save poll — try again.');}
+  }
+  async function resetPollVotes(){
+    if(!ME.admin)return;
+    if(!confirm('Reset ALL votes on this poll? The question stays the same.'))return;
+    try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){}
+    myVote=null; pollVotes=[0,0,0]; renderPoll(); loadPoll();
+    toast('🗳️ Poll votes reset!');
+  }
   async function loadPoll(){
+    await loadPollConfig();
     if(!ONLINE){renderPoll();return;}
     try{
       var res=await sb.from('flap_poll').select('*');
@@ -2402,7 +2523,7 @@
       pollVotes=[0,0,0];myVote=null;
       res.data.forEach(function(v){
         if(v.choice>=0&&v.choice<3)pollVotes[v.choice]++;
-        if(ME.name&&v.name===ME.name)myVote=v.choice;
+        if(ME.name&&v.name===ME.name&&v.choice>=0&&v.choice<3)myVote=v.choice;
       });
       renderPoll();
     }catch(e){renderPoll();}
@@ -2477,6 +2598,14 @@
   }
   if(ONLINE)setInterval(function(){if(ME.name){loadFeed();loadNotifs();}},20000);
 
+  async function delReply(rid, fid){
+    if(!ME.name)return;
+    if(!confirm('Delete this reply? This can’t be undone.'))return;
+    if(REPLIES[fid])REPLIES[fid]=REPLIES[fid].filter(function(x){return x.id!==rid;});
+    renderLive();
+    if(ONLINE){ try{ await sb.from('flap_replies').delete().eq('id',rid); }catch(e){} }
+    toast('Reply deleted.');
+  }
   async function sendReply(id){
     if(!requireAuth())return;
     var inp=document.getElementById('ri-'+id);
@@ -2729,11 +2858,25 @@
   })();
 </script>
 
+<!-- Delete-account confirmation -->
+<div id="delModal" onclick="if(event.target===this)closeDelModal()">
+  <div class="dm-card">
+    <div class="dm-title">Delete your account?</div>
+    <div class="dm-text">This permanently deletes <b id="delModalName"></b> — your profile, all your flaps, and all your replies.<br><br><b>This can’t be undone.</b></div>
+    <div class="dm-btns">
+      <button class="dm-cancel" type="button" onclick="closeDelModal()">Cancel</button>
+      <button class="dm-go" type="button" onclick="reallyDeleteAccount()">Yes, delete</button>
+    </div>
+  </div>
+</div>
+
 <!-- Mobile side drawer: relocate the sidebars into a slide-in panel so
      Your Page / Poll / Flapper of the Week / House Rules / Flappers are one tap away. -->
 <script>
 (function(){
-  var isApp = document.documentElement.classList.contains('is-app');
+  var isAppReal = !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent);
+  var mq = window.matchMedia('(max-width:760px)');
+  function compact(){ return isAppReal || mq.matches; }   // app OR phone-width browser
   var drawerBody = document.getElementById('drawerBody');
   if(!drawerBody) return;
   var asides = Array.prototype.slice.call(document.querySelectorAll('.wrap > aside'));
@@ -2761,16 +2904,23 @@
     if(/Oh! You Mean/i.test(t)) return 8;
     return 7;
   }
+  var pollSlot = document.getElementById('livePollSlot');
   function place(){
-    if(isApp){
+    if(compact()){
       boxes.slice().sort(function(a,b){ return rank(a.el)-rank(b.el); })
-           .forEach(function(b){ drawerBody.appendChild(b.el); });
+           .forEach(function(b){
+             // Poll of the Day lives in the main feed (above Live Flaps), not the drawer
+             if(pollSlot && /Poll of the Day/i.test(head(b.el))) pollSlot.appendChild(b.el);
+             else drawerBody.appendChild(b.el);
+           });
     } else {
       toggleDrawer(false);
       boxes.forEach(function(b){ if(b.el.parentNode !== b.anchor.parentNode) b.anchor.parentNode.insertBefore(b.el, b.anchor.nextSibling); });
     }
   }
   place();
+  // re-run when crossing the phone/desktop breakpoint (e.g. rotating or resizing)
+  if(mq.addEventListener) mq.addEventListener('change', place); else if(mq.addListener) mq.addListener(place);
   // tapping a button / link inside the drawer closes it (after the action fires)
   drawerBody.addEventListener('click', function(e){
     if(e.target.closest('button, a')) setTimeout(function(){ toggleDrawer(false); }, 120);
