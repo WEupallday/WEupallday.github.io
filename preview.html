@@ -1799,6 +1799,7 @@
       recent=recent.filter(function(r){var n=(r.name||'');return !parseReflap(r.body) && n!=='::ticker::' && n!=='::verified::' && n!=='::pinned::' && n!=='::ticket::';}); /* hide reflap + sentinel rows */
       var tickerCur='';try{var tk=await sb.from('flaps').select('body').eq('name','::ticker::').order('id',{ascending:false}).limit(1);if(tk.data&&tk.data[0])tickerCur=tk.data[0].body;}catch(e){}
       var verCur='';try{var vk=await sb.from('flaps').select('body').eq('name','::verified::').order('id',{ascending:false}).limit(1);if(vk.data&&vk.data[0])verCur=vk.data[0].body;}catch(e){}
+      var pollCur='';try{var pk=await sb.from('flaps').select('body').eq('name','::poll::').order('id',{ascending:false}).limit(1);if(pk.data&&pk.data[0])pollCur=pk.data[0].body;}catch(e){}
       var tickets=[];try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(60)).data||[];}catch(e){}
       var counts={};fl.forEach(function(f){counts[f.name]=(counts[f.name]||0)+1;});
       var now=Date.now(),online=0;
@@ -1821,6 +1822,17 @@
       h+='<div style="padding:2px 2px 10px;"><textarea id="adminTicker" style="width:100%;box-sizing:border-box;min-height:56px;font-family:Verdana,Arial,sans-serif;font-size:12px;padding:8px;border:2px solid var(--card-border);border-radius:8px;">'+esc(tickerCur||((document.getElementById('tickerText')||{}).textContent||''))+'</textarea>'+
          '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#2f9e5a,#1c7a42);" onclick="saveTicker()">SAVE TICKER FOR EVERYONE</button>'+
          '<div style="font-size:10px;color:#889;margin-top:4px;">The scrolling message at the top of the site. Separate phrases with ★ if you like.</div></div>';
+      var pp=pollCur?String(pollCur).split('␟'):[];
+      var pIn='width:100%;box-sizing:border-box;font-family:Verdana,Arial,sans-serif;font-size:12px;padding:8px;border:2px solid var(--card-border);border-radius:8px;margin-bottom:6px;';
+      h+='<div class="pc-flaps-h">🗳️ Flap Poll of the Day</div>';
+      h+='<div style="padding:2px 2px 10px;">'+
+         '<input id="adminPollQ" value="'+esc(pp[0]||POLL.q)+'" placeholder="Poll question (make it funny!)" style="'+pIn+'">'+
+         '<input id="adminPollO1" value="'+esc(pp[1]||POLL.opts[0])+'" placeholder="Option 1" style="'+pIn+'">'+
+         '<input id="adminPollO2" value="'+esc(pp[2]||POLL.opts[1])+'" placeholder="Option 2" style="'+pIn+'">'+
+         '<input id="adminPollO3" value="'+esc(pp[3]||POLL.opts[2])+'" placeholder="Option 3" style="'+pIn+'">'+
+         '<button class="you-update" type="button" style="margin-top:2px;width:100%;background:linear-gradient(180deg,#8a4fd8,#5f2ea0);" onclick="savePoll()">SAVE POLL (starts votes fresh)</button>'+
+         '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#c0603a,#8f3c1c);" onclick="resetPollVotes()">↺ RESET VOTES ONLY</button>'+
+         '<div style="font-size:10px;color:#889;margin-top:4px;">Set the question + 3 options. Saving a new poll clears old votes so everyone can vote again. Emojis welcome. 🍿</div></div>';
       h+='<div class="pc-flaps-h">✔ Verified Members</div>';
       h+='<div style="padding:2px 2px 10px;"><textarea id="adminVerified" style="width:100%;box-sizing:border-box;min-height:44px;font-family:Verdana,Arial,sans-serif;font-size:12px;padding:8px;border:2px solid var(--card-border);border-radius:8px;">'+esc(verCur)+'</textarea>'+
          '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#1fb6a6,#0e8577);" onclick="saveVerified()">SAVE VERIFIED LIST</button>'+
@@ -2362,7 +2374,7 @@
   }
 
   /* ============ Poll of the Day (shared via DB) ============ */
-  var POLL={q:"What kind of flapper are you?",opts:["All day, every day 📢","Only when it's dramatic 🎭","Silent lurker mode 👀"]};
+  var POLL={q:"Be honest… why are you REALLY on TheFlap?",opts:["To lurk & judge silently 👀","To post unhinged 3am thoughts 🌙","Purely for the drama 🍿"]};
   var pollVotes=[0,0,0],myVote=null;
   /* ===== editable scrolling ticker (admin) — persisted as a hidden sentinel row ===== */
   function setTicker(text){
@@ -2462,7 +2474,43 @@
       toast(newVal?'📌 Pinned to the top!':'Unpinned.');
     }catch(e){toast('Could not pin — try again.');}
   }
+  /* the poll question + options are editable by admin, stored as a hidden ::poll:: sentinel row */
+  async function loadPollConfig(){
+    if(!ONLINE)return;
+    try{
+      var r=await sb.from('flaps').select('body').eq('name','::poll::').order('id',{ascending:false}).limit(1);
+      if(!r.error && r.data && r.data[0] && r.data[0].body){
+        var p=String(r.data[0].body).split('␟');
+        if(p.length>=4 && p[0] && p[1] && p[2] && p[3]) POLL={q:p[0],opts:[p[1],p[2],p[3]]};
+      }
+    }catch(e){}
+  }
+  async function savePoll(){
+    if(!ME.admin)return;
+    var q=((document.getElementById('adminPollQ')||{}).value||'').trim();
+    var o1=((document.getElementById('adminPollO1')||{}).value||'').trim();
+    var o2=((document.getElementById('adminPollO2')||{}).value||'').trim();
+    var o3=((document.getElementById('adminPollO3')||{}).value||'').trim();
+    if(!q||!o1||!o2||!o3){toast('Fill in the question and all 3 options.');return;}
+    var body=[q,o1,o2,o3].join('␟');
+    try{
+      var ex=await sb.from('flaps').select('id').eq('name','::poll::').order('id',{ascending:false}).limit(1);
+      if(!ex.error && ex.data && ex.data[0]) await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id);
+      else await sb.from('flaps').insert({name:'::poll::',body:body,mood:'flappy',likes:0});
+      try{await sb.from('flap_poll').delete().gte('choice',-1);}catch(e){}   /* new poll -> fresh votes */
+      POLL={q:q,opts:[o1,o2,o3]}; myVote=null; pollVotes=[0,0,0]; renderPoll(); loadPoll();
+      toast('🗳️ Poll updated for everyone!');
+    }catch(e){toast('Could not save poll — try again.');}
+  }
+  async function resetPollVotes(){
+    if(!ME.admin)return;
+    if(!confirm('Reset ALL votes on this poll? The question stays the same.'))return;
+    try{await sb.from('flap_poll').delete().gte('choice',-1);}catch(e){}
+    myVote=null; pollVotes=[0,0,0]; renderPoll(); loadPoll();
+    toast('🗳️ Poll votes reset!');
+  }
   async function loadPoll(){
+    await loadPollConfig();
     if(!ONLINE){renderPoll();return;}
     try{
       var res=await sb.from('flap_poll').select('*');
