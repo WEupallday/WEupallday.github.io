@@ -49,6 +49,7 @@
   .topbar{background:linear-gradient(180deg,#ff9a2e 0%,var(--orange) 55%,#d96f00 100%);border-bottom:3px solid #a85400;padding:5px 0;box-shadow:0 3px 10px rgba(0,0,0,.4);}
   .topbar-inner{width:1010px;margin:0 auto;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
   .navbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:9px;letter-spacing:.5px;color:#fff;text-transform:uppercase;cursor:pointer;background:linear-gradient(180deg,#c22a1a 0%,#8f1408 100%);border:1px solid #6b0e04;border-radius:4px;padding:4px 9px;text-shadow:0 1px 1px rgba(0,0,0,.5);}
+  .rf-short{display:none;}
   .navbtn:hover{background:linear-gradient(180deg,#e03a26 0%,#a81a0a 100%);}
 
   .banner{width:1010px;margin:-2px auto 0;background:var(--orange);border:4px solid var(--orange-dark);border-top:none;border-radius:0 0 8px 8px;padding:8px;display:grid;grid-template-columns:repeat(7,1fr);gap:7px;box-shadow:0 6px 16px rgba(0,0,0,.45);}
@@ -622,6 +623,7 @@
     .navbtn{flex:none;font-size:11px;padding:5px 11px;}
     /* on phones keep only the essentials so nothing gets cut off */
     .nav-soon{display:none;}
+    .rf-long{display:none;} .rf-short{display:inline;}
     /* drop the member-photo banner on phones — it ate too much space */
     .banner{display:none;}
     .ticker{height:30px;}
@@ -741,7 +743,7 @@
   <div class="topbar-inner">
     <span class="topbrand" onclick="window.scrollTo({top:0,behavior:'smooth'})">the<b>FLAP</b></span>
     <button class="navbtn" onclick="toast('You are home!')">Home</button>
-    <button class="navbtn" onclick="loadFeed(true)">Refresh Feed</button>
+    <button class="navbtn nav-refresh" onclick="loadFeed(true)"><span class="rf-long">Refresh Feed</span><span class="rf-short">🔄</span></button>
     <button class="navbtn support-nav" onclick="openSupport()">🎫 Support</button>
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">What's On TheFlap?</button>
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Tunes</button>
