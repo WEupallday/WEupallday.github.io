@@ -49,6 +49,7 @@
   .topbar{background:linear-gradient(180deg,#ff9a2e 0%,var(--orange) 55%,#d96f00 100%);border-bottom:3px solid #a85400;padding:5px 0;box-shadow:0 3px 10px rgba(0,0,0,.4);}
   .topbar-inner{width:1010px;margin:0 auto;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
   .navbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:9px;letter-spacing:.5px;color:#fff;text-transform:uppercase;cursor:pointer;background:linear-gradient(180deg,#c22a1a 0%,#8f1408 100%);border:1px solid #6b0e04;border-radius:4px;padding:4px 9px;text-shadow:0 1px 1px rgba(0,0,0,.5);}
+  .rf-short{display:none;}
   .navbtn:hover{background:linear-gradient(180deg,#e03a26 0%,#a81a0a 100%);}
 
   .banner{width:1010px;margin:-2px auto 0;background:var(--orange);border:4px solid var(--orange-dark);border-top:none;border-radius:0 0 8px 8px;padding:8px;display:grid;grid-template-columns:repeat(7,1fr);gap:7px;box-shadow:0 6px 16px rgba(0,0,0,.45);}
@@ -609,6 +610,50 @@
     /* touch devices: bigger tap targets everywhere clickable */
     .likebtn,.siderow,.navbtn,.trend-list li,.poll-opt{padding-top:7px;padding-bottom:7px;}
   }
+  /* brand hidden on desktop (logo lives in the sidebar there) */
+  .topbrand{display:none;}
+  /* ===== PHONE: tight, feed-first, scannable (real-app density) ===== */
+  @media(max-width:760px){
+    /* brand header + one compact scrollable row of nav */
+    .topbar{position:sticky;top:0;z-index:90;}
+    .topbar-inner{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start;gap:5px;padding:5px 8px;scrollbar-width:none;}
+    .topbar-inner::-webkit-scrollbar{display:none;}
+    .topbrand{display:inline-block;flex:none;font-family:'Chewy','Comic Sans MS',cursive;font-size:20px;line-height:1;color:#fff;letter-spacing:.5px;margin-right:6px;cursor:pointer;text-shadow:0 2px 0 var(--orange-dark);}
+    .topbrand b{color:#ffe08a;}
+    .navbtn{flex:none;font-size:11px;padding:5px 11px;}
+    /* on phones keep only the essentials so nothing gets cut off */
+    .nav-soon{display:none;}
+    .rf-long{display:none;} .rf-short{display:inline;}
+    /* drop the member-photo banner on phones — it ate too much space */
+    .banner{display:none;}
+    .ticker{height:30px;}
+    .ticker span{font-size:14px;line-height:30px;}
+    /* denser post cards, round avatars (Twitter-ish) */
+    .wrap{gap:10px;margin-top:8px;}
+    .sidebox{margin-bottom:10px;}
+    .card{margin-bottom:8px;border-width:2px;}
+    .card-strip{font-size:9px;padding:3px 8px;}
+    .card-body{padding:8px 9px 9px;}
+    .poster{width:40px;margin-right:8px;}
+    .poster .pava{width:38px;height:38px;border-radius:50%;border-width:2px;}
+    .poster .pava::after{border-radius:50%;}
+    .poster .pname{font-size:11px;}
+    .moodbox{width:52px;padding:2px 2px 3px;border-width:2px;border-radius:8px;margin-left:6px;}
+    .moodbox .mlabel{font-size:9px;}
+    .moodbox .mword{font-size:8px;}
+    .moodbox .emo{width:22px;height:22px;}
+    .statustxt{font-size:14px;line-height:1.45;}
+    .reply{padding:6px 4px 6px 2px;}
+    .reply .rava{width:32px;height:32px;border-radius:50%;}
+    .reply .rtxt{font-size:12.5px;}
+    .card-foot{padding:5px 8px;}
+    .colhead{font-size:11px;padding:5px 9px;}
+    /* stop the ~13px right-edge clipping: let grid children shrink to the screen */
+    .wrap{margin-left:7px;margin-right:7px;}
+    .wrap>main,.wrap>aside{min-width:0;max-width:100%;box-sizing:border-box;}
+    .card,.card-body,.sidebox,.logobox,.moodbox{max-width:100%;box-sizing:border-box;}
+    .card-strip{white-space:normal;}
+  }
 </style>
 </head>
 <body>
@@ -696,14 +741,15 @@
 
 <div class="topbar">
   <div class="topbar-inner">
+    <span class="topbrand" onclick="window.scrollTo({top:0,behavior:'smooth'})">the<b>FLAP</b></span>
     <button class="navbtn" onclick="toast('You are home!')">Home</button>
-    <button class="navbtn" onclick="loadFeed(true)">Refresh Feed</button>
+    <button class="navbtn nav-refresh" onclick="loadFeed(true)"><span class="rf-long">Refresh Feed</span><span class="rf-short">🔄</span></button>
     <button class="navbtn support-nav" onclick="openSupport()">🎫 Support</button>
-    <button class="navbtn" onclick="toast('Coming soon!')">What's On TheFlap?</button>
-    <button class="navbtn" onclick="toast('Coming soon!')">Tunes</button>
-    <button class="navbtn" onclick="toast('Coming soon!')">Profiles</button>
-    <button class="navbtn" onclick="toast('Coming soon!')">Statuses</button>
-    <button class="navbtn" onclick="toast('Coming soon!')">Pix</button>
+    <button class="navbtn nav-soon" onclick="toast('Coming soon!')">What's On TheFlap?</button>
+    <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Tunes</button>
+    <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Profiles</button>
+    <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Statuses</button>
+    <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Pix</button>
     <button class="navbtn bell" id="bellBtn" type="button" onclick="toggleNotifs(event)">🔔<span id="bellCount" class="bell-count"></span></button>
   </div>
 </div>
@@ -2112,7 +2158,7 @@
   window.addEventListener('appinstalled',function(){dismissInstall();toast('TheFlap installed! 🐦 Open it from your home screen.');});
   function installDismissed(){try{return localStorage.getItem('flap_install_x')==='1';}catch(e){return false;}}
   function maybeShowInstall(){
-    if(isStandalone||installDismissed())return;
+    if(isStandalone||installDismissed()||window.Capacitor||/[?&]app=1/.test(location.search)||/(theflap-?app|capacitor)/i.test(navigator.userAgent))return; /* real app / installed: no bookmark prompt */
     var bar=document.getElementById('installBar');
     if(isIOS){ /* iOS never fires beforeinstallprompt — show share-sheet route */
       document.getElementById('ibHint').textContent='Tap Add for home-screen + notifications (iOS)';
