@@ -59,9 +59,21 @@
   .topbar-inner{width:1010px;margin:0 auto;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
   .navbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:9px;letter-spacing:.5px;color:#fff;text-transform:uppercase;cursor:pointer;background:linear-gradient(180deg,#c22a1a 0%,#8f1408 100%);border:1px solid #6b0e04;border-radius:4px;padding:4px 9px;text-shadow:0 1px 1px rgba(0,0,0,.5);}
   .rf-short{display:none;}
-  /* side drawer + hamburger are mobile-only; hidden on desktop */
+  /* side drawer + hamburger + reply toggle are app-only; hidden on the website */
   .menu-btn{display:none;}
   #sideDrawer,#drawerScrim{display:none;}
+  .replybtn{display:none;}
+  /* delete-account confirmation modal (works everywhere) */
+  #delModal{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:20px;box-sizing:border-box;}
+  #delModal.open{display:flex;}
+  #delModal .dm-card{background:#fff;border:3px solid #c22a1a;border-radius:14px;max-width:340px;width:100%;padding:20px 18px;box-shadow:0 12px 40px rgba(0,0,0,.5);text-align:center;}
+  #delModal .dm-title{font-family:'Chewy','Comic Sans MS',cursive;font-size:22px;color:#c22a1a;margin-bottom:8px;}
+  #delModal .dm-text{font-size:13px;color:#333;line-height:1.5;margin-bottom:16px;}
+  #delModal .dm-text b{color:#111;}
+  #delModal .dm-btns{display:flex;gap:10px;justify-content:center;}
+  #delModal .dm-cancel,#delModal .dm-go{font-weight:bold;border:none;border-radius:9px;padding:12px 16px;cursor:pointer;font-size:13px;flex:1;}
+  #delModal .dm-cancel{background:#e6e8ef;color:#222;}
+  #delModal .dm-go{background:linear-gradient(180deg,#e23b2a,#a5140a);color:#fff;}
   .navbtn:hover{background:linear-gradient(180deg,#e03a26 0%,#a81a0a 100%);}
 
   .banner{width:1010px;margin:-2px auto 0;background:var(--orange);border:4px solid var(--orange-dark);border-top:none;border-radius:0 0 8px 8px;padding:8px;display:grid;grid-template-columns:repeat(7,1fr);gap:7px;box-shadow:0 6px 16px rgba(0,0,0,.45);}
@@ -627,19 +639,20 @@
   /* ===== IN-APP ONLY (html.is-app): tight, feed-first, scannable real-app density.
      Gated on the app so the public website — desktop AND mobile browser — is unchanged. ===== */
   html.is-app{
-    /* brand header + one compact scrollable row of nav */
-    .topbar{position:sticky;top:0;z-index:90;}
-    .topbar-inner{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start;gap:5px;padding:5px 8px;scrollbar-width:none;}
+    /* brand header + one compact scrollable row of nav.
+       padding-top clears the Dynamic Island / notch via the safe-area inset. */
+    .topbar{position:sticky;top:0;z-index:90;padding-top:calc(env(safe-area-inset-top, 0px) + 6px);}
+    .topbar-inner{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start;gap:6px;padding:6px 10px 8px;scrollbar-width:none;}
     .topbar-inner::-webkit-scrollbar{display:none;}
-    .topbrand{display:inline-block;flex:none;font-family:'Chewy','Comic Sans MS',cursive;font-size:20px;line-height:1;color:#fff;letter-spacing:.5px;margin-right:6px;cursor:pointer;text-shadow:0 2px 0 var(--orange-dark);}
+    .topbrand{display:inline-block;flex:none;font-family:'Chewy','Comic Sans MS',cursive;font-size:22px;line-height:1;color:#fff;letter-spacing:.5px;margin-right:6px;cursor:pointer;text-shadow:0 2px 0 var(--orange-dark);}
     .topbrand b{color:#ffe08a;}
-    .navbtn{flex:none;font-size:11px;padding:5px 11px;}
+    .navbtn{flex:none;font-size:13.5px;padding:8px 14px;border-radius:6px;}
     /* on phones keep only the essentials so nothing gets cut off */
     .nav-soon{display:none;}
     .nav-refresh{display:none;}          /* lives in the drawer / feed is live anyway */
     .rf-long{display:none;} .rf-short{display:inline;}
     /* hamburger + Twitter-style slide-in side panel */
-    .menu-btn{display:inline-block;flex:none;font-size:17px;line-height:1;padding:3px 9px;background:linear-gradient(180deg,#f5a623,#e07d0a);border-color:#b45c00;}
+    .menu-btn{display:inline-block;flex:none;font-size:20px;line-height:1;padding:6px 12px;background:linear-gradient(180deg,#f5a623,#e07d0a);border-color:#b45c00;}
     #drawerScrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:190;opacity:0;pointer-events:none;transition:opacity .2s ease;}
     body.drawer-open #drawerScrim{opacity:1;pointer-events:auto;}
     #sideDrawer{display:block;position:fixed;top:0;left:0;height:100%;width:84%;max-width:340px;z-index:200;background:linear-gradient(160deg,#1636a6 0%,#0f2570 100%);box-shadow:6px 0 26px rgba(0,0,0,.55);transform:translateX(-104%);transition:transform .26s ease;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px 24px;}
@@ -680,6 +693,16 @@
     .wrap>main,.wrap>aside{min-width:0;max-width:100%;box-sizing:border-box;}
     .card,.card-body,.sidebox,.logobox,.moodbox{max-width:100%;box-sizing:border-box;}
     .card-strip{white-space:normal;}
+    /* drop The Flappers panel in the app — it can't list everyone anyway */
+    .sidebox:has(#profilesList){display:none;}
+    /* Twitter-style: cards start compact; the reply box + reactions open on tap */
+    .replybtn{display:inline-block;flex:none;font-size:12px;padding:7px 13px;background:linear-gradient(180deg,#3c6ec9,#22398f);border-color:#1a2a6e;border-radius:6px;}
+    .reply-compose{display:none;}
+    .card.show-compose .reply-compose{display:flex;}
+    /* a touch denser so flaps sit closer together */
+    .poster .pava{width:36px;height:36px;}
+    .moodbox{width:48px;}
+    .replies{margin-top:6px;}
   }
 </style>
 </head>
@@ -1435,7 +1458,7 @@
     if(o.pic)h+='<div class="post-pic"><img src="'+esc(o.pic)+'" alt="flap pic" loading="lazy" onerror="this.closest(\'.post-pic\').style.display=\'none\'"></div>';
     var reps=(o.replies||[]).join('');
     if(!o.liveId){
-      reps+='<div class="reply"><div class="rava">'+myAva()+'</div>'+
+      reps+='<div class="reply reply-compose"><div class="rava">'+myAva()+'</div>'+
         '<div class="rcol">'+
           '<div class="replyrow"><input maxlength="200" placeholder="reply…" onkeydown="if(event.key===\'Enter\')demoReply(this)">'+
           '<button class="comp-btn" type="button" onclick="demoReply(this)">Reply</button></div>'+
@@ -1447,6 +1470,7 @@
     h+='</div>';
     if(o.reflapCount)h+='<div class="reflap-count-line">🔁 <b>'+o.reflapCount+'</b> '+(o.reflapCount===1?'person':'people')+' reflapped this</div>';
     h+='<div class="card-foot"><span class="tags">Tagged: '+o.tags.map(function(t){return '<span class="tg">'+esc(String(t).toLowerCase())+'</span>';}).join('')+'</span>';
+    h+='<button class="replybtn" type="button" onclick="toggleCompose(this)">💬 Reply</button>';
     if(o.liveId){
       h+='<button class="likebtn" type="button" data-n="'+(o.likes||0)+'" data-id="'+o.liveId+'" onclick="likeLive(this)">👍 Flap This! ('+(o.likes||0)+')</button>';
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase())h+='<button class="reflapbtn'+(o.reflapped?' on':'')+'" type="button" onclick="reflapPost('+o.liveId+')">🔁 '+(o.reflapped?'Reflapped':'Reflap')+'</button>';
@@ -1462,6 +1486,13 @@
     }
     h+='</div></div>';
     return h;
+  }
+  /* Twitter-style: reveal a card's reply box + reactions only when tapped (app only) */
+  function toggleCompose(btn){
+    var card=btn.closest('.card'); if(!card)return;
+    var open=card.classList.toggle('show-compose');
+    btn.textContent = open ? '✕ Close' : '💬 Reply';
+    if(open){ var inp=card.querySelector('.reply-compose input'); if(inp)setTimeout(function(){try{inp.focus();}catch(e){}},60); }
   }
   function likeFlap(btn){
     var n=parseInt(btn.getAttribute('data-n'),10)||0;
@@ -1845,10 +1876,15 @@
     }
     toast('Thanks — reported. Our team reviews reports within 24 hours.');
   }
-  async function deleteAccount(){
+  function deleteAccount(){
     if(!ME.name){toast('Not signed in.');return;}
-    if(!confirm('Delete your account?\nThis permanently removes your profile, your flaps, and your replies. This cannot be undone.'))return;
-    if(!confirm('Last check — this is PERMANENT. Delete '+ME.name+' for good?'))return;
+    var m=document.getElementById('delModal');
+    if(m){ document.getElementById('delModalName').textContent=ME.name; m.classList.add('open'); }
+  }
+  function closeDelModal(){ var m=document.getElementById('delModal'); if(m)m.classList.remove('open'); }
+  async function reallyDeleteAccount(){
+    closeDelModal();
+    if(!ME.name)return;
     var name=ME.name;
     toast('Deleting your account…');
     if(ONLINE){
@@ -2023,7 +2059,7 @@
       return '<div class="reply"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/'/g,'')+'\')">'+avatarFor(r.name)+'</div>'+
         replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+'</div>';
     });
-    reps.push('<div class="reply"><div class="rava">'+myAva()+'</div>'+
+    reps.push('<div class="reply reply-compose"><div class="rava">'+myAva()+'</div>'+
       '<div class="rcol">'+
         '<div class="replyrow"><input id="ri-'+row.id+'" maxlength="200" placeholder="reply as '+esc(ME.name)+'…" '+
         'onkeydown="if(event.key===\'Enter\')sendReply('+row.id+')">'+
@@ -2728,6 +2764,18 @@
     try{subscribePush();}catch(e){}
   })();
 </script>
+
+<!-- Delete-account confirmation -->
+<div id="delModal" onclick="if(event.target===this)closeDelModal()">
+  <div class="dm-card">
+    <div class="dm-title">Delete your account?</div>
+    <div class="dm-text">This permanently deletes <b id="delModalName"></b> — your profile, all your flaps, and all your replies.<br><br><b>This can’t be undone.</b></div>
+    <div class="dm-btns">
+      <button class="dm-cancel" type="button" onclick="closeDelModal()">Cancel</button>
+      <button class="dm-go" type="button" onclick="reallyDeleteAccount()">Yes, delete</button>
+    </div>
+  </div>
+</div>
 
 <!-- Mobile side drawer: relocate the sidebars into a slide-in panel so
      Your Page / Poll / Flapper of the Week / House Rules / Flappers are one tap away. -->
