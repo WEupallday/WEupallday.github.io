@@ -10,6 +10,10 @@
 (function(){try{
   var isApp = !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent);
   if(isApp) document.documentElement.classList.add('is-app');
+  /* the preview frame passes ?safe=NN to simulate the iPhone's Dynamic Island gap;
+     on a real device this stays 0 and the true env(safe-area-inset-top) is used instead. */
+  var sm = location.search.match(/[?&]safe=(\d+)/);
+  if(sm) document.documentElement.style.setProperty('--demo-safe', sm[1]+'px');
 }catch(e){}})();
 </script>
 <title>TheFlap.com — Friends Edition</title>
@@ -641,7 +645,7 @@
   html.is-app{
     /* brand header + one compact scrollable row of nav.
        padding-top clears the Dynamic Island / notch via the safe-area inset. */
-    .topbar{position:sticky;top:0;z-index:90;padding-top:calc(env(safe-area-inset-top, 0px) + 6px);}
+    .topbar{position:sticky;top:0;z-index:90;padding-top:calc(env(safe-area-inset-top, 0px) + var(--demo-safe, 0px) + 6px);}
     /* Instagram-style minimal bar: ☰ menu (left) · theFLAP (centered) · 🔔 (right).
        Home + Support live in the ☰ drawer instead of cluttering the top. */
     .topbar-inner{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;padding:6px 12px 8px;overflow:visible;}
