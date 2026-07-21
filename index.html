@@ -2181,7 +2181,7 @@
   }
   /* ===== verified badges — admin-granted, persisted as a hidden sentinel row ===== */
   var VERIFIED={};
-  function isVerified(n){n=(n||'').toLowerCase(); return n==='lock' || !!VERIFIED[n];}
+  function isVerified(n){n=(n||'').toLowerCase(); return n==='lock' || !!(VERIFIED && VERIFIED[n]);}
   function vbadge(n){
     if(!isVerified(n))return '';
     return ' <span class="vbadge" title="Verified member"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#1fb6a6" stroke="#0e8577" stroke-width="1.5"/><path d="M6.8 12.4 L10.4 16 L17.2 8.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
