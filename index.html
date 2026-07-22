@@ -2183,8 +2183,22 @@
       tags:[authorName,'theflap']
     });
   }
+  /* true while the user is mid-typing anywhere (reply box, composer, DM, friend add) —
+     used to pause the background feed poll so it never wipes an open input. */
+  function isTyping(){
+    var a=document.activeElement, id=a?(a.id||''):'';
+    if(a){
+      if(id.indexOf('ri-')===0 || id==='dmInput' || id==='friendAdd' || id==='seedText') return true;
+      if((a.tagName==='TEXTAREA'||a.tagName==='INPUT') && a.closest && (a.closest('.replyrow')||a.closest('.pearwrap')||a.closest('.dm-compose')||a.closest('.composer'))) return true;
+    }
+    var live=document.getElementById('liveFeed');
+    if(live){ var ins=live.querySelectorAll('input'); for(var i=0;i<ins.length;i++){ if((ins[i].value||'').trim()) return true; } }
+    var dm=document.getElementById('dmInput'); if(dm&&(dm.value||'').trim())return true;
+    return false;
+  }
   function renderLive(){
-    var box=document.getElementById('liveFeed');
+    var box=document.getElementById('liveFeed'); if(!box)return;
+    var __sy=window.pageYOffset||document.documentElement.scrollTop||0;
     var rows=(LAST_ROWS||[]).filter(function(r){return !isBlocked(r.name)&&!parseReflap(r.body);}),head='';
     if(FEED_FILTER){
       var f=FEED_FILTER.toLowerCase();
@@ -2208,6 +2222,7 @@
       : '<div class="card"><div class="card-body" style="text-align:center;font-size:11px;">'+
         (FEED_FILTER?'no flaps for @'+esc(FEED_FILTER)+' yet!':(ONLINE?'no flaps yet — be the first!':'demo mode — configure the backend (see setup file) and your friends\' flaps will appear here!'))+
         '</div></div>');
+    if(__sy>0){try{window.scrollTo(0,__sy);}catch(e){}}   /* keep the reader where they were across refreshes */
   }
   function tagFilter(name){FEED_FILTER=name;renderLive();toast('Showing flaps for '+(name[0]==='#'?name:'@'+name));document.getElementById('liveFeed').scrollIntoView({behavior:'smooth',block:'nearest'});}
   function clearFilter(){FEED_FILTER=null;renderLive();}
@@ -2672,7 +2687,7 @@
       document.getElementById('liveFeed').innerHTML='<div class="card"><div class="card-body" style="text-align:center;font-size:11px;color:#8f1408;">could not reach the flap server — check your keys / internet.</div></div>';
     }
   }
-  if(ONLINE)setInterval(function(){if(ME.name){loadFeed();loadNotifs();}},20000);
+  if(ONLINE)setInterval(function(){if(ME.name){ if(!isTyping())loadFeed(); loadNotifs(); }},20000);   /* don't refresh the feed while you're mid-reply — it'd wipe your open box */
 
   async function delReply(rid, fid){
     if(!ME.name)return;
