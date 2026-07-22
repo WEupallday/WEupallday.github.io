@@ -72,6 +72,7 @@
   .menu-btn{display:none;}
   #sideDrawer,#drawerScrim{display:none;}
   .replybtn{display:none;}
+  .hqbtn{display:none;}
   .reply-del{cursor:pointer;color:#c22a1a;font-size:12px;margin-left:6px;opacity:.7;vertical-align:middle;}
   .reply-del:hover{opacity:1;}
   /* delete-account confirmation modal (works everywhere) */
@@ -664,6 +665,11 @@
     .topbrand{display:inline-block;justify-self:center;font-family:'Chewy','Comic Sans MS',cursive;font-size:27px;line-height:1;color:#fff;letter-spacing:.5px;margin:0;cursor:pointer;text-shadow:0 2px 0 var(--orange-dark);}
     .topbrand b{color:#ffe08a;}
     .bell{justify-self:end;}
+    /* explicit columns so an admin 👑 button can sit beside the bell without wrapping */
+    .menu-btn{grid-column:1;}
+    .topbrand{grid-column:2;}
+    .bell{grid-column:3;}
+    body.admin-on .hqbtn{display:inline-block;grid-column:3;justify-self:end;margin-right:48px;font-size:18px;line-height:1;padding:5px 10px;background:linear-gradient(180deg,#ffd23f,#e0a800);border-color:#b45c00;color:#5a3600;}
     .navbtn{font-size:13.5px;padding:8px 13px;border-radius:6px;}
     /* on phones keep only the essentials so nothing gets cut off */
     .nav-soon{display:none;}
@@ -750,6 +756,28 @@
     .topbar{transition:transform .26s ease;}
     body.bar-hidden .topbar{transform:translateY(-100%);}
   }
+  /* ===== TheFlap HQ — dedicated tabbed admin ===== */
+  .hq-strip{background:linear-gradient(180deg,#ffd23f,#f0a91e)!important;color:#5a3600!important;border-bottom:2px solid #b45c00;}
+  .hq-tabs{display:flex;background:#12357a;border-bottom:3px solid #ffd23f;}
+  .hq-tab{flex:1;min-width:0;background:none;border:0;color:#a8c2ff;font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:9.5px;padding:8px 2px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;border-bottom:3px solid transparent;}
+  .hq-tab .hq-ico{font-size:16px;line-height:1;}
+  .hq-tab.on{color:#fff;background:#1c47a2;border-bottom-color:#ffd23f;}
+  .hq-body{max-height:62vh;overflow-y:auto;padding:12px;}
+  .hq-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:6px;}
+  .hq-stat{background:linear-gradient(180deg,#eef4ff,#d6e4ff);border:2px solid #1a2a6e;border-radius:10px;padding:8px 4px;text-align:center;}
+  .hq-stat b{display:block;font-size:22px;color:#12357a;line-height:1.05;}
+  .hq-stat span{font-size:8.5px;color:#4a5978;text-transform:uppercase;letter-spacing:.2px;line-height:1.1;display:block;margin-top:2px;}
+  .hq-stat.hot b{color:#c22a1a;}
+  .hq-sec{font-weight:bold;color:#12357a;border-bottom:2px solid #ffd23f;padding:6px 2px 5px;margin:14px 0 8px;font-size:13px;}
+  .hq-btn{border:none;border-radius:9px;color:#fff;font-weight:bold;font-size:12.5px;padding:11px 12px;cursor:pointer;}
+  .hq-row{border:2px solid #dbe4f7;background:#f7faff;border-radius:9px;padding:8px 10px;margin-bottom:7px;font-size:12px;color:#1a2440;}
+  .hq-row .hq-actions{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap;}
+  .hq-actions button{border:none;border-radius:7px;padding:6px 11px;font-size:11px;font-weight:bold;cursor:pointer;background:#e6e8ef;color:#333;}
+  .hq-input{width:100%;box-sizing:border-box;font-family:Verdana,Arial,sans-serif;font-size:12px;padding:9px;border:2px solid var(--card-border);border-radius:8px;margin-bottom:6px;}
+  .hq-mem{display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid #e6eef6;}
+  .hq-mem .m-ava{width:30px;height:34px;flex:none;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3);overflow:hidden;border-radius:5px;background:#123;}
+  .hq-mem .m-ava img,.hq-mem .m-ava svg{width:100%;height:100%;object-fit:cover;display:block;}
+  .hq-del{background:#e23b2a!important;color:#fff!important;} .hq-go{background:linear-gradient(180deg,#2f9e5a,#1c7a42)!important;color:#fff!important;} .hq-blue{background:linear-gradient(180deg,#3c6ec9,#22398f)!important;color:#fff!important;} .hq-purple{background:linear-gradient(180deg,#8a4fd8,#5f2ea0)!important;color:#fff!important;} .hq-gold{background:linear-gradient(180deg,#f0b429,#c88a10)!important;color:#3a2600!important;}
 </style>
 </head>
 <body>
@@ -847,6 +875,7 @@
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Profiles</button>
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Statuses</button>
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Pix</button>
+    <button class="navbtn hqbtn" id="hqBtn" type="button" onclick="showAdmin()" title="Admin HQ">👑</button>
     <button class="navbtn bell" id="bellBtn" type="button" onclick="toggleNotifs(event)">🔔<span id="bellCount" class="bell-count"></span></button>
   </div>
 </div>
@@ -2016,6 +2045,7 @@
     renderSidebar();
     loadPoll();
     if(ME.admin)document.getElementById('adminBtn').classList.add('show');
+    document.body.classList.toggle('admin-on', !!ME.admin);   /* shows the 👑 HQ button in the top bar */
     heartbeat();
   }
   /* real profile pic upload — replaces the generated cartoon */
@@ -2868,6 +2898,211 @@
     document.getElementById('postFile').value='';
     document.getElementById('attachPreview').style.display='none';
     closePear();
+  }
+
+  /* ===================== TheFlap HQ — one dedicated tabbed admin page (lock only) =====================
+     Overrides the old scattered admin panel. Consolidates stats, moderation, members, support, settings,
+     plus a house-account "seed the feed" system he fully controls. */
+  var HOUSE_PERSONAS=[
+    {name:'moonchild',c1:'#ff7ab8',c2:'#c23f8f',mood:'tired',posts:["who else is awake rn or is it just me and my thoughts","3am and i've replanned my whole life again lol","not me watching the sunrise on a school night","brain said no sleep tonight so here i am","if you're reading this you should be asleep. hi"]},
+    {name:'the plug',c1:'#4f8cff',c2:'#2b4fc0',mood:'hyped',posts:["pull up we outside today","who's tryna do something im so bored","link up or lose out i don't make the rules","energy is UP today let's move","someone plan something i'll be there in 20"]},
+    {name:'sunny',c1:'#ffb14d',c2:'#e07d0a',mood:'happy',posts:["reminder: you're doing better than you think","small wins count, i made my bed today lol","proud of everyone just showing up today","drink some water this is your sign","today was actually good and i'll take it"]},
+    {name:'lowkey',c1:'#8a97b5',c2:'#4a5978',mood:'chillin',posts:["been reading everyone's flaps and saying nothing, as one does","lurking is a personality trait and it's mine","i see everything, i say nothing, i log off","no thoughts just vibes today","reflapping in silence like a professional"]},
+    {name:'dramaqueen',c1:'#e0361f',c2:'#8f1408',mood:'freakin',posts:["so much just happened i can't even post about it","why is it always something with these people","not saying names but you know who you are","the drama writes itself i just report it","grab your snacks it's about to be a day"]},
+    {name:'bestie',c1:'#16a34a',c2:'#0e7a34',mood:'pumped',posts:["everyone post something i wanna hype you up","reflap this if you're having a good day i'll reflap back","we're all besties on here whether you like it or not","shoutout to whoever's reading this, you're that girl/guy","let's get everybody flapping today"]}
+  ];
+  function svgAvatar(c1,c2,ini){
+    var s='<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+c1+'"/><stop offset="1" stop-color="'+c2+'"/></linearGradient></defs><rect width="120" height="120" fill="url(#g)"/><text x="60" y="80" font-family="Verdana,Arial" font-size="58" font-weight="bold" fill="#ffffff" text-anchor="middle">'+ini+'</text></svg>';
+    return 'data:image/svg+xml,'+encodeURIComponent(s);
+  }
+  function personaAva(p){ return svgAvatar(p.c1,p.c2,(p.name[0]||'?').toUpperCase()); }
+  async function postAsPersonaBody(p,body){
+    if(!ONLINE){toast('Offline — can’t seed right now.');return;}
+    try{ await sb.from('flap_users').upsert({name:p.name,avatar_url:personaAva(p),last_seen:new Date().toISOString()},{onConflict:'name'}); }catch(e){}
+    try{ await sb.from('flaps').insert({name:p.name,avatar_url:personaAva(p),mood:p.mood||'happy',body:body,likes:Math.floor(Math.random()*4)}); }catch(e){}
+    try{await loadFeed();}catch(e){}
+  }
+  async function seedPost(idx){
+    if(!ME.admin)return;
+    var p=(typeof idx==='number')?HOUSE_PERSONAS[idx]:HOUSE_PERSONAS[Math.floor(Math.random()*HOUSE_PERSONAS.length)];
+    var body=p.posts[Math.floor(Math.random()*p.posts.length)];
+    await postAsPersonaBody(p,body); toast('Seeded a flap as '+p.name+' 🌱'); showAdmin();
+  }
+  async function postAsCustom(){
+    if(!ME.admin)return;
+    var sel=document.getElementById('seedPersona'), ta=document.getElementById('seedText');
+    if(!sel||!ta)return;
+    var p=HOUSE_PERSONAS[parseInt(sel.value,10)||0];
+    var body=(ta.value||'').trim(); if(!body){toast('Type something to post first.');return;}
+    ta.value=''; await postAsPersonaBody(p,body); toast('Posted as '+p.name+'!'); showAdmin();
+  }
+  function isSentinelName(n){ return String(n||'').indexOf('::')===0; }
+  var ADMIN_DATA=null, ADMIN_TAB='dash';
+  function adminTab(t){ ADMIN_TAB=t; renderAdmin(); var b=document.querySelector('.hq-body'); if(b)b.scrollTop=0; }
+  async function showAdmin(){
+    if(!ME.admin){toast('Admins only.');return;}
+    var box=document.getElementById('profCardBox');
+    box.innerHTML='<div class="pc-strip hq-strip"><span>👑 TheFlap HQ</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body" style="padding:26px;text-align:center;color:#12357a;">loading your HQ…</div>';
+    document.getElementById('profModal').classList.add('open');
+    try{
+      var us=(await sb.from('flap_users').select('*').order('created_at',{ascending:false})).data||[];
+      var flAll=(await sb.from('flaps').select('id,name,body,pic_url,mood,created_at').order('id',{ascending:false}).limit(400)).data||[];
+      var rc=await sb.from('flap_replies').select('*',{count:'exact',head:true});
+      var repliesRecent=[]; try{repliesRecent=(await sb.from('flap_replies').select('*').order('id',{ascending:false}).limit(60)).data||[];}catch(e){}
+      var reports=[]; try{reports=(await sb.from('flap_reports').select('*').eq('resolved',false).order('id',{ascending:false})).data||[];}catch(e){}
+      var repIds=reports.filter(function(r){return r.target_type==='post'&&r.target_id;}).map(function(r){return r.target_id;});
+      var repPosts={}; if(repIds.length){try{((await sb.from('flaps').select('id,body,name').in('id',repIds)).data||[]).forEach(function(p){repPosts[p.id]=p;});}catch(e){}}
+      var tickets=[]; try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(80)).data||[];}catch(e){}
+      async function sen(nm){try{var r=await sb.from('flaps').select('body').eq('name',nm).order('id',{ascending:false}).limit(1);return (r.data&&r.data[0])?r.data[0].body:'';}catch(e){return '';}}
+      var tickerCur=await sen('::ticker::'), verCur=await sen('::verified::'), pollCur=await sen('::poll::');
+      ADMIN_DATA={us:us,flAll:flAll,replyCount:rc.count||0,repliesRecent:repliesRecent,reports:reports,repPosts:repPosts,tickets:tickets,tickerCur:tickerCur,verCur:verCur,pollCur:pollCur,now:Date.now()};
+      renderAdmin();
+    }catch(e){
+      box.innerHTML='<div class="pc-strip hq-strip"><span>👑 TheFlap HQ</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">Could not load HQ — check your connection and try again.</div>';
+    }
+  }
+  function renderAdmin(){
+    var box=document.getElementById('profCardBox'); if(!box||!ADMIN_DATA)return;
+    var tabs=[['dash','📊','Home'],['mod','🛡️','Moderation'],['members','👥','Members'],['support','🎫','Support'],['settings','⚙️','Settings']];
+    var bar='<div class="hq-tabs">'+tabs.map(function(t){return '<button class="hq-tab'+(ADMIN_TAB===t[0]?' on':'')+'" type="button" onclick="adminTab(\''+t[0]+'\')"><span class="hq-ico">'+t[1]+'</span>'+t[2]+'</button>';}).join('')+'</div>';
+    var body = ADMIN_TAB==='dash'?hqDash() : ADMIN_TAB==='mod'?hqMod() : ADMIN_TAB==='members'?hqMembers() : ADMIN_TAB==='support'?hqSupport() : hqSettings();
+    box.innerHTML='<div class="pc-strip hq-strip"><span>👑 TheFlap HQ</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>'+bar+'<div class="pc-body hq-body">'+body+'</div>';
+  }
+  function hqStats(){
+    var d=ADMIN_DATA, now=d.now, dayAgo=now-864e5, weekAgo=now-7*864e5;
+    var real=d.flAll.filter(function(r){return !isSentinelName(r.name) && !(typeof parseReflap==='function'&&parseReflap(r.body));});
+    function T(v){return v?new Date(v).getTime():0;}
+    return {members:d.us.length,
+      online:d.us.filter(function(u){return u.last_seen&&now-T(u.last_seen)<12e4;}).length,
+      joinsToday:d.us.filter(function(u){return T(u.created_at)>dayAgo;}).length,
+      joinsWeek:d.us.filter(function(u){return T(u.created_at)>weekAgo;}).length,
+      flapsToday:real.filter(function(r){return T(r.created_at)>dayAgo;}).length,
+      repliesToday:d.repliesRecent.filter(function(r){return r.created_at&&T(r.created_at)>dayAgo;}).length,
+      totalFlaps:real.length, totalReplies:d.replyCount};
+  }
+  function hqDash(){
+    var s=hqStats(), h='';
+    h+='<div class="hq-stats">'+
+      '<div class="hq-stat hot"><b>'+s.joinsToday+'</b><span>joined today</span></div>'+
+      '<div class="hq-stat"><b>'+s.joinsWeek+'</b><span>this week</span></div>'+
+      '<div class="hq-stat"><b>'+s.online+'</b><span>online now</span></div>'+
+      '<div class="hq-stat"><b>'+s.members+'</b><span>members</span></div>'+
+      '<div class="hq-stat"><b>'+s.flapsToday+'</b><span>flaps today</span></div>'+
+      '<div class="hq-stat"><b>'+s.repliesToday+'</b><span>replies today</span></div>'+
+      '<div class="hq-stat"><b>'+s.totalFlaps+'</b><span>total flaps</span></div>'+
+      '<div class="hq-stat"><b>'+s.totalReplies+'</b><span>total replies</span></div>'+
+      '<div class="hq-stat"><b>'+(ADMIN_DATA.reports.length+ADMIN_DATA.tickets.length)+'</b><span>open issues</span></div></div>';
+    h+='<div class="hq-sec">🌱 Seed the feed</div>';
+    h+='<div style="font-size:11px;color:#556;margin-bottom:8px;">When it’s quiet, drop a flap from a house account to get things moving. You control every post — nothing auto-posts.</div>';
+    h+='<button class="hq-btn hq-go" style="width:100%;margin-bottom:12px;" type="button" onclick="seedPost()">🌱 Seed a random flap now</button>';
+    h+='<div class="hq-sec">✍️ Post as a house account</div>';
+    h+='<select id="seedPersona" class="hq-input">'+HOUSE_PERSONAS.map(function(p,i){return '<option value="'+i+'">'+esc(p.name)+'</option>';}).join('')+'</select>';
+    h+='<textarea id="seedText" class="hq-input" style="min-height:60px;" placeholder="Type a flap to post as the selected house account…"></textarea>';
+    h+='<button class="hq-btn hq-purple" style="width:100%;" type="button" onclick="postAsCustom()">Post as this account</button>';
+    return h;
+  }
+  function hqMod(){
+    var d=ADMIN_DATA, h='';
+    h+='<div class="hq-sec">⚑ Reports ('+d.reports.length+')</div>';
+    if(!d.reports.length) h+='<div style="font-size:12px;color:#2a8a2a;margin-bottom:8px;">No open reports. 🎉</div>';
+    else h+=d.reports.map(function(r){
+      var tgt=r.target_type==='post' ? 'flap by <b>'+esc((d.repPosts[r.target_id]||{}).name||r.target_name||'?')+'</b>: “'+esc(((d.repPosts[r.target_id]||{}).body||'(deleted)').replace(/<[^>]+>/g,'').slice(0,110))+'”' : 'user <b>'+esc(r.target_name||'?')+'</b>';
+      var act=(r.target_type==='post'&&r.target_id)?'<button class="hq-del" onclick="modDeletePost('+r.target_id+','+r.id+')">Delete flap</button>':'<button class="hq-blue" onclick="showUserProfile(\''+esc(r.target_name||'').replace(/'/g,'')+'\')">View user</button>';
+      return '<div class="hq-row"><div style="font-weight:bold;color:#c22a1a;">'+esc(r.reason||'reported')+'</div><div>'+tgt+'</div><div style="color:#889;font-size:10px;">by '+esc(r.reporter||'?')+' · '+new Date(r.created_at).toLocaleString()+'</div><div class="hq-actions">'+act+'<button onclick="resolveReport('+r.id+')">Dismiss</button></div></div>';
+    }).join('');
+    var real=d.flAll.filter(function(r){return !isSentinelName(r.name)&&!(typeof parseReflap==='function'&&parseReflap(r.body));}).slice(0,40);
+    h+='<div class="hq-sec">🗂 Recent flaps — delete anything</div>';
+    h+=real.length?real.map(function(r){
+      var txt=esc((r.body||'').replace(/<[^>]+>/g,'').slice(0,90))||'(photo)';
+      return '<div class="hq-row"><div><b>'+esc(r.name)+'</b> · <span style="color:#889;font-size:10px;">'+new Date(r.created_at).toLocaleString()+'</span></div><div style="margin:3px 0;">'+txt+(r.pic_url?' <span style="color:#2a6fb0;">📷</span>':'')+'</div><div class="hq-actions">'+(r.pic_url?'<button onclick="adminRemovePhoto('+r.id+')">Remove photo</button>':'')+'<button class="hq-del" onclick="adminDeleteFlap('+r.id+')">Delete</button></div></div>';
+    }).join(''):'<div style="font-size:12px;color:#777;">No flaps.</div>';
+    var reps=(d.repliesRecent||[]).filter(function(r){return !isSentinelName(r.name);}).slice(0,30);
+    h+='<div class="hq-sec">💬 Recent replies — delete anything</div>';
+    h+=reps.length?reps.map(function(r){
+      return '<div class="hq-row"><div><b>'+esc(r.name)+'</b></div><div style="margin:3px 0;">'+esc(String(r.body||'').replace(/[␞␟]/g,' ').slice(0,100))+'</div><div class="hq-actions"><button class="hq-del" onclick="adminDeleteReply('+r.id+')">Delete reply</button></div></div>';
+    }).join(''):'<div style="font-size:12px;color:#777;">No replies.</div>';
+    return h;
+  }
+  function hqMembers(){
+    var d=ADMIN_DATA, now=d.now, counts={};
+    d.flAll.forEach(function(f){ if(!isSentinelName(f.name)) counts[f.name]=(counts[f.name]||0)+1; });
+    var verList=(d.verCur||'').split(/[,\s]+/).filter(Boolean).map(function(x){return x.toLowerCase();});
+    var h='<div class="hq-sec">👥 Members ('+d.us.length+')</div>';
+    h+='<div style="font-size:11px;color:#556;margin-bottom:8px;">✔ grants/removes verified · 🗑 removes a member + their content · tap a name to view their profile.</div>';
+    h+=d.us.map(function(u){
+      var on=u.last_seen&&now-new Date(u.last_seen).getTime()<12e4;
+      var av=u.avatar_url?'<img src="'+esc(u.avatar_url)+'">':(typeof userPortrait==='function'?userPortrait(u.name):'');
+      var isVer=verList.indexOf((u.name||'').toLowerCase())>-1||(u.name||'').toLowerCase()==='lock';
+      var nm=esc(u.name).replace(/'/g,'');
+      return '<div class="hq-mem"><span class="m-ava" style="cursor:pointer" onclick="closeProfile();showUserProfile(\''+nm+'\')">'+av+'</span>'+
+        '<div style="flex:1;min-width:0;"><b>'+esc(u.name)+'</b>'+(isVer?' <span style="color:#e0a800;">✔</span>':'')+(on?' <span style="color:#1c9a4e;font-size:10px;">● online</span>':'')+'<div style="font-size:10px;color:#889;">'+(counts[u.name]||0)+' flaps · joined '+new Date(u.created_at).toLocaleDateString()+'</div></div>'+
+        '<button class="hq-gold" style="border:none;border-radius:6px;padding:6px 9px;font-size:12px;font-weight:bold;cursor:pointer;" title="Toggle verified" onclick="toggleVerifiedFor(\''+nm+'\')">✔</button>'+
+        ((u.name||'').toLowerCase()!=='lock'?'<button class="hq-del" style="border:none;border-radius:6px;padding:6px 9px;font-size:12px;font-weight:bold;cursor:pointer;" title="Remove member" onclick="removeUser(\''+nm+'\')">🗑</button>':'')+
+      '</div>';
+    }).join('');
+    return h;
+  }
+  function hqSupport(){
+    var d=ADMIN_DATA, h='';
+    h+='<div class="hq-sec">🎫 Support tickets ('+d.tickets.length+')</div>';
+    if(!d.tickets.length) h+='<div style="font-size:12px;color:#2a8a2a;margin-bottom:8px;">No open tickets. 🎉</div>';
+    else h+=d.tickets.map(function(tk){
+      var parts=String(tk.body||'').split('␟'); var who=parts[0]||'?'; var msg=parts.slice(2).join('␟')||parts[1]||'';
+      return '<div class="hq-row"><div style="font-weight:bold;">🎫 from '+esc(who)+'</div><div style="margin:3px 0;">'+esc(msg.slice(0,400))+'</div><div style="color:#889;font-size:10px;">'+new Date(tk.created_at).toLocaleString()+'</div><div class="hq-actions"><button class="hq-go" onclick="resolveTicket('+tk.id+')">Resolve &amp; remove</button></div></div>';
+    }).join('');
+    h+='<div class="hq-sec">⚑ Reports ('+d.reports.length+')</div>';
+    h+=d.reports.length?'<div style="font-size:12px;color:#556;">'+d.reports.length+' open report(s) — open the <b>Moderation</b> tab to act on them.</div>':'<div style="font-size:12px;color:#2a8a2a;">No open reports.</div>';
+    return h;
+  }
+  function hqSettings(){
+    var d=ADMIN_DATA, h='';
+    var pp=d.pollCur?String(d.pollCur).split('␟'):[];
+    h+='<div class="hq-sec">📢 Scrolling ticker</div>';
+    h+='<textarea id="adminTicker" class="hq-input" style="min-height:56px;">'+esc(d.tickerCur||((document.getElementById('tickerText')||{}).textContent||''))+'</textarea>';
+    h+='<button class="hq-btn hq-go" style="width:100%;margin-bottom:4px;" onclick="saveTicker()">Save ticker for everyone</button>';
+    h+='<div style="font-size:10px;color:#889;margin-bottom:8px;">The scrolling message at the top. Separate phrases with ★.</div>';
+    h+='<div class="hq-sec">🗳️ Flap poll of the day</div>';
+    h+='<input id="adminPollQ" class="hq-input" value="'+esc(pp[0]||POLL.q)+'" placeholder="Poll question (make it funny!)">';
+    h+='<input id="adminPollO1" class="hq-input" value="'+esc(pp[1]||POLL.opts[0])+'" placeholder="Option 1">';
+    h+='<input id="adminPollO2" class="hq-input" value="'+esc(pp[2]||POLL.opts[1])+'" placeholder="Option 2">';
+    h+='<input id="adminPollO3" class="hq-input" value="'+esc(pp[3]||POLL.opts[2])+'" placeholder="Option 3">';
+    h+='<button class="hq-btn hq-purple" style="width:100%;margin-bottom:4px;" onclick="savePoll()">Save poll (starts votes fresh)</button>';
+    h+='<button class="hq-btn" style="width:100%;background:linear-gradient(180deg,#c0603a,#8f3c1c);color:#fff;margin-bottom:8px;" onclick="resetPollVotes()">↺ Reset votes only</button>';
+    h+='<div class="hq-sec">✔ Verified members</div>';
+    h+='<textarea id="adminVerified" class="hq-input" style="min-height:44px;">'+esc(d.verCur||'')+'</textarea>';
+    h+='<button class="hq-btn" style="width:100%;background:linear-gradient(180deg,#1fb6a6,#0e8577);color:#fff;margin-bottom:4px;" onclick="saveVerified()">Save verified list</button>';
+    h+='<div style="font-size:10px;color:#889;margin-bottom:8px;">Names here (comma/space separated) get the ✔ badge. You (lock) are always verified. Or use the ✔ buttons on the Members tab.</div>';
+    h+='<div class="hq-sec">🖼️ Member banner</div>';
+    h+='<div style="font-size:11px;color:#556;">The top banner (desktop site) auto-shows members who have a profile pic — no setup needed. Grant verified or seed house accounts and they show up automatically.</div>';
+    return h;
+  }
+  async function toggleVerifiedFor(name){
+    if(!ME.admin)return; name=(name||'').trim(); if(!name)return;
+    var cur=(ADMIN_DATA?ADMIN_DATA.verCur:'')||'';
+    var list=cur.split(/[,\s]+/).filter(Boolean); var low=name.toLowerCase();
+    var has=list.some(function(x){return x.toLowerCase()===low;});
+    list = has ? list.filter(function(x){return x.toLowerCase()!==low;}) : list.concat([name]);
+    var body=list.join(', ');
+    try{ var ex=await sb.from('flaps').select('id').eq('name','::verified::').order('id',{ascending:false}).limit(1);
+      if(ex.data&&ex.data[0]) await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id);
+      else await sb.from('flaps').insert({name:'::verified::',body:body,mood:'flappy',likes:0});
+    }catch(e){}
+    if(ADMIN_DATA)ADMIN_DATA.verCur=body;
+    try{await loadVerified();}catch(e){}
+    toast((has?'Removed':'Granted')+' verified: '+name); renderAdmin();
+  }
+  async function removeUser(name){
+    if(!ME.admin)return;
+    if((name||'').toLowerCase()==='lock'){toast("Can't remove lock.");return;}
+    if(!confirm('Remove '+name+' and delete all their flaps & replies? This cannot be undone.'))return;
+    try{ await sb.from('flaps').delete().ilike('name',name); await sb.from('flap_replies').delete().ilike('name',name); await sb.from('flap_users').delete().ilike('name',name); }catch(e){}
+    toast('Removed '+name+'.'); try{await loadFeed();}catch(e){} showAdmin();
+  }
+  async function adminDeleteReply(id){
+    if(!ME.admin)return;
+    if(!confirm('Delete this reply for everyone?'))return;
+    try{await sb.from('flap_replies').delete().eq('id',id);}catch(e){}
+    try{await loadFeed();}catch(e){} showAdmin(); toast('Reply deleted.');
   }
 
   /* ================= SESSION RESTORE (keeps you logged in across refresh/restart) =================
