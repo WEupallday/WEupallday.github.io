@@ -2706,7 +2706,7 @@
     }
   }
   if(ONLINE)setInterval(function(){if(ME.name){ if(!isTyping())loadFeed(); loadNotifs(); }},20000);   /* don't refresh the feed while you're mid-reply — it'd wipe your open box */
-  if(ONLINE)setInterval(function(){ if(ME.name && DM_OPEN && document.getElementById('dmThread') && !isTyping()){ refreshDMThread(DM_OPEN); } },5000);   /* live-refresh the open DM thread so replies arrive quickly */
+  if(ONLINE)setInterval(function(){ if(ME.name && DM_OPEN && document.getElementById('dmThread')){ refreshDMThread(DM_OPEN); } },4000);   /* live-refresh the open DM thread so replies arrive; safe while typing (only swaps bubbles, not your box) */
 
   async function delReply(rid, fid){
     if(!ME.name)return;
@@ -3243,8 +3243,10 @@
   async function refreshDMThread(name){
     var th=document.getElementById('dmThread'); if(!th)return;
     var msgs=await loadDM(name), me=(ME.name||'').toLowerCase();
+    if(msgs.length===th.querySelectorAll('.dm-line').length) return;   /* nothing new — don't churn the thread */
+    var nearBottom=(th.scrollHeight-th.scrollTop-th.clientHeight)<90;
     th.innerHTML=msgs.length?msgs.map(function(m){var mine=m.from.toLowerCase()===me;return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+esc(m.text)+'</span></div>';}).join(''):'<div class="dm-empty" style="text-align:center;color:#889;font-size:12px;padding:24px;">No messages yet — say hi 👋</div>';
-    th.scrollTop=th.scrollHeight;
+    if(nearBottom)th.scrollTop=th.scrollHeight;
   }
   async function openSocial(tab){
     if(!FEATURES.social){toast('Coming soon 👀');return;}
