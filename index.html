@@ -799,12 +799,8 @@
   .fd-bar{position:sticky;top:0;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;background:linear-gradient(180deg,#f5a623,#e07d0a);border-bottom:2px solid #b45c00;z-index:2;}
   .fd-back{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.45);color:#fff;font-weight:bold;font-size:14px;padding:7px 14px;border-radius:20px;cursor:pointer;}
   .fd-title{font-family:'Chewy','Comic Sans MS',cursive;font-size:19px;color:#fff;text-shadow:0 2px 0 var(--orange-dark);}
-  .fd-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;background:#fff;}
-  #flapDetail .fd-body{background:#fff;}
-  #flapDetail .card{margin:0!important;border:0!important;box-shadow:none!important;background:#fff!important;border-radius:0!important;}   /* no boxed card frame in the single-post view */
-  #flapDetail .card-body{padding:14px 16px!important;background:#fff;}
-  #flapDetail .card-strip{border-radius:0!important;}
-  #flapDetail .statustxt{font-size:16px;line-height:1.5;cursor:default!important;}
+  .fd-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px;}
+  .fd-body .statustxt{font-size:16px;line-height:1.5;cursor:default!important;}
   #lightbox{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.93);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;cursor:zoom-out;}
   #lightbox.open{display:flex;}
   #lightbox img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.6);}
