@@ -2149,7 +2149,7 @@
     var bodyText=rf?rf.body:(row.body||'');
     var reps=(REPLIES[row.id]||[]).filter(function(r){return !isBlocked(r.name);}).map(function(r){
       var p=splitReply(r.body);
-      var canDel=(ME.admin||(r.name||'').toLowerCase()===(ME.name||'').toLowerCase())&&r.id;
+      var canDel=((r.name||'').toLowerCase()===(ME.name||'').toLowerCase())&&r.id;   /* only your OWN replies show 🗑; admins moderate from the HQ */
       var delLink=canDel?'<a class="reply-del" title="Delete this reply" onclick="delReply('+r.id+','+row.id+')">🗑</a>':'';
       return '<div class="reply"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/'/g,'')+'\')">'+avatarFor(r.name)+'</div>'+
         replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+delLink+'</div>';
