@@ -778,6 +778,17 @@
   .hq-mem .m-ava{width:30px;height:34px;flex:none;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3);overflow:hidden;border-radius:5px;background:#123;}
   .hq-mem .m-ava img,.hq-mem .m-ava svg{width:100%;height:100%;object-fit:cover;display:block;}
   .hq-del{background:#e23b2a!important;color:#fff!important;} .hq-go{background:linear-gradient(180deg,#2f9e5a,#1c7a42)!important;color:#fff!important;} .hq-blue{background:linear-gradient(180deg,#3c6ec9,#22398f)!important;color:#fff!important;} .hq-purple{background:linear-gradient(180deg,#8a4fd8,#5f2ea0)!important;color:#fff!important;} .hq-gold{background:linear-gradient(180deg,#f0b429,#c88a10)!important;color:#3a2600!important;}
+  /* ===== Friends & 1:1 DMs ===== */
+  .dm-thread{max-height:52vh;overflow-y:auto;padding:12px;background:#eef2fb;}
+  .dm-line{display:flex;margin-bottom:6px;}
+  .dm-line.mine{justify-content:flex-end;}
+  .dm-bub{max-width:76%;padding:8px 12px;border-radius:14px;font-size:13px;background:#fff;border:1px solid #d7e0f2;color:#1a2440;word-wrap:break-word;}
+  .dm-line.mine .dm-bub{background:linear-gradient(180deg,#3c8cff,#2a5fd0);color:#fff;border:none;}
+  .dm-compose{display:flex;gap:6px;padding:8px;background:#fff;border-top:2px solid #ffd23f;}
+  .dm-compose input{flex:1;min-width:0;border:2px solid var(--card-border);border-radius:20px;padding:9px 14px;font-size:13px;font-family:Verdana,Arial,sans-serif;}
+  .dm-compose button{background:linear-gradient(180deg,#2f9e5a,#1c7a42);color:#fff;border:none;border-radius:20px;padding:9px 16px;font-weight:bold;cursor:pointer;}
+  .social-btn{display:none!important;}
+  body.social-on .social-btn{display:block!important;}
 </style>
 </head>
 <body>
@@ -913,6 +924,7 @@
   </div>
   <div id="drawerBody"></div>
   <div class="drawer-nav">
+    <button class="social-btn" type="button" onclick="openSocial('friends');toggleDrawer(false);">👯 Friends &amp; Messages</button>
     <button type="button" onclick="openSupport();toggleDrawer(false);">🎫 Support</button>
     <button type="button" onclick="loadFeed(true);toggleDrawer(false);">🔄 Refresh Feed</button>
   </div>
@@ -2258,6 +2270,8 @@
     if(n.kind==='like') return who+' flapped your post 👍';
     if(n.kind==='tag')  return who+' tagged you in a flap:'+ex;
     if(n.kind==='reflap')return who+' reflapped your flap 🔁';
+    if(n.kind==='friend')return who+' '+esc(n.excerpt||'sent you a friend request')+' 👯';
+    if(n.kind==='dm')    return who+' messaged you:'+ex;
     return who+' interacted with you';
   }
   function renderBell(){
@@ -2628,9 +2642,10 @@
     try{
       var res=await sb.from('flaps').select('*').order('id',{ascending:false}).limit(50);
       if(res.error)throw res.error;
-      LAST_ROWS=(res.data||[]).filter(function(r){var n=(r.name||'');return n!=='::ticker::' && n!=='::verified::' && n!=='::pinned::' && n!=='::ticket::';}); /* keep hidden sentinel rows out of the feed */
+      LAST_ROWS=(res.data||[]).filter(function(r){return String(r.name||'').indexOf('::')!==0;}); /* keep ALL hidden ::sentinel:: rows (ticker, poll, friend, dm, features…) out of the feed */
       loadTicker();
       loadVerified();
+      loadFeatures();
       await loadPinned();
       myFlapCount=res.data.filter(function(r){return r.name===ME.name;}).length;
       document.getElementById('youCount').textContent=myFlapCount;
@@ -3072,6 +3087,9 @@
     h+='<textarea id="adminVerified" class="hq-input" style="min-height:44px;">'+esc(d.verCur||'')+'</textarea>';
     h+='<button class="hq-btn" style="width:100%;background:linear-gradient(180deg,#1fb6a6,#0e8577);color:#fff;margin-bottom:4px;" onclick="saveVerified()">Save verified list</button>';
     h+='<div style="font-size:10px;color:#889;margin-bottom:8px;">Names here (comma/space separated) get the ✔ badge. You (lock) are always verified. Or use the ✔ buttons on the Members tab.</div>';
+    h+='<div class="hq-sec">🚀 Friends &amp; Messaging</div>';
+    h+='<div style="font-size:11px;color:#556;margin-bottom:8px;">Mutual friend requests + 1-on-1 DMs. Built and ready — currently <b>'+(FEATURES.social?'LIVE ✅ for everyone':'OFF (dark — nobody sees it)')+'</b>. Flip it whenever you want to drop it.</div>';
+    h+='<button class="hq-btn" style="width:100%;color:#fff;margin-bottom:12px;background:linear-gradient(180deg,'+(FEATURES.social?'#c0603a,#8f3c1c':'#2f9e5a,#1c7a42')+');" onclick="setSocialLive('+(FEATURES.social?'false':'true')+')">'+(FEATURES.social?'⏸ Turn OFF Friends & Messaging':'🚀 GO LIVE — turn on Friends & Messaging')+'</button>';
     h+='<div class="hq-sec">🖼️ Member banner</div>';
     h+='<div style="font-size:11px;color:#556;">The top banner (desktop site) auto-shows members who have a profile pic — no setup needed. Grant verified or seed house accounts and they show up automatically.</div>';
     return h;
@@ -3103,6 +3121,120 @@
     if(!confirm('Delete this reply for everyone?'))return;
     try{await sb.from('flap_replies').delete().eq('id',id);}catch(e){}
     try{await loadFeed();}catch(e){} showAdmin(); toast('Reply deleted.');
+  }
+
+  /* ===================== FRIENDS + 1:1 MESSAGING (dark until admin flips "Go Live") =====================
+     Uses the flaps table via sentinels — no new DB setup:
+       ::features::  body 'on'/'off'                  (master switch)
+       ::friend::    body 'requester␟target␟status'   (status: pending | accepted)
+       ::dm::        body 'from␟to␟text'              (created_at = timestamp) */
+  var FEATURES={social:false}, FRIENDS_ROWS=[], SOCIAL_TAB='friends', PSEP='␟';
+  async function loadFeatures(){
+    if(!ONLINE){applyFeatureFlags();return;}
+    try{ var r=await sb.from('flaps').select('body').eq('name','::features::').order('id',{ascending:false}).limit(1);
+      FEATURES.social=!!(r.data&&r.data[0]&&/on/i.test(r.data[0].body||'')); }catch(e){}
+    applyFeatureFlags();
+  }
+  function applyFeatureFlags(){ document.body.classList.toggle('social-on', !!FEATURES.social); }
+  async function setSocialLive(on){
+    if(!ME.admin)return;
+    try{ var ex=await sb.from('flaps').select('id').eq('name','::features::').order('id',{ascending:false}).limit(1);
+      if(ex.data&&ex.data[0]) await sb.from('flaps').update({body:on?'on':'off'}).eq('id',ex.data[0].id);
+      else await sb.from('flaps').insert({name:'::features::',body:on?'on':'off',mood:'flappy',likes:0});
+    }catch(e){}
+    FEATURES.social=on; applyFeatureFlags();
+    toast(on?'🚀 Friends & Messaging is LIVE for everyone!':'Friends & Messaging turned off.');
+    if(document.querySelector('.hq-tabs')) renderAdmin();
+  }
+  async function loadFriends(){
+    if(!ONLINE||!ME.name){FRIENDS_ROWS=[];return;}
+    try{ var r=await sb.from('flaps').select('id,body').eq('name','::friend::').limit(1000);
+      FRIENDS_ROWS=(r.data||[]).map(function(x){var p=String(x.body||'').split(PSEP);return {id:x.id,a:p[0]||'',b:p[1]||'',status:p[2]||'pending'};});
+    }catch(e){FRIENDS_ROWS=[];}
+  }
+  function friendStatus(name){
+    var me=(ME.name||'').toLowerCase(),o=(name||'').toLowerCase();
+    for(var i=0;i<FRIENDS_ROWS.length;i++){var f=FRIENDS_ROWS[i],a=f.a.toLowerCase(),b=f.b.toLowerCase();
+      if((a===me&&b===o)||(a===o&&b===me)) return f.status==='accepted'?'friends':(a===me?'sent':'incoming'); }
+    return 'none';
+  }
+  function myFriends(){ var me=(ME.name||'').toLowerCase(),out=[]; FRIENDS_ROWS.forEach(function(f){ if(f.status!=='accepted')return; if(f.a.toLowerCase()===me)out.push(f.b); else if(f.b.toLowerCase()===me)out.push(f.a); }); return out; }
+  function incomingReqs(){ var me=(ME.name||'').toLowerCase(); return FRIENDS_ROWS.filter(function(f){return f.status==='pending'&&f.b.toLowerCase()===me;}).map(function(f){return f.a;}); }
+  async function sendFriendReq(name){
+    if(!requireAuth())return; name=(name||'').trim();
+    if(!name||name.toLowerCase()===(ME.name||'').toLowerCase()){toast("That's you!");return;}
+    var st=friendStatus(name);
+    if(st==='friends'){toast('Already friends!');return;}
+    if(st==='sent'){toast('Request already sent.');return;}
+    if(st==='incoming'){return acceptFriend(name);}
+    try{ await sb.from('flaps').insert({name:'::friend::',body:ME.name+PSEP+name+PSEP+'pending',mood:'flappy',likes:0}); }catch(e){}
+    try{addNotif(name,ME.name,'friend',null,'sent you a friend request');}catch(e){}
+    await loadFriends(); toast('Friend request sent to '+name+'!'); if(document.getElementById('friendAdd'))openSocial(SOCIAL_TAB);
+  }
+  async function acceptFriend(name){
+    if(!requireAuth())return; var me=(ME.name||'').toLowerCase(),o=(name||'').toLowerCase();
+    var row=FRIENDS_ROWS.find(function(f){return f.a.toLowerCase()===o&&f.b.toLowerCase()===me&&f.status==='pending';});
+    if(!row){toast('No pending request from '+name+'.');return;}
+    try{ await sb.from('flaps').update({body:row.a+PSEP+row.b+PSEP+'accepted'}).eq('id',row.id); }catch(e){}
+    try{addNotif(name,ME.name,'friend',null,'accepted your friend request');}catch(e){}
+    await loadFriends(); toast("You're now friends with "+name+"!"); openSocial('friends');
+  }
+  async function removeFriend(name){
+    var me=(ME.name||'').toLowerCase(),o=(name||'').toLowerCase();
+    var row=FRIENDS_ROWS.find(function(f){var a=f.a.toLowerCase(),b=f.b.toLowerCase();return (a===me&&b===o)||(a===o&&b===me);});
+    if(!row)return; if(!confirm('Remove '+name+' as a friend?'))return;
+    try{ await sb.from('flaps').delete().eq('id',row.id); }catch(e){}
+    await loadFriends(); openSocial(SOCIAL_TAB);
+  }
+  async function loadDM(name){
+    if(!ONLINE)return [];
+    try{ var r=await sb.from('flaps').select('id,body,created_at').eq('name','::dm::').order('id',{ascending:true}).limit(1000);
+      var me=(ME.name||'').toLowerCase(),o=(name||'').toLowerCase();
+      return (r.data||[]).map(function(x){var p=String(x.body||'').split(PSEP);return {from:p[0]||'',to:p[1]||'',text:p.slice(2).join(PSEP),at:x.created_at};})
+        .filter(function(m){var mf=m.from.toLowerCase(),mt=m.to.toLowerCase();return (mf===me&&mt===o)||(mf===o&&mt===me);});
+    }catch(e){return [];}
+  }
+  async function sendDM(name){
+    var inp=document.getElementById('dmInput'); if(!inp)return; var text=(inp.value||'').trim(); if(!text)return; inp.value='';
+    try{ await sb.from('flaps').insert({name:'::dm::',body:ME.name+PSEP+name+PSEP+text,mood:'flappy',likes:0}); }catch(e){}
+    try{addNotif(name,ME.name,'dm',null,text.slice(0,60));}catch(e){}
+    openDM(name);
+  }
+  async function openSocial(tab){
+    if(!FEATURES.social){toast('Coming soon 👀');return;}
+    if(!requireAuth())return;
+    SOCIAL_TAB=tab||SOCIAL_TAB;
+    var box=document.getElementById('profCardBox');
+    document.getElementById('profModal').classList.add('open');
+    box.innerHTML='<div class="pc-strip"><span>👯 Friends & Messages</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body" style="padding:22px;text-align:center;">loading…</div>';
+    await loadFriends();
+    var tabs=[['friends','👯 Friends'],['requests','📨 Requests'],['messages','💬 Messages']];
+    var inc=incomingReqs();
+    var bar='<div class="hq-tabs">'+tabs.map(function(t){return '<button class="hq-tab'+(SOCIAL_TAB===t[0]?' on':'')+'" style="flex-direction:row;gap:5px;font-size:12px;padding:9px 4px;" onclick="openSocial(\''+t[0]+'\')">'+t[1]+(t[0]==='requests'&&inc.length?' ('+inc.length+')':'')+'</button>';}).join('')+'</div>';
+    var body='';
+    if(SOCIAL_TAB==='friends'){
+      body+='<div style="display:flex;gap:6px;margin-bottom:10px;"><input id="friendAdd" class="hq-input" style="margin:0;" placeholder="add a friend by username…" onkeydown="if(event.key===\'Enter\')sendFriendReq(this.value)"><button class="hq-btn hq-go" style="padding:9px 14px;" onclick="sendFriendReq((document.getElementById(\'friendAdd\').value||\'\'))">Add</button></div>';
+      var fr=myFriends();
+      body+=fr.length?fr.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><button class="hq-blue" style="border:none;border-radius:7px;padding:7px 12px;font-weight:bold;cursor:pointer;" onclick="openDM(\''+nm+'\')">💬</button><button style="background:#e6e8ef;border:none;border-radius:7px;padding:7px 10px;cursor:pointer;" onclick="removeFriend(\''+nm+'\')">✕</button></div>';}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">No friends yet — add someone above!</div>';
+    } else if(SOCIAL_TAB==='requests'){
+      body+=inc.length?inc.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><button class="hq-go" style="border:none;border-radius:7px;padding:7px 13px;font-weight:bold;color:#fff;cursor:pointer;" onclick="acceptFriend(\''+nm+'\')">Accept</button></div>';}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">No friend requests right now.</div>';
+    } else {
+      var fr2=myFriends();
+      body+=fr2.length?'<div style="font-size:11px;color:#556;margin-bottom:6px;">Tap a friend to open your chat.</div>'+fr2.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem" style="cursor:pointer;" onclick="openDM(\''+nm+'\')"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><span style="color:#2a6fb0;font-size:16px;">💬</span></div>';}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">Add friends first, then you can DM them.</div>';
+    }
+    box.innerHTML='<div class="pc-strip"><span>👯 Friends & Messages</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>'+bar+'<div class="pc-body hq-body">'+body+'</div>';
+  }
+  async function openDM(name){
+    if(!FEATURES.social)return;
+    var box=document.getElementById('profCardBox'); document.getElementById('profModal').classList.add('open');
+    box.innerHTML='<div class="pc-strip"><span><a onclick="openSocial(\'messages\')" style="cursor:pointer;color:#c86a10;">‹ back</a> · '+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕</span></div><div class="pc-body" style="padding:22px;text-align:center;">loading…</div>';
+    var msgs=await loadDM(name), me=(ME.name||'').toLowerCase();
+    var thread=msgs.length?msgs.map(function(m){var mine=m.from.toLowerCase()===me;return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+esc(m.text)+'</span></div>';}).join(''):'<div style="text-align:center;color:#889;font-size:12px;padding:24px;">No messages yet — say hi 👋</div>';
+    var nm=esc(name).replace(/'/g,'');
+    box.innerHTML='<div class="pc-strip"><span><a onclick="openSocial(\'messages\')" style="cursor:pointer;color:#c86a10;">‹ back</a> · '+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕</span></div>'+
+      '<div class="dm-thread" id="dmThread">'+thread+'</div>'+
+      '<div class="dm-compose"><input id="dmInput" placeholder="message '+esc(name)+'…" onkeydown="if(event.key===\'Enter\')sendDM(\''+nm+'\')"><button onclick="sendDM(\''+nm+'\')">Send</button></div>';
+    var th=document.getElementById('dmThread'); if(th)th.scrollTop=th.scrollHeight;
   }
 
   /* ================= SESSION RESTORE (keeps you logged in across refresh/restart) =================
