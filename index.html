@@ -736,6 +736,19 @@
     .replies{margin-top:6px;}
     .card-foot{padding:5px 7px;gap:4px;}
     .colhead{font-size:10.5px;padding:4px 9px;}
+    /* tighter frame — trim the padding/whitespace around the content, keep text the same */
+    .card{margin-bottom:5px;}
+    .card-body{padding:5px 8px 6px;}
+    .card-strip{padding:2px 8px;}
+    .card-foot{padding:4px 7px 5px;}
+    .colhead{margin:6px 0 3px;}
+    .statustxt{margin:1px 0;}
+    .replies{margin-top:4px;}
+    .reply{padding:4px 2px;}
+    .post-pic{margin-top:5px;}
+    /* auto-hiding top bar: slides up when scrolling down, back when scrolling up */
+    .topbar{transition:transform .26s ease;}
+    body.bar-hidden .topbar{transform:translateY(-100%);}
   }
 </style>
 </head>
@@ -2952,6 +2965,37 @@ function toggleDrawer(force){
   var d = document.getElementById('sideDrawer');
   if(d){ d.setAttribute('aria-hidden', open ? 'false' : 'true'); if(open) d.scrollTop = 0; }
 }
+/* App-feel gestures (app + phone-width only): swipe-from-left opens the menu,
+   and the top bar auto-hides on scroll-down / reappears on scroll-up. */
+(function(){
+  var mq = window.matchMedia('(max-width:760px)');
+  var isAppReal = !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent);
+  function compact(){ return isAppReal || mq.matches; }
+  var x0=null,y0=null,t0=0;
+  document.addEventListener('touchstart',function(e){
+    if(!compact()||!e.touches[0])return; x0=e.touches[0].clientX; y0=e.touches[0].clientY; t0=Date.now();
+  },{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(x0==null||!compact())return;
+    var t=e.changedTouches[0], dx=t.clientX-x0, dy=t.clientY-y0, dt=Date.now()-t0;
+    var open=document.body.classList.contains('drawer-open');
+    if(dt<650 && Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4){
+      if(dx>0 && x0<48 && !open){ try{toggleDrawer(true);}catch(_){ } }
+      else if(dx<0 && open){ try{toggleDrawer(false);}catch(_){ } }
+    }
+    x0=y0=null;
+  },{passive:true});
+  var lastY=0, ticking=false;
+  window.addEventListener('scroll',function(){
+    if(!compact()||ticking)return; ticking=true;
+    requestAnimationFrame(function(){
+      var y=window.scrollY||document.documentElement.scrollTop||0;
+      if(y>90 && y>lastY+5) document.body.classList.add('bar-hidden');
+      else if(y<lastY-5 || y<50) document.body.classList.remove('bar-hidden');
+      lastY=y; ticking=false;
+    });
+  },{passive:true});
+})();
 </script>
 </body>
 </html>
