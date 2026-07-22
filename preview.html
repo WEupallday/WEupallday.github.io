@@ -793,6 +793,20 @@
   html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}   /* never let iOS auto-inflate text huge */
   html.is-app, html.is-app body{touch-action:manipulation;}     /* kills double-tap-to-zoom in the app */
   html.is-app button, html.is-app a, html.is-app input, html.is-app textarea, html.is-app select, html.is-app .navbtn, html.is-app .likebtn, html.is-app .poll-opt{touch-action:manipulation;}
+  /* ===== single-post detail view + image lightbox ===== */
+  #flapDetail{position:fixed;inset:0;z-index:300;background:#14337a;display:none;flex-direction:column;}
+  #flapDetail.open{display:flex;}
+  .fd-bar{position:sticky;top:0;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;background:linear-gradient(180deg,#f5a623,#e07d0a);border-bottom:2px solid #b45c00;z-index:2;}
+  .fd-back{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.45);color:#fff;font-weight:bold;font-size:14px;padding:7px 14px;border-radius:20px;cursor:pointer;}
+  .fd-title{font-family:'Chewy','Comic Sans MS',cursive;font-size:19px;color:#fff;text-shadow:0 2px 0 var(--orange-dark);}
+  .fd-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px;}
+  .fd-body .card{margin:0;}
+  .fd-body .statustxt{font-size:16px;line-height:1.5;cursor:default!important;}
+  #lightbox{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.93);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;cursor:zoom-out;}
+  #lightbox.open{display:flex;}
+  #lightbox img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.6);}
+  .lb-x{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:18px;color:#fff;font-size:28px;font-weight:bold;cursor:pointer;line-height:1;}
+  body.detail-open{overflow:hidden;}
 </style>
 </head>
 <body>
@@ -1546,12 +1560,12 @@
     var h='<div class="card'+(o.pinned?' pinned-card':'')+'"'+(o.liveId?' id="flap-'+o.liveId+'"':'')+'>';
     if(o.pinned)h+='<div class="pinned-tag">📌 Pinned</div>';
     if(o.reflapBy)h+='<div class="reflap-tag">🔁 <b>'+esc(o.reflapBy)+'</b> reflapped '+esc(o.name)+"'s flap</div>";
-    h+='<div class="card-strip">'+o.date+' &nbsp;·&nbsp; <span class="rate">Rating: '+o.rating+' Flaps</span></div>';
+    h+='<div class="card-strip"'+(o.liveId?' style="cursor:pointer;" onclick="openFlap('+o.liveId+')"':'')+'>'+o.date+' &nbsp;·&nbsp; <span class="rate">Rating: '+o.rating+' Flaps</span></div>';
     h+='<div class="card-body">';
     h+='<div class="moodbox"><div class="mlabel">Mood</div>'+emoHTML(o.mood)+'<div class="mword">'+esc(o.mood)+'</div></div>';
     h+='<div class="poster'+(o.profileName?' clickable" onclick="showUserProfile(\''+esc(o.profileName).replace(/'/g,'')+'\')" title="View profile':'')+'"><div class="pava">'+o.ava+'</div><div class="pname">'+esc(o.name)+vbadge(o.name)+'</div></div>';
-    h+='<div class="statustxt">'+o.body+'</div>';
-    if(o.pic)h+='<div class="post-pic"><img src="'+esc(o.pic)+'" alt="flap pic" loading="lazy" onerror="this.closest(\'.post-pic\').style.display=\'none\'"></div>';
+    h+='<div class="statustxt"'+(o.liveId?' style="cursor:pointer;" onclick="openFlap('+o.liveId+')"':'')+'>'+o.body+'</div>';
+    if(o.pic)h+='<div class="post-pic"><img src="'+esc(o.pic)+'" alt="flap pic" loading="lazy" style="cursor:zoom-in;" onclick="event.stopPropagation();openLightbox(this.src)" onerror="this.closest(\'.post-pic\').style.display=\'none\'"></div>';
     var reps=(o.replies||[]).join('');
     if(!o.liveId){
       reps+='<div class="reply reply-compose"><div class="rava">'+myAva()+'</div>'+
@@ -2227,6 +2241,7 @@
         (FEED_FILTER?'no flaps for @'+esc(FEED_FILTER)+' yet!':(ONLINE?'no flaps yet — be the first!':'demo mode — configure the backend (see setup file) and your friends\' flaps will appear here!'))+
         '</div></div>');
     if(__sy>0){try{window.scrollTo(0,__sy);}catch(e){}}   /* keep the reader where they were across refreshes */
+    try{refreshOpenFlap();}catch(e){}   /* keep an open single-post view in sync too */
   }
   function tagFilter(name){FEED_FILTER=name;renderLive();toast('Showing flaps for '+(name[0]==='#'?name:'@'+name));document.getElementById('liveFeed').scrollIntoView({behavior:'smooth',block:'nearest'});}
   function clearFilter(){FEED_FILTER=null;renderLive();}
@@ -3256,6 +3271,38 @@
     var th=document.getElementById('dmThread'); if(th)th.scrollTop=th.scrollHeight;
   }
 
+  /* ===================== Twitter-style single-post view + image lightbox (hash-routed, shareable) ===================== */
+  var FEED_SCROLL=0, LAST_DETAIL_ID=null;
+  function openFlap(id){ if(!id)return; FEED_SCROLL=window.pageYOffset||document.documentElement.scrollTop||0; location.hash='flap/'+id; }
+  function closeFlap(){
+    if((location.hash||'').indexOf('#flap/')===0){ history.back(); setTimeout(function(){ if((location.hash||'').indexOf('#flap/')===0){ try{location.hash='';}catch(e){} } },30); }
+    else hideFlapDetail();
+  }
+  function hideFlapDetail(){ var el=document.getElementById('flapDetail'); if(el)el.classList.remove('open'); document.body.classList.remove('detail-open'); LAST_DETAIL_ID=null; try{window.scrollTo(0,FEED_SCROLL);}catch(e){} }
+  function showFlapDetail(id){
+    var el=document.getElementById('flapDetail'); if(!el)return;
+    var body=el.querySelector('.fd-body');
+    el.classList.add('open'); document.body.classList.add('detail-open');
+    if(String(id)!==String(LAST_DETAIL_ID)) body.innerHTML='<div style="padding:30px;text-align:center;color:#cfe0ff;">loading flap…</div>';
+    function render(r){
+      if(!r){ body.innerHTML='<div style="padding:34px;text-align:center;color:#cfe0ff;">This flap isn’t available — it may have been deleted.</div>'; return; }
+      try{computeReflaps();}catch(e){}
+      body.innerHTML=liveCard(r);
+      var card=body.querySelector('.card'); if(card)card.classList.add('show-compose');
+      if(String(id)!==String(LAST_DETAIL_ID)) el.scrollTop=0;
+      LAST_DETAIL_ID=id;
+    }
+    var row=(LAST_ROWS||[]).find(function(r){return String(r.id)===String(id);});
+    if(row){ if(!REPLIES[id] && ONLINE){ sb.from('flap_replies').select('*').eq('flap_id',id).order('id',{ascending:true}).then(function(rr){REPLIES[id]=rr.data||[];render(row);}); } else render(row); }
+    else if(ONLINE){ sb.from('flaps').select('*').eq('id',id).single().then(function(res){ var r=res&&res.data; if(r&&!REPLIES[id]){ sb.from('flap_replies').select('*').eq('flap_id',id).order('id',{ascending:true}).then(function(rr){REPLIES[id]=rr.data||[];render(r);}); } else render(r); }); }
+    else render(null);
+  }
+  function refreshOpenFlap(){ var el=document.getElementById('flapDetail'); if(el&&el.classList.contains('open')&&!isTyping()){ var m=(location.hash||'').match(/^#flap\/(\d+)/); if(m)showFlapDetail(parseInt(m[1],10)); } }
+  function renderFlapFromHash(){ var m=(location.hash||'').match(/^#flap\/(\d+)/); if(m)showFlapDetail(parseInt(m[1],10)); else hideFlapDetail(); }
+  window.addEventListener('hashchange', renderFlapFromHash);
+  function openLightbox(src){ var lb=document.getElementById('lightbox'); if(!lb||!src)return; lb.querySelector('img').src=src; lb.classList.add('open'); }
+  function closeLightbox(){ var lb=document.getElementById('lightbox'); if(lb)lb.classList.remove('open'); }
+
   /* ================= SESSION RESTORE (keeps you logged in across refresh/restart) =================
      Runs LAST, after every var + function is defined, so nothing can throw and drop the gate. */
   try{setTimeout(inAppTip,1500);}catch(e){}
@@ -3272,8 +3319,17 @@
     try{loadBlocks().then(function(){loadFeed();});}catch(e){try{loadFeed();}catch(e2){}}
     try{loadNotifs();}catch(e){}
     try{subscribePush();}catch(e){}
+    try{if(/^#flap\/\d+/.test(location.hash||''))setTimeout(renderFlapFromHash,900);}catch(e){}  /* open a shared #flap/123 link */
   })();
 </script>
+
+<!-- Twitter-style single-post detail -->
+<div id="flapDetail">
+  <div class="fd-bar"><button class="fd-back" type="button" onclick="closeFlap()">‹ Back</button><span class="fd-title">Flap</span></div>
+  <div class="fd-body"></div>
+</div>
+<!-- full-size image lightbox (tap to close — page zoom is locked, so this is how you see image detail) -->
+<div id="lightbox" onclick="closeLightbox()"><span class="lb-x">✕</span><img src="" alt="flap photo"></div>
 
 <!-- Delete-account confirmation -->
 <div id="delModal" onclick="if(event.target===this)closeDelModal()">
