@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <script>
 /* Detect the native app (Capacitor wrapper, or ?app=1 for the preview) and tag <html> with
    .is-app. Every app-only layout rule is gated on this class, so plain website visitors
@@ -789,6 +789,10 @@
   .dm-compose button{background:linear-gradient(180deg,#2f9e5a,#1c7a42);color:#fff;border:none;border-radius:20px;padding:9px 16px;font-weight:bold;cursor:pointer;}
   .social-btn{display:none!important;}
   body.social-on .social-btn{display:block!important;}
+  /* ===== lock the scale so a stray pinch / double-tap can't get stuck zoomed ===== */
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}   /* never let iOS auto-inflate text huge */
+  html.is-app, html.is-app body{touch-action:manipulation;}     /* kills double-tap-to-zoom in the app */
+  html.is-app button, html.is-app a, html.is-app input, html.is-app textarea, html.is-app select, html.is-app .navbtn, html.is-app .likebtn, html.is-app .poll-opt{touch-action:manipulation;}
 </style>
 </head>
 <body>
@@ -3377,6 +3381,12 @@ function toggleDrawer(force){
       lastY=y; ticking=false;
     });
   },{passive:true});
+  /* hard block pinch-zoom in the app so it can never get stuck zoomed (viewport lock + this) */
+  if(compact()){
+    document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});
+    document.addEventListener('gesturechange',function(e){e.preventDefault();},{passive:false});
+    document.addEventListener('gestureend',function(e){e.preventDefault();},{passive:false});
+  }
 })();
 </script>
 </body>
