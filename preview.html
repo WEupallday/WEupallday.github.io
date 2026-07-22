@@ -1804,7 +1804,7 @@
   setInterval(heartbeat,60000);
 
   /* ============ user profile pages ============ */
-  function closeProfile(){document.getElementById('profModal').classList.remove('open');}
+  function closeProfile(){document.getElementById('profModal').classList.remove('open');DM_OPEN=null;}
   var PROFILE_DATA={posts:[],reflaps:[]};
   function profileTab(which){
     var lst=document.getElementById('profList');if(!lst)return;
@@ -2706,6 +2706,7 @@
     }
   }
   if(ONLINE)setInterval(function(){if(ME.name){ if(!isTyping())loadFeed(); loadNotifs(); }},20000);   /* don't refresh the feed while you're mid-reply — it'd wipe your open box */
+  if(ONLINE)setInterval(function(){ if(ME.name && DM_OPEN && document.getElementById('dmThread') && !isTyping()){ refreshDMThread(DM_OPEN); } },5000);   /* live-refresh the open DM thread so replies arrive quickly */
 
   async function delReply(rid, fid){
     if(!ME.name)return;
@@ -3161,7 +3162,7 @@
        ::features::  body 'on'/'off'                  (master switch)
        ::friend::    body 'requester␟target␟status'   (status: pending | accepted)
        ::dm::        body 'from␟to␟text'              (created_at = timestamp) */
-  var FEATURES={social:false}, FRIENDS_ROWS=[], SOCIAL_TAB='friends', PSEP='␟';
+  var FEATURES={social:false}, FRIENDS_ROWS=[], SOCIAL_TAB='friends', PSEP='␟', DM_OPEN=null;
   async function loadFeatures(){
     if(!ONLINE){applyFeatureFlags();return;}
     try{ var r=await sb.from('flaps').select('body').eq('name','::features::').order('id',{ascending:false}).limit(1);
@@ -3229,9 +3230,21 @@
   }
   async function sendDM(name){
     var inp=document.getElementById('dmInput'); if(!inp)return; var text=(inp.value||'').trim(); if(!text)return; inp.value='';
+    /* show my message instantly, like a real text — before the server round-trip */
+    var th=document.getElementById('dmThread');
+    if(th){ var ph=th.querySelector('.dm-empty'); if(ph)ph.remove();
+      th.insertAdjacentHTML('beforeend','<div class="dm-line mine"><span class="dm-bub">'+esc(text)+'</span></div>');
+      th.scrollTop=th.scrollHeight; }
+    if(inp)inp.focus();
     try{ await sb.from('flaps').insert({name:'::dm::',body:ME.name+PSEP+name+PSEP+text,mood:'flappy',likes:0}); }catch(e){}
     try{addNotif(name,ME.name,'dm',null,text.slice(0,60));}catch(e){}
-    openDM(name);
+  }
+  /* refresh just the message bubbles (keeps your compose box + focus) so replies arrive live */
+  async function refreshDMThread(name){
+    var th=document.getElementById('dmThread'); if(!th)return;
+    var msgs=await loadDM(name), me=(ME.name||'').toLowerCase();
+    th.innerHTML=msgs.length?msgs.map(function(m){var mine=m.from.toLowerCase()===me;return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+esc(m.text)+'</span></div>';}).join(''):'<div class="dm-empty" style="text-align:center;color:#889;font-size:12px;padding:24px;">No messages yet — say hi 👋</div>';
+    th.scrollTop=th.scrollHeight;
   }
   async function openSocial(tab){
     if(!FEATURES.social){toast('Coming soon 👀');return;}
@@ -3262,12 +3275,13 @@
     var box=document.getElementById('profCardBox'); document.getElementById('profModal').classList.add('open');
     box.innerHTML='<div class="pc-strip"><span><a onclick="openSocial(\'messages\')" style="cursor:pointer;color:#c86a10;">‹ back</a> · '+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕</span></div><div class="pc-body" style="padding:22px;text-align:center;">loading…</div>';
     var msgs=await loadDM(name), me=(ME.name||'').toLowerCase();
-    var thread=msgs.length?msgs.map(function(m){var mine=m.from.toLowerCase()===me;return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+esc(m.text)+'</span></div>';}).join(''):'<div style="text-align:center;color:#889;font-size:12px;padding:24px;">No messages yet — say hi 👋</div>';
+    var thread=msgs.length?msgs.map(function(m){var mine=m.from.toLowerCase()===me;return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+esc(m.text)+'</span></div>';}).join(''):'<div class="dm-empty" style="text-align:center;color:#889;font-size:12px;padding:24px;">No messages yet — say hi 👋</div>';
     var nm=esc(name).replace(/'/g,'');
     box.innerHTML='<div class="pc-strip"><span><a onclick="openSocial(\'messages\')" style="cursor:pointer;color:#c86a10;">‹ back</a> · '+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕</span></div>'+
       '<div class="dm-thread" id="dmThread">'+thread+'</div>'+
       '<div class="dm-compose"><input id="dmInput" placeholder="message '+esc(name)+'…" onkeydown="if(event.key===\'Enter\')sendDM(\''+nm+'\')"><button onclick="sendDM(\''+nm+'\')">Send</button></div>';
     var th=document.getElementById('dmThread'); if(th)th.scrollTop=th.scrollHeight;
+    DM_OPEN=name;
   }
 
   /* ===================== Twitter-style single-post view + image lightbox (hash-routed, shareable) ===================== */
