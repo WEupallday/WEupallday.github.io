@@ -1585,6 +1585,7 @@
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase())h+='<button class="reflapbtn'+(o.reflapped?' on':'')+'" type="button" onclick="reflapPost('+o.liveId+')">🔁 '+(o.reflapped?'Reflapped':'Reflap')+'</button>';
       if(ME.admin)h+='<button class="pinbtn" type="button" onclick="pinPost('+o.liveId+')">'+(o.pinned?'📌 Unpin':'📌 Pin')+'</button>';
       if(ME.admin)h+='<button class="delbtn" type="button" onclick="delLive('+o.liveId+')">DELETE</button>';
+      else if(o.memberDel)h+='<button class="delbtn" type="button" title="Delete your own flap (within '+DELETE_WINDOW_MIN+' min of posting)" onclick="delMineFlap('+o.liveId+','+(o.createdMs||0)+')">🗑 Delete</button>';
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
         var pn=esc(o.name).replace(/'/g,'');
         h+='<span class="post-mod"><a onclick="openReport(\'post\','+o.liveId+',\''+pn+'\')" title="Report this flap">⚑ report</a>'+
@@ -2172,14 +2173,21 @@
       await loadFeed(); toast('Reflapped! 🔁');
     }catch(e){toast('Reflap failed — try again.');}
   }
+  /* ===== time-limited self-delete: members can remove their own flap/reply for a window, then it's permanent (admin unrestricted) ===== */
+  var DELETE_WINDOW_MIN=30, DELETE_WINDOW_MS=DELETE_WINDOW_MIN*60*1000;
+  function withinDelWindow(ms){ return !!ms && (Date.now()-ms)<DELETE_WINDOW_MS; }
   function liveCard(row){
     var rf=parseReflap(row.body);
     var authorName=rf?rf.name:row.name;
     var bodyText=rf?rf.body:(row.body||'');
+    var createdMs=row.created_at?Date.parse(row.created_at):0;
+    var mineFlap=((row.name||'').toLowerCase()===(ME.name||'').toLowerCase());
     var reps=(REPLIES[row.id]||[]).filter(function(r){return !isBlocked(r.name);}).map(function(r){
       var p=splitReply(r.body);
-      var canDel=((r.name||'').toLowerCase()===(ME.name||'').toLowerCase())&&r.id;   /* only your OWN replies show 🗑; admins moderate from the HQ */
-      var delLink=canDel?'<a class="reply-del" title="Delete this reply" onclick="delReply('+r.id+','+row.id+')">🗑</a>':'';
+      var rMs=r.created_at?Date.parse(r.created_at):0;
+      var mineR=((r.name||'').toLowerCase()===(ME.name||'').toLowerCase());
+      var canDel=r.id && mineR && (ME.admin || withinDelWindow(rMs));   /* your OWN reply is deletable for '+DELETE_WINDOW_MIN+' min, then permanent; admins moderate from the HQ */
+      var delLink=canDel?'<a class="reply-del" title="Delete this reply (yours, within '+DELETE_WINDOW_MIN+' min)" onclick="delReply('+r.id+','+row.id+')">🗑</a>':'';
       return '<div class="reply"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/'/g,'')+'\')">'+avatarFor(r.name)+'</div>'+
         replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+delLink+'</div>';
     });
@@ -2197,6 +2205,8 @@
       body:parseTags(bodyText).html,pic:row.pic_url,replies:reps,reflapBy:(rf?row.name:null),
       reflapCount:(rf?0:(REFLAP_COUNTS[row.id]||0)),reflapped:(rf?false:!!MY_REFLAPS[row.id]),
       pinned:!!row.__pinned,
+      createdMs:createdMs,
+      memberDel:(mineFlap && !ME.admin && withinDelWindow(createdMs)),
       tags:[authorName,'theflap']
     });
   }
@@ -2710,10 +2720,16 @@
 
   async function delReply(rid, fid){
     if(!ME.name)return;
+    var rr=(REPLIES[fid]||[]).find(function(x){return x.id===rid;});
+    if(!ME.admin){
+      if(rr && (rr.name||'').toLowerCase()!==(ME.name||'').toLowerCase()){ toast('You can only delete your own replies.'); return; }
+      var rMs=rr&&rr.created_at?Date.parse(rr.created_at):0;
+      if(!withinDelWindow(rMs)){ toast('This reply is older than '+DELETE_WINDOW_MIN+' min — it can no longer be deleted.'); return; }
+    }
     if(!confirm('Delete this reply? This can’t be undone.'))return;
     if(REPLIES[fid])REPLIES[fid]=REPLIES[fid].filter(function(x){return x.id!==rid;});
     renderLive();
-    if(ONLINE){ try{ await sb.from('flap_replies').delete().eq('id',rid); }catch(e){} }
+    if(ONLINE){ try{ var q=sb.from('flap_replies').delete().eq('id',rid); if(!ME.admin)q=q.gte('created_at', new Date(Date.now()-DELETE_WINDOW_MS).toISOString()); await q; }catch(e){} }
     toast('Reply deleted.');
   }
   async function sendReply(id){
@@ -2755,6 +2771,14 @@
     if(ONLINE){try{await sb.from('flaps').delete().eq('id',id);}catch(e){}}
     loadFeed();
     toast('Deleted.');
+  }
+  /* member self-delete: only your OWN flap, only within the window; admin path is delLive (unrestricted) */
+  async function delMineFlap(id, createdMs){
+    if(!ME.name)return;
+    if(!ME.admin && !withinDelWindow(createdMs)){ toast('This flap is older than '+DELETE_WINDOW_MIN+' min — it can no longer be deleted.'); return; }
+    if(!confirm('Delete this flap? You can only delete your own flaps within '+DELETE_WINDOW_MIN+' minutes of posting — after that it stays up.'))return;
+    if(ONLINE){ try{ var q=sb.from('flaps').delete().eq('id',id); if(!ME.admin)q=q.gte('created_at', new Date(Date.now()-DELETE_WINDOW_MS).toISOString()); await q; }catch(e){} }
+    loadFeed(); toast('Deleted.');
   }
 
   /* ================= pear composer ================= */
