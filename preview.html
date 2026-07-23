@@ -794,6 +794,13 @@
   .loadmore-btn:hover{filter:brightness(1.05);}
   .loadmore-btn:disabled{opacity:.6;cursor:default;}
   .feed-end{color:#9fb0e0;font-size:11px;letter-spacing:.04em;}
+  .mention-box{position:fixed;z-index:99999;background:#fff;border:2px solid var(--orange,#f7941e);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.28);overflow-y:auto;max-height:232px;}
+  .mention-hint{font-size:10px;color:#a06a10;background:#fff6e2;padding:4px 10px;border-bottom:1px solid #ffe3ad;}
+  .mention-item{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f0f4;}
+  .mention-item:last-child{border-bottom:none;}
+  .mention-item:hover,.mention-item.on{background:#fff2d6;}
+  .mention-item .m-ava{width:26px;height:26px;border-radius:50%;overflow:hidden;flex:0 0 auto;background:#eee;}
+  .mention-item .m-ava img,.mention-item .m-ava svg{width:100%;height:100%;display:block;object-fit:cover;}
   .social-btn{display:none!important;}
   body.social-on .social-btn{display:block!important;}
   /* ===== lock the scale so a stray pinch / double-tap can't get stuck zoomed ===== */
@@ -1557,6 +1564,54 @@
   function toggleDmTray(){ var t=document.getElementById('dmTray'); if(t)t.style.display=(t.style.display==='none'||!t.style.display)?'block':'none'; }
   /* render a DM bubble: escape text, then turn ⟨mood:name⟩ tokens into animated mood faces */
   function dmText(t){ return esc(t||'').replace(/⟨mood:([a-z]+)⟩/g,function(m,name){ return '<span class="remoji remoji-anim">'+emoHTML(name,true)+'</span>'; }); }
+
+  /* ===== @mention autocomplete: type @ and tap a name to tag them ===== */
+  var MENTION_EL=null;
+  function mentionBox(){
+    var b=document.getElementById('mentionBox');
+    if(!b){ b=document.createElement('div'); b.id='mentionBox'; b.className='mention-box'; b.style.display='none';
+      b.addEventListener('mousedown',function(e){ var it=e.target.closest&&e.target.closest('.mention-item'); if(it){ e.preventDefault(); pickMention(it.getAttribute('data-name')); } });
+      document.body.appendChild(b);
+    }
+    return b;
+  }
+  function isMentionTarget(el){ if(!el)return false; return el.id==='composeText'||(el.id||'').indexOf('ri-')===0||el.id==='dmInput'; }
+  function currentMentionToken(el){
+    var pos=(el.selectionStart!=null?el.selectionStart:(el.value||'').length), before=(el.value||'').slice(0,pos);
+    var m=before.match(/@([A-Za-z0-9_]*)$/);
+    return m?{q:m[1],start:pos-m[0].length,end:pos}:null;
+  }
+  function showMentions(el){
+    var box=mentionBox(), tok=currentMentionToken(el);
+    if(!tok){ box.style.display='none'; MENTION_EL=null; return; }
+    var q=tok.q.toLowerCase();
+    var names=Object.keys(USERS||{}).map(function(k){return USERS[k]&&USERS[k].name;})
+      .filter(function(n){ return n && n.toLowerCase()!==(ME.name||'').toLowerCase() && (q===''||n.toLowerCase().indexOf(q)===0); })
+      .sort(function(a,b){return a.toLowerCase()<b.toLowerCase()?-1:1;}).slice(0,6);
+    if(!names.length){ box.style.display='none'; MENTION_EL=null; return; }
+    MENTION_EL=el;
+    box.innerHTML='<div class="mention-hint">tap a name to tag them</div>'+names.map(function(n){
+      return '<div class="mention-item" data-name="'+esc(n)+'"><span class="m-ava">'+avatarFor(n)+'</span><b>'+esc(n)+'</b></div>';
+    }).join('');
+    var r=el.getBoundingClientRect();
+    box.style.width=Math.min(280,Math.max(170,r.width))+'px';
+    box.style.left=Math.max(8,Math.min(r.left,window.innerWidth-Math.min(280,Math.max(170,r.width))-8))+'px';
+    var below=r.bottom+4, boxH=Math.min(232,(names.length*42)+24);
+    box.style.top=((below+boxH>window.innerHeight)?Math.max(8,r.top-boxH-4):below)+'px';   /* flip above if no room below */
+    box.style.display='block';
+  }
+  function pickMention(name){
+    var el=MENTION_EL; if(!el||!name)return;
+    var tok=currentMentionToken(el), val=el.value||'';
+    if(tok){ el.value=val.slice(0,tok.start)+'@'+name+' '+val.slice(tok.end); var caret=tok.start+name.length+2; el.focus(); try{el.setSelectionRange(caret,caret);}catch(e){} }
+    else { el.value=(val?val+' ':'')+'@'+name+' '; el.focus(); }
+    var box=document.getElementById('mentionBox'); if(box)box.style.display='none'; MENTION_EL=null;
+  }
+  function hideMentions(){ var box=document.getElementById('mentionBox'); if(box)box.style.display='none'; MENTION_EL=null; }
+  document.addEventListener('input',function(e){ if(isMentionTarget(e.target))showMentions(e.target); },true);
+  document.addEventListener('keyup',function(e){ if(isMentionTarget(e.target)&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))showMentions(e.target); },true);
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape')hideMentions(); },true);
+  document.addEventListener('scroll',function(){ if(MENTION_EL)showMentions(MENTION_EL); },true);
   function reactionHTML(token){
     if(!token)return '';
     if(token.charAt(0)==='~')return ' <span class="remoji remoji-anim">'+emoHTML(token.slice(1),true)+'</span>';
