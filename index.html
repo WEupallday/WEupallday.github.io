@@ -656,7 +656,7 @@
   html.is-app{
     /* brand header + one compact scrollable row of nav.
        padding-top clears the Dynamic Island / notch via the safe-area inset. */
-    .topbar{position:sticky;top:0;z-index:90;padding-top:calc(env(safe-area-inset-top, 0px) + var(--demo-safe, 0px) + 6px);}
+    .topbar{position:sticky;top:0;z-index:90;padding-top:calc(max(env(safe-area-inset-top, 0px), 50px) + var(--demo-safe, 0px) + 10px);}   /* guaranteed clearance below the Dynamic Island even if the safe-area inset reports 0 */
     /* Instagram-style minimal bar: ☰ menu (left) · theFLAP (centered) · 🔔 (right).
        Home + Support live in the ☰ drawer instead of cluttering the top. */
     .topbar-inner{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;padding:6px 12px 8px;overflow:visible;}
@@ -681,7 +681,8 @@
     body.drawer-open #drawerScrim{opacity:1;pointer-events:auto;}
     #sideDrawer{display:block;position:fixed;top:0;left:0;height:100%;width:84%;max-width:340px;z-index:200;background:linear-gradient(160deg,#1636a6 0%,#0f2570 100%);box-shadow:6px 0 26px rgba(0,0,0,.55);transform:translateX(-104%);transition:transform .26s ease;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px 24px;}
     body.drawer-open #sideDrawer{transform:translateX(0);}
-    .drawer-head{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:11px 4px 9px;margin-bottom:6px;background:linear-gradient(160deg,#1636a6,#0f2570);border-bottom:2px solid #ffd23f;z-index:2;}
+    .drawer-head{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:calc(max(env(safe-area-inset-top,0px),50px) + 8px) 4px 11px;margin-bottom:6px;background:linear-gradient(160deg,#1636a6,#0f2570);border-bottom:2px solid #ffd23f;z-index:2;}   /* push "theFLAP menu" below the island */
+    .fd-bar{padding-top:calc(max(env(safe-area-inset-top,0px),44px) + 10px);}   /* single-post back bar clears the island too (app only) */
     .drawer-title{font-family:'Chewy','Comic Sans MS',cursive;font-size:19px;color:#fff;}
     .drawer-title b{color:#ffe08a;}
     .drawer-close{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:15px;line-height:1;width:30px;height:30px;border-radius:50%;cursor:pointer;}
