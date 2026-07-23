@@ -2511,7 +2511,7 @@
     var weekAgo=Date.now()-7*24*60*60*1000, by={};
     rows.forEach(function(r){
       var t=r.created_at?Date.parse(r.created_at):0, n=(r.name||'');
-      if(n && t>=weekAgo) by[n]=(by[n]||0)+1;
+      if(n && n.toLowerCase()!=='lock' && t>=weekAgo) by[n]=(by[n]||0)+1;   /* owner (lock) is excluded — Flapper of the Week is for the members */
     });
     var top=Object.keys(by).map(function(k){return [k,by[k]];}).sort(function(a,b){return b[1]-a[1];})[0];
     var fb=document.getElementById('flapperBox');
