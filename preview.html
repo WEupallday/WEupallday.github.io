@@ -787,6 +787,8 @@
   .dm-compose{display:flex;gap:6px;padding:8px;background:#fff;border-top:2px solid #ffd23f;}
   .dm-compose input{flex:1;min-width:0;border:2px solid var(--card-border);border-radius:20px;padding:9px 14px;font-size:13px;font-family:Verdana,Arial,sans-serif;}
   .dm-compose button{background:linear-gradient(180deg,#2f9e5a,#1c7a42);color:#fff;border:none;border-radius:20px;padding:9px 16px;font-weight:bold;cursor:pointer;}
+  .dm-compose .dm-emoji-toggle{background:#fff;color:#2a5fd0;border:2px solid var(--card-border);border-radius:50%;width:38px;height:38px;padding:0;font-size:18px;flex:0 0 auto;}
+  .dm-tray{background:#f4f7ff;border-top:1px solid #d7e0f2;padding:8px 10px 10px;max-height:150px;overflow-y:auto;}
   .social-btn{display:none!important;}
   body.social-on .social-btn{display:block!important;}
   /* ===== lock the scale so a stray pinch / double-tap can't get stuck zoomed ===== */
@@ -1543,6 +1545,13 @@
   function pickReplyEmoji(key,idx,btn){reactPick(key,RE_EMOJIS[idx],btn);}
   function pickReplyMood(key,mood,btn){reactPick(key,'~'+mood,btn);}
   function splitReply(body){var b=body||'';var i=b.indexOf(RE_SEP);return i>-1?{emoji:b.slice(0,i),text:b.slice(i+1)}:{emoji:'',text:b};}
+  /* ===== DM composer: same emoji + animated-mood picker as reply boxes ===== */
+  function dmEmojiBtns(){ return RE_EMOJIS.map(function(e){return '<button type="button" title="add emoji" onclick="dmInsert(\''+e+'\')">'+e+'</button>';}).join(''); }
+  function dmMoodBtns(){ return RE_MOODS.map(function(m){return '<button type="button" class="moodbtn" title="'+m+'" onclick="dmInsert(\'⟨mood:'+m+'⟩\')">'+emoHTML(m,true)+'</button>';}).join(''); }
+  function dmInsert(tok){ var inp=document.getElementById('dmInput'); if(!inp)return; inp.value=(inp.value||'')+tok; inp.focus(); }
+  function toggleDmTray(){ var t=document.getElementById('dmTray'); if(t)t.style.display=(t.style.display==='none'||!t.style.display)?'block':'none'; }
+  /* render a DM bubble: escape text, then turn ⟨mood:name⟩ tokens into animated mood faces */
+  function dmText(t){ return esc(t||'').replace(/⟨mood:([a-z]+)⟩/g,function(m,name){ return '<span class="remoji remoji-anim">'+emoHTML(name,true)+'</span>'; }); }
   function reactionHTML(token){
     if(!token)return '';
     if(token.charAt(0)==='~')return ' <span class="remoji remoji-anim">'+emoHTML(token.slice(1),true)+'</span>';
@@ -3257,7 +3266,7 @@
     /* show my message instantly, like a real text — before the server round-trip */
     var th=document.getElementById('dmThread');
     if(th){ var ph=th.querySelector('.dm-empty'); if(ph)ph.remove();
-      th.insertAdjacentHTML('beforeend','<div class="dm-line mine"><span class="dm-bub">'+esc(text)+'</span></div>');
+      th.insertAdjacentHTML('beforeend','<div class="dm-line mine"><span class="dm-bub">'+dmText(text)+'</span></div>');
       th.scrollTop=th.scrollHeight; }
     if(inp)inp.focus();
     try{ await sb.from('flaps').insert({name:'::dm::',body:ME.name+PSEP+name+PSEP+text,mood:'flappy',likes:0}); }catch(e){}
@@ -3269,7 +3278,7 @@
     var msgs=await loadDM(name), me=(ME.name||'').toLowerCase();
     if(msgs.length===th.querySelectorAll('.dm-line').length) return;   /* nothing new — don't churn the thread */
     var nearBottom=(th.scrollHeight-th.scrollTop-th.clientHeight)<90;
-    th.innerHTML=msgs.length?msgs.map(function(m){var mine=m.from.toLowerCase()===me;return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+esc(m.text)+'</span></div>';}).join(''):'<div class="dm-empty" style="text-align:center;color:#889;font-size:12px;padding:24px;">No messages yet — say hi 👋</div>';
+    th.innerHTML=msgs.length?msgs.map(function(m){var mine=m.from.toLowerCase()===me;return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+dmText(m.text)+'</span></div>';}).join(''):'<div class="dm-empty" style="text-align:center;color:#889;font-size:12px;padding:24px;">No messages yet — say hi 👋</div>';
     if(nearBottom)th.scrollTop=th.scrollHeight;
   }
   async function openSocial(tab){
@@ -3301,11 +3310,12 @@
     var box=document.getElementById('profCardBox'); document.getElementById('profModal').classList.add('open');
     box.innerHTML='<div class="pc-strip"><span><a onclick="openSocial(\'messages\')" style="cursor:pointer;color:#c86a10;">‹ back</a> · '+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕</span></div><div class="pc-body" style="padding:22px;text-align:center;">loading…</div>';
     var msgs=await loadDM(name), me=(ME.name||'').toLowerCase();
-    var thread=msgs.length?msgs.map(function(m){var mine=m.from.toLowerCase()===me;return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+esc(m.text)+'</span></div>';}).join(''):'<div class="dm-empty" style="text-align:center;color:#889;font-size:12px;padding:24px;">No messages yet — say hi 👋</div>';
+    var thread=msgs.length?msgs.map(function(m){var mine=m.from.toLowerCase()===me;return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+dmText(m.text)+'</span></div>';}).join(''):'<div class="dm-empty" style="text-align:center;color:#889;font-size:12px;padding:24px;">No messages yet — say hi 👋</div>';
     var nm=esc(name).replace(/'/g,'');
     box.innerHTML='<div class="pc-strip"><span><a onclick="openSocial(\'messages\')" style="cursor:pointer;color:#c86a10;">‹ back</a> · '+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕</span></div>'+
       '<div class="dm-thread" id="dmThread">'+thread+'</div>'+
-      '<div class="dm-compose"><input id="dmInput" placeholder="message '+esc(name)+'…" onkeydown="if(event.key===\'Enter\')sendDM(\''+nm+'\')"><button onclick="sendDM(\''+nm+'\')">Send</button></div>';
+      '<div class="dm-compose"><button type="button" class="dm-emoji-toggle" title="emojis & moods" onclick="toggleDmTray()">😊</button><input id="dmInput" placeholder="message '+esc(name)+'…" onkeydown="if(event.key===\'Enter\')sendDM(\''+nm+'\')"><button onclick="sendDM(\''+nm+'\')">Send</button></div>'+
+      '<div class="dm-tray" id="dmTray" style="display:none;"><div class="remoji-bar">'+dmEmojiBtns()+'</div><div class="remoji-bar moodrow">'+dmMoodBtns()+'</div></div>';
     var th=document.getElementById('dmThread'); if(th)th.scrollTop=th.scrollHeight;
     DM_OPEN=name;
   }
