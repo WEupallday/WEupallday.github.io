@@ -1,51 +1,43 @@
-const CACHE = 'theflap-v2';
-const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
+/* TheFlap service worker — network-first so site/app updates show up immediately.
+   Bump CACHE to force old caches out. */
+const CACHE = 'theflap-v3';
+const PRECACHE = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
+
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(()=>{}).then(() => self.skipWaiting()));
+  self.skipWaiting();   /* take over as soon as possible */
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE).catch(() => {})));
 });
+
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())   /* control open pages right away */
   );
 });
-self.addEventListener('message', (e) => { if (e.data === 'skipWaiting') self.skipWaiting(); });
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-  const isDoc = req.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html';
-  if (isDoc) {
-    // always try the network first for the app document, and keep the offline copy fresh
+
+  const accept = req.headers.get('accept') || '';
+  const isHTML = req.mode === 'navigate' || accept.includes('text/html');
+
+  if (isHTML) {
+    /* NETWORK-FIRST for the page: always try to get the freshest index.html,
+       cache it as a fallback, and only use the cache when offline. */
     e.respondWith(
-      fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put('/index.html', copy)).catch(()=>{});
-        return res;
-      }).catch(() => caches.match('/index.html').then((r) => r || caches.match('/')))
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put('/index.html', copy)).catch(() => {});
+          return res;
+        })
+        .catch(() => caches.match('/index.html').then((r) => r || caches.match('/')))
     );
     return;
   }
+
+  /* Static assets (icons, manifest): cache-first, fall back to network. */
   e.respondWith(caches.match(req).then((r) => r || fetch(req)));
-});
-self.addEventListener('push', (e) => {
-  let d = {};
-  try { d = e.data ? e.data.json() : {}; } catch (_) { d = { body: (e.data && e.data.text()) || '' }; }
-  const title = d.title || 'TheFlap 🐦';
-  e.waitUntil(self.registration.showNotification(title, {
-    body: d.body || 'Something flappened!',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    tag: d.tag || 'theflap',
-    data: { url: d.url || '/' }
-  }));
-});
-self.addEventListener('notificationclick', (e) => {
-  e.notification.close();
-  const url = (e.notification.data && e.notification.data.url) || '/';
-  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then((ws) => {
-    for (const w of ws) { if ('focus' in w) return w.focus(); }
-    if (clients.openWindow) return clients.openWindow(url);
-  }));
 });
