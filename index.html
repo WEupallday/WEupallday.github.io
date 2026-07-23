@@ -789,6 +789,11 @@
   .dm-compose button{background:linear-gradient(180deg,#2f9e5a,#1c7a42);color:#fff;border:none;border-radius:20px;padding:9px 16px;font-weight:bold;cursor:pointer;}
   .dm-compose .dm-emoji-toggle{background:#fff;color:#2a5fd0;border:2px solid var(--card-border);border-radius:50%;width:38px;height:38px;padding:0;font-size:18px;flex:0 0 auto;}
   .dm-tray{background:#f4f7ff;border-top:1px solid #d7e0f2;padding:8px 10px 10px;max-height:150px;overflow-y:auto;}
+  .loadmore-wrap{text-align:center;padding:14px 0 22px;}
+  .loadmore-btn{background:linear-gradient(180deg,#ffd23f,#ffb703);color:#5a3a00;border:2px solid #e08a00;border-radius:22px;padding:10px 22px;font-weight:bold;font-size:13px;cursor:pointer;box-shadow:0 2px 0 #c77a00;}
+  .loadmore-btn:hover{filter:brightness(1.05);}
+  .loadmore-btn:disabled{opacity:.6;cursor:default;}
+  .feed-end{color:#9fb0e0;font-size:11px;letter-spacing:.04em;}
   .social-btn{display:none!important;}
   body.social-on .social-btn{display:block!important;}
   /* ===== lock the scale so a stray pinch / double-tap can't get stuck zoomed ===== */
@@ -2129,6 +2134,7 @@
   /* ================= live feed ================= */
   var localPosts=[];     /* offline-mode fallback */
   var LAST_ROWS=[];      /* cached posts */
+  var FEED_LIMIT=50, FEED_HAS_MORE=true, FEED_LOADING_MORE=false;   /* how many flaps to show; grows as you scroll for older ones */
   var REPLIES={};        /* flap_id -> replies */
   var FEED_FILTER=null;  /* active @tag filter */
   var USERS={};          /* lowercase name -> {name, avatar_url, ...} */
@@ -2258,8 +2264,23 @@
       : '<div class="card"><div class="card-body" style="text-align:center;font-size:11px;">'+
         (FEED_FILTER?'no flaps for @'+esc(FEED_FILTER)+' yet!':(ONLINE?'no flaps yet — be the first!':'demo mode — configure the backend (see setup file) and your friends\' flaps will appear here!'))+
         '</div></div>');
+    /* "load older flaps" control at the bottom so the feed never dead-ends */
+    if(!FEED_FILTER && rows.length && FEED_HAS_MORE){
+      box.innerHTML+='<div class="loadmore-wrap"><button id="loadMoreBtn" class="loadmore-btn" onclick="loadOlderFlaps()">↓ Load older flaps</button></div>';
+    } else if(!FEED_FILTER && rows.length && !FEED_HAS_MORE){
+      box.innerHTML+='<div class="loadmore-wrap"><span class="feed-end">✦ you’ve reached the very first flap ✦</span></div>';
+    }
     if(__sy>0){try{window.scrollTo(0,__sy);}catch(e){}}   /* keep the reader where they were across refreshes */
     try{refreshOpenFlap();}catch(e){}   /* keep an open single-post view in sync too */
+  }
+  /* fetch the next batch of older flaps by growing the window, then reload (poll keeps the bigger window too) */
+  async function loadOlderFlaps(){
+    if(FEED_LOADING_MORE||!FEED_HAS_MORE||!ONLINE)return;
+    FEED_LOADING_MORE=true;
+    var btn=document.getElementById('loadMoreBtn'); if(btn){btn.textContent='Loading…';btn.disabled=true;}
+    FEED_LIMIT+=50;
+    try{ await loadFeed(); }catch(e){}
+    FEED_LOADING_MORE=false;
   }
   function tagFilter(name){FEED_FILTER=name;renderLive();toast('Showing flaps for '+(name[0]==='#'?name:'@'+name));document.getElementById('liveFeed').scrollIntoView({behavior:'smooth',block:'nearest'});}
   function clearFilter(){FEED_FILTER=null;renderLive();}
@@ -2692,8 +2713,9 @@
       return;
     }
     try{
-      var res=await sb.from('flaps').select('*').order('id',{ascending:false}).limit(50);
+      var res=await sb.from('flaps').select('*').order('id',{ascending:false}).limit(FEED_LIMIT);
       if(res.error)throw res.error;
+      FEED_HAS_MORE=((res.data||[]).length>=FEED_LIMIT);   /* a full page came back → there are probably older flaps */
       LAST_ROWS=(res.data||[]).filter(function(r){return String(r.name||'').indexOf('::')!==0;}); /* keep ALL hidden ::sentinel:: rows (ticker, poll, friend, dm, features…) out of the feed */
       loadTicker();
       loadVerified();
@@ -2726,6 +2748,12 @@
   }
   if(ONLINE)setInterval(function(){if(ME.name){ if(!isTyping())loadFeed(); loadNotifs(); }},20000);   /* don't refresh the feed while you're mid-reply — it'd wipe your open box */
   if(ONLINE)setInterval(function(){ if(ME.name && DM_OPEN && document.getElementById('dmThread')){ refreshDMThread(DM_OPEN); } },4000);   /* live-refresh the open DM thread so replies arrive; safe while typing (only swaps bubbles, not your box) */
+  /* auto-load older flaps as you near the bottom, so the feed keeps flowing */
+  window.addEventListener('scroll',function(){
+    if(FEED_FILTER||FEED_LOADING_MORE||!FEED_HAS_MORE)return;
+    var nearBottom=(window.innerHeight+window.pageYOffset)>=(document.body.offsetHeight-600);
+    if(nearBottom)loadOlderFlaps();
+  },{passive:true});
 
   async function delReply(rid, fid){
     if(!ME.name)return;
