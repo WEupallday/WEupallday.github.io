@@ -1522,7 +1522,7 @@
     var html=esc(text)
       .replace(/@([a-z0-9_]+)/gi,function(_,n){
         tags.push(n);
-        return '<a class="attag" onclick="tagFilter(\''+n+'\')">@'+n+'</a>';
+        return '<a class="attag" onclick="showUserProfile(\''+n+'\')">@'+n+'</a>';   /* tap a @name → open their profile (not a feed filter) */
       })
       .replace(/#([a-z0-9_]+)/gi,function(_,n){
         return '<a class="attag htag" onclick="tagFilter(\'#'+n+'\')">#'+n+'</a>';
