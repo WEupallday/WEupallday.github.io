@@ -803,6 +803,15 @@
   .mention-item:hover,.mention-item.on{background:#fff2d6;}
   .mention-item .m-ava{width:26px;height:26px;border-radius:50%;overflow:hidden;flex:0 0 auto;background:#eee;}
   .mention-item .m-ava img,.mention-item .m-ava svg{width:100%;height:100%;display:block;object-fit:cover;}
+  /* ===== X-style header PREVIEW — app-only, shown only with ?hdr=x (live app + website untouched) ===== */
+  .xtabs{display:none;}
+  html.is-app body.hdr-x #xTabs{display:flex;background:linear-gradient(180deg,#ff9a2e,#e07d0a);border-bottom:2px solid #ffd23f;box-shadow:0 3px 8px rgba(0,0,0,.3);}
+  html.is-app body.hdr-x #xTabs .xtab{flex:1;text-align:center;padding:12px 0 11px;font-family:'Chewy','Comic Sans MS',cursive;font-size:15px;font-weight:bold;color:#fff2cf;background:transparent;border:none;cursor:pointer;position:relative;letter-spacing:.4px;}
+  html.is-app body.hdr-x #xTabs .xtab.on{color:#fff;}
+  html.is-app body.hdr-x #xTabs .xtab.on::after{content:'';position:absolute;left:50%;transform:translateX(-50%);bottom:2px;width:54px;height:4px;border-radius:4px;background:#ffd23f;}
+  html.is-app body.hdr-x .menu-btn.as-avatar{padding:0;width:36px;height:36px;border-radius:50%;overflow:hidden;background:#0a0a0a;border:2px solid #ffd23f;display:inline-flex;align-items:center;justify-content:center;}
+  html.is-app body.hdr-x .menu-btn.as-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}
+  html.is-app body.hdr-x .menu-btn.as-avatar .emo,html.is-app body.hdr-x .menu-btn.as-avatar svg{width:100%;height:100%;display:block;}
   .social-btn{display:none!important;}
   body.social-on .social-btn{display:block!important;}
   /* ===== lock the scale so a stray pinch / double-tap can't get stuck zoomed ===== */
@@ -922,6 +931,11 @@
     <button class="navbtn hqbtn" id="hqBtn" type="button" onclick="showAdmin()" title="Admin HQ">👑</button>
     <button class="navbtn bell" id="bellBtn" type="button" onclick="toggleNotifs(event)">🔔<span id="bellCount" class="bell-count"></span></button>
   </div>
+</div>
+<!-- X-style tab row (preview only, app-only, shown when ?hdr=x) -->
+<div id="xTabs" class="xtabs">
+  <button class="xtab on" type="button" data-tab="foryou" onclick="xSwitchTab('foryou',this)">For You</button>
+  <button class="xtab" type="button" data-tab="friends" onclick="xSwitchTab('friends',this)">Friends</button>
 </div>
 <div id="notifPanel" class="notif-panel"></div>
 
@@ -2157,8 +2171,29 @@
     loadPoll();
     if(ME.admin)document.getElementById('adminBtn').classList.add('show');
     document.body.classList.toggle('admin-on', !!ME.admin);   /* shows the 👑 HQ button in the top bar */
+    try{applyHdrX();}catch(e){}   /* refresh the X-style avatar in the header once we know who you are */
     heartbeat();
   }
+  /* ===== X-style header preview (app-only, ?hdr=x) — avatar left, logo center, For You / Friends tabs ===== */
+  var HDR_X = /[?&]hdr=x/.test(location.search);
+  function applyHdrX(){
+    if(!HDR_X)return;
+    document.body.classList.add('hdr-x');
+    var mb=document.querySelector('.menu-btn');
+    if(mb){ mb.classList.add('as-avatar'); mb.innerHTML=(typeof ME!=='undefined'&&ME.pic)?'<img src="'+esc(ME.pic)+'" alt="you">':(typeof myAva==='function'?myAva():'☰'); }
+  }
+  function xSwitchTab(tab,btn){
+    var tabs=document.querySelectorAll('#xTabs .xtab'); for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('on');
+    if(btn)btn.classList.add('on');
+    if(tab==='friends'){
+      if(typeof FEATURES!=='undefined' && FEATURES.social){ try{openSocial('friends');}catch(e){} }
+      else { toast('Friends feed is coming soon 👀'); }
+    } else {
+      try{clearFilter();}catch(e){}
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+  }
+  try{applyHdrX();}catch(e){}
   /* real profile pic upload — replaces the generated cartoon */
   document.getElementById('avatarFile').addEventListener('change',async function(e){
     var f=e.target.files[0];if(!f)return;
