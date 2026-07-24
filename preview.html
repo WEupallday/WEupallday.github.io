@@ -822,6 +822,9 @@
   html.is-app body.hdr-x .launcher .ltxt b{font-size:12.5px;}
   html.is-app body.hdr-x .launcher .ltxt span{font-size:9px;}
   html.is-app body.hdr-x .launcher .comp-btn.go{font-size:11px;padding:6px 12px;animation:none;box-shadow:0 2px 0 #b45c00;}
+  /* auto-hide the top bar on scroll-down, reveal on scroll-up — reliable in the app, not just touch devices */
+  html.is-app .topbar{transition:transform .26s ease;}
+  html.is-app body.bar-hidden .topbar{transform:translateY(-100%);}
   .social-btn{display:none!important;}
   body.social-on .social-btn{display:block!important;}
   /* ===== lock the scale so a stray pinch / double-tap can't get stuck zoomed ===== */
