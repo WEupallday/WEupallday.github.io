@@ -812,6 +812,9 @@
   html.is-app body.hdr-x .menu-btn.as-avatar{padding:0;width:36px;height:36px;border-radius:50%;overflow:hidden;background:#0a0a0a;border:2px solid #ffd23f;display:inline-flex;align-items:center;justify-content:center;}
   html.is-app body.hdr-x .menu-btn.as-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}
   html.is-app body.hdr-x .menu-btn.as-avatar .emo,html.is-app body.hdr-x .menu-btn.as-avatar svg{width:100%;height:100%;display:block;}
+  .fab-compose{display:none;}
+  html.is-app body.hdr-x .fab-compose{display:flex;position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:58px;height:58px;border-radius:50%;background:linear-gradient(180deg,#ffb703,#f5820a);border:3px solid #fff;color:#fff;font-size:34px;font-weight:bold;line-height:1;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.45);z-index:150;cursor:pointer;padding:0 0 4px;}
+  html.is-app body.hdr-x .fab-compose:active{transform:scale(.94);}
   .social-btn{display:none!important;}
   body.social-on .social-btn{display:block!important;}
   /* ===== lock the scale so a stray pinch / double-tap can't get stuck zoomed ===== */
@@ -938,6 +941,8 @@
   <button class="xtab" type="button" data-tab="friends" onclick="xSwitchTab('friends',this)">Friends</button>
 </div>
 <div id="notifPanel" class="notif-panel"></div>
+<!-- floating compose button (preview only, app-only) -->
+<button id="fabCompose" class="fab-compose" type="button" onclick="openPear()" aria-label="Post a flap">+</button>
 
 <!-- install-to-home-screen prompt -->
 <div id="installBar">
@@ -2181,6 +2186,9 @@
     document.body.classList.add('hdr-x');
     var mb=document.querySelector('.menu-btn');
     if(mb){ mb.classList.add('as-avatar'); mb.innerHTML=(typeof ME!=='undefined'&&ME.pic)?'<img src="'+esc(ME.pic)+'" alt="you">':(typeof myAva==='function'?myAva():'☰'); }
+    /* move the tab row INTO the sticky top bar so it stays pinned while scrolling (like X) */
+    var tb=document.querySelector('.topbar'), xt=document.getElementById('xTabs');
+    if(tb&&xt&&xt.parentNode!==tb){ tb.appendChild(xt); }
   }
   function xSwitchTab(tab,btn){
     var tabs=document.querySelectorAll('#xTabs .xtab'); for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('on');
