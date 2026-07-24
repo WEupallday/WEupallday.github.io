@@ -2308,6 +2308,10 @@
   function renderLive(){
     var box=document.getElementById('liveFeed'); if(!box)return;
     var __sy=window.pageYOffset||document.documentElement.scrollTop||0;
+    /* scroll anchor: remember the topmost visible flap + where it sits on screen, so newer posts
+       loading in ABOVE the viewport can't shove the reader to a different spot (fixes the feed "jumping") */
+    var __anchorId=null, __anchorTop=0;
+    (function(){ var cs=box.querySelectorAll('.card[id^="flap-"]'); for(var i=0;i<cs.length;i++){ var rc=cs[i].getBoundingClientRect(); if(rc.bottom>4){ __anchorId=cs[i].id; __anchorTop=rc.top; break; } } })();
     var rows=(LAST_ROWS||[]).filter(function(r){return !isBlocked(r.name)&&!parseReflap(r.body);}),head='';
     if(FEED_FILTER){
       var f=FEED_FILTER.toLowerCase();
@@ -2337,7 +2341,12 @@
     } else if(!FEED_FILTER && rows.length && !FEED_HAS_MORE){
       box.innerHTML+='<div class="loadmore-wrap"><span class="feed-end">✦ you’ve reached the very first flap ✦</span></div>';
     }
-    if(__sy>0){try{window.scrollTo(0,__sy);}catch(e){}}   /* keep the reader where they were across refreshes */
+    /* restore reading position by pinning the SAME flap back to where it was on screen (not a stale pixel offset) */
+    if(__anchorId){
+      var __el=document.getElementById(__anchorId);
+      if(__el){ var __delta=__el.getBoundingClientRect().top-__anchorTop; if(Math.abs(__delta)>0.5){ try{window.scrollBy(0,__delta);}catch(e){} } }
+      else if(__sy>0){ try{window.scrollTo(0,__sy);}catch(e){} }
+    } else if(__sy>0){ try{window.scrollTo(0,__sy);}catch(e){} }
     try{refreshOpenFlap();}catch(e){}   /* keep an open single-post view in sync too */
   }
   /* fetch the next batch of older flaps by growing the window, then reload (poll keeps the bigger window too) */
@@ -2489,6 +2498,9 @@
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('/sw.js').then(function(r){swReg=r;}).catch(function(){});
   }
+  /* hide the gray iOS keyboard accessory bar (up/down arrows + Done) like native apps.
+     No-op until @capacitor/keyboard is installed + cap sync'd in the native build. */
+  try{ if(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Keyboard){ window.Capacitor.Plugins.Keyboard.setAccessoryBarVisible({isVisible:false}); } }catch(e){}
   window.addEventListener('beforeinstallprompt',function(e){
     e.preventDefault();deferredInstall=e;maybeShowInstall();
   });
