@@ -822,9 +822,10 @@
   html.is-app body.hdr-x .launcher .ltxt b{font-size:12.5px;}
   html.is-app body.hdr-x .launcher .ltxt span{font-size:9px;}
   html.is-app body.hdr-x .launcher .comp-btn.go{font-size:11px;padding:6px 12px;animation:none;box-shadow:0 2px 0 #b45c00;}
-  /* auto-hide the top bar on scroll-down, reveal on scroll-up — reliable in the app, not just touch devices */
-  html.is-app .topbar{transition:transform .26s ease;}
-  html.is-app body.bar-hidden .topbar{transform:translateY(-100%);}
+  /* auto-hide the top bar on scroll-down, reveal on scroll-up. Uses `top` (transform is blocked on this
+     sticky bar in-app), slid far enough up to fully clear even tall safe-area bars. */
+  html.is-app .topbar{transition:top .26s ease;}
+  html.is-app body.bar-hidden .topbar{top:-320px;}
   .social-btn{display:none!important;}
   body.social-on .social-btn{display:block!important;}
   /* ===== lock the scale so a stray pinch / double-tap can't get stuck zoomed ===== */
@@ -3651,6 +3652,21 @@ function toggleDrawer(force){
       lastY=y; ticking=false;
     });
   },{passive:true});
+  /* fresh, self-contained auto-hide toggler — reliably reveals the top bar on scroll-up in the app */
+  (function(){
+    var lastY=window.scrollY||0, tk=false;
+    window.addEventListener('scroll',function(){
+      if(tk)return; tk=true;
+      requestAnimationFrame(function(){
+        var y=window.scrollY||document.documentElement.scrollTop||0;
+        if(document.documentElement.classList.contains('is-app')){
+          if(y>110 && y>lastY+4) document.body.classList.add('bar-hidden');           /* scrolling down → hide */
+          else if(y<lastY-4 || y<60) document.body.classList.remove('bar-hidden');      /* scroll up a touch → reveal */
+        }
+        lastY=y; tk=false;
+      });
+    },{passive:true});
+  })();
   /* hard block pinch-zoom in the app so it can never get stuck zoomed (viewport lock + this) */
   if(compact()){
     document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});
