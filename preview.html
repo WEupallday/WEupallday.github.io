@@ -813,9 +813,15 @@
   html.is-app body.hdr-x .menu-btn.as-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}
   html.is-app body.hdr-x .menu-btn.as-avatar .emo,html.is-app body.hdr-x .menu-btn.as-avatar svg{width:100%;height:100%;display:block;}
   .fab-compose{display:none;}
-  html.is-app body.hdr-x .fab-compose{display:flex;position:fixed;right:18px;bottom:calc(22px + env(safe-area-inset-bottom,0px));width:66px;height:66px;border-radius:50%;background:linear-gradient(180deg,#ffc93c,#f5820a);border:4px solid #fff;color:#fff;font-size:40px;font-weight:bold;line-height:1;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(0,0,0,.5);z-index:150;cursor:pointer;padding:0 0 5px;animation:fabPop 2.4s ease-in-out infinite;}
+  html.is-app body.hdr-x .fab-compose{display:flex;position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:50%;background:linear-gradient(180deg,#ffc93c,#f5820a);border:3px solid #fff;color:#fff;font-size:32px;font-weight:bold;line-height:1;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.45);z-index:150;cursor:pointer;padding:0 0 4px;animation:fabPop 2.6s ease-in-out infinite;}
   html.is-app body.hdr-x .fab-compose:active{transform:scale(.93);}
-  @keyframes fabPop{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
+  @keyframes fabPop{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+  /* zoom the app content out a touch + slim the top post box (the floating + handles posting now) */
+  html.is-app body.hdr-x .wrap{zoom:0.9;}
+  html.is-app body.hdr-x .launcher{padding:9px 12px;gap:10px;}
+  html.is-app body.hdr-x .launcher .ltxt b{font-size:14px;}
+  html.is-app body.hdr-x .launcher .ltxt span{font-size:10px;}
+  html.is-app body.hdr-x .launcher .comp-btn.go{font-size:12px;padding:7px 13px;animation:none;box-shadow:0 2px 0 #b45c00;}
   .social-btn{display:none!important;}
   body.social-on .social-btn{display:block!important;}
   /* ===== lock the scale so a stray pinch / double-tap can't get stuck zoomed ===== */
