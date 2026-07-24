@@ -337,11 +337,12 @@
   #toast.show{transform:translateX(-50%) translateY(0);}
   .pagefoot{width:1010px;margin:26px auto 0;text-align:center;color:#8a94c8;font-size:9px;letter-spacing:.5px;line-height:1.6;}
 
-  .launcher{display:flex;align-items:center;gap:14px;padding:12px;cursor:pointer;}
+  .launcher{display:flex;align-items:center;gap:16px;padding:18px 16px;cursor:pointer;}
   .pearmini{width:56px;height:36px;flex:none;filter:drop-shadow(0 3px 5px rgba(0,0,0,.35));}
-  .launcher .ltxt b{display:block;color:var(--name-navy);font-size:13px;}
-  .launcher .ltxt span{font-size:10px;color:#2a4a6e;}
-  .launcher .comp-btn.go{margin-left:auto;}
+  .launcher .ltxt b{display:block;color:var(--name-navy);font-size:20px;line-height:1.15;}
+  .launcher .ltxt span{font-size:12.5px;color:#2a4a6e;}
+  .launcher .comp-btn.go{margin-left:auto;font-size:16px;padding:11px 26px;font-weight:bold;box-shadow:0 3px 0 #b45c00;animation:launchPulse 2.2s ease-in-out infinite;}
+  @keyframes launchPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
 
   #pearOverlay{position:fixed;inset:0;z-index:100;display:none;background:rgba(20,8,40,.5);align-items:center;justify-content:center;}
   #pearOverlay.open{display:flex;}
@@ -889,8 +890,8 @@
   <div class="gatecard">
     <h2>theFLAP.com</h2>
     <p>First time? Pick a name, a password + <b>a profile pic</b> — that makes your account. Coming back? Same name + password logs you in. Your profile follows you.</p>
-    <input type="text" id="gateName" maxlength="20" placeholder="Your name (what everyone sees)">
-    <input type="password" id="gatePass" maxlength="40" placeholder="Your password">
+    <input type="text" id="gateName" name="username" autocomplete="username" maxlength="20" placeholder="Your name (what everyone sees)">
+    <input type="password" id="gatePass" name="password" autocomplete="current-password" maxlength="40" placeholder="Your password">
     <div class="gate-ava-wrap">
       <div class="gate-ava" id="gateAva" onclick="document.getElementById('gateAvatarFile').click()" title="Add your profile pic">＋</div>
       <div class="gate-ava-label">New here? Tap the circle to add your <b>profile pic</b></div>
@@ -1025,10 +1026,10 @@
       <div class="card-body launcher" onclick="openPear()">
         <svg class="pearmini" viewBox="0 0 760 480"><g transform="translate(0 480) rotate(-90)"><use href="#pearBodyUse"/></g></svg>
         <div class="ltxt">
-          <b>Grab your FlapPad to post!</b>
-          <span>your flap goes live for all your friends</span>
+          <b>✍️ Tap here to post a flap!</b>
+          <span>share a photo, a mood, whatever — it goes live for all your friends</span>
         </div>
-        <button class="comp-btn go" type="button">Open</button>
+        <button class="comp-btn go" type="button">Post ✏️</button>
       </div>
     </div>
     <input type="file" id="postFile" accept="image/*" hidden>
@@ -1652,7 +1653,8 @@
     h+='<div class="card-foot"><span class="tags">Tagged: '+o.tags.map(function(t){return '<span class="tg">'+esc(String(t).toLowerCase())+'</span>';}).join('')+'</span>';
     h+='<button class="replybtn" type="button" onclick="toggleCompose(this)">💬 Reply</button>';
     if(o.liveId){
-      h+='<button class="likebtn" type="button" data-n="'+(o.likes||0)+'" data-id="'+o.liveId+'" onclick="likeLive(this)">👍 Flap This! ('+(o.likes||0)+')</button>';
+      var __lk=hasLiked(o.liveId);
+      h+='<button class="likebtn'+(__lk?' liked':'')+'" type="button" data-n="'+(o.likes||0)+'" data-id="'+o.liveId+'" onclick="likeLive(this)">'+(__lk?'✔ Flapped! ('+(o.likes||0)+')':'👍 Flap This! ('+(o.likes||0)+')')+'</button>';
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase())h+='<button class="reflapbtn'+(o.reflapped?' on':'')+'" type="button" onclick="reflapPost('+o.liveId+')">🔁 '+(o.reflapped?'Reflapped':'Reflap')+'</button>';
       if(ME.admin)h+='<button class="pinbtn" type="button" onclick="pinPost('+o.liveId+')">'+(o.pinned?'📌 Unpin':'📌 Pin')+'</button>';
       if(ME.admin)h+='<button class="delbtn" type="button" onclick="delLive('+o.liveId+')">DELETE</button>';
@@ -1774,6 +1776,8 @@
     }
   }
   renderFlappers();
+  /* prefill the saved name on the login gate so returning members don't retype it */
+  try{var _ln=localStorage.getItem('flap_lastname'), _gn=document.getElementById('gateName'); if(_ln&&_gn&&!_gn.value){_gn.value=_ln;}}catch(e){}
   /* hide the fictional "classic crew" feed once real members are posting */
   function updateClassicVisibility(){
     var real=(LAST_ROWS||[]).length>0;
@@ -1837,6 +1841,7 @@
     }
     ME.admin=(ME.name.toLowerCase()==='lock'); /* admin is silently tied to the "lock" account */
     err.textContent='';
+    try{localStorage.setItem('flap_lastname',ME.name);}catch(e){}   /* remember the name so it prefills next time */
     saveSession(ME);
     initMe();
     document.getElementById('gate').classList.add('hidden');
@@ -2848,12 +2853,17 @@
     }catch(e){toast('Reply failed — check connection.');}
   }
 
+  /* remember which flaps you've already liked (per device) so reloading can't re-like the same post */
+  var MY_LIKES=(function(){try{return JSON.parse(localStorage.getItem('flap_likes')||'{}');}catch(e){return {};}})();
+  function hasLiked(id){return !!MY_LIKES[id];}
+  function markLiked(id){MY_LIKES[id]=1;try{localStorage.setItem('flap_likes',JSON.stringify(MY_LIKES));}catch(e){}}
   async function likeLive(btn){
     if(!requireAuth())return;
     var id=btn.getAttribute('data-id');
+    if(hasLiked(id)){toast('You already flapped this one! 👍');return;}   /* one flap per person, survives reloads */
     var n=parseInt(btn.getAttribute('data-n'),10)||0;
     if(btn.classList.contains('liked'))return;
-    btn.classList.add('liked');
+    btn.classList.add('liked'); markLiked(id);
     n++;btn.textContent='✔ Flapped! ('+n+')';btn.setAttribute('data-n',n);
     if(ONLINE){try{await sb.from('flaps').update({likes:n}).eq('id',id);}catch(e){}}
     addNotif(ownerOf(id),ME.name,'like',id,'');   /* notify the post's owner */
