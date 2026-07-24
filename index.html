@@ -337,11 +337,12 @@
   #toast.show{transform:translateX(-50%) translateY(0);}
   .pagefoot{width:1010px;margin:26px auto 0;text-align:center;color:#8a94c8;font-size:9px;letter-spacing:.5px;line-height:1.6;}
 
-  .launcher{display:flex;align-items:center;gap:14px;padding:12px;cursor:pointer;}
+  .launcher{display:flex;align-items:center;gap:16px;padding:18px 16px;cursor:pointer;}
   .pearmini{width:56px;height:36px;flex:none;filter:drop-shadow(0 3px 5px rgba(0,0,0,.35));}
-  .launcher .ltxt b{display:block;color:var(--name-navy);font-size:13px;}
-  .launcher .ltxt span{font-size:10px;color:#2a4a6e;}
-  .launcher .comp-btn.go{margin-left:auto;}
+  .launcher .ltxt b{display:block;color:var(--name-navy);font-size:20px;line-height:1.15;}
+  .launcher .ltxt span{font-size:12.5px;color:#2a4a6e;}
+  .launcher .comp-btn.go{margin-left:auto;font-size:16px;padding:11px 26px;font-weight:bold;box-shadow:0 3px 0 #b45c00;animation:launchPulse 2.2s ease-in-out infinite;}
+  @keyframes launchPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
 
   #pearOverlay{position:fixed;inset:0;z-index:100;display:none;background:rgba(20,8,40,.5);align-items:center;justify-content:center;}
   #pearOverlay.open{display:flex;}
@@ -795,6 +796,13 @@
   .loadmore-btn:hover{filter:brightness(1.05);}
   .loadmore-btn:disabled{opacity:.6;cursor:default;}
   .feed-end{color:#9fb0e0;font-size:11px;letter-spacing:.04em;}
+  .mention-box{position:fixed;z-index:99999;background:#fff;border:2px solid var(--orange,#f7941e);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.28);overflow-y:auto;max-height:232px;}
+  .mention-hint{font-size:10px;color:#a06a10;background:#fff6e2;padding:4px 10px;border-bottom:1px solid #ffe3ad;}
+  .mention-item{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f0f4;}
+  .mention-item:last-child{border-bottom:none;}
+  .mention-item:hover,.mention-item.on{background:#fff2d6;}
+  .mention-item .m-ava{width:26px;height:26px;border-radius:50%;overflow:hidden;flex:0 0 auto;background:#eee;}
+  .mention-item .m-ava img,.mention-item .m-ava svg{width:100%;height:100%;display:block;object-fit:cover;}
   .social-btn{display:none!important;}
   body.social-on .social-btn{display:block!important;}
   /* ===== lock the scale so a stray pinch / double-tap can't get stuck zoomed ===== */
@@ -882,8 +890,8 @@
   <div class="gatecard">
     <h2>theFLAP.com</h2>
     <p>First time? Pick a name, a password + <b>a profile pic</b> — that makes your account. Coming back? Same name + password logs you in. Your profile follows you.</p>
-    <input type="text" id="gateName" maxlength="20" placeholder="Your name (what everyone sees)">
-    <input type="password" id="gatePass" maxlength="40" placeholder="Your password">
+    <input type="text" id="gateName" name="username" autocomplete="username" maxlength="20" placeholder="Your name (what everyone sees)">
+    <input type="password" id="gatePass" name="password" autocomplete="current-password" maxlength="40" placeholder="Your password">
     <div class="gate-ava-wrap">
       <div class="gate-ava" id="gateAva" onclick="document.getElementById('gateAvatarFile').click()" title="Add your profile pic">＋</div>
       <div class="gate-ava-label">New here? Tap the circle to add your <b>profile pic</b></div>
@@ -1018,10 +1026,10 @@
       <div class="card-body launcher" onclick="openPear()">
         <svg class="pearmini" viewBox="0 0 760 480"><g transform="translate(0 480) rotate(-90)"><use href="#pearBodyUse"/></g></svg>
         <div class="ltxt">
-          <b>Grab your FlapPad to post!</b>
-          <span>your flap goes live for all your friends</span>
+          <b>✍️ Tap here to post a flap!</b>
+          <span>share a photo, a mood, whatever — it goes live for all your friends</span>
         </div>
-        <button class="comp-btn go" type="button">Open</button>
+        <button class="comp-btn go" type="button">Post ✏️</button>
       </div>
     </div>
     <input type="file" id="postFile" accept="image/*" hidden>
@@ -1056,10 +1064,11 @@
       <div class="sidehead">House Rules</div>
       <div class="sidetext">
         1. be nice.<br>
-        2. no last names, phone numbers, addresses.<br>
-        3. what flaps here stays here.<br>
-        4. lock can delete anything. lock is the law.<br>
-        5. taco tuesday is sacred.
+        2. no explicit pictures, nudity, or nsfw content.<br>
+        3. no last names, phone numbers, addresses.<br>
+        4. what flaps here stays here.<br>
+        5. lock can delete anything. lock is the law.<br>
+        6. taco tuesday is sacred.
       </div>
     </div>
     <div class="sidebox">
@@ -1558,6 +1567,54 @@
   function toggleDmTray(){ var t=document.getElementById('dmTray'); if(t)t.style.display=(t.style.display==='none'||!t.style.display)?'block':'none'; }
   /* render a DM bubble: escape text, then turn ⟨mood:name⟩ tokens into animated mood faces */
   function dmText(t){ return esc(t||'').replace(/⟨mood:([a-z]+)⟩/g,function(m,name){ return '<span class="remoji remoji-anim">'+emoHTML(name,true)+'</span>'; }); }
+
+  /* ===== @mention autocomplete: type @ and tap a name to tag them ===== */
+  var MENTION_EL=null;
+  function mentionBox(){
+    var b=document.getElementById('mentionBox');
+    if(!b){ b=document.createElement('div'); b.id='mentionBox'; b.className='mention-box'; b.style.display='none';
+      b.addEventListener('mousedown',function(e){ var it=e.target.closest&&e.target.closest('.mention-item'); if(it){ e.preventDefault(); pickMention(it.getAttribute('data-name')); } });
+      document.body.appendChild(b);
+    }
+    return b;
+  }
+  function isMentionTarget(el){ if(!el)return false; return el.id==='composeText'||(el.id||'').indexOf('ri-')===0||el.id==='dmInput'; }
+  function currentMentionToken(el){
+    var pos=(el.selectionStart!=null?el.selectionStart:(el.value||'').length), before=(el.value||'').slice(0,pos);
+    var m=before.match(/@([A-Za-z0-9_]*)$/);
+    return m?{q:m[1],start:pos-m[0].length,end:pos}:null;
+  }
+  function showMentions(el){
+    var box=mentionBox(), tok=currentMentionToken(el);
+    if(!tok){ box.style.display='none'; MENTION_EL=null; return; }
+    var q=tok.q.toLowerCase();
+    var names=Object.keys(USERS||{}).map(function(k){return USERS[k]&&USERS[k].name;})
+      .filter(function(n){ return n && n.toLowerCase()!==(ME.name||'').toLowerCase() && (q===''||n.toLowerCase().indexOf(q)===0); })
+      .sort(function(a,b){return a.toLowerCase()<b.toLowerCase()?-1:1;}).slice(0,6);
+    if(!names.length){ box.style.display='none'; MENTION_EL=null; return; }
+    MENTION_EL=el;
+    box.innerHTML='<div class="mention-hint">tap a name to tag them</div>'+names.map(function(n){
+      return '<div class="mention-item" data-name="'+esc(n)+'"><span class="m-ava">'+avatarFor(n)+'</span><b>'+esc(n)+'</b></div>';
+    }).join('');
+    var r=el.getBoundingClientRect();
+    box.style.width=Math.min(280,Math.max(170,r.width))+'px';
+    box.style.left=Math.max(8,Math.min(r.left,window.innerWidth-Math.min(280,Math.max(170,r.width))-8))+'px';
+    var below=r.bottom+4, boxH=Math.min(232,(names.length*42)+24);
+    box.style.top=((below+boxH>window.innerHeight)?Math.max(8,r.top-boxH-4):below)+'px';   /* flip above if no room below */
+    box.style.display='block';
+  }
+  function pickMention(name){
+    var el=MENTION_EL; if(!el||!name)return;
+    var tok=currentMentionToken(el), val=el.value||'';
+    if(tok){ el.value=val.slice(0,tok.start)+'@'+name+' '+val.slice(tok.end); var caret=tok.start+name.length+2; el.focus(); try{el.setSelectionRange(caret,caret);}catch(e){} }
+    else { el.value=(val?val+' ':'')+'@'+name+' '; el.focus(); }
+    var box=document.getElementById('mentionBox'); if(box)box.style.display='none'; MENTION_EL=null;
+  }
+  function hideMentions(){ var box=document.getElementById('mentionBox'); if(box)box.style.display='none'; MENTION_EL=null; }
+  document.addEventListener('input',function(e){ if(isMentionTarget(e.target))showMentions(e.target); },true);
+  document.addEventListener('keyup',function(e){ if(isMentionTarget(e.target)&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))showMentions(e.target); },true);
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape')hideMentions(); },true);
+  document.addEventListener('scroll',function(){ if(MENTION_EL)showMentions(MENTION_EL); },true);
   function reactionHTML(token){
     if(!token)return '';
     if(token.charAt(0)==='~')return ' <span class="remoji remoji-anim">'+emoHTML(token.slice(1),true)+'</span>';
@@ -1596,7 +1653,8 @@
     h+='<div class="card-foot"><span class="tags">Tagged: '+o.tags.map(function(t){return '<span class="tg">'+esc(String(t).toLowerCase())+'</span>';}).join('')+'</span>';
     h+='<button class="replybtn" type="button" onclick="toggleCompose(this)">💬 Reply</button>';
     if(o.liveId){
-      h+='<button class="likebtn" type="button" data-n="'+(o.likes||0)+'" data-id="'+o.liveId+'" onclick="likeLive(this)">👍 Flap This! ('+(o.likes||0)+')</button>';
+      var __lk=hasLiked(o.liveId);
+      h+='<button class="likebtn'+(__lk?' liked':'')+'" type="button" data-n="'+(o.likes||0)+'" data-id="'+o.liveId+'" onclick="likeLive(this)">'+(__lk?'✔ Flapped! ('+(o.likes||0)+')':'👍 Flap This! ('+(o.likes||0)+')')+'</button>';
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase())h+='<button class="reflapbtn'+(o.reflapped?' on':'')+'" type="button" onclick="reflapPost('+o.liveId+')">🔁 '+(o.reflapped?'Reflapped':'Reflap')+'</button>';
       if(ME.admin)h+='<button class="pinbtn" type="button" onclick="pinPost('+o.liveId+')">'+(o.pinned?'📌 Unpin':'📌 Pin')+'</button>';
       if(ME.admin)h+='<button class="delbtn" type="button" onclick="delLive('+o.liveId+')">DELETE</button>';
@@ -1718,6 +1776,8 @@
     }
   }
   renderFlappers();
+  /* prefill the saved name on the login gate so returning members don't retype it */
+  try{var _ln=localStorage.getItem('flap_lastname'), _gn=document.getElementById('gateName'); if(_ln&&_gn&&!_gn.value){_gn.value=_ln;}}catch(e){}
   /* hide the fictional "classic crew" feed once real members are posting */
   function updateClassicVisibility(){
     var real=(LAST_ROWS||[]).length>0;
@@ -1781,6 +1841,7 @@
     }
     ME.admin=(ME.name.toLowerCase()==='lock'); /* admin is silently tied to the "lock" account */
     err.textContent='';
+    try{localStorage.setItem('flap_lastname',ME.name);}catch(e){}   /* remember the name so it prefills next time */
     saveSession(ME);
     initMe();
     document.getElementById('gate').classList.add('hidden');
@@ -2792,12 +2853,17 @@
     }catch(e){toast('Reply failed — check connection.');}
   }
 
+  /* remember which flaps you've already liked (per device) so reloading can't re-like the same post */
+  var MY_LIKES=(function(){try{return JSON.parse(localStorage.getItem('flap_likes')||'{}');}catch(e){return {};}})();
+  function hasLiked(id){return !!MY_LIKES[id];}
+  function markLiked(id){MY_LIKES[id]=1;try{localStorage.setItem('flap_likes',JSON.stringify(MY_LIKES));}catch(e){}}
   async function likeLive(btn){
     if(!requireAuth())return;
     var id=btn.getAttribute('data-id');
+    if(hasLiked(id)){toast('You already flapped this one! 👍');return;}   /* one flap per person, survives reloads */
     var n=parseInt(btn.getAttribute('data-n'),10)||0;
     if(btn.classList.contains('liked'))return;
-    btn.classList.add('liked');
+    btn.classList.add('liked'); markLiked(id);
     n++;btn.textContent='✔ Flapped! ('+n+')';btn.setAttribute('data-n',n);
     if(ONLINE){try{await sb.from('flaps').update({likes:n}).eq('id',id);}catch(e){}}
     addNotif(ownerOf(id),ME.name,'like',id,'');   /* notify the post's owner */
