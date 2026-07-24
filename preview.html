@@ -2904,8 +2904,10 @@
     if(ONLINE){ try{ var q=sb.from('flap_replies').delete().eq('id',rid); if(!ME.admin)q=q.gte('created_at', new Date(Date.now()-DELETE_WINDOW_MS).toISOString()); await q; }catch(e){} }
     toast('Reply deleted.');
   }
+  var SENDING_REPLIES={};
   async function sendReply(id){
     if(!requireAuth())return;
+    if(SENDING_REPLIES[id])return;   /* block a duplicate submit (rapid Enter+button / mobile ghost-tap) */
     var inp=document.getElementById('ri-'+id);
     var text=(inp&&inp.value||'').trim();
     if(!text){toast('Type a reply first!');return;}
@@ -2916,6 +2918,8 @@
       renderLive();toast('Replied (demo mode)');
       return;
     }
+    SENDING_REPLIES[id]=1;
+    if(inp)inp.value='';   /* clear immediately so the same text can't be sent twice */
     try{
       var r=await sb.from('flap_replies').insert({flap_id:id,name:ME.name,body:body});
       if(r.error)throw r.error;
@@ -2923,7 +2927,8 @@
       addNotif(ownerOf(id),ME.name,'reply',id,text);   /* notify the flap's owner */
       await loadFeed();
       toast('Reply posted!');
-    }catch(e){toast('Reply failed — check connection.');}
+    }catch(e){ if(inp)inp.value=text; toast('Reply failed — check connection.'); }
+    finally{ delete SENDING_REPLIES[id]; }
   }
 
   /* remember which flaps you've already liked (per device) so reloading can't re-like the same post */

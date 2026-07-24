@@ -1583,11 +1583,11 @@
   function dmText(t){ return esc(t||'').replace(/⟨mood:([a-z]+)⟩/g,function(m,name){ return '<span class="remoji remoji-anim">'+emoHTML(name,true)+'</span>'; }); }
 
   /* ===== @mention autocomplete: type @ and tap a name to tag them ===== */
-  var MENTION_EL=null;
+  var MENTION_EL=null, MENTION_TOKEN=null;
   function mentionBox(){
     var b=document.getElementById('mentionBox');
     if(!b){ b=document.createElement('div'); b.id='mentionBox'; b.className='mention-box'; b.style.display='none';
-      b.addEventListener('mousedown',function(e){ var it=e.target.closest&&e.target.closest('.mention-item'); if(it){ e.preventDefault(); pickMention(it.getAttribute('data-name')); } });
+      b.addEventListener('pointerdown',function(e){ var it=e.target.closest&&e.target.closest('.mention-item'); if(it){ e.preventDefault(); pickMention(it.getAttribute('data-name')); } });
       document.body.appendChild(b);
     }
     return b;
@@ -1605,8 +1605,8 @@
     var names=Object.keys(USERS||{}).map(function(k){return USERS[k]&&USERS[k].name;})
       .filter(function(n){ return n && n.toLowerCase()!==(ME.name||'').toLowerCase() && (q===''||n.toLowerCase().indexOf(q)===0); })
       .sort(function(a,b){return a.toLowerCase()<b.toLowerCase()?-1:1;}).slice(0,6);
-    if(!names.length){ box.style.display='none'; MENTION_EL=null; return; }
-    MENTION_EL=el;
+    if(!names.length){ box.style.display='none'; MENTION_EL=null; MENTION_TOKEN=null; return; }
+    MENTION_EL=el; MENTION_TOKEN=tok;
     box.innerHTML='<div class="mention-hint">tap a name to tag them</div>'+names.map(function(n){
       return '<div class="mention-item" data-name="'+esc(n)+'"><span class="m-ava">'+avatarFor(n)+'</span><b>'+esc(n)+'</b></div>';
     }).join('');
@@ -1619,12 +1619,13 @@
   }
   function pickMention(name){
     var el=MENTION_EL; if(!el||!name)return;
-    var tok=currentMentionToken(el), val=el.value||'';
+    var tok=MENTION_TOKEN||currentMentionToken(el), val=el.value||'';
     if(tok){ el.value=val.slice(0,tok.start)+'@'+name+' '+val.slice(tok.end); var caret=tok.start+name.length+2; el.focus(); try{el.setSelectionRange(caret,caret);}catch(e){} }
     else { el.value=(val?val+' ':'')+'@'+name+' '; el.focus(); }
-    var box=document.getElementById('mentionBox'); if(box)box.style.display='none'; MENTION_EL=null;
+    try{el.dispatchEvent(new Event('input',{bubbles:true}));}catch(e){}
+    var box=document.getElementById('mentionBox'); if(box)box.style.display='none'; MENTION_EL=null; MENTION_TOKEN=null;
   }
-  function hideMentions(){ var box=document.getElementById('mentionBox'); if(box)box.style.display='none'; MENTION_EL=null; }
+  function hideMentions(){ var box=document.getElementById('mentionBox'); if(box)box.style.display='none'; MENTION_EL=null; MENTION_TOKEN=null; }
   document.addEventListener('input',function(e){ if(isMentionTarget(e.target))showMentions(e.target); },true);
   document.addEventListener('keyup',function(e){ if(isMentionTarget(e.target)&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))showMentions(e.target); },true);
   document.addEventListener('keydown',function(e){ if(e.key==='Escape')hideMentions(); },true);
@@ -2883,8 +2884,10 @@
     if(ONLINE){ try{ var q=sb.from('flap_replies').delete().eq('id',rid); if(!ME.admin)q=q.gte('created_at', new Date(Date.now()-DELETE_WINDOW_MS).toISOString()); await q; }catch(e){} }
     toast('Reply deleted.');
   }
+  var SENDING_REPLIES={};
   async function sendReply(id){
     if(!requireAuth())return;
+    if(SENDING_REPLIES[id])return;   /* block a duplicate submit (rapid Enter+button / mobile ghost-tap) */
     var inp=document.getElementById('ri-'+id);
     var text=(inp&&inp.value||'').trim();
     if(!text){toast('Type a reply first!');return;}
@@ -2895,6 +2898,8 @@
       renderLive();toast('Replied (demo mode)');
       return;
     }
+    SENDING_REPLIES[id]=1;
+    if(inp)inp.value='';   /* clear immediately so the same text can't be sent twice */
     try{
       var r=await sb.from('flap_replies').insert({flap_id:id,name:ME.name,body:body});
       if(r.error)throw r.error;
@@ -2902,7 +2907,8 @@
       addNotif(ownerOf(id),ME.name,'reply',id,text);   /* notify the flap's owner */
       await loadFeed();
       toast('Reply posted!');
-    }catch(e){toast('Reply failed — check connection.');}
+    }catch(e){ if(inp)inp.value=text; toast('Reply failed — check connection.'); }
+    finally{ delete SENDING_REPLIES[id]; }
   }
 
   /* remember which flaps you've already liked (per device) so reloading can't re-like the same post */
