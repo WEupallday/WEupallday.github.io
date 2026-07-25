@@ -1558,17 +1558,38 @@
     toastTimer=setTimeout(function(){t.classList.remove('show');},2200);
   }
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  /* parseTags: linkify @mentions + #hashtags. Unicode-safe (accents, stylized fonts, emoji).
+     @mentions match the real member list first (longest name wins) so names with spaces/emoji tag correctly;
+     falls back to a unicode letter/number run for unknown handles. */
   function parseTags(text){
-    var tags=[];
-    var html=esc(text)
-      .replace(/@([a-z0-9_]+)/gi,function(_,n){
-        tags.push(n);
-        return '<a class="attag" onclick="showUserProfile(\''+n+'\')">@'+n+'</a>';   /* tap a @name → open their profile (not a feed filter) */
-      })
-      .replace(/#([a-z0-9_]+)/gi,function(_,n){
-        return '<a class="attag htag" onclick="tagFilter(\'#'+n+'\')">#'+n+'</a>';
-      });
-    return {html:html,tags:tags};
+    text=(text==null?'':String(text));
+    var tags=[], known=[];
+    try{ known=Object.keys(USERS||{}).map(function(k){return USERS[k]&&USERS[k].name;}).filter(Boolean); }catch(e){}
+    known.sort(function(a,b){return (b?b.length:0)-(a?a.length:0);});   /* longest first: "@John Smith" beats "@John" */
+    var WORD=/[\p{L}\p{N}\p{M}_]/u, RUN=/^[\p{L}\p{N}\p{M}_]+/u;
+    function argSafe(s){return String(s).replace(/['"\\<>]/g,'');}       /* safe inside the onclick attribute */
+    var out='', i=0, n=text.length;
+    while(i<n){
+      var ch=text.charAt(i);
+      if(ch==='@'){
+        var rest=text.slice(i+1), matched=null;
+        for(var j=0;j<known.length;j++){ var nm=known[j]; if(!nm)continue;
+          if(rest.slice(0,nm.length).toLowerCase()===nm.toLowerCase()){ var after=rest.charAt(nm.length);
+            if(after===''||!WORD.test(after)){ matched=nm; break; } } }   /* whole-name match only */
+        if(!matched){ var mg=rest.match(RUN); if(mg)matched=mg[0]; }       /* fallback: unicode letters/marks/digits */
+        if(matched){ tags.push(matched);
+          out+='<a class="attag" onclick="showUserProfile(\''+argSafe(matched)+'\')">@'+esc(matched)+'</a>';
+          i+=1+matched.length; continue; }
+        out+=esc('@'); i++; continue;
+      }
+      if(ch==='#'){ var h=text.slice(i+1).match(RUN);
+        if(h){ out+='<a class="attag htag" onclick="tagFilter(\'#'+argSafe(h[0])+'\')">#'+esc(h[0])+'</a>'; i+=1+h[0].length; continue; }
+        out+=esc('#'); i++; continue;
+      }
+      var k=i; while(k<n){ var c=text.charAt(k); if(c==='@'||c==='#')break; k++; }
+      out+=esc(text.slice(i,k)); i=k;
+    }
+    return {html:out,tags:tags};
   }
   /* ===== emoji + animated-mood reactions on replies ===== */
   var REPLY_EMOJI={};
@@ -1614,12 +1635,12 @@
   function isMentionTarget(el){ if(!el)return false; return el.id==='composeText'||(el.id||'').indexOf('ri-')===0||el.id==='dmInput'; }
   function currentMentionToken(el){
     var pos=(el.selectionStart!=null?el.selectionStart:(el.value||'').length), before=(el.value||'').slice(0,pos);
-    var m=before.match(/@([A-Za-z0-9_]*)$/);
+    var m=before.match(/@([\p{L}\p{N}\p{M}_]*)$/u);   /* unicode-aware: accents, stylized fonts, etc. */
     return m?{q:m[1],start:pos-m[0].length,end:pos}:null;
   }
   function showMentions(el){
     var box=mentionBox();
-    if(!document.documentElement.classList.contains('is-app')){ box.style.display='none'; MENTION_EL=null; MENTION_TOKEN=null; return; }   /* @tag picker is app-only — the website stays original */
+    /* @mention picker runs on desktop web, mobile web, and the app (full parity) */
     var tok=currentMentionToken(el);
     if(!tok){ box.style.display='none'; MENTION_EL=null; MENTION_TOKEN=null; return; }
     var q=tok.q.toLowerCase();
@@ -2672,7 +2693,7 @@
     var counts={};
     rows.forEach(function(r){
       var seen={};
-      (String(r.body||'').match(/#[a-z0-9_]+/gi)||[]).forEach(function(t){t=t.toLowerCase(); if(!seen[t]){seen[t]=1; counts[t]=(counts[t]||0)+1;}});
+      (String(r.body||'').match(/#[\p{L}\p{N}\p{M}_]+/gu)||[]).forEach(function(t){t=t.toLowerCase(); if(!seen[t]){seen[t]=1; counts[t]=(counts[t]||0)+1;}});
     });
     var arr=Object.keys(counts).map(function(k){return [k,counts[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
     var tb=document.getElementById('trendBox');
@@ -2967,7 +2988,7 @@
       delete REPLY_EMOJI[ekey];
       addNotif(ownerOf(id),ME.name,'reply',id,text);   /* notify the flap's owner */
       /* notify each real @-tagged member in the reply too */
-      (text.match(/@([a-z0-9_]+)/gi)||[]).forEach(function(t){ var n=t.slice(1).toLowerCase(); if(USERS[n]&&n!==ME.name.toLowerCase())addNotif(USERS[n].name,ME.name,'tag',id,text); });
+      (function(){var seen={};parseTags(text).tags.forEach(function(nm){var n=(nm||'').toLowerCase();if(seen[n])return;seen[n]=1;if(USERS[n]&&n!==ME.name.toLowerCase())addNotif(USERS[n].name,ME.name,'tag',id,text);});})();
       /* optimistic insert of ONLY the new reply — no feed re-render (kills the flash), soft fade-in */
       var nr={flap_id:id,name:ME.name,body:body,id:(r.data&&r.data.id)||Date.now(),created_at:(r.data&&r.data.created_at)||new Date().toISOString()};
       (REPLIES[id]=REPLIES[id]||[]).push(nr);
@@ -3078,9 +3099,9 @@
   /* live "tagging:" indicator while you type */
   function updateTagBar(){
     var v=document.getElementById('composeText').value;
-    var m=v.match(/@[a-z0-9_]+/gi)||[];
+    var m=parseTags(v).tags;
     document.getElementById('tagBar').innerHTML=m.length
-      ? 'tagging: '+m.map(function(t){return '<span class="attag">'+esc(t)+'</span>';}).join(' ')
+      ? 'tagging: '+m.map(function(t){return '<span class="attag">@'+esc(t)+'</span>';}).join(' ')
       : '';
   }
   document.getElementById('composeText').addEventListener('input',updateTagBar);
@@ -3191,10 +3212,9 @@
       /* ping the admin's Discord with the post + text */
       discordPing('post',ME.name,text||'(photo)');
       /* notify each real @-tagged member */
-      var tagged=text.match(/@([a-z0-9_]+)/gi)||[];
       var seen={};
-      tagged.forEach(function(t){
-        var n=t.slice(1).toLowerCase();
+      parseTags(text).tags.forEach(function(nm){
+        var n=(nm||'').toLowerCase();
         if(seen[n])return;seen[n]=1;
         if(USERS[n]&&n!==ME.name.toLowerCase())addNotif(USERS[n].name,ME.name,'tag',newId,text);
       });
