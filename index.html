@@ -2574,6 +2574,30 @@
   })();
   /* light haptic tap on key actions (no-op on web) */
   function haptic(style){ try{ var P=window.Capacitor&&window.Capacitor.Plugins; if(P&&P.Haptics) P.Haptics.impact({style:style||'Light'}); }catch(e){} }
+  /* ===== dismiss the on-screen keyboard when you scroll the feed or tap away from a text field
+     (fixes the keyboard staying up after you leave a reply/compose box) ===== */
+  var KB_KEEP='.replyrow, .dm-compose, .pearwrap, .composer, #mentionBox, .remoji-bar, .dm-tray';
+  function blurActiveField(){
+    var a=document.activeElement;
+    if(a && (a.tagName==='INPUT'||a.tagName==='TEXTAREA')){
+      try{a.blur();}catch(e){}
+      try{ var P=window.Capacitor&&window.Capacitor.Plugins; if(P&&P.Keyboard) P.Keyboard.hide(); }catch(e){}
+    }
+  }
+  /* a real finger-drag to scroll while a field is focused → drop the keyboard (touchmove only fires on drags, not typing) */
+  document.addEventListener('touchmove', function(e){
+    var a=document.activeElement;
+    if(a && (a.tagName==='INPUT'||a.tagName==='TEXTAREA') && a!==e.target){
+      if(!e.target.closest || !e.target.closest(KB_KEEP)) blurActiveField();
+    }
+  }, {passive:true});
+  /* tap anywhere outside a text field / its controls → drop the keyboard */
+  document.addEventListener('pointerdown', function(e){
+    var a=document.activeElement;
+    if(a && (a.tagName==='INPUT'||a.tagName==='TEXTAREA') && a!==e.target){
+      if(!e.target.closest || (!e.target.closest(KB_KEEP) && !e.target.closest('button') && !e.target.closest('input') && !e.target.closest('textarea'))) blurActiveField();
+    }
+  }, true);
   window.addEventListener('beforeinstallprompt',function(e){
     e.preventDefault();deferredInstall=e;maybeShowInstall();
   });
