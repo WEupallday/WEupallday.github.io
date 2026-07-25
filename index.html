@@ -2197,7 +2197,9 @@
     heartbeat();
   }
   /* ===== X-style header preview (app-only, ?hdr=x) — avatar left, logo center, For You / Friends tabs ===== */
-  var HDR_X = /[?&]hdr=x/.test(location.search);
+  /* X-style layout is now ON by default in the app (avatar top-left, For You/Friends tabs, floating +, zoomed feed).
+     Still gated to the app only — the desktop website keeps its original layout. */
+  var HDR_X = /[?&]hdr=x/.test(location.search) || !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent);
   function applyHdrX(){
     if(!HDR_X)return;
     document.body.classList.add('hdr-x');
