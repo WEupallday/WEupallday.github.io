@@ -1618,8 +1618,10 @@
     return m?{q:m[1],start:pos-m[0].length,end:pos}:null;
   }
   function showMentions(el){
-    var box=mentionBox(), tok=currentMentionToken(el);
-    if(!tok){ box.style.display='none'; MENTION_EL=null; return; }
+    var box=mentionBox();
+    if(!document.documentElement.classList.contains('is-app')){ box.style.display='none'; MENTION_EL=null; MENTION_TOKEN=null; return; }   /* @tag picker is app-only — the website stays original */
+    var tok=currentMentionToken(el);
+    if(!tok){ box.style.display='none'; MENTION_EL=null; MENTION_TOKEN=null; return; }
     var q=tok.q.toLowerCase();
     var names=Object.keys(USERS||{}).map(function(k){return USERS[k]&&USERS[k].name;})
       .filter(function(n){ return n && n.toLowerCase()!==(ME.name||'').toLowerCase() && (q===''||n.toLowerCase().indexOf(q)===0); })
