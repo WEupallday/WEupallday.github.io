@@ -796,6 +796,8 @@
   .loadmore-btn:hover{filter:brightness(1.05);}
   .loadmore-btn:disabled{opacity:.6;cursor:default;}
   .feed-end{color:#9fb0e0;font-size:11px;letter-spacing:.04em;}
+  .reply.reply-new{animation:replyIn .28s ease;}
+  @keyframes replyIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
   .mention-box{position:fixed;z-index:99999;background:#fff;border:2px solid var(--orange,#f7941e);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.28);overflow-y:auto;max-height:232px;}
   .mention-hint{font-size:10px;color:#a06a10;background:#fff6e2;padding:4px 10px;border-bottom:1px solid #ffe3ad;}
   .mention-item{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f0f4;}
@@ -812,6 +814,20 @@
   html.is-app body.hdr-x .menu-btn.as-avatar{padding:0;width:36px;height:36px;border-radius:50%;overflow:hidden;background:#0a0a0a;border:2px solid #ffd23f;display:inline-flex;align-items:center;justify-content:center;}
   html.is-app body.hdr-x .menu-btn.as-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}
   html.is-app body.hdr-x .menu-btn.as-avatar .emo,html.is-app body.hdr-x .menu-btn.as-avatar svg{width:100%;height:100%;display:block;}
+  .fab-compose{display:none;}
+  html.is-app body.hdr-x .fab-compose{display:flex;position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:48px;height:48px;border-radius:50%;background:linear-gradient(180deg,#ffc93c,#f5820a);border:3px solid #fff;color:#fff;font-size:30px;font-weight:bold;line-height:1;align-items:center;justify-content:center;box-shadow:0 5px 14px rgba(0,0,0,.4);z-index:150;cursor:pointer;padding:0 0 3px;}
+  html.is-app body.hdr-x .fab-compose:active{transform:scale(.92);}
+  /* zoom the app content out so more fits on screen + slim the top post box (the floating + handles posting now) */
+  html.is-app body.hdr-x .wrap{zoom:0.82;}
+  html.is-app body.hdr-x .launcher{padding:7px 10px;gap:8px;}
+  html.is-app body.hdr-x .launcher .pearmini{width:38px;height:26px;}
+  html.is-app body.hdr-x .launcher .ltxt b{font-size:12.5px;}
+  html.is-app body.hdr-x .launcher .ltxt span{font-size:9px;}
+  html.is-app body.hdr-x .launcher .comp-btn.go{font-size:11px;padding:6px 12px;animation:none;box-shadow:0 2px 0 #b45c00;}
+  /* auto-hide the top bar on scroll-down, reveal on scroll-up. Uses `top` (transform is blocked on this
+     sticky bar in-app), slid far enough up to fully clear even tall safe-area bars. */
+  html.is-app .topbar{transition:top .26s ease;}
+  html.is-app body.bar-hidden .topbar{top:-320px;}
   .social-btn{display:none!important;}
   body.social-on .social-btn{display:block!important;}
   /* ===== lock the scale so a stray pinch / double-tap can't get stuck zoomed ===== */
@@ -938,6 +954,8 @@
   <button class="xtab" type="button" data-tab="friends" onclick="xSwitchTab('friends',this)">Friends</button>
 </div>
 <div id="notifPanel" class="notif-panel"></div>
+<!-- floating compose button (preview only, app-only) -->
+<button id="fabCompose" class="fab-compose" type="button" onclick="openPear()" aria-label="Post a flap">+</button>
 
 <!-- install-to-home-screen prompt -->
 <div id="installBar">
@@ -1587,6 +1605,7 @@
   function mentionBox(){
     var b=document.getElementById('mentionBox');
     if(!b){ b=document.createElement('div'); b.id='mentionBox'; b.className='mention-box'; b.style.display='none';
+      /* pointerdown handles mouse + touch reliably; preventDefault keeps the input focused so the tag inserts */
       b.addEventListener('pointerdown',function(e){ var it=e.target.closest&&e.target.closest('.mention-item'); if(it){ e.preventDefault(); pickMention(it.getAttribute('data-name')); } });
       document.body.appendChild(b);
     }
@@ -1606,7 +1625,7 @@
       .filter(function(n){ return n && n.toLowerCase()!==(ME.name||'').toLowerCase() && (q===''||n.toLowerCase().indexOf(q)===0); })
       .sort(function(a,b){return a.toLowerCase()<b.toLowerCase()?-1:1;}).slice(0,6);
     if(!names.length){ box.style.display='none'; MENTION_EL=null; MENTION_TOKEN=null; return; }
-    MENTION_EL=el; MENTION_TOKEN=tok;
+    MENTION_EL=el; MENTION_TOKEN=tok;   /* lock in the @token position NOW, so tapping a name later inserts correctly even after the input blurs */
     box.innerHTML='<div class="mention-hint">tap a name to tag them</div>'+names.map(function(n){
       return '<div class="mention-item" data-name="'+esc(n)+'"><span class="m-ava">'+avatarFor(n)+'</span><b>'+esc(n)+'</b></div>';
     }).join('');
@@ -1619,10 +1638,10 @@
   }
   function pickMention(name){
     var el=MENTION_EL; if(!el||!name)return;
-    var tok=MENTION_TOKEN||currentMentionToken(el), val=el.value||'';
+    var tok=MENTION_TOKEN||currentMentionToken(el), val=el.value||'';   /* use the token captured when the list opened (survives blur) */
     if(tok){ el.value=val.slice(0,tok.start)+'@'+name+' '+val.slice(tok.end); var caret=tok.start+name.length+2; el.focus(); try{el.setSelectionRange(caret,caret);}catch(e){} }
     else { el.value=(val?val+' ':'')+'@'+name+' '; el.focus(); }
-    try{el.dispatchEvent(new Event('input',{bubbles:true}));}catch(e){}
+    try{el.dispatchEvent(new Event('input',{bubbles:true}));}catch(e){}   /* keep any listeners in sync */
     var box=document.getElementById('mentionBox'); if(box)box.style.display='none'; MENTION_EL=null; MENTION_TOKEN=null;
   }
   function hideMentions(){ var box=document.getElementById('mentionBox'); if(box)box.style.display='none'; MENTION_EL=null; MENTION_TOKEN=null; }
@@ -2182,6 +2201,9 @@
     document.body.classList.add('hdr-x');
     var mb=document.querySelector('.menu-btn');
     if(mb){ mb.classList.add('as-avatar'); mb.innerHTML=(typeof ME!=='undefined'&&ME.pic)?'<img src="'+esc(ME.pic)+'" alt="you">':(typeof myAva==='function'?myAva():'☰'); }
+    /* move the tab row INTO the sticky top bar so it stays pinned while scrolling (like X) */
+    var tb=document.querySelector('.topbar'), xt=document.getElementById('xTabs');
+    if(tb&&xt&&xt.parentNode!==tb){ tb.appendChild(xt); }
   }
   function xSwitchTab(tab,btn){
     var tabs=document.querySelectorAll('#xTabs .xtab'); for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('on');
@@ -2901,14 +2923,35 @@
     SENDING_REPLIES[id]=1;
     if(inp)inp.value='';   /* clear immediately so the same text can't be sent twice */
     try{
-      var r=await sb.from('flap_replies').insert({flap_id:id,name:ME.name,body:body});
+      var r=await sb.from('flap_replies').insert({flap_id:id,name:ME.name,body:body}).select('id,created_at').single();
       if(r.error)throw r.error;
       delete REPLY_EMOJI[ekey];
       addNotif(ownerOf(id),ME.name,'reply',id,text);   /* notify the flap's owner */
-      await loadFeed();
+      /* notify each real @-tagged member in the reply too */
+      (text.match(/@([a-z0-9_]+)/gi)||[]).forEach(function(t){ var n=t.slice(1).toLowerCase(); if(USERS[n]&&n!==ME.name.toLowerCase())addNotif(USERS[n].name,ME.name,'tag',id,text); });
+      /* optimistic insert of ONLY the new reply — no feed re-render (kills the flash), soft fade-in */
+      var nr={flap_id:id,name:ME.name,body:body,id:(r.data&&r.data.id)||Date.now(),created_at:(r.data&&r.data.created_at)||new Date().toISOString()};
+      (REPLIES[id]=REPLIES[id]||[]).push(nr);
+      insertReplyBubble(id,nr);
+      try{ var cd=document.getElementById('flap-'+id); if(cd){ cd.querySelectorAll('.remoji-bar button.sel').forEach(function(b){b.classList.remove('sel');}); } }catch(e){}
+      try{refreshOpenFlap();}catch(e){}   /* keep an open single-post view in sync (no feed flash) */
       toast('Reply posted!');
     }catch(e){ if(inp)inp.value=text; toast('Reply failed — check connection.'); }
     finally{ delete SENDING_REPLIES[id]; }
+  }
+  /* build + insert one reply bubble into a card's replies list, right before the compose box, with a fade-in */
+  function insertReplyBubble(flapId, r){
+    var card=document.getElementById('flap-'+flapId); if(!card)return;
+    var rb=card.querySelector('.replies'); if(!rb)return;
+    var p=splitReply(r.body);
+    var rMs=r.created_at?Date.parse(r.created_at):0;
+    var mineR=((r.name||'').toLowerCase()===(ME.name||'').toLowerCase());
+    var canDel=r.id && mineR && (ME.admin || withinDelWindow(rMs));
+    var delLink=canDel?'<a class="reply-del" title="Delete this reply (yours, within '+DELETE_WINDOW_MIN+' min)" onclick="delReply('+r.id+','+flapId+')">🗑</a>':'';
+    var html='<div class="reply reply-new"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/\x27/g,'')+'\')">'+avatarFor(r.name)+'</div>'+replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+delLink+'</div>';
+    var comp=rb.querySelector('.reply-compose');
+    if(comp) comp.insertAdjacentHTML('beforebegin',html);
+    else rb.insertAdjacentHTML('beforeend',html);
   }
 
   /* remember which flaps you've already liked (per device) so reloading can't re-like the same post */
@@ -3639,6 +3682,21 @@ function toggleDrawer(force){
       lastY=y; ticking=false;
     });
   },{passive:true});
+  /* fresh, self-contained auto-hide toggler — reliably reveals the top bar on scroll-up in the app */
+  (function(){
+    var lastY=window.scrollY||0, tk=false;
+    window.addEventListener('scroll',function(){
+      if(tk)return; tk=true;
+      requestAnimationFrame(function(){
+        var y=window.scrollY||document.documentElement.scrollTop||0;
+        if(document.documentElement.classList.contains('is-app')){
+          if(y>110 && y>lastY+4) document.body.classList.add('bar-hidden');           /* scrolling down → hide */
+          else if(y<lastY-4 || y<60) document.body.classList.remove('bar-hidden');      /* scroll up a touch → reveal */
+        }
+        lastY=y; tk=false;
+      });
+    },{passive:true});
+  })();
   /* hard block pinch-zoom in the app so it can never get stuck zoomed (viewport lock + this) */
   if(compact()){
     document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});

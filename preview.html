@@ -796,6 +796,8 @@
   .loadmore-btn:hover{filter:brightness(1.05);}
   .loadmore-btn:disabled{opacity:.6;cursor:default;}
   .feed-end{color:#9fb0e0;font-size:11px;letter-spacing:.04em;}
+  .reply.reply-new{animation:replyIn .28s ease;}
+  @keyframes replyIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
   .mention-box{position:fixed;z-index:99999;background:#fff;border:2px solid var(--orange,#f7941e);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.28);overflow-y:auto;max-height:232px;}
   .mention-hint{font-size:10px;color:#a06a10;background:#fff6e2;padding:4px 10px;border-bottom:1px solid #ffe3ad;}
   .mention-item{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f0f4;}
@@ -2921,14 +2923,35 @@
     SENDING_REPLIES[id]=1;
     if(inp)inp.value='';   /* clear immediately so the same text can't be sent twice */
     try{
-      var r=await sb.from('flap_replies').insert({flap_id:id,name:ME.name,body:body});
+      var r=await sb.from('flap_replies').insert({flap_id:id,name:ME.name,body:body}).select('id,created_at').single();
       if(r.error)throw r.error;
       delete REPLY_EMOJI[ekey];
       addNotif(ownerOf(id),ME.name,'reply',id,text);   /* notify the flap's owner */
-      await loadFeed();
+      /* notify each real @-tagged member in the reply too */
+      (text.match(/@([a-z0-9_]+)/gi)||[]).forEach(function(t){ var n=t.slice(1).toLowerCase(); if(USERS[n]&&n!==ME.name.toLowerCase())addNotif(USERS[n].name,ME.name,'tag',id,text); });
+      /* optimistic insert of ONLY the new reply — no feed re-render (kills the flash), soft fade-in */
+      var nr={flap_id:id,name:ME.name,body:body,id:(r.data&&r.data.id)||Date.now(),created_at:(r.data&&r.data.created_at)||new Date().toISOString()};
+      (REPLIES[id]=REPLIES[id]||[]).push(nr);
+      insertReplyBubble(id,nr);
+      try{ var cd=document.getElementById('flap-'+id); if(cd){ cd.querySelectorAll('.remoji-bar button.sel').forEach(function(b){b.classList.remove('sel');}); } }catch(e){}
+      try{refreshOpenFlap();}catch(e){}   /* keep an open single-post view in sync (no feed flash) */
       toast('Reply posted!');
     }catch(e){ if(inp)inp.value=text; toast('Reply failed — check connection.'); }
     finally{ delete SENDING_REPLIES[id]; }
+  }
+  /* build + insert one reply bubble into a card's replies list, right before the compose box, with a fade-in */
+  function insertReplyBubble(flapId, r){
+    var card=document.getElementById('flap-'+flapId); if(!card)return;
+    var rb=card.querySelector('.replies'); if(!rb)return;
+    var p=splitReply(r.body);
+    var rMs=r.created_at?Date.parse(r.created_at):0;
+    var mineR=((r.name||'').toLowerCase()===(ME.name||'').toLowerCase());
+    var canDel=r.id && mineR && (ME.admin || withinDelWindow(rMs));
+    var delLink=canDel?'<a class="reply-del" title="Delete this reply (yours, within '+DELETE_WINDOW_MIN+' min)" onclick="delReply('+r.id+','+flapId+')">🗑</a>':'';
+    var html='<div class="reply reply-new"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/\x27/g,'')+'\')">'+avatarFor(r.name)+'</div>'+replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+delLink+'</div>';
+    var comp=rb.querySelector('.reply-compose');
+    if(comp) comp.insertAdjacentHTML('beforebegin',html);
+    else rb.insertAdjacentHTML('beforeend',html);
   }
 
   /* remember which flaps you've already liked (per device) so reloading can't re-like the same post */
