@@ -2049,10 +2049,9 @@
          '<input id="adminPollO1" value="'+esc(pp[1]||POLL.opts[0])+'" placeholder="Option 1" style="'+pIn+'">'+
          '<input id="adminPollO2" value="'+esc(pp[2]||POLL.opts[1])+'" placeholder="Option 2" style="'+pIn+'">'+
          '<input id="adminPollO3" value="'+esc(pp[3]||POLL.opts[2])+'" placeholder="Option 3" style="'+pIn+'">'+
-         '<button class="you-update" type="button" style="margin-top:2px;width:100%;background:linear-gradient(180deg,#3aa06a,#1c7a45);" onclick="adminRandomPoll()">🎲 GENERATE RANDOM POLL</button>'+
          '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#8a4fd8,#5f2ea0);" onclick="savePoll()">SAVE CUSTOM POLL (starts votes fresh)</button>'+
          '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#c0603a,#8f3c1c);" onclick="resetPollVotes()">↺ RESET VOTES ONLY</button>'+
-         '<div style="font-size:10px;color:#889;margin-top:4px;">Polls now auto-rotate to a fresh random one every day at midnight (a close race hangs on a few extra hours). Set one here to override just for today. Emojis welcome. 🍿</div></div>';
+         '<div style="font-size:10px;color:#889;margin-top:4px;">Set the poll here — it stays up until YOU change it. Type the question + all 3 options, then Save. Emojis welcome. 🍿</div></div>';
       h+='<div class="pc-flaps-h">✔ Verified Members</div>';
       h+='<div style="padding:2px 2px 10px;"><textarea id="adminVerified" style="width:100%;box-sizing:border-box;min-height:44px;font-family:Verdana,Arial,sans-serif;font-size:12px;padding:8px;border:2px solid var(--card-border);border-radius:8px;">'+esc(verCur)+'</textarea>'+
          '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#1fb6a6,#0e8577);" onclick="saveVerified()">SAVE VERIFIED LIST</button>'+
@@ -2799,7 +2798,7 @@
     }catch(e){}
     POLL_ROTATING=false;
   }
-  function maybeAutoRotatePoll(){ if(pollRotationDue())rotatePollNow(); }
+  function maybeAutoRotatePoll(){ /* disabled: the poll changes ONLY when lock saves it in Admin HQ */ }
   /* ===== editable scrolling ticker (admin) — persisted as a hidden sentinel row ===== */
   function setTicker(text){
     var el=document.getElementById('tickerText');
@@ -2970,7 +2969,6 @@
         if(ME.name&&v.name===ME.name&&v.choice>=0&&v.choice<3)myVote=v.choice;
       });
       renderPoll();
-      maybeAutoRotatePoll();   /* time for a fresh daily poll? (holds a nail-biter a few hours longer) */
     }catch(e){renderPoll();}
   }
   function renderPoll(){
@@ -2987,7 +2985,7 @@
          (voted?'<span class="pct">'+pct+'%'+(myVote===i?' ✓':'')+'</span>':'')+
          '</button>';
     });
-    h+='</div><div class="poll-note">'+total+' vote'+(total===1?'':'s')+' · fresh poll every day 🗳️</div>';
+    h+='</div><div class="poll-note">'+total+' vote'+(total===1?'':'s')+' 🗳️</div>';
     box.innerHTML=h;
   }
   async function votePoll(i){
@@ -3044,7 +3042,7 @@
     }
   }
   if(ONLINE)setInterval(function(){if(ME.name){ if(!isTyping())loadFeed(); loadNotifs(); }},20000);   /* don't refresh the feed while you're mid-reply — it'd wipe your open box */
-  if(ONLINE)setInterval(function(){ loadPoll(); },300000);   /* every 5 min: refresh poll votes + auto-rotate to a fresh daily poll at midnight */
+  if(ONLINE)setInterval(function(){ loadPoll(); },300000);   /* every 5 min: refresh poll vote COUNTS only — never changes the poll */
   if(ONLINE)setInterval(function(){ if(ME.name && DM_OPEN && document.getElementById('dmThread')){ refreshDMThread(DM_OPEN); } },4000);   /* live-refresh the open DM thread so replies arrive; safe while typing (only swaps bubbles, not your box) */
   /* auto-load older flaps as you near the bottom, so the feed keeps flowing */
   window.addEventListener('scroll',function(){
@@ -3505,7 +3503,6 @@
     h+='<input id="adminPollO1" class="hq-input" value="'+esc(pp[1]||POLL.opts[0])+'" placeholder="Option 1">';
     h+='<input id="adminPollO2" class="hq-input" value="'+esc(pp[2]||POLL.opts[1])+'" placeholder="Option 2">';
     h+='<input id="adminPollO3" class="hq-input" value="'+esc(pp[3]||POLL.opts[2])+'" placeholder="Option 3">';
-    h+='<button class="hq-btn" style="width:100%;background:linear-gradient(180deg,#3aa06a,#1c7a45);color:#fff;margin-bottom:4px;" onclick="adminRandomPoll()">🎲 Generate random poll</button>';
     h+='<button class="hq-btn hq-purple" style="width:100%;margin-bottom:4px;" onclick="savePoll()">Save custom poll (starts votes fresh)</button>';
     h+='<button class="hq-btn" style="width:100%;background:linear-gradient(180deg,#c0603a,#8f3c1c);color:#fff;margin-bottom:8px;" onclick="resetPollVotes()">↺ Reset votes only</button>';
     h+='<div class="hq-sec">✔ Verified members</div>';
