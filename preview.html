@@ -917,6 +917,15 @@
     <p>First time? Pick a name, a password + <b>a profile pic</b> — that makes your account. Coming back? Same name + password logs you in. Your profile follows you.</p>
     <input type="text" id="gateName" name="username" autocomplete="username" maxlength="20" placeholder="Your name (what everyone sees)">
     <input type="password" id="gatePass" name="password" autocomplete="current-password" maxlength="40" placeholder="Your password">
+    <select id="gateDevice" style="width:100%;box-sizing:border-box;font-family:Verdana,Arial,sans-serif;font-size:13px;padding:9px;border:2px solid #cfe0f5;border-radius:8px;margin-top:8px;color:#22398f;background:#fff;">
+      <option value="">📱 What device are you on? (new accounts)</option>
+      <option value="iPhone / iPad">iPhone / iPad</option>
+      <option value="Samsung">Samsung phone/tablet</option>
+      <option value="Android (other)">Android (other)</option>
+      <option value="Windows PC">Windows computer</option>
+      <option value="Mac">Mac computer</option>
+      <option value="Other">Other</option>
+    </select>
     <div class="gate-ava-wrap">
       <div class="gate-ava" id="gateAva" onclick="document.getElementById('gateAvatarFile').click()" title="Add your profile pic">＋</div>
       <div class="gate-ava-label">New here? Tap the circle to add your <b>profile pic</b></div>
@@ -1893,6 +1902,25 @@
     }catch(e){}
   }
 
+  function detectDevice(){
+    var ua=navigator.userAgent||'';
+    if(/iPhone|iPad|iPod/i.test(ua))return 'iPhone / iPad';
+    if(/SM-|Samsung/i.test(ua))return 'Samsung';
+    if(/Android/i.test(ua))return 'Android (other)';
+    if(/Macintosh|Mac OS X/i.test(ua))return 'Mac';
+    if(/Windows/i.test(ua))return 'Windows PC';
+    return 'Other';
+  }
+  async function banUser(name){
+    if(!ME.admin)return;
+    if(!confirm('Permanently ban '+name+'? They will be locked out of TheFlap.'))return;
+    try{ await sb.from('flap_users').update({banned:true}).ilike('name',name); if(USERS[(name||'').toLowerCase()])USERS[(name||'').toLowerCase()].banned=true; toast('🔨 '+name+' is banned.'); try{closeProfile();}catch(e){} }catch(e){toast('Could not ban — try again.');}
+  }
+  async function unbanUser(name){
+    if(!ME.admin)return;
+    try{ await sb.from('flap_users').update({banned:false}).ilike('name',name); if(USERS[(name||'').toLowerCase()])USERS[(name||'').toLowerCase()].banned=false; toast('♻ '+name+' un-banned.'); try{closeProfile();}catch(e){} }catch(e){toast('Could not un-ban.');}
+  }
+
   /* ================= invite gate ================= */
   async function sha256(s){
     var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
@@ -1915,6 +1943,7 @@
         if(res.data){
           /* existing account — password must match */
           if(res.data.pass_hash!==hash){err.textContent='Wrong password for '+res.data.name+'. (Names are one-per-person!)';return;}
+          if(res.data.banned){err.textContent='This account has been banned. Email theflapsupport@gmail.com if you think this is a mistake.';return;}
           ME.name=res.data.name;
           ME.pic=res.data.avatar_url||null;
           ME.handle=res.data.handle||'';
@@ -1937,7 +1966,8 @@
           }catch(e4){}
           ME.pic=picUrl;
           var newHandle=await genUniqueHandle(ME.name); ME.handle=newHandle;
-          var ins=await sb.from('flap_users').insert({name:ME.name,pass_hash:hash,avatar_url:picUrl,handle:newHandle});
+          var _dev=((document.getElementById('gateDevice')||{}).value)||detectDevice();
+          var ins=await sb.from('flap_users').insert({name:ME.name,pass_hash:hash,avatar_url:picUrl,handle:newHandle,device:_dev});
           if(ins.error)throw ins.error;
           GATE_PIC_BLOB=null;
           discordPing('join',ME.name);   /* ping the admin's Discord on a real new signup */
@@ -1998,13 +2028,14 @@
       var gpic=meta.avatar_url||meta.picture||'';
       var ex=await sb.from('flap_users').select('*').ilike('email',email).maybeSingle();
       var row=ex&&ex.data;
+      if(row&&row.banned){ try{if(sb&&sb.auth)sb.auth.signOut();}catch(e){} toast('This account has been banned.'); return; }
       if(!row){
         var base=(gname||email.split('@')[0]||'flapper').slice(0,20);
         var tryName=base, k=1;
         while(true){ var c=await sb.from('flap_users').select('name').ilike('name',tryName).maybeSingle(); if(!c||!c.data)break; k++; tryName=base.slice(0,17)+k; }
         var handle=await genUniqueHandle(tryName);
         var randPass=await sha256('google:'+email+':'+Math.random().toString(36));
-        var ins=await sb.from('flap_users').insert({name:tryName,pass_hash:randPass,avatar_url:gpic||null,handle:handle,email:email}).select('*').maybeSingle();
+        var ins=await sb.from('flap_users').insert({name:tryName,pass_hash:randPass,avatar_url:gpic||null,handle:handle,email:email,device:detectDevice()}).select('*').maybeSingle();
         row=(ins&&ins.data)?ins.data:{name:tryName,avatar_url:gpic,handle:handle,email:email};
         try{ discordPing('join',row.name); }catch(e){}
         try{ sendPush('lock','TheFlap 🐦',row.name+' just joined TheFlap with Google! 🎉'); }catch(e){}
@@ -2088,6 +2119,15 @@
            (isBlocked(name)
              ?'<button type="button" onclick="unblockUser(\''+pn2+'\')">✓ Unblock</button>'
              :'<button type="button" class="danger" onclick="blockUser(\''+pn2+'\')">🚫 Block user</button>')+
+           '</div>';
+      }
+      if(ME.admin && (name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
+        var _au=USERS[(name||'').toLowerCase()]||{}; var _dev=_au.device||'unknown'; var _pn=esc(name).replace(/'/g,'');
+        h+='<div class="pc-actions" style="border-top:1px dashed #cbd5e8;margin-top:6px;padding-top:8px;flex-wrap:wrap;align-items:center;">'+
+           '<span style="font-size:11px;color:#2a4a6e;margin-right:auto;">📱 Device: <b>'+esc(_dev)+'</b></span>'+
+           (_au.banned
+             ?'<button type="button" onclick="unbanUser(\''+_pn+'\')">♻ Unban</button>'
+             :'<button type="button" class="danger" onclick="banUser(\''+_pn+'\')">🔨 Permanently ban</button>')+
            '</div>';
       }
       h+='<div class="pc-tabs">'+
@@ -3153,10 +3193,11 @@
       document.getElementById('youCount').textContent=myFlapCount;
       /* members list — powers real photos everywhere + the banner */
       try{
-        var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at,handle');
+        var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at,handle,device,banned');
         if(!um.error&&um.data){USERS={};um.data.forEach(function(u){USERS[u.name.toLowerCase()]=u;});}
       }catch(eu){}
       try{ if(ME.name&&USERS[ME.name.toLowerCase()]){ ME.handle=USERS[ME.name.toLowerCase()].handle||ME.handle||''; } }catch(eh){}
+      try{ if(ME.name&&!ME.admin&&USERS[ME.name.toLowerCase()]&&USERS[ME.name.toLowerCase()].banned){ toast('This account has been banned.'); setTimeout(function(){try{clearSession();}catch(e){}location.reload();},1600); return; } }catch(ebn){}
       if(ONLINE&&ME.name&&!HANDLE_CHECKED){ HANDLE_CHECKED=true; try{ensureHandle();}catch(eh2){} }
       REPLIES={};
       var ids=res.data.map(function(r){return r.id;});
