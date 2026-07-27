@@ -924,6 +924,11 @@
     <input type="file" id="gateAvatarFile" accept="image/*" hidden>
     <div class="gate-err" id="gateErr"></div>
     <button class="comp-btn go" type="button" onclick="enterGate()">Let Me In!</button>
+    <div style="text-align:center;font-size:11px;color:#7a86b8;margin:10px 0 6px;">— or —</div>
+    <button class="gate-google" type="button" onclick="googleSignIn()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:#3c4043;border:2px solid #dadce0;border-radius:8px;padding:9px;font-weight:bold;font-size:13px;cursor:pointer;font-family:Verdana,Arial,sans-serif;">
+      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Continue with Google
+    </button>
     <a onclick="browseGuest()" style="display:block;margin-top:10px;font-size:11px;color:var(--card-border);font-weight:bold;cursor:pointer;text-decoration:underline;">👀 just browse for now</a>
     <div class="offline-note" id="offlineNote" style="display:none;">
       ⚠ Backend not configured yet — you can look around in demo mode, but posts won't be shared.
@@ -1959,6 +1964,58 @@
       }else{subscribePush();}
     }catch(e){}
   }
+  function enterAppAfterLogin(){
+    ME.admin=((ME.name||'').toLowerCase()==='lock');
+    try{localStorage.setItem('flap_lastname',ME.name);}catch(e){}
+    saveSession(ME);
+    try{initMe();}catch(e){}
+    var g=document.getElementById('gate'); if(g)g.classList.add('hidden');
+    if(ME.admin)toast(ME.name+' — admin mode ON');
+    try{loadBlocks().then(function(){loadFeed();});}catch(e){try{loadFeed();}catch(e2){}}
+    try{loadNotifs();}catch(e){}
+    try{ if('Notification' in window && Notification.permission==='default'){ Notification.requestPermission().then(function(){subscribePush();}); }else{subscribePush();} }catch(e){}
+    try{ ensureHandle(); }catch(e){}
+  }
+  async function googleSignIn(){
+    if(!ONLINE||!sb||!sb.auth){toast('Google sign-in needs the server.');return;}
+    try{
+      var redir=location.origin+location.pathname;
+      var r=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:redir}});
+      if(r&&r.error){toast('Google sign-in error — try again.');}
+    }catch(e){toast('Could not start Google sign-in.');}
+  }
+  async function handleGoogleReturn(){
+    if(!ONLINE||!sb||!sb.auth)return;
+    try{
+      var s=await sb.auth.getSession();
+      var sess=s&&s.data&&s.data.session;
+      if(!sess||!sess.user)return;
+      if(ME&&ME.name)return;
+      var u=sess.user, email=(u.email||'').toLowerCase();
+      if(!email)return;
+      var meta=u.user_metadata||{};
+      var gname=(meta.full_name||meta.name||'').trim();
+      var gpic=meta.avatar_url||meta.picture||'';
+      var ex=await sb.from('flap_users').select('*').ilike('email',email).maybeSingle();
+      var row=ex&&ex.data;
+      if(!row){
+        var base=(gname||email.split('@')[0]||'flapper').slice(0,20);
+        var tryName=base, k=1;
+        while(true){ var c=await sb.from('flap_users').select('name').ilike('name',tryName).maybeSingle(); if(!c||!c.data)break; k++; tryName=base.slice(0,17)+k; }
+        var handle=await genUniqueHandle(tryName);
+        var randPass=await sha256('google:'+email+':'+Math.random().toString(36));
+        var ins=await sb.from('flap_users').insert({name:tryName,pass_hash:randPass,avatar_url:gpic||null,handle:handle,email:email}).select('*').maybeSingle();
+        row=(ins&&ins.data)?ins.data:{name:tryName,avatar_url:gpic,handle:handle,email:email};
+        try{ discordPing('join',row.name); }catch(e){}
+        try{ sendPush('lock','TheFlap 🐦',row.name+' just joined TheFlap with Google! 🎉'); }catch(e){}
+        toast('Welcome to TheFlap, '+row.name+'! 🎉');
+      }else{
+        toast('Welcome back, '+row.name+'!');
+      }
+      ME={name:row.name,admin:false,pic:row.avatar_url||gpic||null,handle:row.handle||'',email:email};
+      enterAppAfterLogin();
+    }catch(e){}
+  }
   function browseGuest(){
     document.getElementById('gate').classList.add('hidden');
     ME={name:'',admin:false};
@@ -1973,6 +2030,7 @@
     return false;
   }
   function logOut(){
+    try{ if(typeof sb!=='undefined'&&sb&&sb.auth)sb.auth.signOut(); }catch(e){}
     clearSession();
     location.reload();
   }
@@ -3790,7 +3848,7 @@
   try{setTimeout(inAppTip,1500);}catch(e){}
   (function restoreSession(){
     var saved=readSession();
-    if(!saved)return;
+    if(!saved){ if(typeof ONLINE!=='undefined'&&ONLINE){try{handleGoogleReturn();}catch(e){}} return; }
     var m;
     try{m=JSON.parse(saved);}catch(e){return;}
     if(!m||!m.name)return;
