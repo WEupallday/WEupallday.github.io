@@ -2589,10 +2589,15 @@
     try{ if(P.Keyboard) P.Keyboard.setAccessoryBarVisible({isVisible:false}); }catch(e){}   /* hide the gray keyboard bar */
     try{ if(P.StatusBar){ P.StatusBar.setBackgroundColor({color:'#e07d0a'}); P.StatusBar.setStyle({style:'DARK'}); P.StatusBar.setOverlaysWebView({overlay:false}); } }catch(e){}   /* brand-orange status bar */
     try{ if(P.SplashScreen){ setTimeout(function(){P.SplashScreen.hide();},600); } }catch(e){}   /* dismiss splash once loaded */
-    try{ if(P.PushNotifications){ var PN=P.PushNotifications;
-      PN.addListener('registration',function(t){ try{ window.__pushToken=t.value; if(window.sb && window.ME && ME.name) sb.from('flaps').insert({name:'::push::',body:ME.name+'␟'+'ios'+'␟'+t.value,mood:'flappy',likes:0}); }catch(e){} });
-      PN.requestPermissions().then(function(r){ if(r&&r.receive==='granted') PN.register(); }).catch(function(){});
-    } }catch(e){}
+    try{
+      var PLAT=(C.getPlatform&&C.getPlatform())||'';
+      /* PUSH: iOS only. Android needs Firebase/google-services.json first — calling register() without it
+         throws a native FirebaseApp-not-initialized exception and crashes the app on launch. */
+      if(PLAT==='ios' && P.PushNotifications){ var PN=P.PushNotifications;
+        PN.addListener('registration',function(t){ try{ window.__pushToken=t.value; if(window.sb && window.ME && ME.name) sb.from('flaps').insert({name:'::push::',body:ME.name+'␟'+PLAT+'␟'+t.value,mood:'flappy',likes:0}); }catch(e){} });
+        PN.requestPermissions().then(function(r){ if(r&&r.receive==='granted') PN.register(); }).catch(function(){});
+      }
+    }catch(e){}
   })();
   /* light haptic tap on key actions (no-op on web) */
   function haptic(style){ try{ var P=window.Capacitor&&window.Capacitor.Plugins; if(P&&P.Haptics) P.Haptics.impact({style:style||'Light'}); }catch(e){} }
