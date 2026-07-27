@@ -1859,6 +1859,35 @@
     if(hh)hh.style.display=real?'none':'';
   }
 
+  /* ===== plain @handles: every account has a lowercase [a-z0-9_] handle for @mentions + identity,
+     while the display name can stay fancy. Existing users get one auto-generated (editable in profile). ===== */
+  var HANDLE_CHECKED=false;
+  function sanitizeHandle(s){ try{ s=String(s||'').toLowerCase().normalize('NFKD'); }catch(e){ s=String(s||'').toLowerCase(); } return s.replace(/[^a-z0-9_]+/g,'').slice(0,20); }
+  async function genUniqueHandle(name){
+    var base=sanitizeHandle(name); if(base.length<2)base=(base+'flapper').slice(0,20);
+    var h=base;
+    for(var i=1;i<=60;i++){
+      try{ var chk=await sb.from('flap_users').select('name').ilike('handle',h).limit(1);
+        if(!chk.error && (!chk.data||!chk.data.length)) return h; }catch(e){ return h; }
+      h=base.slice(0,17)+(i+1);
+    }
+    return base.slice(0,14)+String(Date.now()).slice(-4);
+  }
+  async function ensureHandle(){
+    if(!ONLINE||!ME.name)return;
+    try{
+      var r=await sb.from('flap_users').select('name,handle').ilike('name',ME.name).maybeSingle();
+      if(r&&r.data){
+        ME.handle=r.data.handle||'';
+        if(!ME.handle){
+          var h=await genUniqueHandle(ME.name);
+          var up=await sb.from('flap_users').update({handle:h}).eq('name',r.data.name);
+          if(!up.error){ ME.handle=h; if(USERS[r.data.name.toLowerCase()])USERS[r.data.name.toLowerCase()].handle=h; toast('Your handle is @'+h+' — you can change it in your profile.'); }
+        }
+      }
+    }catch(e){}
+  }
+
   /* ================= invite gate ================= */
   async function sha256(s){
     var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
@@ -1883,7 +1912,9 @@
           if(res.data.pass_hash!==hash){err.textContent='Wrong password for '+res.data.name+'. (Names are one-per-person!)';return;}
           ME.name=res.data.name;
           ME.pic=res.data.avatar_url||null;
+          ME.handle=res.data.handle||'';
           toast('Welcome back, '+ME.name+'!');
+          try{await ensureHandle();}catch(eh){}
         }else{
           /* new account — a profile pic is REQUIRED to sign up */
           if(!GATE_PIC_BLOB){
@@ -1900,7 +1931,8 @@
             if(!up.error)picUrl=sb.storage.from('pics').getPublicUrl(path).data.publicUrl;
           }catch(e4){}
           ME.pic=picUrl;
-          var ins=await sb.from('flap_users').insert({name:ME.name,pass_hash:hash,avatar_url:picUrl});
+          var newHandle=await genUniqueHandle(ME.name); ME.handle=newHandle;
+          var ins=await sb.from('flap_users').insert({name:ME.name,pass_hash:hash,avatar_url:picUrl,handle:newHandle});
           if(ins.error)throw ins.error;
           GATE_PIC_BLOB=null;
           discordPing('join',ME.name);   /* ping the admin's Discord on a real new signup */
@@ -3063,9 +3095,11 @@
       document.getElementById('youCount').textContent=myFlapCount;
       /* members list — powers real photos everywhere + the banner */
       try{
-        var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at');
+        var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at,handle');
         if(!um.error&&um.data){USERS={};um.data.forEach(function(u){USERS[u.name.toLowerCase()]=u;});}
       }catch(eu){}
+      try{ if(ME.name&&USERS[ME.name.toLowerCase()]){ ME.handle=USERS[ME.name.toLowerCase()].handle||ME.handle||''; } }catch(eh){}
+      if(ONLINE&&ME.name&&!HANDLE_CHECKED){ HANDLE_CHECKED=true; try{ensureHandle();}catch(eh2){} }
       REPLIES={};
       var ids=res.data.map(function(r){return r.id;});
       if(ids.length){
