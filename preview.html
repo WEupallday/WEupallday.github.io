@@ -2309,7 +2309,7 @@
     return {name:parts[1]||'', id:parts[2]||'', body:parts.slice(3).join('␟')};
   }
   /* reflaps are stored as hidden flap rows; the feed shows a COUNT on the original, not a copy */
-  var REFLAP_COUNTS={}, MY_REFLAPS={};
+  var REFLAP_COUNTS={}, MY_REFLAPS={}, REFLAPPING={}, MY_REFLAPS_OPT={};
   function computeReflaps(){
     REFLAP_COUNTS={}; MY_REFLAPS={};
     (LAST_ROWS||[]).forEach(function(r){
@@ -2318,27 +2318,47 @@
       REFLAP_COUNTS[p.id]=(REFLAP_COUNTS[p.id]||0)+1;
       if((r.name||'').toLowerCase()===(ME.name||'').toLowerCase())MY_REFLAPS[p.id]=r.id;
     });
+    /* keep a just-tapped reflap in its chosen state even if a background refresh lands
+       before the DB row is visible — stops the button flipping back on its own */
+    var now=Date.now();
+    for(var k in MY_REFLAPS_OPT){
+      var e=MY_REFLAPS_OPT[k]; if(!e)continue;
+      if(now-e.t>8000){ delete MY_REFLAPS_OPT[k]; continue; }
+      if(e.on){ if(!MY_REFLAPS[k])MY_REFLAPS[k]=true; } else { delete MY_REFLAPS[k]; }
+    }
   }
   async function reflapPost(id){
     if(!requireAuth())return;
     var key=String(id);
-    if(MY_REFLAPS[key]){                         /* already reflapped -> toggle off */
-      try{await sb.from('flaps').delete().eq('id',MY_REFLAPS[key]);}catch(e){}
-      await loadFeed(); toast('Reflap removed.'); return;
-    }
-    var o=null;
-    try{o=(await sb.from('flaps').select('*').eq('id',id).single()).data;}catch(e){}
-    if(!o){toast('Could not reflap that.');return;}
-    var origName=o.name,origBody=o.body||'',origId=o.id;
-    var rf=parseReflap(o.body);
-    if(rf){origName=rf.name;origBody=rf.body;origId=rf.id;}
-    if((origName||'').toLowerCase()===(ME.name||'').toLowerCase()){toast("You can't reflap your own flap!");return;}
-    var body='RF␟'+origName+'␟'+origId+'␟'+origBody;
+    if(REFLAPPING[key])return;   /* ignore double / ghost taps while a reflap toggle is in flight */
+    REFLAPPING[key]=1;
     try{
-      await sb.from('flaps').insert({name:ME.name,avatar_url:o.avatar_url,mood:o.mood||'happy',body:body,pic_url:o.pic_url,likes:0});
+      if(MY_REFLAPS[key]){                         /* already reflapped -> toggle off */
+        var rid=MY_REFLAPS[key];
+        MY_REFLAPS_OPT[key]={on:false,t:Date.now()}; delete MY_REFLAPS[key];
+        if(REFLAP_COUNTS[key])REFLAP_COUNTS[key]=Math.max(0,REFLAP_COUNTS[key]-1);
+        renderLive();
+        if(rid!==true){ try{await sb.from('flaps').delete().eq('id',rid);}catch(e){} }
+        await loadFeed(); delete MY_REFLAPS_OPT[key]; toast('Reflap removed.'); return;
+      }
+      var o=null;
+      try{o=(await sb.from('flaps').select('*').eq('id',id).single()).data;}catch(e){}
+      if(!o){toast('Could not reflap that.');return;}
+      var origName=o.name,origBody=o.body||'',origId=o.id;
+      var rf=parseReflap(o.body);
+      if(rf){origName=rf.name;origBody=rf.body;origId=rf.id;}
+      if((origName||'').toLowerCase()===(ME.name||'').toLowerCase()){toast("You can't reflap your own flap!");return;}
+      var okey=String(origId);
+      MY_REFLAPS_OPT[okey]={on:true,t:Date.now()}; MY_REFLAPS[okey]=true;   /* optimistic: button stays ON */
+      REFLAP_COUNTS[okey]=(REFLAP_COUNTS[okey]||0)+1;
+      renderLive();
+      var body='RF␟'+origName+'␟'+origId+'␟'+origBody;
+      var ins=await sb.from('flaps').insert({name:ME.name,avatar_url:o.avatar_url,mood:o.mood||'happy',body:body,pic_url:o.pic_url,likes:0});
+      if(ins&&ins.error){ MY_REFLAPS_OPT[okey]={on:false,t:Date.now()}; delete MY_REFLAPS[okey]; if(REFLAP_COUNTS[okey])REFLAP_COUNTS[okey]--; renderLive(); toast('Reflap failed — try again.'); return; }
       addNotif(origName,ME.name,'reflap',origId,'');
-      await loadFeed(); toast('Reflapped! 🔁');
+      await loadFeed(); delete MY_REFLAPS_OPT[okey]; toast('Reflapped! 🔁');
     }catch(e){toast('Reflap failed — try again.');}
+    finally{ REFLAPPING[key]=0; }
   }
   /* ===== time-limited self-delete: members can remove their own flap/reply for a window, then it's permanent (admin unrestricted) ===== */
   var DELETE_WINDOW_MIN=30, DELETE_WINDOW_MS=DELETE_WINDOW_MIN*60*1000;
