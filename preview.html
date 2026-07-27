@@ -2049,6 +2049,7 @@
          '<input id="adminPollO1" value="'+esc(pp[1]||POLL.opts[0])+'" placeholder="Option 1" style="'+pIn+'">'+
          '<input id="adminPollO2" value="'+esc(pp[2]||POLL.opts[1])+'" placeholder="Option 2" style="'+pIn+'">'+
          '<input id="adminPollO3" value="'+esc(pp[3]||POLL.opts[2])+'" placeholder="Option 3" style="'+pIn+'">'+
+         '<button class="you-update" type="button" style="margin-top:2px;width:100%;background:linear-gradient(180deg,#3aa06a,#1c7a45);" onclick="adminRandomPoll()">🎲 GENERATE RANDOM POLL</button>'+
          '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#8a4fd8,#5f2ea0);" onclick="savePoll()">SAVE CUSTOM POLL (starts votes fresh)</button>'+
          '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#c0603a,#8f3c1c);" onclick="resetPollVotes()">↺ RESET VOTES ONLY</button>'+
          '<div style="font-size:10px;color:#889;margin-top:4px;">Set the poll here — it stays up until YOU change it. Type the question + all 3 options, then Save. Emojis welcome. 🍿</div></div>';
@@ -3514,6 +3515,7 @@
     h+='<input id="adminPollO1" class="hq-input" value="'+esc(pp[1]||POLL.opts[0])+'" placeholder="Option 1">';
     h+='<input id="adminPollO2" class="hq-input" value="'+esc(pp[2]||POLL.opts[1])+'" placeholder="Option 2">';
     h+='<input id="adminPollO3" class="hq-input" value="'+esc(pp[3]||POLL.opts[2])+'" placeholder="Option 3">';
+    h+='<button class="hq-btn" style="width:100%;background:linear-gradient(180deg,#3aa06a,#1c7a45);color:#fff;margin-bottom:4px;" onclick="adminRandomPoll()">🎲 Generate random poll</button>';
     h+='<button class="hq-btn hq-purple" style="width:100%;margin-bottom:4px;" onclick="savePoll()">Save custom poll (starts votes fresh)</button>';
     h+='<button class="hq-btn" style="width:100%;background:linear-gradient(180deg,#c0603a,#8f3c1c);color:#fff;margin-bottom:8px;" onclick="resetPollVotes()">↺ Reset votes only</button>';
     h+='<div class="hq-sec">✔ Verified members</div>';
