@@ -1420,6 +1420,9 @@
   if(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase){
     sb=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY);
     ONLINE=true;
+    /* Google/Apple OAuth finishes the token handshake asynchronously — when the session lands, log the person in
+       (a one-time getSession check on load races the handshake and can miss it, dumping you back on the gate). */
+    try{ sb.auth.onAuthStateChange(function(evt,session){ if(session&&session.user&&(evt==='SIGNED_IN'||evt==='INITIAL_SESSION')){ try{handleGoogleReturn();}catch(e){} } }); }catch(e){}
   }
 
   /* ================= fictional cast (the "classics") ================= */
@@ -2255,15 +2258,19 @@
       if(r&&r.error){toast('Google sign-in error — try again.');}
     }catch(e){toast('Could not start Google sign-in.');}
   }
+  var GRET_RUNNING=false;
   async function handleGoogleReturn(){
     if(!ONLINE||!sb||!sb.auth)return;
+    if(GRET_RUNNING)return;              /* don't double-run (restoreSession + onAuthStateChange both call this) */
+    if(ME&&ME.name)return;              /* already logged in */
+    GRET_RUNNING=true;
     try{
       var s=await sb.auth.getSession();
       var sess=s&&s.data&&s.data.session;
-      if(!sess||!sess.user)return;
-      if(ME&&ME.name)return;
+      if(!sess||!sess.user){ GRET_RUNNING=false; return; }   /* handshake not done yet — let the SIGNED_IN event retry */
+      if(ME&&ME.name){ GRET_RUNNING=false; return; }
       var u=sess.user, email=(u.email||'').toLowerCase();
-      if(!email)return;
+      if(!email){ GRET_RUNNING=false; return; }
       var meta=u.user_metadata||{};
       var gname=(meta.full_name||meta.name||'').trim();
       var gpic=meta.avatar_url||meta.picture||'';
@@ -2287,7 +2294,7 @@
       toast('Welcome back, '+row.name+'!');
       ME={name:row.name,admin:false,pic:row.avatar_url||gpic||null,handle:row.handle||'',email:email};
       enterAppAfterLogin();
-    }catch(e){}
+    }catch(e){ GRET_RUNNING=false; }
   }
   function browseGuest(){
     document.getElementById('gate').classList.add('hidden');
