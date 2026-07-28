@@ -1983,8 +1983,8 @@
       var __lk=hasLiked(o.liveId);
       h+='<button class="likebtn'+(__lk?' liked':'')+'" type="button" data-n="'+(o.likes||0)+'" data-id="'+o.liveId+'" onclick="likeLive(this)">'+(__lk?'✔ Flapped! ('+(o.likes||0)+')':'👍 Flap This! ('+(o.likes||0)+')')+'</button>';
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase())h+='<button class="reflapbtn'+(o.reflapped?' on':'')+'" type="button" onclick="reflapPost('+o.liveId+')">🔁 '+(o.reflapped?'Reflapped':'Reflap')+'</button>';
-      if(ME.admin)h+='<button class="pinbtn" type="button" onclick="pinPost('+o.liveId+')">'+(o.pinned?'📌 Unpin':'📌 Pin')+'</button>';
-      if(ME.admin)h+='<button class="delbtn" type="button" onclick="delLive('+o.liveId+')">DELETE</button>';
+      if(ME.admin||ME.mod)h+='<button class="pinbtn" type="button" onclick="pinPost('+o.liveId+')">'+(o.pinned?'📌 Unpin':'📌 Pin')+'</button>';
+      if(ME.admin||ME.mod)h+='<button class="delbtn" type="button" onclick="delLive('+o.liveId+')">DELETE</button>';
       else if(o.memberDel)h+='<button class="delbtn" type="button" title="Delete your own flap (within '+DELETE_WINDOW_MIN+' min of posting)" onclick="delMineFlap('+o.liveId+','+(o.createdMs||0)+')">🗑 Delete</button>';
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
         var pn=esc(o.name).replace(/'/g,'');
@@ -2777,7 +2777,7 @@
       var h='<div class="pc-strip"><span>'+esc(name)+' — Profile</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>';
       h+='<div class="pc-body">';
       h+='<div class="pc-head"><div class="pc-ava">'+av+'</div><div>';
-      h+='<div class="pc-name">'+esc(name)+vbadge(name)+(on?' <span style="font-size:9px;color:#1a8a1a;">● online</span>':'')+'</div>';
+      h+='<div class="pc-name">'+esc(name)+vbadge(name)+((isMod(name)&&(name||'').toLowerCase()!=='lock')?' <span class="modtag" title="Moderator" style="font-size:12px;">🛡</span>':'')+(on?' <span style="font-size:9px;color:#1a8a1a;">● online</span>':'')+'</div>';
       h+='<div class="pc-meta">'+(u?'joined '+new Date(u.created_at).toLocaleDateString()+' · ':'')+mine.length+' flaps · '+refl.length+' reflaps</div>';
       h+='<div class="pc-meta" style="margin-top:2px;"><b id="pcFollowers">0</b> followers · <b id="pcFollowing">0</b> following</div>';
       h+='<div class="pc-feel">feeling: '+emoHTML(feeling,true)+' '+esc(feeling)+'</div>';
@@ -2812,6 +2812,10 @@
                '<button type="button" onclick="muteUser(\''+_pn+'\',24)">24h</button>'+
                '<button type="button" onclick="muteUser(\''+_pn+'\',168)">7d</button>'+
                '<button type="button" onclick="customMute(\''+_pn+'\')">Custom</button>')+
+           '</div>';
+        h+='<div class="pc-actions" style="margin-top:4px;flex-wrap:wrap;align-items:center;gap:6px;">'+
+           '<span style="font-size:11px;color:#2a4a6e;margin-right:auto;">🛡 Moderator (can pin & remove posts/replies):</span>'+
+           '<button type="button" onclick="toggleMod(\''+_pn+'\')">'+(isMod(name)?'✓ Remove moderator':'🛡 Make moderator')+'</button>'+
            '</div>';
         if((_au.violations||0)>0){ h+='<div style="font-size:10.5px;color:#a35a00;padding:2px 2px 0;">⚠ '+_au.violations+' auto-mod removal(s) on record for this member.</div>'; }
       }
@@ -3200,7 +3204,7 @@
       var p=splitReply(r.body);
       var rMs=r.created_at?Date.parse(r.created_at):0;
       var mineR=((r.name||'').toLowerCase()===(ME.name||'').toLowerCase());
-      var canDel=r.id && mineR && (ME.admin || withinDelWindow(rMs));   /* your OWN reply is deletable for '+DELETE_WINDOW_MIN+' min, then permanent; admins moderate from the HQ */
+      var canDel=r.id && ((ME.admin||ME.mod) || (mineR && withinDelWindow(rMs)));   /* your OWN reply for '+DELETE_WINDOW_MIN+' min; admins & mods can remove any reply */
       var delLink=canDel?'<a class="reply-del" title="Delete this reply (yours, within '+DELETE_WINDOW_MIN+' min)" onclick="delReply('+r.id+','+row.id+')">🗑</a>':'';
       return '<div class="reply"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/'/g,'')+'\')">'+avatarFor(r.name)+'</div>'+
         replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+delLink+'</div>';
@@ -3747,7 +3751,40 @@
       toast('✔ Verified list updated!');
     }catch(e){toast('Could not save — try again.');}
   }
-  /* ===== pin a flap to the top (admin) — persisted as a hidden sentinel row ===== */
+  /* ===== moderators — admin-granted (persisted like the verified list). Mods can pin & remove content. ===== */
+  var MODS={};
+  function isMod(n){n=(n||'').toLowerCase(); return n==='lock' || !!(MODS && MODS[n]);}
+  async function loadMods(){
+    if(!ONLINE)return;
+    try{
+      var r=await sb.from('flaps').select('body').eq('name','::mods::').order('id',{ascending:false}).limit(1);
+      MODS={};
+      if(!r.error && r.data && r.data[0]){ (r.data[0].body||'').split(/[\s,]+/).forEach(function(n){n=n.trim().toLowerCase(); if(n)MODS[n]=1;}); }
+    }catch(e){}
+    try{ if(typeof ME!=='undefined' && ME && ME.name){ ME.mod = !!ME.admin || isMod(ME.name); } }catch(e){}
+  }
+  async function toggleMod(name){
+    if(!ME.admin)return;
+    var key=(name||'').toLowerCase(); if(!key)return;
+    if(key==='lock'){ toast('Lock is always an admin.'); return; }
+    var making=!MODS[key];
+    if(making)MODS[key]=1; else delete MODS[key];
+    var body=Object.keys(MODS).join(', ');
+    try{
+      var ex=await sb.from('flaps').select('id').eq('name','::mods::').order('id',{ascending:false}).limit(1);
+      if(ex.data&&ex.data[0]){ await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id); }
+      else { await sb.from('flaps').insert({name:'::mods::',body:body,mood:'flappy',likes:0}); }
+      toast(making?('🛡 '+name+' is now a moderator!'):(name+' is no longer a moderator.'));
+      try{ showUserProfile(name); }catch(e){}
+    }catch(e){ toast('Could not update — try again.'); }
+  }
+  /* ===== message length — verified members can send longer flaps & DMs ===== */
+  function msgLimit(){ return isVerified(ME.name) ? 1000 : 300; }
+  function applyMsgLimits(){
+    try{ var ct=document.getElementById('composeText'); if(ct)ct.maxLength=msgLimit(); }catch(e){}
+    try{ var dm=document.getElementById('dmInput'); if(dm)dm.maxLength=msgLimit(); }catch(e){}
+  }
+  /* ===== pin a flap to the top (admin/mod) — persisted as a hidden sentinel row ===== */
   var PINNED_ID=null;
   async function loadPinned(){
     if(!ONLINE)return;
@@ -3756,7 +3793,7 @@
     }catch(e){}
   }
   async function pinPost(id){
-    if(!ME.admin)return;
+    if(!ME.admin && !ME.mod)return;
     var cur=String(id), newVal=(PINNED_ID===cur)?'':cur;
     try{
       var ex=await sb.from('flaps').select('id').eq('name','::pinned::').order('id',{ascending:false}).limit(1);
@@ -3883,7 +3920,8 @@
       FEED_HAS_MORE=((res.data||[]).length>=FEED_LIMIT);   /* a full page came back → there are probably older flaps */
       LAST_ROWS=(res.data||[]).filter(function(r){return String(r.name||'').indexOf('::')!==0;}); /* keep ALL hidden ::sentinel:: rows (ticker, poll, friend, dm, features…) out of the feed */
       loadTicker();
-      loadVerified();
+      loadVerified().then(applyMsgLimits);
+      loadMods();
       loadFeatures();
       await loadPinned();
       myFlapCount=res.data.filter(function(r){return r.name===ME.name;}).length;
@@ -3928,7 +3966,7 @@
   async function delReply(rid, fid){
     if(!ME.name)return;
     var rr=(REPLIES[fid]||[]).find(function(x){return x.id===rid;});
-    if(!ME.admin){
+    if(!ME.admin && !ME.mod){
       if(rr && (rr.name||'').toLowerCase()!==(ME.name||'').toLowerCase()){ toast('You can only delete your own replies.'); return; }
       var rMs=rr&&rr.created_at?Date.parse(rr.created_at):0;
       if(!withinDelWindow(rMs)){ toast('This reply is older than '+DELETE_WINDOW_MIN+' min — it can no longer be deleted.'); return; }
@@ -3936,7 +3974,7 @@
     if(!confirm('Delete this reply? This can’t be undone.'))return;
     if(REPLIES[fid])REPLIES[fid]=REPLIES[fid].filter(function(x){return x.id!==rid;});
     renderLive();
-    if(ONLINE){ try{ var q=sb.from('flap_replies').delete().eq('id',rid); if(!ME.admin)q=q.gte('created_at', new Date(Date.now()-DELETE_WINDOW_MS).toISOString()); await q; }catch(e){} }
+    if(ONLINE){ try{ var q=sb.from('flap_replies').delete().eq('id',rid); if(!ME.admin && !ME.mod)q=q.gte('created_at', new Date(Date.now()-DELETE_WINDOW_MS).toISOString()); await q; }catch(e){} }
     toast('Reply deleted.');
   }
   var SENDING_REPLIES={};
@@ -3982,7 +4020,7 @@
     var p=splitReply(r.body);
     var rMs=r.created_at?Date.parse(r.created_at):0;
     var mineR=((r.name||'').toLowerCase()===(ME.name||'').toLowerCase());
-    var canDel=r.id && mineR && (ME.admin || withinDelWindow(rMs));
+    var canDel=r.id && ((ME.admin||ME.mod) || (mineR && withinDelWindow(rMs)));
     var delLink=canDel?'<a class="reply-del" title="Delete this reply (yours, within '+DELETE_WINDOW_MIN+' min)" onclick="delReply('+r.id+','+flapId+')">🗑</a>':'';
     var html='<div class="reply reply-new"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/\x27/g,'')+'\')">'+avatarFor(r.name)+'</div>'+replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+delLink+'</div>';
     var comp=rb.querySelector('.reply-compose');
@@ -4008,7 +4046,7 @@
     toast('You flapped it!');
   }
   async function delLive(id){
-    if(!ME.admin)return;
+    if(!ME.admin && !ME.mod)return;
     if(!confirm('Delete this flap for everyone?'))return;
     if(ONLINE){try{await sb.from('flaps').delete().eq('id',id);}catch(e){}}
     loadFeed();
@@ -4635,7 +4673,7 @@
     var nm=esc(name).replace(/'/g,'');
     box.innerHTML='<div class="pc-strip"><span><button type="button" class="dm-back" onclick="openSocial(\'messages\')" title="Back to messages">←</button>'+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕</span></div>'+
       '<div class="dm-thread" id="dmThread">'+thread+'</div>'+
-      '<div class="dm-compose"><button type="button" class="dm-emoji-toggle" title="emojis & moods" onclick="toggleDmTray()">😊</button><input id="dmInput" placeholder="message '+esc(name)+'…" onkeydown="if(event.key===\'Enter\')sendDM(\''+nm+'\')"><button onclick="sendDM(\''+nm+'\')">Send</button></div>'+
+      '<div class="dm-compose"><button type="button" class="dm-emoji-toggle" title="emojis & moods" onclick="toggleDmTray()">😊</button><input id="dmInput" maxlength="'+msgLimit()+'" placeholder="message '+esc(name)+'…" onkeydown="if(event.key===\'Enter\')sendDM(\''+nm+'\')"><button onclick="sendDM(\''+nm+'\')">Send</button></div>'+
       '<div class="dm-tray" id="dmTray" style="display:none;"><div class="remoji-bar">'+dmEmojiBtns()+'</div><div class="remoji-bar moodrow">'+dmMoodBtns()+'</div></div>';
     var th=document.getElementById('dmThread'); if(th)th.scrollTop=th.scrollHeight;
     DM_OPEN=name;
