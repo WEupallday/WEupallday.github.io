@@ -65,8 +65,14 @@
   }
 
   .topbar{background:linear-gradient(180deg,#ff9a2e 0%,var(--orange) 55%,#d96f00 100%);border-bottom:3px solid #a85400;padding:5px 0;box-shadow:0 3px 10px rgba(0,0,0,.4);}
+  /* hide-on-scroll: bar tucks up when scrolling down, pops back on scroll up (all viewports) */
+  .topbar{position:sticky;top:0;z-index:95;transition:transform .28s ease;will-change:transform;}
+  body.bar-hidden .topbar{transform:translateY(-105%);}
   .topbar-inner{width:1010px;margin:0 auto;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
   .navbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:9px;letter-spacing:.5px;color:#fff;text-transform:uppercase;cursor:pointer;background:linear-gradient(180deg,#c22a1a 0%,#8f1408 100%);border:1px solid #6b0e04;border-radius:4px;padding:4px 9px;text-shadow:0 1px 1px rgba(0,0,0,.5);}
+  /* clean, neat Search — a light "field" pill instead of the red action buttons */
+  .navbtn.search-nav{background:#fff;color:var(--navy,#22398f);border:1.5px solid #e0b06a;border-radius:14px;text-shadow:none;text-transform:none;letter-spacing:.2px;padding:4px 12px;box-shadow:inset 0 1px 2px rgba(0,0,0,.05);}
+  .navbtn.search-nav:hover{border-color:var(--orange);color:var(--orange-dark,#c05e00);}
   .rf-short{display:none;}
   /* side drawer + hamburger + reply toggle are app-only; hidden on the website */
   .menu-btn{display:none;}
@@ -1319,7 +1325,8 @@
         4. what flaps here stays here.<br>
         5. lock can delete anything. lock is the law.<br>
         6. taco tuesday is sacred.<br>
-        <span style="opacity:.85;">⚙ auto-moderation is on: posts, replies &amp; DMs with slurs or severe abuse are blocked automatically and reviewed by lock. wrongly flagged? tap “Appeal.”</span>
+        <span style="opacity:.85;">⚙ auto-moderation is on: posts, replies &amp; DMs with slurs or severe abuse are blocked automatically and reviewed by lock. wrongly flagged? tap “Appeal.”</span><br>
+        <span style="opacity:.85;">💬 heads up: direct messages are <b>not private from moderation</b> — lock may review messages to keep TheFlap safe.</span>
       </div>
     </div>
     <div class="sidebox">
@@ -2253,7 +2260,7 @@
       var e1=document.getElementById('pcFollowers'), e2=document.getElementById('pcFollowing');
       if(e1)e1.textContent=(fr&&fr.count!=null?fr.count:0);
       if(e2)e2.textContent=(fg&&fg.count!=null?fg.count:0);
-    }catch(e){}
+    }catch(e){ var e1=document.getElementById('pcFollowers'), e2=document.getElementById('pcFollowing'); if(e1&&e1.textContent==='')e1.textContent='0'; if(e2&&e2.textContent==='')e2.textContent='0'; }
   }
   /* "Following" feed filter */
   var FOLLOW_FILTER=false;
@@ -2726,7 +2733,7 @@
       h+='<div class="pc-head"><div class="pc-ava">'+av+'</div><div>';
       h+='<div class="pc-name">'+esc(name)+vbadge(name)+(on?' <span style="font-size:9px;color:#1a8a1a;">● online</span>':'')+'</div>';
       h+='<div class="pc-meta">'+(u?'joined '+new Date(u.created_at).toLocaleDateString()+' · ':'')+mine.length+' flaps · '+refl.length+' reflaps</div>';
-      h+='<div class="pc-meta" style="margin-top:2px;"><b id="pcFollowers">·</b> followers · <b id="pcFollowing">·</b> following</div>';
+      h+='<div class="pc-meta" style="margin-top:2px;"><b id="pcFollowers">0</b> followers · <b id="pcFollowing">0</b> following</div>';
       h+='<div class="pc-feel">feeling: '+emoHTML(feeling,true)+' '+esc(feeling)+'</div>';
       h+='</div></div>';
       if((name||'').toLowerCase()===(ME.name||'').toLowerCase()){
@@ -4200,7 +4207,52 @@
   }
   function isSentinelName(n){ return String(n||'').indexOf('::')===0; }
   var ADMIN_DATA=null, ADMIN_TAB='dash';
-  function adminTab(t){ ADMIN_TAB=t; renderAdmin(); var b=document.querySelector('.hq-body'); if(b)b.scrollTop=0; }
+  function adminTab(t){ ADMIN_TAB=t; if(t!=='messages')MSG_OPEN=null; renderAdmin(); var b=document.querySelector('.hq-body'); if(b)b.scrollTop=0; }
+  /* ---- admin Messages oversight (DMs, admin-gated only) ---- */
+  var MSG_SEARCH='', MSG_OPEN=null;
+  function _b64(s){ try{ return btoa(unescape(encodeURIComponent(s))); }catch(e){ return ''; } }
+  function _unb64(s){ try{ return decodeURIComponent(escape(atob(s))); }catch(e){ return ''; } }
+  function hqMsgSearch(v){ MSG_SEARCH=v; renderAdmin(); var i=document.getElementById('hqMsgSearch'); if(i){ i.focus(); try{i.setSelectionRange(i.value.length,i.value.length);}catch(e){} } }
+  function hqMsgOpen(b64){ MSG_OPEN=_unb64(b64); renderAdmin(); }
+  function hqMsgBack(){ MSG_OPEN=null; renderAdmin(); }
+  function hqMessages(){
+    if(!ME.admin) return '';
+    var d=ADMIN_DATA||{};
+    var msgs=(d.dms||[]).map(function(x){ var p=String(x.body||'').split(PSEP); return {from:p[0]||'',to:p[1]||'',text:p.slice(2).join(PSEP),at:x.created_at}; }).filter(function(m){ return m.from&&m.to; });
+    var convs={};
+    msgs.forEach(function(m){
+      var lo=m.from.toLowerCase(), hi=m.to.toLowerCase(), key=(lo<hi?lo+''+hi:hi+''+lo);
+      if(!convs[key])convs[key]={key:key,a:m.from,b:m.to,list:[]};
+      convs[key].list.push(m);
+    });
+    Object.keys(convs).forEach(function(k){ convs[k].list.reverse(); });   /* rows came newest-first → make each thread chronological */
+    var h='';
+    h+='<div style="font-size:11px;color:#7a2b22;background:#fff6ee;border:1px solid #ffd8ad;border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.5;">🔒 <b>Admin oversight.</b> You can review any member\'s direct messages for safety &amp; moderation. Members are told messages aren\'t private from moderation (House Rules + Privacy Policy).</div>';
+    if(MSG_OPEN && convs[MSG_OPEN]){
+      var cc=convs[MSG_OPEN];
+      h+='<div style="margin-bottom:8px;"><a onclick="hqMsgBack()" style="color:#22398f;font-weight:bold;cursor:pointer;">← all conversations</a></div>';
+      h+='<div style="font-weight:bold;color:#22398f;font-size:14px;margin-bottom:8px;">'+esc(cc.a)+' ⇄ '+esc(cc.b)+' <span style="color:#8a93c0;font-weight:normal;font-size:11px;">('+cc.list.length+' messages)</span></div>';
+      h+='<div style="max-height:52vh;overflow-y:auto;">'+cc.list.map(function(m){
+        return '<div style="margin:5px 0;padding:7px 10px;background:#f2f7ff;border-radius:10px;font-size:12.5px;line-height:1.45;"><b style="color:#22398f;">'+esc(m.from)+'</b> <span style="color:#8a93c0;font-size:10px;">→ '+esc(m.to)+' · '+(m.at?new Date(m.at).toLocaleString():'')+'</span><br>'+esc(m.text)+'</div>';
+      }).join('')+'</div>';
+      return h;
+    }
+    h+='<input type="text" id="hqMsgSearch" placeholder="🔍 Search conversations by username…" value="'+esc(MSG_SEARCH)+'" oninput="hqMsgSearch(this.value)" autocomplete="off" style="width:100%;box-sizing:border-box;padding:9px 11px;border:2px solid #cfe0f5;border-radius:9px;font-family:Verdana,Arial,sans-serif;font-size:15px;color:#22398f;margin-bottom:8px;">';
+    var arr=Object.keys(convs).map(function(k){return convs[k];});
+    arr.sort(function(a,b){ var la=a.list[a.list.length-1], lb=b.list[b.list.length-1]; return (new Date(lb.at||0))-(new Date(la.at||0)); });
+    var q=(MSG_SEARCH||'').trim().toLowerCase();
+    if(q) arr=arr.filter(function(c){ return c.a.toLowerCase().indexOf(q)>-1 || c.b.toLowerCase().indexOf(q)>-1; });
+    if(!arr.length){ h+='<div style="text-align:center;color:#8a93c0;font-size:12.5px;padding:20px;">'+(q?'No conversations match “'+esc(q)+'”.':'No messages yet.')+'</div>'; return h; }
+    h+='<div style="font-size:11px;color:#8a93c0;margin:2px 0 6px;">'+arr.length+' conversation'+(arr.length===1?'':'s')+':</div>';
+    h+=arr.map(function(c){
+      var last=c.list[c.list.length-1];
+      return '<div onclick="hqMsgOpen(\''+_b64(c.key)+'\')" style="cursor:pointer;padding:9px 8px;border-bottom:1px solid #eef2fa;">'+
+        '<div style="font-weight:bold;color:#22398f;font-size:13px;">'+esc(c.a)+' ⇄ '+esc(c.b)+' <span style="color:#8a93c0;font-weight:normal;font-size:11px;">('+c.list.length+')</span></div>'+
+        '<div style="font-size:12px;color:#556;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><b>'+esc(last.from)+':</b> '+esc(last.text)+'</div>'+
+        '</div>';
+    }).join('');
+    return h;
+  }
   async function showAdmin(){
     if(!ME.admin){toast('Admins only.');return;}
     var box=document.getElementById('profCardBox');
@@ -4215,9 +4267,10 @@
       var repIds=reports.filter(function(r){return r.target_type==='post'&&r.target_id;}).map(function(r){return r.target_id;});
       var repPosts={}; if(repIds.length){try{((await sb.from('flaps').select('id,body,name').in('id',repIds)).data||[]).forEach(function(p){repPosts[p.id]=p;});}catch(e){}}
       var tickets=[]; try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(80)).data||[];}catch(e){}
+      var dms=[]; try{dms=(await sb.from('flaps').select('id,body,created_at').eq('name','::dm::').order('id',{ascending:false}).limit(3000)).data||[];}catch(e){}   /* admin message oversight */
       async function sen(nm){try{var r=await sb.from('flaps').select('body').eq('name',nm).order('id',{ascending:false}).limit(1);return (r.data&&r.data[0])?r.data[0].body:'';}catch(e){return '';}}
       var tickerCur=await sen('::ticker::'), verCur=await sen('::verified::'), pollCur=await sen('::poll::');
-      ADMIN_DATA={us:us,flAll:flAll,replyCount:rc.count||0,repliesRecent:repliesRecent,reports:reports,repPosts:repPosts,tickets:tickets,tickerCur:tickerCur,verCur:verCur,pollCur:pollCur,now:Date.now()};
+      ADMIN_DATA={us:us,flAll:flAll,replyCount:rc.count||0,repliesRecent:repliesRecent,reports:reports,repPosts:repPosts,tickets:tickets,dms:dms,tickerCur:tickerCur,verCur:verCur,pollCur:pollCur,now:Date.now()};
       renderAdmin();
     }catch(e){
       box.innerHTML='<div class="pc-strip hq-strip"><span>👑 TheFlap HQ</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">Could not load HQ — check your connection and try again.</div>';
@@ -4225,9 +4278,9 @@
   }
   function renderAdmin(){
     var box=document.getElementById('profCardBox'); if(!box||!ADMIN_DATA)return;
-    var tabs=[['dash','📊','Home'],['mod','🛡️','Moderation'],['members','👥','Members'],['support','🎫','Support'],['settings','⚙️','Settings']];
+    var tabs=[['dash','📊','Home'],['mod','🛡️','Moderation'],['members','👥','Members'],['messages','💬','Messages'],['support','🎫','Support'],['settings','⚙️','Settings']];
     var bar='<div class="hq-tabs">'+tabs.map(function(t){return '<button class="hq-tab'+(ADMIN_TAB===t[0]?' on':'')+'" type="button" onclick="adminTab(\''+t[0]+'\')"><span class="hq-ico">'+t[1]+'</span>'+t[2]+'</button>';}).join('')+'</div>';
-    var body = ADMIN_TAB==='dash'?hqDash() : ADMIN_TAB==='mod'?hqMod() : ADMIN_TAB==='members'?hqMembers() : ADMIN_TAB==='support'?hqSupport() : hqSettings();
+    var body = ADMIN_TAB==='dash'?hqDash() : ADMIN_TAB==='mod'?hqMod() : ADMIN_TAB==='members'?hqMembers() : ADMIN_TAB==='messages'?hqMessages() : ADMIN_TAB==='support'?hqSupport() : hqSettings();
     box.innerHTML='<div class="pc-strip hq-strip"><span>👑 TheFlap HQ</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>'+bar+'<div class="pc-body hq-body">'+body+'</div>';
   }
   function hqStats(){
@@ -4686,6 +4739,19 @@ function toggleDrawer(force){
           if(y>110 && y>lastY+4) document.body.classList.add('bar-hidden');           /* scrolling down → hide */
           else if(y<lastY-4 || y<60) document.body.classList.remove('bar-hidden');      /* scroll up a touch → reveal */
         }
+        lastY=y; tk=false;
+      });
+    },{passive:true});
+  })();
+  /* universal hide-on-scroll — runs on desktop site + mobile + app (bar tucks up on scroll-down, returns on scroll-up) */
+  (function(){
+    var lastY=window.scrollY||0, tk=false;
+    window.addEventListener('scroll',function(){
+      if(tk)return; tk=true;
+      requestAnimationFrame(function(){
+        var y=window.scrollY||document.documentElement.scrollTop||0;
+        if(y>110 && y>lastY+4) document.body.classList.add('bar-hidden');       /* scrolling down → hide */
+        else if(y<lastY-4 || y<60) document.body.classList.remove('bar-hidden'); /* scroll up a touch → reveal */
         lastY=y; tk=false;
       });
     },{passive:true});
