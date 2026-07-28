@@ -990,23 +990,9 @@
     <div class="gate-or">or</div>
 
     <div id="gateAlt" class="gate-alt hidden">
-      <p style="font-size:10.5px;color:#2a4a6e;margin:0 0 8px;line-height:1.4;">First time? Pick a name, a password + <b>a profile pic</b>. Coming back? Same name + password logs you in.</p>
+      <p style="font-size:10.5px;color:#2a4a6e;margin:0 0 8px;line-height:1.4;">First time? Pick a name + a password to make your account. Coming back? Same name + password logs you in.</p>
       <input type="text" id="gateName" name="username" autocomplete="username" maxlength="20" placeholder="Your name (what everyone sees)">
       <input type="password" id="gatePass" name="password" autocomplete="current-password" maxlength="40" placeholder="Your password">
-      <select id="gateDevice" style="width:100%;box-sizing:border-box;font-family:Verdana,Arial,sans-serif;font-size:13px;padding:9px;border:2px solid #cfe0f5;border-radius:8px;margin-top:8px;color:#22398f;background:#fff;">
-        <option value="">📱 What device are you on? (new accounts)</option>
-        <option value="iPhone / iPad">iPhone / iPad</option>
-        <option value="Samsung">Samsung phone/tablet</option>
-        <option value="Android (other)">Android (other)</option>
-        <option value="Windows PC">Windows computer</option>
-        <option value="Mac">Mac computer</option>
-        <option value="Other">Other</option>
-      </select>
-      <div class="gate-ava-wrap">
-        <div class="gate-ava" id="gateAva" onclick="document.getElementById('gateAvatarFile').click()" title="Add your profile pic">＋</div>
-        <div class="gate-ava-label">New here? Tap the circle to add your <b>profile pic</b></div>
-      </div>
-      <input type="file" id="gateAvatarFile" accept="image/*" hidden>
       <button class="comp-btn go" type="button" onclick="enterGate()">Let Me In!</button>
     </div>
     <div class="gate-err" id="gateErr"></div>
@@ -2076,29 +2062,18 @@
           toast('Welcome back, '+ME.name+'!');
           try{await ensureHandle();}catch(eh){}
         }else{
-          /* new account — a profile pic is REQUIRED to sign up */
-          if(!GATE_PIC_BLOB){
-            err.textContent='📸 Add a profile pic to finish signing up!';
-            document.getElementById('gateAvatarFile').click();
-            return;
-          }
-          ME.name=name.slice(0,20);
+          /* new account — create it, then send them through onboarding to pick handle + name + profile pic */
+          var newName=name.slice(0,20);
           err.textContent='creating your account…';
-          var picUrl=null;
-          try{
-            var path='avatar-'+Date.now()+'-'+Math.random().toString(36).slice(2,6)+'.jpg';
-            var up=await sb.storage.from('pics').upload(path,GATE_PIC_BLOB,{contentType:'image/jpeg',upsert:false});
-            if(!up.error)picUrl=sb.storage.from('pics').getPublicUrl(path).data.publicUrl;
-          }catch(e4){}
-          ME.pic=picUrl;
-          var newHandle=await genUniqueHandle(ME.name); ME.handle=newHandle;
-          var _dev=((document.getElementById('gateDevice')||{}).value)||detectDevice();
-          var ins=await sb.from('flap_users').insert({name:ME.name,pass_hash:hash,avatar_url:picUrl,handle:newHandle,device:_dev});
+          var newHandle=await genUniqueHandle(newName);
+          var ins=await sb.from('flap_users').insert({name:newName,pass_hash:hash,avatar_url:null,handle:newHandle,device:detectDevice()}).select('*').maybeSingle();
           if(ins.error)throw ins.error;
-          GATE_PIC_BLOB=null;
-          discordPing('join',ME.name);   /* ping the admin's Discord on a real new signup */
-          sendPush('lock','TheFlap 🐦',ME.name+' just joined TheFlap! 🎉');   /* + phone push to admin */
-          toast('Account created! Welcome to TheFlap, '+ME.name+'!');
+          var newRow=(ins&&ins.data)?ins.data:{name:newName,avatar_url:null,handle:newHandle};
+          try{ discordPing('join',newRow.name); }catch(e5){}   /* ping the admin's Discord on a real new signup */
+          try{ sendPush('lock','TheFlap 🐦',newRow.name+' just joined TheFlap! 🎉'); }catch(e5){}
+          err.textContent='';
+          startOnboarding(newRow);   /* pick handle + display name + profile pic, then enter */
+          return;
         }
       }catch(e){err.textContent='Could not reach the flap server — try again.';return;}
     }else{
@@ -2706,17 +2681,17 @@
   });
   /* profile pic chosen during sign-up */
   var GATE_PIC_BLOB=null;
-  document.getElementById('gateAvatarFile').addEventListener('change',async function(e){
+  var _gaf=document.getElementById('gateAvatarFile');   /* removed from gate; profile pic now lives in onboarding */
+  if(_gaf){ _gaf.addEventListener('change',async function(e){
     var f=e.target.files[0];if(!f)return;
     try{GATE_PIC_BLOB=await compressImage(f);}
     catch(err){toast('Could not read that photo. Try a JPEG or a screenshot.');e.target.value='';return;}
     var av=document.getElementById('gateAva');
-    av.style.backgroundImage='url('+URL.createObjectURL(GATE_PIC_BLOB)+')';
-    av.classList.add('has');
+    if(av){ av.style.backgroundImage='url('+URL.createObjectURL(GATE_PIC_BLOB)+')'; av.classList.add('has'); }
     var er=document.getElementById('gateErr'); if(er)er.textContent='';
     e.target.value='';
     toast('Nice pic! Now tap “Let Me In!”');
-  });
+  }); }
   if(!ONLINE)document.getElementById('offlineNote').style.display='block';
   /* session restore runs at the very end of the script — see restoreSession() */
 
