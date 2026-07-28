@@ -443,6 +443,34 @@
   .srch-name{font-weight:bold;color:var(--navy,#22398f);font-size:14px;}
   .srch-handle{font-size:12px;color:#8a93c0;}
   .srch-empty{color:#8a93c0;font-size:12.5px;text-align:center;padding:16px 0;}
+  /* ---- settings (own profile) ---- */
+  #settingsModal{position:fixed;inset:0;z-index:190;background:rgba(15,8,32,.6);display:none;align-items:flex-start;justify-content:center;padding:40px 14px 20px;overflow-y:auto;}
+  #settingsModal.open{display:flex;}
+  .set-card{width:420px;max-width:96vw;background:#fff;border:3px solid var(--orange);border-radius:14px;box-shadow:0 18px 46px rgba(0,0,0,.6);overflow:hidden;}
+  .set-head{background:linear-gradient(#f5920f,#e07d0a);color:#fff;padding:11px 14px;display:flex;align-items:center;gap:8px;}
+  .set-head b{font-size:15px;flex:1;} .set-x{cursor:pointer;font-size:18px;font-weight:bold;line-height:1;}
+  .set-body{padding:6px 14px 16px;}
+  .set-sec{padding:12px 0;border-bottom:1px solid #eef2fa;}
+  .set-sec:last-child{border-bottom:none;}
+  .set-label{font-weight:bold;color:var(--navy,#22398f);font-size:13px;margin-bottom:6px;}
+  .set-count{font-weight:normal;color:#8a93c0;font-size:11px;}
+  .set-body input[type=text]{width:100%;box-sizing:border-box;padding:10px;border:2px solid #cfe0f5;border-radius:9px;font-family:Verdana,Arial,sans-serif;font-size:16px;color:var(--navy,#22398f);}
+  .set-inrow{position:relative;} .set-at{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#9aa;font-weight:bold;font-size:16px;}
+  .set-hasat{padding-left:26px !important;}
+  .set-hint{font-size:11px;color:#8a94b8;margin-top:5px;min-height:14px;} .set-hint.good{color:#1a9d5a;} .set-hint.bad{color:#c0392b;}
+  .set-btn{display:inline-block;margin-top:8px;padding:8px 14px;background:var(--navy,#22398f);color:#fff;border-radius:18px;font-size:12.5px;font-weight:bold;cursor:pointer;}
+  .set-btn.save{background:linear-gradient(#ffb14d,#f5820a);box-shadow:0 3px 0 #c96b00;}
+  .set-btn.save:active{transform:translateY(2px);box-shadow:0 1px 0 #c96b00;}
+  .set-btn.danger{background:#c0392b;}
+  .set-btn.disabled{filter:grayscale(.6) opacity(.55);cursor:not-allowed;pointer-events:none;}
+  .set-avarow{display:flex;align-items:center;gap:12px;}
+  .set-ava{width:60px;height:60px;border-radius:50%;flex:0 0 60px;border:3px solid var(--orange);display:flex;align-items:center;justify-content:center;font-size:30px;background:#dfe7f7;overflow:hidden;}
+  .set-ava img{width:100%;height:100%;object-fit:cover;}
+  .set-blocked{max-height:150px;overflow-y:auto;}
+  .set-brow{display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:13px;color:var(--navy,#22398f);}
+  .set-brow .set-unb{margin-left:auto;font-size:11px;background:#eef2fa;color:var(--navy,#22398f);padding:4px 10px;border-radius:12px;cursor:pointer;font-weight:bold;}
+  .set-empty{color:#8a93c0;font-size:12px;padding:6px 0;}
+  .set-account{display:flex;gap:10px;flex-wrap:wrap;}
   .gate-err{color:var(--red);font-size:10px;font-weight:bold;min-height:14px;}
   /* replies + tag filter */
   .replyrow{display:flex;gap:6px;flex:1;align-items:center;}
@@ -1096,6 +1124,42 @@
     <div class="srch-body">
       <input type="text" id="srchInput" class="srch-input" placeholder="Search by name or @handle…" oninput="runSearch()" autocomplete="off">
       <div class="srch-results" id="srchResults"><div class="srch-empty">Type a name to find your friends on TheFlap.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS (your own profile) -->
+<div id="settingsModal" onclick="if(event.target===this)closeSettings()">
+  <div class="set-card">
+    <div class="set-head"><span>⚙</span><b>Settings</b><span class="set-x" onclick="closeSettings()">✕</span></div>
+    <div class="set-body">
+      <div class="set-sec">
+        <div class="set-avarow">
+          <div class="set-ava" id="setAva">🙂</div>
+          <div><div class="set-label">Profile picture</div><span class="set-btn" onclick="document.getElementById('setPicFile').click()">📷 Change photo</span></div>
+        </div>
+        <input type="file" id="setPicFile" accept="image/*" hidden onchange="settingsChangePic(event)">
+      </div>
+      <div class="set-sec">
+        <div class="set-label">Display name <span class="set-count" id="setNameCount"></span></div>
+        <input type="text" id="setName" maxlength="24" placeholder="Your name">
+        <div class="set-hint" id="setNameHint"></div>
+        <span class="set-btn save" id="setNameSave" onclick="saveDisplayName()">Save name</span>
+      </div>
+      <div class="set-sec">
+        <div class="set-label">Handle (@mention) <span class="set-count" id="setHandleCount"></span></div>
+        <div class="set-inrow"><span class="set-at">@</span><input type="text" id="setHandle" class="set-hasat" maxlength="20" placeholder="your_handle" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')"></div>
+        <div class="set-hint" id="setHandleHint"></div>
+        <span class="set-btn save" id="setHandleSave" onclick="saveHandle()">Save handle</span>
+      </div>
+      <div class="set-sec">
+        <div class="set-label">People you've blocked</div>
+        <div class="set-blocked" id="setBlocked"><div class="set-empty">You haven't blocked anyone.</div></div>
+      </div>
+      <div class="set-sec set-account">
+        <span class="set-btn" onclick="closeSettings();logOut();">🚪 Log out</span>
+        <span class="set-btn danger" onclick="closeSettings();deleteAccount();">🗑 Delete account</span>
+      </div>
     </div>
   </div>
 </div>
@@ -2360,6 +2424,103 @@
     }catch(e){ res.innerHTML='<div class="srch-empty">Could not search — try again.</div>'; }
   }
   function pickSearch(i){ var u=SRCH_ROWS[i]; if(!u)return; closeSearch(); try{ showUserProfile(u.name); }catch(e){ toast('Could not open profile.'); } }
+  /* ================= SETTINGS (your own profile) ================= */
+  var SET_LIMITS={name:3, handle:2};   /* how many times each can be changed */
+  var SET={row:null};
+  async function openSettings(){
+    if(!ONLINE||!sb||!ME.name){ toast('Settings need the server.'); return; }
+    try{ closeProfile(); }catch(e){}
+    document.getElementById('settingsModal').classList.add('open');
+    try{
+      var r=await sb.from('flap_users').select('name,handle,avatar_url,name_changes,handle_changes').ilike('name',ME.name).maybeSingle();
+      SET.row=(r&&r.data)?r.data:{name:ME.name,handle:ME.handle||'',avatar_url:ME.pic||null,name_changes:0,handle_changes:0};
+    }catch(e){ SET.row={name:ME.name,handle:ME.handle||'',avatar_url:ME.pic||null,name_changes:0,handle_changes:0}; }
+    document.getElementById('setName').value=SET.row.name||'';
+    document.getElementById('setHandle').value=SET.row.handle||'';
+    document.getElementById('setNameHint').textContent=''; document.getElementById('setHandleHint').textContent='';
+    var bigA=document.getElementById('setAva');
+    if(SET.row.avatar_url){ bigA.innerHTML='<img src="'+esc(SET.row.avatar_url)+'" alt="">'; } else { bigA.textContent='🙂'; }
+    settingsUpdateCounts();
+    settingsRenderBlocked();
+  }
+  function closeSettings(){ var m=document.getElementById('settingsModal'); if(m)m.classList.remove('open'); }
+  function settingsUpdateCounts(){
+    var nc=(SET.row&&SET.row.name_changes)||0, hc=(SET.row&&SET.row.handle_changes)||0;
+    var nleft=Math.max(0, SET_LIMITS.name-nc), hleft=Math.max(0, SET_LIMITS.handle-hc);
+    document.getElementById('setNameCount').textContent='('+nleft+' change'+(nleft===1?'':'s')+' left)';
+    document.getElementById('setHandleCount').textContent='('+hleft+' change'+(hleft===1?'':'s')+' left)';
+    var ns=document.getElementById('setNameSave'), hs=document.getElementById('setHandleSave');
+    if(nleft<=0){ ns.classList.add('disabled'); ns.textContent='Name locked'; } else { ns.classList.remove('disabled'); ns.textContent='Save name'; }
+    if(hleft<=0){ hs.classList.add('disabled'); hs.textContent='Handle locked'; } else { hs.classList.remove('disabled'); hs.textContent='Save handle'; }
+  }
+  async function saveDisplayName(){
+    if((SET_LIMITS.name-((SET.row&&SET.row.name_changes)||0))<=0) return;
+    var newName=(((document.getElementById('setName')||{}).value)||'').trim().slice(0,24);
+    var hint=document.getElementById('setNameHint');
+    if(!newName){ hint.className='set-hint bad'; hint.textContent='Pick a name.'; return; }
+    if(newName.toLowerCase()===(SET.row.name||'').toLowerCase()){ hint.className='set-hint'; hint.textContent='That’s already your name.'; return; }
+    if(isReservedName(newName)){ hint.className='set-hint bad'; hint.textContent='That name isn’t allowed (no “flap” or staff names).'; return; }
+    var btn=document.getElementById('setNameSave'); btn.classList.add('disabled');
+    try{
+      var chk=await sb.from('flap_users').select('name').ilike('name',newName).limit(1);
+      if(chk&&chk.data&&chk.data.length){ hint.className='set-hint bad'; hint.textContent='That name is taken.'; btn.classList.remove('disabled'); return; }
+      var oldName=SET.row.name;
+      var up=await sb.from('flap_users').update({name:newName, name_changes:((SET.row.name_changes||0)+1)}).ilike('name',oldName).select('*').maybeSingle();
+      if(up&&up.error) throw up.error;
+      try{ await sb.from('flaps').update({name:newName}).ilike('name',oldName); }catch(e){}          /* keep post attribution */
+      try{ await sb.from('flap_replies').update({name:newName}).ilike('name',oldName); }catch(e){}
+      SET.row.name=newName; SET.row.name_changes=(SET.row.name_changes||0)+1;
+      ME.name=newName; ME.admin=((newName||'').toLowerCase()==='lock'); try{localStorage.setItem('flap_lastname',newName);}catch(e){} saveSession(ME);
+      hint.className='set-hint good'; hint.textContent='✓ Saved!';
+      settingsUpdateCounts();
+      try{ initMe(); }catch(e){} try{ loadFeed(); }catch(e){}
+    }catch(e){ hint.className='set-hint bad'; hint.textContent='Could not save — that name may be taken.'; }
+    btn.classList.remove('disabled');
+  }
+  async function saveHandle(){
+    if((SET_LIMITS.handle-((SET.row&&SET.row.handle_changes)||0))<=0) return;
+    var newH=(((document.getElementById('setHandle')||{}).value)||'').toLowerCase().replace(/[^a-z0-9_]/g,'');
+    var hint=document.getElementById('setHandleHint');
+    if(newH.length<3){ hint.className='set-hint bad'; hint.textContent='Handles are 3+ letters, numbers or _.'; return; }
+    if(newH===(SET.row.handle||'').toLowerCase()){ hint.className='set-hint'; hint.textContent='That’s already your handle.'; return; }
+    if(isReservedName(newH)){ hint.className='set-hint bad'; hint.textContent='That handle isn’t allowed (no “flap” or staff names).'; return; }
+    var btn=document.getElementById('setHandleSave'); btn.classList.add('disabled');
+    try{
+      var chk=await sb.from('flap_users').select('name').ilike('handle',newH).limit(1);
+      if(chk&&chk.data&&chk.data.length){ hint.className='set-hint bad'; hint.textContent='@'+newH+' is taken.'; btn.classList.remove('disabled'); return; }
+      var up=await sb.from('flap_users').update({handle:newH, handle_changes:((SET.row.handle_changes||0)+1)}).ilike('name',SET.row.name).select('*').maybeSingle();
+      if(up&&up.error) throw up.error;
+      SET.row.handle=newH; SET.row.handle_changes=(SET.row.handle_changes||0)+1;
+      ME.handle=newH;
+      hint.className='set-hint good'; hint.textContent='✓ Saved!';
+      settingsUpdateCounts();
+    }catch(e){ hint.className='set-hint bad'; hint.textContent='Could not save — that handle may be taken.'; }
+    btn.classList.remove('disabled');
+  }
+  async function settingsChangePic(ev){
+    var f=ev&&ev.target&&ev.target.files&&ev.target.files[0]; if(!f)return;
+    var bigA=document.getElementById('setAva');
+    try{
+      var blob=await compressImage(f);
+      var path='avatar-'+Date.now()+'-'+Math.random().toString(36).slice(2,6)+'.jpg';
+      var up=await sb.storage.from('pics').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+      if(up.error) throw up.error;
+      var url=sb.storage.from('pics').getPublicUrl(path).data.publicUrl;
+      await sb.from('flap_users').update({avatar_url:url}).ilike('name',SET.row.name);
+      SET.row.avatar_url=url; ME.pic=url; saveSession(ME);
+      bigA.innerHTML='<img src="'+esc(url)+'" alt="">';
+      try{ initMe(); }catch(e){} try{ loadFeed(); }catch(e){}
+      toast('Profile photo updated! 📸');
+    }catch(e){ toast('Could not update photo — try a JPEG.'); }
+    ev.target.value='';
+  }
+  function settingsRenderBlocked(){
+    var el=document.getElementById('setBlocked'); if(!el)return;
+    var names=Object.keys(BLOCKED||{});
+    if(!names.length){ el.innerHTML='<div class="set-empty">You haven’t blocked anyone.</div>'; return; }
+    el.innerHTML=names.map(function(n){ var e=esc(n).replace(/'/g,''); return '<div class="set-brow">🚫 '+esc(n)+'<span class="set-unb" onclick="settingsUnblock(\''+e+'\')">Unblock</span></div>'; }).join('');
+  }
+  function settingsUnblock(n){ try{ unblockUser(n); }catch(e){} setTimeout(settingsRenderBlocked, 400); }
   var PROFILE_DATA={posts:[],reflaps:[]};
   function profileTab(which){
     var lst=document.getElementById('profList');if(!lst)return;
@@ -2396,6 +2557,9 @@
       h+='<div class="pc-meta">'+(u?'joined '+new Date(u.created_at).toLocaleDateString()+' · ':'')+mine.length+' flaps · '+refl.length+' reflaps</div>';
       h+='<div class="pc-feel">feeling: '+emoHTML(feeling,true)+' '+esc(feeling)+'</div>';
       h+='</div></div>';
+      if((name||'').toLowerCase()===(ME.name||'').toLowerCase()){
+        h+='<div class="pc-actions"><button type="button" onclick="openSettings()">⚙ Settings</button></div>';
+      }
       if((name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
         var pn2=esc(name).replace(/'/g,'');
         h+='<div class="pc-actions">'+
