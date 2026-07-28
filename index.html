@@ -1989,6 +1989,15 @@
      while the display name can stay fancy. Existing users get one auto-generated (editable in profile). ===== */
   var HANDLE_CHECKED=false;
   function sanitizeHandle(s){ try{ s=String(s||'').toLowerCase().normalize('NFKD'); }catch(e){ s=String(s||'').toLowerCase(); } return s.replace(/[^a-z0-9_]+/g,'').slice(0,20); }
+  /* Reserved / brand-protected names — nobody but the app can use "flap" or impersonate staff.
+     Applies to both the display name and the @handle. */
+  function isReservedName(s){
+    var t=String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+    if(!t) return false;
+    if(/flap|admin|support|official|moderator/.test(t)) return true;   /* blocks theflap, flapsupport, flap, admin, support, etc. */
+    if(/^(mod|staff|root|owner|team|lock|theteam)$/.test(t)) return true;
+    return false;
+  }
   async function genUniqueHandle(name){
     var base=sanitizeHandle(name); if(base.length<2)base=(base+'flapper').slice(0,20);
     var h=base;
@@ -2063,6 +2072,7 @@
           try{await ensureHandle();}catch(eh){}
         }else{
           /* new account — create it, then send them through onboarding to pick handle + name + profile pic */
+          if(isReservedName(name)){ err.textContent='That name isn’t allowed — pick another (no “flap” or staff names).'; return; }
           var newName=name.slice(0,20);
           err.textContent='creating your account…';
           var newHandle=await genUniqueHandle(newName);
@@ -2186,6 +2196,8 @@
     if(handle.length<3||!name)return;
     var btn=document.getElementById('obNextBtn'); btn.disabled=true;
     var hh=document.getElementById('obHandleHint'), nh=document.getElementById('obNameHint');
+    if(isReservedName(handle)){ hh.className='ob-hint bad'; hh.textContent='That handle isn’t allowed — pick another (no “flap” or staff names).'; btn.disabled=false; return; }
+    if(isReservedName(name)){ nh.className='ob-hint bad'; nh.textContent='That name isn’t allowed — pick another (no “flap” or staff names).'; btn.disabled=false; return; }
     if(ONLINE&&sb){
       try{
         var chk=await sb.from('flap_users').select('name').ilike('handle',handle).limit(5);
