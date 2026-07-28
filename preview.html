@@ -952,6 +952,13 @@
   /* lock the background so the feed can't scroll while the side menu is open */
   body.drawer-open{overflow:hidden!important;}
   body.drawer-open .wrap,body.drawer-open .topbar{touch-action:none;}
+  /* in the app the floating + is the composer, so drop the big "Post A New Flap" launcher card */
+  html.is-app .composeblock{display:none!important;}
+  /* clear back arrow inside a DM conversation (returns to the messages list; ✕ still fully closes) */
+  .dm-back{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);color:#fff;font-size:16px;line-height:1;border-radius:8px;padding:3px 10px;margin-right:8px;cursor:pointer;font-weight:bold;}
+  .dm-back:hover{background:rgba(255,255,255,.32);}
+  /* "Seen" read receipt under your last sent message */
+  .dm-seen{text-align:right;font-size:10px;color:#8aa0c8;margin:-2px 4px 6px 0;letter-spacing:.3px;}
   /* auto-hide the top bar on scroll-down, reveal on scroll-up. Uses `top` (transform is blocked on this
      sticky bar in-app), slid far enough up to fully clear even tall safe-area bars. */
   html.is-app .topbar{transition:top .26s ease;}
@@ -1305,8 +1312,8 @@
 
   <main>
     <div id="notifBar" onclick="dismissNotif()"></div>
-    <div class="colhead">Post A New Flap</div>
-    <div class="card composer">
+    <div class="colhead composeblock">Post A New Flap</div>
+    <div class="card composer composeblock">
       <div class="card-body launcher" onclick="openPear()">
         <svg class="pearmini" viewBox="0 0 760 480"><g transform="translate(0 480) rotate(-90)"><use href="#pearBodyUse"/></g></svg>
         <div class="ltxt">
@@ -4535,6 +4542,36 @@
         .filter(function(m){var mf=m.from.toLowerCase(),mt=m.to.toLowerCase();return (mf===me&&mt===o)||(mf===o&&mt===me);});
     }catch(e){return [];}
   }
+  /* ---- read receipts: a ::dmread:: marker stores "reader␟other␟<ms>" = how far reader has read ---- */
+  async function markDMRead(other){
+    if(!ONLINE||!ME.name||!other)return;
+    var key=ME.name+PSEP+other, now=Date.now();
+    try{
+      var r=await sb.from('flaps').select('id').eq('name','::dmread::').ilike('body',key+PSEP+'%').limit(1);
+      if(r.data&&r.data[0]) await sb.from('flaps').update({body:key+PSEP+now}).eq('id',r.data[0].id);
+      else await sb.from('flaps').insert({name:'::dmread::',body:key+PSEP+now,mood:'flappy',likes:0});
+    }catch(e){}
+  }
+  async function otherLastRead(other){
+    if(!ONLINE||!ME.name||!other)return 0;
+    try{
+      var key=other+PSEP+ME.name;
+      var r=await sb.from('flaps').select('body').eq('name','::dmread::').ilike('body',key+PSEP+'%').order('id',{ascending:false}).limit(1);
+      if(r.data&&r.data[0]){ var p=String(r.data[0].body).split(PSEP); return parseInt(p[2]||'0',10)||0; }
+    }catch(e){}
+    return 0;
+  }
+  /* build the message bubbles, tagging "Seen" under my most-recent sent message once the other has read it */
+  function dmThreadHTML(msgs, me, lastReadMs){
+    if(!msgs.length) return '<div class="dm-empty" style="text-align:center;color:#889;font-size:12px;padding:24px;">No messages yet — say hi 👋</div>';
+    var lastMine=-1;
+    for(var i=msgs.length-1;i>=0;i--){ if(msgs[i].from.toLowerCase()===me){ lastMine=i; break; } }
+    return msgs.map(function(m,idx){
+      var mine=m.from.toLowerCase()===me;
+      var seen=(mine && idx===lastMine && lastReadMs && new Date(m.at).getTime()<=lastReadMs) ? '<div class="dm-seen">Seen ✓</div>' : '';
+      return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+dmText(m.text)+'</span></div>'+seen;
+    }).join('');
+  }
   async function sendDM(name){
     var inp=document.getElementById('dmInput'); if(!inp)return; var text=(inp.value||'').trim(); if(!text)return;
     if(blockedByMute())return;
@@ -4553,10 +4590,14 @@
   async function refreshDMThread(name){
     var th=document.getElementById('dmThread'); if(!th)return;
     var msgs=await loadDM(name), me=(ME.name||'').toLowerCase();
-    if(msgs.length===th.querySelectorAll('.dm-line').length) return;   /* nothing new — don't churn the thread */
+    var lastRead=await otherLastRead(name);
+    var sig=String(msgs.length)+'|'+lastRead;
+    if(th.getAttribute('data-sig')===sig) return;   /* nothing new (message or seen-state) — don't churn */
     var nearBottom=(th.scrollHeight-th.scrollTop-th.clientHeight)<90;
-    th.innerHTML=msgs.length?msgs.map(function(m){var mine=m.from.toLowerCase()===me;return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+dmText(m.text)+'</span></div>';}).join(''):'<div class="dm-empty" style="text-align:center;color:#889;font-size:12px;padding:24px;">No messages yet — say hi 👋</div>';
+    th.innerHTML=dmThreadHTML(msgs, me, lastRead);
+    th.setAttribute('data-sig',sig);
     if(nearBottom)th.scrollTop=th.scrollHeight;
+    markDMRead(name);                                /* keep my read-marker current as new messages arrive */
   }
   async function openSocial(tab){
     if(!FEATURES.social){toast('Coming soon 👀');return;}
@@ -4585,11 +4626,14 @@
   async function openDM(name){
     if(!FEATURES.social)return;
     var box=document.getElementById('profCardBox'); var pm=document.getElementById('profModal'); pm.classList.add('open'); pm.classList.add('mob-full'); document.body.classList.add('modal-on');
-    box.innerHTML='<div class="pc-strip"><span><a onclick="openSocial(\'messages\')" style="cursor:pointer;color:#c86a10;">‹ back</a> · '+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕</span></div><div class="pc-body" style="padding:22px;text-align:center;">loading…</div>';
+    var nm0=esc(name).replace(/'/g,'');
+    box.innerHTML='<div class="pc-strip"><span><button type="button" class="dm-back" onclick="openSocial(\'messages\')" title="Back to messages">←</button>'+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕</span></div><div class="pc-body" style="padding:22px;text-align:center;">loading…</div>';
     var msgs=await loadDM(name), me=(ME.name||'').toLowerCase();
-    var thread=msgs.length?msgs.map(function(m){var mine=m.from.toLowerCase()===me;return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+dmText(m.text)+'</span></div>';}).join(''):'<div class="dm-empty" style="text-align:center;color:#889;font-size:12px;padding:24px;">No messages yet — say hi 👋</div>';
+    await markDMRead(name);                          /* I have now read their messages */
+    var lastRead=await otherLastRead(name);          /* how far they have read mine */
+    var thread=dmThreadHTML(msgs, me, lastRead);
     var nm=esc(name).replace(/'/g,'');
-    box.innerHTML='<div class="pc-strip"><span><a onclick="openSocial(\'messages\')" style="cursor:pointer;color:#c86a10;">‹ back</a> · '+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕</span></div>'+
+    box.innerHTML='<div class="pc-strip"><span><button type="button" class="dm-back" onclick="openSocial(\'messages\')" title="Back to messages">←</button>'+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕</span></div>'+
       '<div class="dm-thread" id="dmThread">'+thread+'</div>'+
       '<div class="dm-compose"><button type="button" class="dm-emoji-toggle" title="emojis & moods" onclick="toggleDmTray()">😊</button><input id="dmInput" placeholder="message '+esc(name)+'…" onkeydown="if(event.key===\'Enter\')sendDM(\''+nm+'\')"><button onclick="sendDM(\''+nm+'\')">Send</button></div>'+
       '<div class="dm-tray" id="dmTray" style="display:none;"><div class="remoji-bar">'+dmEmojiBtns()+'</div><div class="remoji-bar moodrow">'+dmMoodBtns()+'</div></div>';
@@ -4778,25 +4822,43 @@ document.addEventListener('touchmove',function(e){
         || document.documentElement.scrollTop
         || (document.body && document.body.scrollTop) || 0;
     }
-    var lastY=sy(), hidden=false, MIN=64, downAcc=0;
+    var hidden=false, MIN=64, lastY=sy(), downAcc=0;
     function setHidden(h){ if(h===hidden)return; hidden=h; document.body.classList.toggle('bar-hidden',h); }
+
+    /* ---- MOBILE: drive off the FINGER, not the scroll position ----
+       On phones, reading scrollY during a touch scroll is unreliable (iOS/Android
+       webviews freeze layout reads and don't emit scroll/rAF until the gesture
+       settles — that's why reveal-on-scroll-up kept failing). But touchmove ALWAYS
+       fires while the finger is down, and the finger's own direction tells us exactly
+       what the user wants: drag DOWN = pull content down = show the header;
+       drag UP = push content up = hide it. */
+    var touching=false, tLastY=null;
+    window.addEventListener('touchstart',function(e){ touching=true; tLastY=(e.touches&&e.touches[0])?e.touches[0].clientY:null; },{passive:true});
+    window.addEventListener('touchmove',function(e){
+      if(!e.touches||!e.touches[0])return;
+      var cy=e.touches[0].clientY;
+      if(tLastY!=null){
+        var fd=cy-tLastY;                         /* finger delta: + = dragging downward */
+        if(sy()<=MIN)      setHidden(false);       /* at the very top → always show */
+        else if(fd>1.5)    setHidden(false);       /* finger drags down → reveal the whole top */
+        else if(fd<-1.5)   setHidden(true);        /* finger drags up → tuck it away */
+      }
+      tLastY=cy;
+    },{passive:true});
+    window.addEventListener('touchend',function(){ touching=false; tLastY=null; lastY=sy(); },{passive:true});
+
+    /* ---- DESKTOP / trackpad / wheel: drive off scroll position ---- */
     function check(){
+      if(touching) return;                         /* the finger handler owns it mid-drag */
       var y=sy(), d=y-lastY;
-      if(y<=MIN){ downAcc=0; setHidden(false); }        /* near the top → always show the whole header */
-      else if(d>0){ downAcc+=d; if(downAcc>10) setHidden(true); }  /* accumulate downward → hide after ~10px */
-      else if(d<0){ downAcc=0; setHidden(false); }       /* ANY upward movement → reveal instantly (finger drags are only ~1px/frame, so no threshold) */
+      if(y<=MIN){ downAcc=0; setHidden(false); }
+      else if(d>0){ downAcc+=d; if(downAcc>10) setHidden(true); }
+      else if(d<0){ downAcc=0; setHidden(false); }
       lastY=y;
     }
-    /* Belt-and-suspenders: run the check from BOTH a rAF loop AND scroll/touch/wheel
-       events. Whichever the webview actually delivers, the header still responds.
-       (Pure event listeners fooled us before when the iOS webview didn't emit them;
-       pure rAF can be throttled when idle — together they cover every case.) */
     function loop(){ check(); requestAnimationFrame(loop); }
     requestAnimationFrame(loop);
-    ['scroll','touchmove','wheel','touchstart','touchend'].forEach(function(ev){
-      window.addEventListener(ev,check,{passive:true});
-      document.addEventListener(ev,check,{passive:true});
-    });
+    ['scroll','wheel'].forEach(function(ev){ window.addEventListener(ev,check,{passive:true}); document.addEventListener(ev,check,{passive:true}); });
   })();
   /* hard block pinch-zoom in the app so it can never get stuck zoomed (viewport lock + this) */
   if(compact()){
