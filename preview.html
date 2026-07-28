@@ -65,8 +65,15 @@
   }
 
   .topbar{background:linear-gradient(180deg,#ff9a2e 0%,var(--orange) 55%,#d96f00 100%);border-bottom:3px solid #a85400;padding:5px 0;box-shadow:0 3px 10px rgba(0,0,0,.4);}
+  /* hide-on-scroll: bar tucks up when scrolling down, pops back on scroll up (all viewports) */
+  .topbar{position:sticky;top:0;z-index:95;transition:transform .28s ease;will-change:transform;}
+  body.bar-hidden .topbar{transform:translateY(-105%);}
   .topbar-inner{width:1010px;margin:0 auto;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
   .navbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:9px;letter-spacing:.5px;color:#fff;text-transform:uppercase;cursor:pointer;background:linear-gradient(180deg,#c22a1a 0%,#8f1408 100%);border:1px solid #6b0e04;border-radius:4px;padding:4px 9px;text-shadow:0 1px 1px rgba(0,0,0,.5);}
+  /* clean, neat Search — a light "field" pill instead of the red action buttons */
+  .navbtn.search-nav{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.45);border-radius:16px;text-shadow:none;text-transform:none;letter-spacing:.3px;padding:5px 14px;font-size:11px;box-shadow:none;}
+  .navbtn.search-nav:hover{background:rgba(255,255,255,.24);}
+  .navbtn.search-nav:hover{border-color:var(--orange);color:var(--orange-dark,#c05e00);}
   .rf-short{display:none;}
   /* side drawer + hamburger + reply toggle are app-only; hidden on the website */
   .menu-btn{display:none;}
@@ -155,6 +162,13 @@
   .poster .pava{width:70px;height:76px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);margin:0 auto;overflow:hidden;background:#123;}
   .poster .pava img{width:100%;height:100%;object-fit:cover;display:block;}
   .poster .pname{color:var(--name-navy);font-weight:bold;font-size:12px;margin-top:4px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .follow-btn{margin-top:4px;font-size:9.5px;font-weight:bold;padding:3px 8px;border-radius:11px;border:1.5px solid var(--orange);background:#fff;color:#c05e00;cursor:pointer;line-height:1;white-space:nowrap;max-width:100%;font-family:Verdana,Arial,sans-serif;}
+  .follow-btn.following{background:var(--orange);color:#fff;border-color:var(--orange);}
+  .follow-btn:active{transform:translateY(1px);}
+  .pc-actions .follow-btn{font-size:12px;padding:6px 12px;border-radius:16px;margin-top:0;}
+  .feedtabs{display:flex;gap:6px;margin:0 0 8px;}
+  .feedtab{flex:1;padding:8px;border-radius:9px;border:2px solid #cfe0f5;background:#fff;color:var(--navy,#22398f);font-weight:bold;font-size:12.5px;cursor:pointer;font-family:Verdana,Arial,sans-serif;}
+  .feedtab.on{background:linear-gradient(#ffb14d,#f5820a);color:#fff;border-color:var(--orange);}
   .poster.clickable{cursor:pointer;}
   .poster.clickable:hover .pava{box-shadow:0 0 0 2px var(--orange), 0 2px 6px rgba(0,0,0,.35);}
   .moodbox{float:right;width:106px;background:#fff;border:3px solid var(--red);border-radius:10px;text-align:center;padding:5px 4px 7px;margin-left:10px;box-shadow:0 3px 8px rgba(0,0,0,.3);}
@@ -384,6 +398,93 @@
   .gatecard input{width:100%;border:2px solid var(--card-border);border-radius:6px;padding:8px 10px;font-family:Verdana,Arial,sans-serif;font-size:12px;margin-bottom:8px;outline:none;}
   .gatecard input:focus{border-color:var(--orange);}
   .gatecard .comp-btn.go{width:100%;margin:4px 0 0;font-size:12px;padding:8px;}
+  /* ---- redesigned gate: Google primary, feed visible+dimmed behind ---- */
+  #gate{background:rgba(15,8,32,.60);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+  .gate-logo{width:54px;height:50px;margin:0 auto 2px;display:block;}
+  .gatecard h2{font-size:30px;margin:0;}
+  .gate-tag{font-size:11px !important;color:#5b6aa0 !important;margin:2px 0 14px !important;}
+  .gate-google{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:#3c4043;border:2px solid #dadce0;border-radius:10px;padding:12px;font-weight:bold;font-size:15px;cursor:pointer;font-family:Verdana,Arial,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.12);}
+  .gate-google:active{background:#f3f3f3;}
+  .gate-or{display:flex;align-items:center;gap:8px;color:#8a93c0;font-size:11px;margin:12px 2px;}
+  .gate-or::before,.gate-or::after{content:"";flex:1;height:1px;background:#c9d6ee;}
+  .gate-alt{margin-top:2px;}
+  .gate-alt.hidden{display:none;}
+  .gate-toggle{display:inline-block;margin-top:4px;font-size:11.5px;color:var(--navy,#22398f);font-weight:bold;cursor:pointer;text-decoration:underline;}
+  .gate-browse{display:block;margin-top:12px;font-size:10.5px;color:#8a93c0;cursor:pointer;text-decoration:underline;}
+  /* ---- onboarding wizard (new accounts) ---- */
+  #onboard{position:fixed;inset:0;z-index:210;background:rgba(15,8,32,.75);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 14px;}
+  #onboard.hidden{display:none;}
+  .ob-card{width:360px;max-width:94vw;background:#fff;border:4px solid var(--orange);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.7);overflow:hidden;}
+  .ob-head{background:linear-gradient(#f5920f,#e07d0a);color:#fff;padding:14px;text-align:center;}
+  .ob-head h2{margin:5px 0 0;font-size:19px;font-family:'Chewy',cursive;}
+  .ob-head svg{width:40px;height:36px;}
+  .ob-step{padding:18px 18px 22px;}
+  .ob-step.hidden{display:none;}
+  .ob-step h3{color:var(--navy,#22398f);margin:0 0 3px;font-size:16px;}
+  .ob-step p{font-size:12px;color:#556;margin:0 0 10px;line-height:1.45;}
+  .ob-step input[type=text]{width:100%;box-sizing:border-box;padding:12px;border:2px solid #cfe0f5;border-radius:9px;font-family:Verdana,Arial,sans-serif;font-size:16px;color:var(--navy,#22398f);}
+  .ob-inrow{position:relative;}
+  .ob-at{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#9aa;font-weight:bold;font-size:16px;}
+  .ob-hasat{padding-left:26px !important;}
+  .ob-hint{font-size:11px;color:#8a94b8;margin-top:5px;line-height:1.4;min-height:14px;}
+  .ob-hint.good{color:#1a9d5a;} .ob-hint.bad{color:#c0392b;}
+  .ob-btn{width:100%;padding:13px;margin-top:16px;background:linear-gradient(#ffb14d,#f5820a);color:#fff;border:none;border-radius:11px;font-weight:bold;font-size:15px;cursor:pointer;font-family:Verdana,Arial,sans-serif;box-shadow:0 4px 0 #c96b00;}
+  .ob-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #c96b00;}
+  .ob-btn:disabled{filter:grayscale(.6) opacity(.6);box-shadow:0 4px 0 #999;cursor:not-allowed;}
+  .ob-avmain{display:flex;flex-direction:column;align-items:center;gap:9px;margin:4px 0 12px;}
+  .ob-avbig{width:96px;height:96px;border-radius:50%;border:4px solid var(--orange);display:flex;align-items:center;justify-content:center;font-size:46px;background:#dfe7f7;overflow:hidden;}
+  .ob-avbig img{width:100%;height:100%;object-fit:cover;}
+  .ob-upload{display:inline-block;padding:8px 15px;background:var(--navy,#22398f);color:#fff;border-radius:18px;font-size:12.5px;font-weight:bold;cursor:pointer;}
+  .ob-avgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:4px;}
+  .ob-avopt{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;cursor:pointer;border:3px solid transparent;}
+  .ob-avopt.sel{border-color:var(--navy,#22398f);}
+  .ob-policy{background:#fff6ee;border:2px solid #ffd8ad;border-radius:11px;padding:11px 13px;margin:14px 0 2px;font-size:11.5px;color:#7a5a30;line-height:1.5;}
+  .ob-policy b{color:#a35a00;} .ob-policy a{color:var(--navy,#22398f);font-weight:bold;}
+  /* ---- people search ---- */
+  #searchModal{position:fixed;inset:0;z-index:180;background:rgba(15,8,32,.6);display:none;align-items:flex-start;justify-content:center;padding:60px 14px 20px;}
+  #searchModal.open{display:flex;}
+  .srch-card{width:420px;max-width:96vw;background:#fff;border:3px solid var(--orange);border-radius:14px;box-shadow:0 18px 46px rgba(0,0,0,.6);overflow:hidden;}
+  .srch-head{background:linear-gradient(#f5920f,#e07d0a);color:#fff;padding:11px 14px;display:flex;align-items:center;gap:8px;}
+  .srch-head b{font-size:15px;flex:1;}
+  .srch-x{cursor:pointer;font-size:18px;font-weight:bold;line-height:1;}
+  .srch-body{padding:12px 14px 16px;}
+  .srch-input{width:100%;box-sizing:border-box;padding:11px 12px;border:2px solid #cfe0f5;border-radius:9px;font-family:Verdana,Arial,sans-serif;font-size:16px;color:var(--navy,#22398f);}
+  .srch-results{margin-top:10px;max-height:52vh;overflow-y:auto;}
+  .srch-row{display:flex;align-items:center;gap:10px;padding:8px 6px;border-radius:9px;cursor:pointer;}
+  .srch-row:hover{background:#f2f7ff;}
+  .srch-av{width:40px;height:40px;border-radius:50%;flex:0 0 40px;background:#dfe7f7 center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--navy,#22398f);font-weight:bold;font-size:16px;overflow:hidden;}
+  .srch-av img{width:100%;height:100%;object-fit:cover;}
+  .srch-name{font-weight:bold;color:var(--navy,#22398f);font-size:14px;}
+  .srch-handle{font-size:12px;color:#8a93c0;}
+  .srch-empty{color:#8a93c0;font-size:12.5px;text-align:center;padding:16px 0;}
+  /* ---- settings (own profile) ---- */
+  #settingsModal{position:fixed;inset:0;z-index:190;background:rgba(15,8,32,.6);display:none;align-items:flex-start;justify-content:center;padding:40px 14px 20px;overflow-y:auto;}
+  #settingsModal.open{display:flex;}
+  .set-card{width:420px;max-width:96vw;background:#fff;border:3px solid var(--orange);border-radius:14px;box-shadow:0 18px 46px rgba(0,0,0,.6);overflow:hidden;}
+  .set-head{background:linear-gradient(#f5920f,#e07d0a);color:#fff;padding:11px 14px;display:flex;align-items:center;gap:8px;}
+  .set-head b{font-size:15px;flex:1;} .set-x{cursor:pointer;font-size:18px;font-weight:bold;line-height:1;}
+  .set-body{padding:6px 14px 16px;}
+  .set-sec{padding:12px 0;border-bottom:1px solid #eef2fa;}
+  .set-sec:last-child{border-bottom:none;}
+  .set-label{font-weight:bold;color:var(--navy,#22398f);font-size:13px;margin-bottom:6px;}
+  .set-count{font-weight:normal;color:#8a93c0;font-size:11px;}
+  .set-body input[type=text]{width:100%;box-sizing:border-box;padding:10px;border:2px solid #cfe0f5;border-radius:9px;font-family:Verdana,Arial,sans-serif;font-size:16px;color:var(--navy,#22398f);}
+  .set-inrow{position:relative;} .set-at{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#9aa;font-weight:bold;font-size:16px;}
+  .set-hasat{padding-left:26px !important;}
+  .set-hint{font-size:11px;color:#8a94b8;margin-top:5px;min-height:14px;} .set-hint.good{color:#1a9d5a;} .set-hint.bad{color:#c0392b;}
+  .set-btn{display:inline-block;margin-top:8px;padding:8px 14px;background:var(--navy,#22398f);color:#fff;border-radius:18px;font-size:12.5px;font-weight:bold;cursor:pointer;}
+  .set-btn.save{background:linear-gradient(#ffb14d,#f5820a);box-shadow:0 3px 0 #c96b00;}
+  .set-btn.save:active{transform:translateY(2px);box-shadow:0 1px 0 #c96b00;}
+  .set-btn.danger{background:#c0392b;}
+  .set-btn.disabled{filter:grayscale(.6) opacity(.55);cursor:not-allowed;pointer-events:none;}
+  .set-avarow{display:flex;align-items:center;gap:12px;}
+  .set-ava{width:60px;height:60px;border-radius:50%;flex:0 0 60px;border:3px solid var(--orange);display:flex;align-items:center;justify-content:center;font-size:30px;background:#dfe7f7;overflow:hidden;}
+  .set-ava img{width:100%;height:100%;object-fit:cover;}
+  .set-blocked{max-height:150px;overflow-y:auto;}
+  .set-brow{display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:13px;color:var(--navy,#22398f);}
+  .set-brow .set-unb{margin-left:auto;font-size:11px;background:#eef2fa;color:var(--navy,#22398f);padding:4px 10px;border-radius:12px;cursor:pointer;font-weight:bold;}
+  .set-empty{color:#8a93c0;font-size:12px;padding:6px 0;}
+  .set-account{display:flex;gap:10px;flex-wrap:wrap;}
   .gate-err{color:var(--red);font-size:10px;font-weight:bold;min-height:14px;}
   /* replies + tag filter */
   .replyrow{display:flex;gap:6px;flex:1;align-items:center;}
@@ -807,10 +908,9 @@
   .mention-item .m-ava img,.mention-item .m-ava svg{width:100%;height:100%;display:block;object-fit:cover;}
   /* ===== X-style header PREVIEW — app-only, shown only with ?hdr=x (live app + website untouched) ===== */
   .xtabs{display:none;}
-  html.is-app body.hdr-x #xTabs{display:flex;background:linear-gradient(180deg,#ff9a2e,#e07d0a);border-bottom:2px solid #ffd23f;box-shadow:0 3px 8px rgba(0,0,0,.3);}
-  html.is-app body.hdr-x #xTabs .xtab{flex:1;text-align:center;padding:12px 0 11px;font-family:'Chewy','Comic Sans MS',cursive;font-size:15px;font-weight:bold;color:#fff2cf;background:transparent;border:none;cursor:pointer;position:relative;letter-spacing:.4px;}
-  html.is-app body.hdr-x #xTabs .xtab.on{color:#fff;}
-  html.is-app body.hdr-x #xTabs .xtab.on::after{content:'';position:absolute;left:50%;transform:translateX(-50%);bottom:2px;width:54px;height:4px;border-radius:4px;background:#ffd23f;}
+  /* consolidated top feed tabs — the 🌎 All flaps / ☆ Following pair, kept in the sticky bar */
+  html.is-app body.hdr-x #xTabs{display:flex;gap:8px;padding:8px 12px 10px;background:linear-gradient(180deg,#ff9a2e,#e07d0a);border-bottom:2px solid #ffd23f;box-shadow:0 3px 8px rgba(0,0,0,.3);}
+  html.is-app body.hdr-x #xTabs .feedtab{flex:1;font-size:13.5px;padding:9px 0;}
   html.is-app body.hdr-x .menu-btn.as-avatar{padding:0;width:36px;height:36px;border-radius:50%;overflow:hidden;background:#0a0a0a;border:2px solid #ffd23f;display:inline-flex;align-items:center;justify-content:center;}
   html.is-app body.hdr-x .menu-btn.as-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}
   html.is-app body.hdr-x .menu-btn.as-avatar .emo,html.is-app body.hdr-x .menu-btn.as-avatar svg{width:100%;height:100%;display:block;}
@@ -824,6 +924,23 @@
   html.is-app body.hdr-x .launcher .ltxt b{font-size:12.5px;}
   html.is-app body.hdr-x .launcher .ltxt span{font-size:9px;}
   html.is-app body.hdr-x .launcher .comp-btn.go{font-size:11px;padding:6px 12px;animation:none;box-shadow:0 2px 0 #b45c00;}
+  /* --- app top bar: avatar + a big transparent 🔍 on the left, brand centered, HQ/bell right --- */
+  html.is-app body.hdr-x .topbar-inner{display:flex;align-items:center;gap:4px;}
+  html.is-app body.hdr-x .menu-btn{order:0;flex:0 0 auto;}
+  html.is-app body.hdr-x .search-nav{order:1;flex:0 0 auto;background:transparent!important;border:none!important;box-shadow:none!important;color:#fff!important;padding:2px 4px;line-height:1;}
+  html.is-app body.hdr-x .search-nav .rf-long{display:none!important;}
+  html.is-app body.hdr-x .search-nav .rf-short{display:inline!important;font-size:23px;}
+  html.is-app body.hdr-x .topbrand{order:2;margin:0 auto;}
+  html.is-app body.hdr-x .hqbtn{order:3;flex:0 0 auto;margin:0!important;}
+  html.is-app body.hdr-x .bell{order:4;flex:0 0 auto;}
+  /* --- full-screen DM conversation on the app (was a cramped half-screen box) --- */
+  html.is-app #profModal.dm-full{align-items:stretch;justify-content:stretch;padding:0;background:#eef2fb;}
+  html.is-app #profModal.dm-full .profcard{width:100vw;max-width:100vw;height:100vh;max-height:100vh;border:none;border-radius:0;box-shadow:none;display:flex;flex-direction:column;animation:none;}
+  html.is-app #profModal.dm-full .pc-strip{flex:0 0 auto;font-size:13px;letter-spacing:.5px;padding:calc(max(env(safe-area-inset-top,0px),44px) + 8px) 14px 10px;}
+  html.is-app #profModal.dm-full .pc-strip a{font-size:15px;}
+  html.is-app #profModal.dm-full .dm-thread{flex:1 1 auto;max-height:none;height:auto;}
+  html.is-app #profModal.dm-full .dm-compose{flex:0 0 auto;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));}
+  html.is-app #profModal.dm-full .dm-tray{flex:0 0 auto;}
   /* auto-hide the top bar on scroll-down, reveal on scroll-up. Uses `top` (transform is blocked on this
      sticky bar in-app), slid far enough up to fully clear even tall safe-area bars. */
   html.is-app .topbar{transition:top .26s ease;}
@@ -913,35 +1030,77 @@
 <!-- INVITE GATE -->
 <div id="gate">
   <div class="gatecard">
-    <h2>theFLAP.com</h2>
-    <p>First time? Pick a name, a password + <b>a profile pic</b> — that makes your account. Coming back? Same name + password logs you in. Your profile follows you.</p>
-    <input type="text" id="gateName" name="username" autocomplete="username" maxlength="20" placeholder="Your name (what everyone sees)">
-    <input type="password" id="gatePass" name="password" autocomplete="current-password" maxlength="40" placeholder="Your password">
-    <select id="gateDevice" style="width:100%;box-sizing:border-box;font-family:Verdana,Arial,sans-serif;font-size:13px;padding:9px;border:2px solid #cfe0f5;border-radius:8px;margin-top:8px;color:#22398f;background:#fff;">
-      <option value="">📱 What device are you on? (new accounts)</option>
-      <option value="iPhone / iPad">iPhone / iPad</option>
-      <option value="Samsung">Samsung phone/tablet</option>
-      <option value="Android (other)">Android (other)</option>
-      <option value="Windows PC">Windows computer</option>
-      <option value="Mac">Mac computer</option>
-      <option value="Other">Other</option>
-    </select>
-    <div class="gate-ava-wrap">
-      <div class="gate-ava" id="gateAva" onclick="document.getElementById('gateAvatarFile').click()" title="Add your profile pic">＋</div>
-      <div class="gate-ava-label">New here? Tap the circle to add your <b>profile pic</b></div>
-    </div>
-    <input type="file" id="gateAvatarFile" accept="image/*" hidden>
-    <div class="gate-err" id="gateErr"></div>
-    <button class="comp-btn go" type="button" onclick="enterGate()">Let Me In!</button>
-    <div style="text-align:center;font-size:11px;color:#7a86b8;margin:10px 0 6px;">— or —</div>
-    <button class="gate-google" type="button" onclick="googleSignIn()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:#3c4043;border:2px solid #dadce0;border-radius:8px;padding:9px;font-weight:bold;font-size:13px;cursor:pointer;font-family:Verdana,Arial,sans-serif;">
+    <svg class="gate-logo" viewBox="0 0 130 110" xmlns="http://www.w3.org/2000/svg"><g stroke="#fff" stroke-width="4" stroke-linejoin="round">
+      <path transform="rotate(-56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/>
+      <path transform="rotate(-28 65 96)" d="M65 96 C 53 60 51 26 65 12 C 79 26 77 60 65 96 Z" fill="#ff8a1e"/>
+      <path d="M65 96 C 52 58 50 22 65 8 C 80 22 78 58 65 96 Z" fill="#ff8a1e"/>
+      <path transform="rotate(28 65 96)" d="M65 96 C 53 60 51 26 65 12 C 79 26 77 60 65 96 Z" fill="#ff8a1e"/>
+      <path transform="rotate(56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/>
+      <circle cx="65" cy="96" r="9" fill="#e05e00"/></g></svg>
+    <h2>The<span style="color:var(--orange)">Flap</span></h2>
+    <p class="gate-tag">where everybody flaps 🐦 · friends edition</p>
+
+    <button class="gate-google gate-apple hidden" id="gateAppleBtn" type="button" onclick="appleSignIn()" style="background:#000;color:#fff;border-color:#000;">
+      <svg width="15" height="17" viewBox="0 0 384 512" aria-hidden="true"><path fill="#fff" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+      Continue with Apple
+    </button>
+    <button class="gate-google" type="button" onclick="googleSignIn()">
       <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
       Continue with Google
     </button>
-    <a onclick="browseGuest()" style="display:block;margin-top:10px;font-size:11px;color:var(--card-border);font-weight:bold;cursor:pointer;text-decoration:underline;">👀 just browse for now</a>
+
+    <div class="gate-or">or</div>
+
+    <div id="gateAlt" class="gate-alt hidden">
+      <p style="font-size:10.5px;color:#2a4a6e;margin:0 0 8px;line-height:1.4;">First time? Pick a name + a password to make your account. Coming back? Same name + password logs you in.</p>
+      <input type="text" id="gateName" name="username" autocomplete="username" maxlength="20" placeholder="Your name (what everyone sees)">
+      <input type="password" id="gatePass" name="password" autocomplete="current-password" maxlength="40" placeholder="Your password">
+      <button class="comp-btn go" type="button" onclick="enterGate()">Let Me In!</button>
+    </div>
+    <div class="gate-err" id="gateErr"></div>
+    <a class="gate-toggle" id="gateAltToggle" onclick="toggleGateAlt()">Use a name &amp; password instead</a>
+
+    <a onclick="browseGuest()" class="gate-browse">👀 just browse for now</a>
     <div class="offline-note" id="offlineNote" style="display:none;">
       ⚠ Backend not configured yet — you can look around in demo mode, but posts won't be shared.
       (See TheFlap_online_SETUP.md)
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING WIZARD (new accounts only) -->
+<div id="onboard" class="hidden">
+  <div class="ob-card">
+    <div class="ob-step" id="obStep1">
+      <div class="ob-head">
+        <svg viewBox="0 0 130 110" xmlns="http://www.w3.org/2000/svg"><g stroke="#fff" stroke-width="4" stroke-linejoin="round"><path transform="rotate(-56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/><path d="M65 96 C 52 58 50 22 65 8 C 80 22 78 58 65 96 Z" fill="#ff8a1e"/><path transform="rotate(56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/><circle cx="65" cy="96" r="9" fill="#e05e00"/></g></svg>
+        <h2>Almost in! Set up your name</h2>
+      </div>
+      <div style="padding:16px 16px 0;">
+        <h3>Your handle</h3>
+        <p>How friends tag you — like <b>@you_name</b>. Letters, numbers &amp; underscores only, so tagging is always easy.</p>
+        <div class="ob-inrow"><span class="ob-at">@</span><input type="text" id="obHandle" class="ob-hasat" maxlength="20" oninput="obCheckHandle()" placeholder="your_handle"></div>
+        <div class="ob-hint" id="obHandleHint">Only a–z, 0–9 and _ — no spaces or symbols.</div>
+        <h3 style="margin-top:16px;">Display name</h3>
+        <p>The name shown on your posts.</p>
+        <input type="text" id="obName" maxlength="24" oninput="obCheckName()" placeholder="Your name">
+        <div class="ob-hint good" id="obNameHint"></div>
+        <button class="ob-btn" id="obNextBtn" onclick="obNext()" disabled>Continue</button>
+      </div>
+    </div>
+    <div class="ob-step hidden" id="obStep2">
+      <div class="ob-head">
+        <svg viewBox="0 0 130 110" xmlns="http://www.w3.org/2000/svg"><g stroke="#fff" stroke-width="4" stroke-linejoin="round"><path transform="rotate(-56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/><path d="M65 96 C 52 58 50 22 65 8 C 80 22 78 58 65 96 Z" fill="#ff8a1e"/><path transform="rotate(56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/><circle cx="65" cy="96" r="9" fill="#e05e00"/></g></svg>
+        <h2>Pick your profile pic</h2>
+      </div>
+      <div style="padding:16px 16px 0;">
+        <p style="text-align:center;">Keep your Google photo, upload your own, or pick a TheFlap avatar.</p>
+        <div class="ob-avmain"><div class="ob-avbig" id="obAvBig">🙂</div><span class="ob-upload" onclick="document.getElementById('obAvatarFile').click()">📷 Upload a photo</span></div>
+        <input type="file" id="obAvatarFile" accept="image/*" hidden onchange="obUploadPic(event)">
+        <div class="ob-avgrid" id="obAvGrid"></div>
+        <div class="ob-policy">📸 <b>Keep it friendly.</b> No inappropriate pictures and no personal info (home address, phone number, etc.) in your photo. See our <a href="https://weupallday.github.io/privacy.html" target="_blank" rel="noopener">Community Guidelines &amp; Privacy Policy</a>.</div>
+        <button class="ob-btn" id="obFinishBtn" onclick="obFinish()">Enter TheFlap 🐦</button>
+      </div>
     </div>
   </div>
 </div>
@@ -952,6 +1111,7 @@
     <span class="topbrand" onclick="window.scrollTo({top:0,behavior:'smooth'})">the<b>FLAP</b></span>
     <button class="navbtn home-nav" onclick="toast('You are home!')">Home</button>
     <button class="navbtn nav-refresh" onclick="loadFeed(true)"><span class="rf-long">Refresh Feed</span><span class="rf-short">🔄</span></button>
+    <button class="navbtn search-nav" type="button" onclick="openSearch()" title="Find people"><span class="rf-long">🔍 Search</span><span class="rf-short">🔍</span></button>
     <button class="navbtn support-nav" onclick="openSupport()">🎫 Support</button>
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">What's On TheFlap?</button>
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Tunes</button>
@@ -962,10 +1122,10 @@
     <button class="navbtn bell" id="bellBtn" type="button" onclick="toggleNotifs(event)">🔔<span id="bellCount" class="bell-count"></span></button>
   </div>
 </div>
-<!-- X-style tab row (preview only, app-only, shown when ?hdr=x) -->
+<!-- top feed-filter tabs (app only) — the single, consolidated All flaps / Following pair -->
 <div id="xTabs" class="xtabs">
-  <button class="xtab on" type="button" data-tab="foryou" onclick="xSwitchTab('foryou',this)">For You</button>
-  <button class="xtab" type="button" data-tab="friends" onclick="xSwitchTab('friends',this)">Friends</button>
+  <button id="xAllBtn" class="feedtab on" type="button" onclick="xFeedTab(false)">🌎 All flaps</button>
+  <button id="xFollowBtn" class="feedtab" type="button" onclick="xFeedTab(true)">☆ Following</button>
 </div>
 <div id="notifPanel" class="notif-panel"></div>
 <!-- floating compose button (preview only, app-only) -->
@@ -990,6 +1150,73 @@
     <button class="comp-btn go" type="button" onclick="document.getElementById('iosSheet').classList.remove('open')">Got it!</button>
   </div>
 </div>
+
+<!-- PEOPLE SEARCH -->
+<div id="searchModal" onclick="if(event.target===this)closeSearch()">
+  <div class="srch-card">
+    <div class="srch-head"><span>🔍</span><b>Find people</b><span class="srch-x" onclick="closeSearch()">✕</span></div>
+    <div class="srch-body">
+      <input type="text" id="srchInput" class="srch-input" placeholder="Search by name or @handle…" oninput="runSearch()" autocomplete="off">
+      <div class="srch-results" id="srchResults"><div class="srch-empty">Type a name to find your friends on TheFlap.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS (your own profile) -->
+<div id="settingsModal" onclick="if(event.target===this)closeSettings()">
+  <div class="set-card">
+    <div class="set-head"><span>⚙</span><b>Settings</b><span class="set-x" onclick="closeSettings()">✕</span></div>
+    <div class="set-body">
+      <div class="set-sec">
+        <div class="set-avarow">
+          <div class="set-ava" id="setAva">🙂</div>
+          <div><div class="set-label">Profile picture</div><span class="set-btn" onclick="document.getElementById('setPicFile').click()">📷 Change photo</span></div>
+        </div>
+        <input type="file" id="setPicFile" accept="image/*" hidden onchange="settingsChangePic(event)">
+      </div>
+      <div class="set-sec">
+        <div class="set-label">Display name <span class="set-count" id="setNameCount"></span></div>
+        <input type="text" id="setName" maxlength="24" placeholder="Your name">
+        <div class="set-hint" id="setNameHint"></div>
+        <span class="set-btn save" id="setNameSave" onclick="saveDisplayName()">Save name</span>
+      </div>
+      <div class="set-sec">
+        <div class="set-label">Handle (@mention) <span class="set-count" id="setHandleCount"></span></div>
+        <div class="set-inrow"><span class="set-at">@</span><input type="text" id="setHandle" class="set-hasat" maxlength="20" placeholder="your_handle" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')"></div>
+        <div class="set-hint" id="setHandleHint"></div>
+        <span class="set-btn save" id="setHandleSave" onclick="saveHandle()">Save handle</span>
+      </div>
+      <div class="set-sec">
+        <div class="set-label">People you've blocked</div>
+        <div class="set-blocked" id="setBlocked"><div class="set-empty">You haven't blocked anyone.</div></div>
+      </div>
+      <div class="set-sec set-account">
+        <span class="set-btn" onclick="closeSettings();logOut();">🚪 Log out</span>
+        <span class="set-btn danger" onclick="closeSettings();deleteAccount();">🗑 Delete account</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTO-MOD violation popup (shown to the violator) -->
+<div id="violModal" onclick="if(event.target===this)closeViol()">
+  <div class="set-card" style="border-color:#c0392b;">
+    <div class="set-head" style="background:linear-gradient(#e35d4f,#c0392b);"><span>⚠</span><b>Content removed</b><span class="set-x" onclick="closeViol()">✕</span></div>
+    <div class="set-body">
+      <p style="font-size:13px;color:#333;margin:2px 0 10px;">Your <b id="violKind">flap</b> broke our <b>House Rules</b> (hate speech / slurs / severe abuse) and was <b>not posted</b>.</p>
+      <div style="background:#fbeceb;border:1px solid #f0c0b8;border-radius:9px;padding:10px 12px;font-size:12.5px;color:#7a2b22;word-break:break-word;" id="violContent"></div>
+      <p style="font-size:11.5px;color:#667;margin:10px 0 2px;">Repeated violations may lead to a time-out or removal. If you believe this was flagged by mistake, you can appeal and <b>lock</b> will personally review it.</p>
+      <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+        <span class="set-btn" onclick="closeViol()">OK, got it</span>
+        <span class="set-btn" style="background:#c0392b;" onclick="submitAppeal()">📩 Appeal — this was a mistake</span>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+  #violModal{position:fixed;inset:0;z-index:200;background:rgba(15,8,32,.65);display:none;align-items:flex-start;justify-content:center;padding:50px 14px 20px;overflow-y:auto;}
+  #violModal.open{display:flex;}
+</style>
 
 <div class="banner" id="banner"></div>
 
@@ -1075,7 +1302,6 @@
           <b>✍️ Tap here to post a flap!</b>
           <span>share a photo, a mood, whatever — it goes live for all your friends</span>
         </div>
-        <button class="comp-btn go" type="button">Post ✏️</button>
       </div>
     </div>
     <input type="file" id="postFile" accept="image/*" hidden>
@@ -1109,12 +1335,14 @@
     <div class="sidebox">
       <div class="sidehead">House Rules</div>
       <div class="sidetext">
-        1. be nice.<br>
+        1. be nice — no slurs, hate speech, or harassment.<br>
         2. no explicit pictures, nudity, or nsfw content.<br>
         3. no last names, phone numbers, addresses.<br>
         4. what flaps here stays here.<br>
         5. lock can delete anything. lock is the law.<br>
-        6. taco tuesday is sacred.
+        6. taco tuesday is sacred.<br>
+        <span style="opacity:.85;">⚙ auto-moderation is on: posts, replies &amp; DMs with slurs or severe abuse are blocked automatically and reviewed by lock. wrongly flagged? tap “Appeal.”</span><br>
+        <span style="opacity:.85;">💬 heads up: direct messages are <b>not private from moderation</b> — lock may review messages to keep TheFlap safe.</span>
       </div>
     </div>
     <div class="sidebox">
@@ -1295,8 +1523,11 @@
     document.body.appendChild(b);
   }
   if(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase){
-    sb=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY);
+    sb=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY,{auth:{detectSessionInUrl:true,persistSession:true,autoRefreshToken:true,flowType:'implicit'}});
     ONLINE=true;
+    /* Google/Apple OAuth finishes the token handshake asynchronously — when the session lands, log the person in
+       (a one-time getSession check on load races the handshake and can miss it, dumping you back on the gate). */
+    try{ sb.auth.onAuthStateChange(function(evt,session){ if(session&&session.user&&(evt==='SIGNED_IN'||evt==='INITIAL_SESSION')){ try{handleGoogleReturn();}catch(e){} } }); }catch(e){}
   }
 
   /* ================= fictional cast (the "classics") ================= */
@@ -1618,6 +1849,7 @@
     return RE_MOODS.map(function(m){return '<button type="button" class="moodbtn" title="'+m+'" onclick="pickReplyMood(\''+key+'\',\''+m+'\',this)">'+emoHTML(m,true)+'</button>';}).join('');
   }
   function reactPick(key,token,btn){
+    if(blockedByMute())return;
     var scope=btn.closest('.rcol')||btn.parentNode;
     var already=(REPLY_EMOJI[key]===token);
     var all=scope.querySelectorAll('.remoji-bar button');
@@ -1877,6 +2109,15 @@
      while the display name can stay fancy. Existing users get one auto-generated (editable in profile). ===== */
   var HANDLE_CHECKED=false;
   function sanitizeHandle(s){ try{ s=String(s||'').toLowerCase().normalize('NFKD'); }catch(e){ s=String(s||'').toLowerCase(); } return s.replace(/[^a-z0-9_]+/g,'').slice(0,20); }
+  /* Reserved / brand-protected names — nobody but the app can use "flap" or impersonate staff.
+     Applies to both the display name and the @handle. */
+  function isReservedName(s){
+    var t=String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+    if(!t) return false;
+    if(/flap|admin|support|official|moderator/.test(t)) return true;   /* blocks theflap, flapsupport, flap, admin, support, etc. */
+    if(/^(mod|staff|root|owner|team|lock|theteam)$/.test(t)) return true;
+    return false;
+  }
   async function genUniqueHandle(name){
     var base=sanitizeHandle(name); if(base.length<2)base=(base+'flapper').slice(0,20);
     var h=base;
@@ -1921,6 +2162,144 @@
     try{ await sb.from('flap_users').update({banned:false}).ilike('name',name); if(USERS[(name||'').toLowerCase()])USERS[(name||'').toLowerCase()].banned=false; toast('♻ '+name+' un-banned.'); try{closeProfile();}catch(e){} }catch(e){toast('Could not un-ban.');}
   }
 
+  /* ================= AUTO-MODERATION + TIME-OUTS (mutes) =================
+     Rule-based, no AI, $0. Auto-mod ONLY removes the content + alerts lock (Discord + HQ).
+     Lock alone decides any time-out/ban. The violator gets a popup + an Appeal button. */
+  function _amNorm(s){ s=String(s||'').toLowerCase(); var map={'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','8':'b','9':'g','@':'a','$':'s','!':'i','|':'i'}; return s.replace(/[013457890@$!|]/g,function(c){return map[c]||c;}); }
+  var AUTOMOD_PATTERNS=[
+    /\bn[\s\W_]*i[\s\W_]*g[\s\W_]*g[\s\W_]*(?:e[\s\W_]*r|a|ah|az|as)\b/i,
+    /\bf[\s\W_]*a[\s\W_]*g(?:[\s\W_]*g|[\s\W_]*o[\s\W_]*t|s?\b)/i,
+    /\bk[\s\W_]*i[\s\W_]*k[\s\W_]*es?\b/i,
+    /\br[\s\W_]*e[\s\W_]*t[\s\W_]*a[\s\W_]*r[\s\W_]*d(?:ed)?\b/i,
+    /\btr[a4]nn(?:y|ie)\b/i
+  ];
+  function checkAutoMod(text){
+    if(!text) return false;
+    var raw=String(text).toLowerCase(), norm=_amNorm(raw);
+    for(var i=0;i<AUTOMOD_PATTERNS.length;i++){ if(AUTOMOD_PATTERNS[i].test(raw)||AUTOMOD_PATTERNS[i].test(norm)) return true; }
+    return false;
+  }
+  /* returns the ISO time you're muted until (if still active), else null */
+  function muteRemaining(){
+    try{ var u=(ME.name&&USERS[ME.name.toLowerCase()])||{}; var mu=u.muted_until||ME.muted_until; if(mu && new Date(mu)>new Date()) return mu; }catch(e){}
+    return null;
+  }
+  function blockedByMute(){
+    var mu=muteRemaining();
+    if(mu){ toast('⏳ You\'re timed out until '+new Date(mu).toLocaleString()+' for breaking the House Rules. You can still read.'); return true; }
+    return false;
+  }
+  /* ---- lock-only time-outs (mutes): read allowed, posting/replies/DMs/reactions blocked ---- */
+  async function muteUser(name,hours){
+    if(!ME.admin)return;
+    var until=new Date(Date.now()+hours*3600*1000).toISOString();
+    try{
+      await sb.from('flap_users').update({muted_until:until}).ilike('name',name);
+      if(USERS[(name||'').toLowerCase()])USERS[(name||'').toLowerCase()].muted_until=until;
+      var label=hours>=168?'7 days':(hours>=24?(Math.round(hours/24)+' day(s)'):hours+' hour(s)');
+      toast('⏳ '+name+' is timed out for '+label+'.');
+      try{ showUserProfile(name); }catch(e){}
+    }catch(e){toast('Could not time out — try again.');}
+  }
+  async function unmuteUser(name){
+    if(!ME.admin)return;
+    try{
+      await sb.from('flap_users').update({muted_until:null}).ilike('name',name);
+      if(USERS[(name||'').toLowerCase()])USERS[(name||'').toLowerCase()].muted_until=null;
+      toast('✓ '+name+'\'s time-out was lifted.'); try{ showUserProfile(name); }catch(e){}
+    }catch(e){toast('Could not lift the time-out.');}
+  }
+  function customMute(name){ var h=prompt('Time out '+name+' for how many HOURS?','12'); if(h===null)return; h=parseFloat(h); if(!(h>0)){toast('Enter a number of hours.');return;} muteUser(name,h); }
+  /* called when auto-mod removes a submission. content is NOT posted. */
+  async function autoModBlock(kind,text){
+    var name=ME.name||'someone', snippet=String(text).slice(0,200);
+    try{ await sb.from('flap_reports').insert({reporter:'auto-mod',reason:'[AUTO-MOD removed a '+kind+'] '+snippet,target_type:'automod',target_name:name,resolved:false}); }catch(e){}
+    try{ discordPing('automod',name,'🚨 auto-mod removed a '+kind+' from '+name+': "'+snippet+'"'); }catch(e){}
+    try{ var lc=name.toLowerCase(); var cur=((USERS[lc]||{}).violations)||0; await sb.from('flap_users').update({violations:cur+1}).ilike('name',name); if(USERS[lc])USERS[lc].violations=cur+1; }catch(e){}
+    showViolationPopup(kind,snippet);
+  }
+  var APPEAL_CTX=null;
+  function showViolationPopup(kind,snippet){
+    APPEAL_CTX={kind:kind,content:snippet};
+    var m=document.getElementById('violModal'); if(!m){ toast('⚠ That broke the House Rules and wasn\'t posted.'); return; }
+    var el=document.getElementById('violContent'); if(el)el.textContent=snippet;
+    var kl=document.getElementById('violKind'); if(kl)kl.textContent=(kind==='DM'?'message':kind);
+    m.classList.add('open');
+  }
+  function closeViol(){ var m=document.getElementById('violModal'); if(m)m.classList.remove('open'); APPEAL_CTX=null; }
+  async function submitAppeal(){
+    var c=APPEAL_CTX, name=ME.name||'someone';
+    if(!c){ closeViol(); return; }
+    try{ await sb.from('flap_reports').insert({reporter:name,reason:'[APPEAL — user says wrongly flagged | '+c.kind+'] '+c.content,target_type:'appeal',target_name:name,resolved:false}); }catch(e){}
+    try{ discordPing('appeal',name,'📩 '+name+' is APPEALING an auto-mod removal ('+c.kind+'): "'+c.content+'"'); }catch(e){}
+    closeViol();
+    toast('Appeal sent — lock will review it. Thanks!');
+  }
+
+  /* ================= FOLLOWING (one-way, no accept — lighter-weight than friends) ================= */
+  var FOLLOWING={};   /* names I currently follow (lowercased keys) */
+  var FOLLOWS_LOADED=false;
+  async function loadFollows(){
+    if(!ONLINE||!ME.name){ FOLLOWING={}; return; }
+    try{ var r=await sb.from('flap_follows').select('following').ilike('follower',ME.name); FOLLOWING={}; (r.data||[]).forEach(function(x){ if(x.following)FOLLOWING[String(x.following).toLowerCase()]=true; }); }catch(e){}
+  }
+  function isFollowing(name){ return !!FOLLOWING[(name||'').toLowerCase()]; }
+  function followBtnHTML(name){
+    if(!name || (ME.name&&name.toLowerCase()===ME.name.toLowerCase())) return '';
+    var f=isFollowing(name), pn=esc(name).replace(/'/g,'');
+    return '<button type="button" class="follow-btn'+(f?' following':'')+'" data-follow="'+esc(name).replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();toggleFollow(\''+pn+'\')">'+(f?'✓ Following':'+ Follow')+'</button>';
+  }
+  function updateFollowButtons(name){
+    var f=isFollowing(name), lc=(name||'').toLowerCase();
+    document.querySelectorAll('.follow-btn').forEach(function(b){
+      if((b.getAttribute('data-follow')||'').toLowerCase()===lc){ b.className='follow-btn'+(f?' following':''); b.textContent=f?'✓ Following':'+ Follow'; }
+    });
+  }
+  async function toggleFollow(name){
+    if(!requireAuth())return;
+    if(!name || name.toLowerCase()===(ME.name||'').toLowerCase())return;
+    if(blockedByMute())return;
+    var was=isFollowing(name), lc=name.toLowerCase();
+    if(was){ delete FOLLOWING[lc]; } else { FOLLOWING[lc]=true; }
+    updateFollowButtons(name);
+    try{
+      if(was){ await sb.from('flap_follows').delete().ilike('follower',ME.name).ilike('following',name); toast('Unfollowed '+name+'.'); }
+      else{ await sb.from('flap_follows').insert({follower:ME.name,following:name}); addNotif(name,ME.name,'follow',null,''); try{discordPing('follow',ME.name,ME.name+' followed '+name);}catch(e){} toast('You\'re now following '+name+' 👤'); }
+    }catch(e){ if(was){FOLLOWING[lc]=true;}else{delete FOLLOWING[lc];} updateFollowButtons(name); toast('Could not update follow — try again.'); return; }
+    try{ if(document.getElementById('profModal')&&document.getElementById('profModal').classList.contains('open')) refreshFollowCounts(name); }catch(e){}
+    try{ if(FOLLOW_FILTER) loadFeed(); }catch(e){}
+  }
+  async function refreshFollowCounts(name){
+    try{
+      var fr=await sb.from('flap_follows').select('follower',{count:'exact',head:true}).ilike('following',name);
+      var fg=await sb.from('flap_follows').select('following',{count:'exact',head:true}).ilike('follower',name);
+      var e1=document.getElementById('pcFollowers'), e2=document.getElementById('pcFollowing');
+      if(e1)e1.textContent=(fr&&fr.count!=null?fr.count:0);
+      if(e2)e2.textContent=(fg&&fg.count!=null?fg.count:0);
+    }catch(e){ var e1=document.getElementById('pcFollowers'), e2=document.getElementById('pcFollowing'); if(e1&&e1.textContent==='')e1.textContent='0'; if(e2&&e2.textContent==='')e2.textContent='0'; }
+  }
+  /* "Following" feed filter */
+  var FOLLOW_FILTER=false;
+  function syncFeedTabs(){
+    var b=document.getElementById('followFilterBtn'); if(b){ b.textContent=FOLLOW_FILTER?'★ Following':'☆ Following'; b.classList.toggle('on',FOLLOW_FILTER); }
+    var a=document.getElementById('allFeedBtn'); if(a)a.classList.toggle('on',!FOLLOW_FILTER);
+    var xf=document.getElementById('xFollowBtn'); if(xf){ xf.textContent=FOLLOW_FILTER?'★ Following':'☆ Following'; xf.classList.toggle('on',FOLLOW_FILTER); }
+    var xa=document.getElementById('xAllBtn'); if(xa)xa.classList.toggle('on',!FOLLOW_FILTER);
+  }
+  function toggleFollowFilter(){
+    if(!requireAuth())return;
+    FOLLOW_FILTER=!FOLLOW_FILTER;
+    syncFeedTabs();
+    try{ renderLive(); }catch(e){ loadFeed(); }
+  }
+  /* top tab press: jump straight to the chosen feed (no toggle guesswork) */
+  function xFeedTab(want){
+    if(!requireAuth())return;
+    want=!!want;
+    if(FOLLOW_FILTER!==want){ FOLLOW_FILTER=want; syncFeedTabs(); try{ renderLive(); }catch(e){ loadFeed(); } }
+    try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){ window.scrollTo(0,0); }
+  }
+
   /* ================= invite gate ================= */
   async function sha256(s){
     var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
@@ -1950,29 +2329,19 @@
           toast('Welcome back, '+ME.name+'!');
           try{await ensureHandle();}catch(eh){}
         }else{
-          /* new account — a profile pic is REQUIRED to sign up */
-          if(!GATE_PIC_BLOB){
-            err.textContent='📸 Add a profile pic to finish signing up!';
-            document.getElementById('gateAvatarFile').click();
-            return;
-          }
-          ME.name=name.slice(0,20);
+          /* new account — create it, then send them through onboarding to pick handle + name + profile pic */
+          if(isReservedName(name)){ err.textContent='That name isn’t allowed — pick another (no “flap” or staff names).'; return; }
+          var newName=name.slice(0,20);
           err.textContent='creating your account…';
-          var picUrl=null;
-          try{
-            var path='avatar-'+Date.now()+'-'+Math.random().toString(36).slice(2,6)+'.jpg';
-            var up=await sb.storage.from('pics').upload(path,GATE_PIC_BLOB,{contentType:'image/jpeg',upsert:false});
-            if(!up.error)picUrl=sb.storage.from('pics').getPublicUrl(path).data.publicUrl;
-          }catch(e4){}
-          ME.pic=picUrl;
-          var newHandle=await genUniqueHandle(ME.name); ME.handle=newHandle;
-          var _dev=((document.getElementById('gateDevice')||{}).value)||detectDevice();
-          var ins=await sb.from('flap_users').insert({name:ME.name,pass_hash:hash,avatar_url:picUrl,handle:newHandle,device:_dev});
+          var newHandle=await genUniqueHandle(newName);
+          var ins=await sb.from('flap_users').insert({name:newName,pass_hash:hash,avatar_url:null,handle:newHandle,device:detectDevice()}).select('*').maybeSingle();
           if(ins.error)throw ins.error;
-          GATE_PIC_BLOB=null;
-          discordPing('join',ME.name);   /* ping the admin's Discord on a real new signup */
-          sendPush('lock','TheFlap 🐦',ME.name+' just joined TheFlap! 🎉');   /* + phone push to admin */
-          toast('Account created! Welcome to TheFlap, '+ME.name+'!');
+          var newRow=(ins&&ins.data)?ins.data:{name:newName,avatar_url:null,handle:newHandle};
+          try{ discordPing('join',newRow.name); }catch(e5){}   /* ping the admin's Discord on a real new signup */
+          try{ sendPush('lock','TheFlap 🐦',newRow.name+' just joined TheFlap! 🎉'); }catch(e5){}
+          err.textContent='';
+          startOnboarding(newRow);   /* pick handle + display name + profile pic, then enter */
+          return;
         }
       }catch(e){err.textContent='Could not reach the flap server — try again.';return;}
     }else{
@@ -2006,6 +2375,126 @@
     try{ if('Notification' in window && Notification.permission==='default'){ Notification.requestPermission().then(function(){subscribePush();}); }else{subscribePush();} }catch(e){}
     try{ ensureHandle(); }catch(e){}
   }
+  /* ---- gate: show/hide the name & password panel ---- */
+  function toggleGateAlt(){
+    var a=document.getElementById('gateAlt'), t=document.getElementById('gateAltToggle');
+    if(!a)return;
+    a.classList.toggle('hidden');
+    var open=!a.classList.contains('hidden');
+    if(t)t.textContent=open?'Hide name & password':'Use a name & password instead';
+    if(open){ try{document.getElementById('gateName').focus();}catch(e){} }
+  }
+  /* ================= ONBOARDING WIZARD (new accounts pick handle + name + pic) ================= */
+  var OB={row:null,pic:null,picBlob:null,handle:'',name:''};
+  var OB_AVS=[['🐦','#f5820a'],['😎','#1565c0'],['🦊','#e07d0a'],['🐱','#8e24aa'],['🐸','#2e7d32'],['🌸','#d81b60'],['⭐','#f9a825'],['🎧','#3949ab'],['🍕','#c62828'],['👾','#00838f']];
+  function startOnboarding(row){
+    OB.row=row; OB.pic=row.avatar_url||null; OB.picBlob=null; OB.handle=''; OB.name='';
+    try{document.getElementById('obHandle').value=row.handle||'';}catch(e){}
+    try{document.getElementById('obName').value=row.name||'';}catch(e){}
+    obBuildGrid(); obRenderBig();
+    document.getElementById('obStep2').classList.add('hidden');
+    document.getElementById('obStep1').classList.remove('hidden');
+    var g=document.getElementById('gate'); if(g)g.classList.add('hidden');
+    document.getElementById('onboard').classList.remove('hidden');
+    obCheckHandle(); obCheckName();
+  }
+  function obRenderBig(){
+    var big=document.getElementById('obAvBig'); if(!big)return;
+    if(OB.pic){ big.innerHTML='<img src="'+OB.pic+'" alt="">'; big.style.background='#dfe7f7'; }
+    else { big.textContent='🙂'; big.style.background='#dfe7f7'; }
+  }
+  function obBuildGrid(){
+    var g=document.getElementById('obAvGrid'); if(!g)return;
+    g.innerHTML=OB_AVS.map(function(a,i){return '<div class="ob-avopt" style="background:'+a[1]+'" onclick="obPickAvatar('+i+')">'+a[0]+'</div>';}).join('');
+  }
+  function obCheckHandle(){
+    var el=document.getElementById('obHandle'); if(!el)return;
+    var clean=(el.value||'').toLowerCase().replace(/[^a-z0-9_]/g,''); if(clean!==el.value)el.value=clean;
+    var h=document.getElementById('obHandleHint');
+    if(clean.length===0){h.className='ob-hint';h.textContent='Only a–z, 0–9 and _ — no spaces or symbols.';}
+    else if(clean.length<3){h.className='ob-hint bad';h.textContent='A little longer, please (3+ characters).';}
+    else{h.className='ob-hint good';h.textContent='✓ @'+clean+' looks good!';}
+    obValidate();
+  }
+  function obCheckName(){
+    var el=document.getElementById('obName'); if(!el)return;
+    var h=document.getElementById('obNameHint');
+    if((el.value||'').trim().length===0){h.className='ob-hint';h.textContent='';}
+    else{h.className='ob-hint good';h.textContent='✓ Looks good.';}
+    obValidate();
+  }
+  function obValidate(){
+    var h=(((document.getElementById('obHandle')||{}).value)||'').replace(/[^a-z0-9_]/g,'');
+    var n=(((document.getElementById('obName')||{}).value)||'').trim();
+    var b=document.getElementById('obNextBtn'); if(b)b.disabled=!(h.length>=3 && n.length>=1);
+  }
+  function obPickAvatar(i){
+    var opts=document.querySelectorAll('.ob-avopt');
+    opts.forEach(function(o){o.classList.remove('sel');});
+    if(opts[i])opts[i].classList.add('sel');
+    var a=OB_AVS[i];
+    var big=document.getElementById('obAvBig'); big.innerHTML=''; big.style.background=a[1]; big.textContent=a[0];
+    OB.pic=null;
+    try{
+      var c=document.createElement('canvas'); c.width=256;c.height=256; var ctx=c.getContext('2d');
+      ctx.fillStyle=a[1]; ctx.beginPath(); ctx.arc(128,128,128,0,Math.PI*2); ctx.fill();
+      ctx.font='150px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(a[0],128,146);
+      c.toBlob(function(b){ OB.picBlob=b; },'image/png');
+    }catch(e){ OB.picBlob=null; }
+  }
+  function obUploadPic(ev){
+    var f=ev&&ev.target&&ev.target.files&&ev.target.files[0]; if(!f)return;
+    OB.picBlob=f; OB.pic=null;
+    try{ var url=URL.createObjectURL(f); var big=document.getElementById('obAvBig'); big.innerHTML='<img src="'+url+'" alt="">'; }catch(e){}
+    document.querySelectorAll('.ob-avopt').forEach(function(o){o.classList.remove('sel');});
+  }
+  async function obNext(){
+    var handle=(((document.getElementById('obHandle')||{}).value)||'').replace(/[^a-z0-9_]/g,'');
+    var name=(((document.getElementById('obName')||{}).value)||'').trim().slice(0,24);
+    if(handle.length<3||!name)return;
+    var btn=document.getElementById('obNextBtn'); btn.disabled=true;
+    var hh=document.getElementById('obHandleHint'), nh=document.getElementById('obNameHint');
+    if(isReservedName(handle)){ hh.className='ob-hint bad'; hh.textContent='That handle isn’t allowed — pick another (no “flap” or staff names).'; btn.disabled=false; return; }
+    if(isReservedName(name)){ nh.className='ob-hint bad'; nh.textContent='That name isn’t allowed — pick another (no “flap” or staff names).'; btn.disabled=false; return; }
+    if(ONLINE&&sb){
+      try{
+        var chk=await sb.from('flap_users').select('name').ilike('handle',handle).limit(5);
+        if(chk&&chk.data&&chk.data.some(function(r){return (r.name||'').toLowerCase()!==(OB.row.name||'').toLowerCase();})){
+          hh.className='ob-hint bad'; hh.textContent='@'+handle+' is taken — try another.'; btn.disabled=false; return;
+        }
+        if(name.toLowerCase()!==(OB.row.name||'').toLowerCase()){
+          var chkn=await sb.from('flap_users').select('name').ilike('name',name).limit(1);
+          if(chkn&&chkn.data&&chkn.data.length){ nh.className='ob-hint bad'; nh.textContent='That name is taken — try another.'; btn.disabled=false; return; }
+        }
+      }catch(e){}
+    }
+    OB.handle=handle; OB.name=name; btn.disabled=false;
+    document.getElementById('obStep1').classList.add('hidden');
+    document.getElementById('obStep2').classList.remove('hidden');
+  }
+  async function obFinish(){
+    var btn=document.getElementById('obFinishBtn'); if(btn)btn.disabled=true;
+    var picUrl=OB.pic||OB.row.avatar_url||null;
+    try{
+      if(OB.picBlob&&ONLINE&&sb&&sb.storage){
+        var path='avatar-'+Date.now()+'-'+Math.random().toString(36).slice(2,6)+'.png';
+        var up=await sb.storage.from('pics').upload(path,OB.picBlob,{contentType:(OB.picBlob.type||'image/png'),upsert:false});
+        if(!up.error)picUrl=sb.storage.from('pics').getPublicUrl(path).data.publicUrl;
+      }
+    }catch(e){}
+    var oldName=OB.row.name;
+    try{
+      if(ONLINE&&sb){
+        var upd={handle:OB.handle,avatar_url:picUrl};
+        if(OB.name&&OB.name.toLowerCase()!==(oldName||'').toLowerCase())upd.name=OB.name;
+        await sb.from('flap_users').update(upd).ilike('name',oldName);
+      }
+    }catch(e){}
+    ME={name:(OB.name||oldName),admin:((OB.name||oldName||'').toLowerCase()==='lock'),pic:picUrl||null,handle:OB.handle,email:OB.row.email||''};
+    document.getElementById('onboard').classList.add('hidden');
+    toast('Welcome to TheFlap, '+ME.name+'! 🎉');
+    enterAppAfterLogin();
+  }
   async function googleSignIn(){
     if(!ONLINE||!sb||!sb.auth){toast('Google sign-in needs the server.');return;}
     try{
@@ -2014,15 +2503,44 @@
       if(r&&r.error){toast('Google sign-in error — try again.');}
     }catch(e){toast('Could not start Google sign-in.');}
   }
+  /* Sign in with Apple — required by Apple (Guideline 4.8) because we offer Google. Shown only inside the iOS app.
+     The return is handled by the same handleGoogleReturn() (it's provider-agnostic: reads the session's email). */
+  async function appleSignIn(){
+    if(!ONLINE||!sb||!sb.auth){toast('Apple sign-in needs the server.');return;}
+    try{
+      var redir=location.origin+location.pathname;
+      var r=await sb.auth.signInWithOAuth({provider:'apple',options:{redirectTo:redir}});
+      if(r&&r.error){toast('Apple sign-in error — try again.');}
+    }catch(e){toast('Could not start Apple sign-in.');}
+  }
+  /* reveal the Apple button only inside the native iOS app */
+  try{ if(window.Capacitor && Capacitor.getPlatform && Capacitor.getPlatform()==='ios'){ var _ab=document.getElementById('gateAppleBtn'); if(_ab)_ab.classList.remove('hidden'); } }catch(e){}
+  var GRET_RUNNING=false;
   async function handleGoogleReturn(){
     if(!ONLINE||!sb||!sb.auth)return;
+    if(GRET_RUNNING)return;              /* don't double-run (restoreSession + onAuthStateChange both call this) */
+    if(ME&&ME.name)return;              /* already logged in */
+    GRET_RUNNING=true;
     try{
+      /* OAuth can return either an implicit #access_token hash OR a ?code query.
+         Apply it manually so login never depends on auto-detection timing. */
+      try{
+        if(/access_token=/.test(location.hash||'')){
+          var _hp=new URLSearchParams((location.hash||'').replace(/^#/,''));
+          var _at=_hp.get('access_token'), _rt=_hp.get('refresh_token');
+          if(_at){ await sb.auth.setSession({access_token:_at, refresh_token:_rt||''}); }
+        } else if(/[?&]code=/.test(location.search||'')){
+          try{ await sb.auth.exchangeCodeForSession(location.href); }catch(_e){}
+        }
+      }catch(_e){}
       var s=await sb.auth.getSession();
       var sess=s&&s.data&&s.data.session;
-      if(!sess||!sess.user)return;
-      if(ME&&ME.name)return;
+      if(!sess||!sess.user){ GRET_RUNNING=false; return; }   /* handshake not done yet — let the SIGNED_IN event retry */
+      if(ME&&ME.name){ GRET_RUNNING=false; return; }
+      /* strip the token/code out of the address bar now that we've consumed it */
+      try{ if(/access_token=|[?&]code=/.test((location.hash||'')+(location.search||''))){ history.replaceState({}, document.title, location.pathname); } }catch(_e){}
       var u=sess.user, email=(u.email||'').toLowerCase();
-      if(!email)return;
+      if(!email){ GRET_RUNNING=false; return; }
       var meta=u.user_metadata||{};
       var gname=(meta.full_name||meta.name||'').trim();
       var gpic=meta.avatar_url||meta.picture||'';
@@ -2039,13 +2557,14 @@
         row=(ins&&ins.data)?ins.data:{name:tryName,avatar_url:gpic,handle:handle,email:email};
         try{ discordPing('join',row.name); }catch(e){}
         try{ sendPush('lock','TheFlap 🐦',row.name+' just joined TheFlap with Google! 🎉'); }catch(e){}
-        toast('Welcome to TheFlap, '+row.name+'! 🎉');
-      }else{
-        toast('Welcome back, '+row.name+'!');
+        row.email=email; row.avatar_url=(row.avatar_url||gpic||null);
+        startOnboarding(row);   /* new Google user: pick handle + display name + profile pic */
+        return;
       }
+      toast('Welcome back, '+row.name+'!');
       ME={name:row.name,admin:false,pic:row.avatar_url||gpic||null,handle:row.handle||'',email:email};
       enterAppAfterLogin();
-    }catch(e){}
+    }catch(e){ GRET_RUNNING=false; }
   }
   function browseGuest(){
     document.getElementById('gate').classList.add('hidden');
@@ -2075,7 +2594,139 @@
   setInterval(heartbeat,60000);
 
   /* ============ user profile pages ============ */
-  function closeProfile(){document.getElementById('profModal').classList.remove('open');DM_OPEN=null;}
+  function closeProfile(){var pm=document.getElementById('profModal');pm.classList.remove('open');pm.classList.remove('dm-full');DM_OPEN=null;}
+  /* ================= PEOPLE SEARCH ================= */
+  var SRCH_T=null, SRCH_ROWS=[];
+  function openSearch(){
+    var m=document.getElementById('searchModal'); if(!m)return;
+    m.classList.add('open');
+    var i=document.getElementById('srchInput'); if(i){i.value='';setTimeout(function(){try{i.focus();}catch(e){}},60);}
+    document.getElementById('srchResults').innerHTML='<div class="srch-empty">Type a name to find your friends on TheFlap.</div>';
+  }
+  function closeSearch(){ var m=document.getElementById('searchModal'); if(m)m.classList.remove('open'); }
+  function runSearch(){
+    var q=(((document.getElementById('srchInput')||{}).value)||'').trim().replace(/^@/,'');
+    if(SRCH_T)clearTimeout(SRCH_T);
+    var res=document.getElementById('srchResults');
+    if(q.length<1){ res.innerHTML='<div class="srch-empty">Type a name to find your friends on TheFlap.</div>'; return; }
+    SRCH_T=setTimeout(function(){ doSearch(q); },220);
+  }
+  async function doSearch(q){
+    var res=document.getElementById('srchResults');
+    if(!ONLINE||!sb){ res.innerHTML='<div class="srch-empty">Search needs the server.</div>'; return; }
+    try{
+      var pat=q.replace(/[*%,()]/g,'');
+      var r=await sb.from('flap_users').select('name,handle,avatar_url,banned').or('name.ilike.*'+pat+'*,handle.ilike.*'+pat+'*').limit(25);
+      var rows=(r&&r.data)?r.data:[];
+      rows=rows.filter(function(u){ return u.name && String(u.name).indexOf('::')!==0 && !u.banned; });
+      SRCH_ROWS=rows;
+      if(!rows.length){ res.innerHTML='<div class="srch-empty">No one found for “'+q.replace(/</g,'&lt;')+'”.</div>'; return; }
+      res.innerHTML=rows.map(function(u,i){
+        var nm=String(u.name||'').replace(/</g,'&lt;');
+        var hd=u.handle?('@'+String(u.handle).replace(/</g,'&lt;')):'';
+        var av=u.avatar_url?('<img src="'+String(u.avatar_url).replace(/"/g,'&quot;')+'" alt="">'):(nm.slice(0,1).toUpperCase());
+        return '<div class="srch-row" onclick="pickSearch('+i+')"><div class="srch-av">'+av+'</div><div><div class="srch-name">'+nm+'</div><div class="srch-handle">'+hd+'</div></div></div>';
+      }).join('');
+    }catch(e){ res.innerHTML='<div class="srch-empty">Could not search — try again.</div>'; }
+  }
+  function pickSearch(i){ var u=SRCH_ROWS[i]; if(!u)return; closeSearch(); try{ showUserProfile(u.name); }catch(e){ toast('Could not open profile.'); } }
+  /* ================= SETTINGS (your own profile) ================= */
+  var SET_LIMITS={name:3, handle:2};   /* how many times each can be changed */
+  var SET={row:null};
+  async function openSettings(){
+    if(!ONLINE||!sb||!ME.name){ toast('Settings need the server.'); return; }
+    try{ closeProfile(); }catch(e){}
+    document.getElementById('settingsModal').classList.add('open');
+    try{
+      var r=await sb.from('flap_users').select('name,handle,avatar_url,name_changes,handle_changes').ilike('name',ME.name).maybeSingle();
+      SET.row=(r&&r.data)?r.data:{name:ME.name,handle:ME.handle||'',avatar_url:ME.pic||null,name_changes:0,handle_changes:0};
+    }catch(e){ SET.row={name:ME.name,handle:ME.handle||'',avatar_url:ME.pic||null,name_changes:0,handle_changes:0}; }
+    document.getElementById('setName').value=SET.row.name||'';
+    document.getElementById('setHandle').value=SET.row.handle||'';
+    document.getElementById('setNameHint').textContent=''; document.getElementById('setHandleHint').textContent='';
+    var bigA=document.getElementById('setAva');
+    if(SET.row.avatar_url){ bigA.innerHTML='<img src="'+esc(SET.row.avatar_url)+'" alt="">'; } else { bigA.textContent='🙂'; }
+    settingsUpdateCounts();
+    settingsRenderBlocked();
+  }
+  function closeSettings(){ var m=document.getElementById('settingsModal'); if(m)m.classList.remove('open'); }
+  function settingsUpdateCounts(){
+    var nc=(SET.row&&SET.row.name_changes)||0, hc=(SET.row&&SET.row.handle_changes)||0;
+    var nleft=Math.max(0, SET_LIMITS.name-nc), hleft=Math.max(0, SET_LIMITS.handle-hc);
+    document.getElementById('setNameCount').textContent='('+nleft+' change'+(nleft===1?'':'s')+' left)';
+    document.getElementById('setHandleCount').textContent='('+hleft+' change'+(hleft===1?'':'s')+' left)';
+    var ns=document.getElementById('setNameSave'), hs=document.getElementById('setHandleSave');
+    if(nleft<=0){ ns.classList.add('disabled'); ns.textContent='Name locked'; } else { ns.classList.remove('disabled'); ns.textContent='Save name'; }
+    if(hleft<=0){ hs.classList.add('disabled'); hs.textContent='Handle locked'; } else { hs.classList.remove('disabled'); hs.textContent='Save handle'; }
+  }
+  async function saveDisplayName(){
+    if((SET_LIMITS.name-((SET.row&&SET.row.name_changes)||0))<=0) return;
+    var newName=(((document.getElementById('setName')||{}).value)||'').trim().slice(0,24);
+    var hint=document.getElementById('setNameHint');
+    if(!newName){ hint.className='set-hint bad'; hint.textContent='Pick a name.'; return; }
+    if(newName.toLowerCase()===(SET.row.name||'').toLowerCase()){ hint.className='set-hint'; hint.textContent='That’s already your name.'; return; }
+    if(isReservedName(newName)){ hint.className='set-hint bad'; hint.textContent='That name isn’t allowed (no “flap” or staff names).'; return; }
+    var btn=document.getElementById('setNameSave'); btn.classList.add('disabled');
+    try{
+      var chk=await sb.from('flap_users').select('name').ilike('name',newName).limit(1);
+      if(chk&&chk.data&&chk.data.length){ hint.className='set-hint bad'; hint.textContent='That name is taken.'; btn.classList.remove('disabled'); return; }
+      var oldName=SET.row.name;
+      var up=await sb.from('flap_users').update({name:newName, name_changes:((SET.row.name_changes||0)+1)}).ilike('name',oldName).select('*').maybeSingle();
+      if(up&&up.error) throw up.error;
+      try{ await sb.from('flaps').update({name:newName}).ilike('name',oldName); }catch(e){}          /* keep post attribution */
+      try{ await sb.from('flap_replies').update({name:newName}).ilike('name',oldName); }catch(e){}
+      SET.row.name=newName; SET.row.name_changes=(SET.row.name_changes||0)+1;
+      ME.name=newName; ME.admin=((newName||'').toLowerCase()==='lock'); try{localStorage.setItem('flap_lastname',newName);}catch(e){} saveSession(ME);
+      hint.className='set-hint good'; hint.textContent='✓ Saved!';
+      settingsUpdateCounts();
+      try{ initMe(); }catch(e){} try{ loadFeed(); }catch(e){}
+    }catch(e){ hint.className='set-hint bad'; hint.textContent='Could not save — that name may be taken.'; }
+    btn.classList.remove('disabled');
+  }
+  async function saveHandle(){
+    if((SET_LIMITS.handle-((SET.row&&SET.row.handle_changes)||0))<=0) return;
+    var newH=(((document.getElementById('setHandle')||{}).value)||'').toLowerCase().replace(/[^a-z0-9_]/g,'');
+    var hint=document.getElementById('setHandleHint');
+    if(newH.length<3){ hint.className='set-hint bad'; hint.textContent='Handles are 3+ letters, numbers or _.'; return; }
+    if(newH===(SET.row.handle||'').toLowerCase()){ hint.className='set-hint'; hint.textContent='That’s already your handle.'; return; }
+    if(isReservedName(newH)){ hint.className='set-hint bad'; hint.textContent='That handle isn’t allowed (no “flap” or staff names).'; return; }
+    var btn=document.getElementById('setHandleSave'); btn.classList.add('disabled');
+    try{
+      var chk=await sb.from('flap_users').select('name').ilike('handle',newH).limit(1);
+      if(chk&&chk.data&&chk.data.length){ hint.className='set-hint bad'; hint.textContent='@'+newH+' is taken.'; btn.classList.remove('disabled'); return; }
+      var up=await sb.from('flap_users').update({handle:newH, handle_changes:((SET.row.handle_changes||0)+1)}).ilike('name',SET.row.name).select('*').maybeSingle();
+      if(up&&up.error) throw up.error;
+      SET.row.handle=newH; SET.row.handle_changes=(SET.row.handle_changes||0)+1;
+      ME.handle=newH;
+      hint.className='set-hint good'; hint.textContent='✓ Saved!';
+      settingsUpdateCounts();
+    }catch(e){ hint.className='set-hint bad'; hint.textContent='Could not save — that handle may be taken.'; }
+    btn.classList.remove('disabled');
+  }
+  async function settingsChangePic(ev){
+    var f=ev&&ev.target&&ev.target.files&&ev.target.files[0]; if(!f)return;
+    var bigA=document.getElementById('setAva');
+    try{
+      var blob=await compressImage(f);
+      var path='avatar-'+Date.now()+'-'+Math.random().toString(36).slice(2,6)+'.jpg';
+      var up=await sb.storage.from('pics').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+      if(up.error) throw up.error;
+      var url=sb.storage.from('pics').getPublicUrl(path).data.publicUrl;
+      await sb.from('flap_users').update({avatar_url:url}).ilike('name',SET.row.name);
+      SET.row.avatar_url=url; ME.pic=url; saveSession(ME);
+      bigA.innerHTML='<img src="'+esc(url)+'" alt="">';
+      try{ initMe(); }catch(e){} try{ loadFeed(); }catch(e){}
+      toast('Profile photo updated! 📸');
+    }catch(e){ toast('Could not update photo — try a JPEG.'); }
+    ev.target.value='';
+  }
+  function settingsRenderBlocked(){
+    var el=document.getElementById('setBlocked'); if(!el)return;
+    var names=Object.keys(BLOCKED||{});
+    if(!names.length){ el.innerHTML='<div class="set-empty">You haven’t blocked anyone.</div>'; return; }
+    el.innerHTML=names.map(function(n){ var e=esc(n).replace(/'/g,''); return '<div class="set-brow">🚫 '+esc(n)+'<span class="set-unb" onclick="settingsUnblock(\''+e+'\')">Unblock</span></div>'; }).join('');
+  }
+  function settingsUnblock(n){ try{ unblockUser(n); }catch(e){} setTimeout(settingsRenderBlocked, 400); }
   var PROFILE_DATA={posts:[],reflaps:[]};
   function profileTab(which){
     var lst=document.getElementById('profList');if(!lst)return;
@@ -2110,11 +2761,16 @@
       h+='<div class="pc-head"><div class="pc-ava">'+av+'</div><div>';
       h+='<div class="pc-name">'+esc(name)+vbadge(name)+(on?' <span style="font-size:9px;color:#1a8a1a;">● online</span>':'')+'</div>';
       h+='<div class="pc-meta">'+(u?'joined '+new Date(u.created_at).toLocaleDateString()+' · ':'')+mine.length+' flaps · '+refl.length+' reflaps</div>';
+      h+='<div class="pc-meta" style="margin-top:2px;"><b id="pcFollowers">0</b> followers · <b id="pcFollowing">0</b> following</div>';
       h+='<div class="pc-feel">feeling: '+emoHTML(feeling,true)+' '+esc(feeling)+'</div>';
       h+='</div></div>';
+      if((name||'').toLowerCase()===(ME.name||'').toLowerCase()){
+        h+='<div class="pc-actions"><button type="button" onclick="openSettings()">⚙ Settings</button></div>';
+      }
       if((name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
         var pn2=esc(name).replace(/'/g,'');
         h+='<div class="pc-actions">'+
+           followBtnHTML(name)+
            '<button type="button" onclick="openReport(\'user\',null,\''+pn2+'\')">⚑ Report user</button>'+
            (isBlocked(name)
              ?'<button type="button" onclick="unblockUser(\''+pn2+'\')">✓ Unblock</button>'
@@ -2129,6 +2785,17 @@
              ?'<button type="button" onclick="unbanUser(\''+_pn+'\')">♻ Unban</button>'
              :'<button type="button" class="danger" onclick="banUser(\''+_pn+'\')">🔨 Permanently ban</button>')+
            '</div>';
+        var _mo=_au.muted_until && new Date(_au.muted_until)>new Date();
+        h+='<div class="pc-actions" style="margin-top:4px;flex-wrap:wrap;align-items:center;gap:6px;">'+
+           '<span style="font-size:11px;color:#2a4a6e;margin-right:auto;">'+(_mo?('⏳ Timed out until <b>'+new Date(_au.muted_until).toLocaleString()+'</b>'):'⏳ Time-out (can read, can\'t post/reply/react):')+'</span>'+
+           (_mo
+             ? '<button type="button" onclick="unmuteUser(\''+_pn+'\')">✓ Lift time-out</button>'
+             : '<button type="button" onclick="muteUser(\''+_pn+'\',1)">1h</button>'+
+               '<button type="button" onclick="muteUser(\''+_pn+'\',24)">24h</button>'+
+               '<button type="button" onclick="muteUser(\''+_pn+'\',168)">7d</button>'+
+               '<button type="button" onclick="customMute(\''+_pn+'\')">Custom</button>')+
+           '</div>';
+        if((_au.violations||0)>0){ h+='<div style="font-size:10.5px;color:#a35a00;padding:2px 2px 0;">⚠ '+_au.violations+' auto-mod removal(s) on record for this member.</div>'; }
       }
       h+='<div class="pc-tabs">'+
          '<button class="pc-tab on" id="ptab-posts" onclick="profileTab(\'posts\')">📝 Flaps ('+mine.length+')</button>'+
@@ -2136,6 +2803,7 @@
       h+='<div id="profList">'+(mine.length?mine.map(liveCard).join(''):'<div style="font-size:11px;padding:8px;">no flaps yet!</div>')+'</div>';
       h+='</div>';
       box.innerHTML=h;
+      try{ refreshFollowCounts(name); }catch(efc){}
     }catch(e){
       box.innerHTML='<div class="pc-strip"><span>Profile</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">could not load profile — try again.</div>';
     }
@@ -2409,17 +3077,17 @@
   });
   /* profile pic chosen during sign-up */
   var GATE_PIC_BLOB=null;
-  document.getElementById('gateAvatarFile').addEventListener('change',async function(e){
+  var _gaf=document.getElementById('gateAvatarFile');   /* removed from gate; profile pic now lives in onboarding */
+  if(_gaf){ _gaf.addEventListener('change',async function(e){
     var f=e.target.files[0];if(!f)return;
     try{GATE_PIC_BLOB=await compressImage(f);}
     catch(err){toast('Could not read that photo. Try a JPEG or a screenshot.');e.target.value='';return;}
     var av=document.getElementById('gateAva');
-    av.style.backgroundImage='url('+URL.createObjectURL(GATE_PIC_BLOB)+')';
-    av.classList.add('has');
+    if(av){ av.style.backgroundImage='url('+URL.createObjectURL(GATE_PIC_BLOB)+')'; av.classList.add('has'); }
     var er=document.getElementById('gateErr'); if(er)er.textContent='';
     e.target.value='';
     toast('Nice pic! Now tap “Let Me In!”');
-  });
+  }); }
   if(!ONLINE)document.getElementById('offlineNote').style.display='block';
   /* session restore runs at the very end of the script — see restoreSession() */
 
@@ -2469,6 +3137,7 @@
   }
   async function reflapPost(id){
     if(!requireAuth())return;
+    if(blockedByMute())return;
     var key=String(id);
     if(REFLAPPING[key])return;   /* ignore double / ghost taps while a reflap toggle is in flight */
     REFLAPPING[key]=1;
@@ -2557,7 +3226,16 @@
        loading in ABOVE the viewport can't shove the reader to a different spot (fixes the feed "jumping") */
     var __anchorId=null, __anchorTop=0;
     (function(){ var cs=box.querySelectorAll('.card[id^="flap-"]'); for(var i=0;i<cs.length;i++){ var rc=cs[i].getBoundingClientRect(); if(rc.bottom>4){ __anchorId=cs[i].id; __anchorTop=rc.top; break; } } })();
-    var rows=(LAST_ROWS||[]).filter(function(r){return !isBlocked(r.name)&&!parseReflap(r.body);}),head='';
+    var rows=(LAST_ROWS||[]).filter(function(r){
+      if(isBlocked(r.name)||parseReflap(r.body))return false;
+      if(FOLLOW_FILTER){ var rn=(r.name||'').toLowerCase(); if(rn!==(ME.name||'').toLowerCase() && !FOLLOWING[rn]) return false; }
+      return true;
+    }),head='';
+    if(ME.name && !FEED_FILTER && !document.documentElement.classList.contains('is-app')){
+      /* desktop website keeps the filter pair here; the app shows it in the sticky top bar instead */
+      head+='<div class="feedtabs"><button id="allFeedBtn" class="feedtab'+(FOLLOW_FILTER?'':' on')+'" onclick="if(FOLLOW_FILTER)toggleFollowFilter()">🌎 All flaps</button>'+
+            '<button id="followFilterBtn" class="feedtab'+(FOLLOW_FILTER?' on':'')+'" onclick="if(!FOLLOW_FILTER)toggleFollowFilter()">'+(FOLLOW_FILTER?'★ Following':'☆ Following')+'</button></div>';
+    }
     if(FEED_FILTER){
       var f=FEED_FILTER.toLowerCase();
       if(f[0]==='#'){
@@ -2578,7 +3256,7 @@
     box.innerHTML=head+(rows.length
       ? rows.map(liveCard).join('')
       : '<div class="card"><div class="card-body" style="text-align:center;font-size:11px;">'+
-        (FEED_FILTER?'no flaps for @'+esc(FEED_FILTER)+' yet!':(ONLINE?'no flaps yet — be the first!':'demo mode — configure the backend (see setup file) and your friends\' flaps will appear here!'))+
+        (FEED_FILTER?'no flaps for @'+esc(FEED_FILTER)+' yet!':(FOLLOW_FILTER?'You\'re not following anyone who\'s flapped yet — tap 🔍 Search or a name to find people to follow! 👤':(ONLINE?'no flaps yet — be the first!':'demo mode — configure the backend (see setup file) and your friends\' flaps will appear here!')))+
         '</div></div>');
     /* "load older flaps" control at the bottom so the feed never dead-ends */
     if(!FEED_FILTER && rows.length && FEED_HAS_MORE){
@@ -2655,7 +3333,7 @@
     try{await sb.from('flap_notifs').insert({recipient:recipient,actor:actor,kind:kind,flap_id:flap_id||null,excerpt:(excerpt||'').slice(0,120)});}catch(e){}
     /* also fire a phone push to the recipient */
     var ex=excerpt?(' "'+String(excerpt).slice(0,60)+'"'):'';
-    var body=kind==='reply'?(actor+' replied to your flap:'+ex):kind==='like'?(actor+' flapped your post 👍'):kind==='tag'?(actor+' tagged you in a flap:'+ex):kind==='reflap'?(actor+' reflapped your flap 🔁'):(actor+' interacted with you');
+    var body=kind==='reply'?(actor+' replied to your flap:'+ex):kind==='like'?(actor+' flapped your post 👍'):kind==='tag'?(actor+' tagged you in a flap:'+ex):kind==='reflap'?(actor+' reflapped your flap 🔁'):kind==='follow'?(actor+' followed you 👤'):(actor+' interacted with you');
     if(kind!=='reflap')sendPush(recipient,'TheFlap 🐦',body); /* reflaps: quiet — bell only, no phone push */
   }
   function notifText(n){
@@ -2666,6 +3344,7 @@
     if(n.kind==='tag')  return who+' tagged you in a flap:'+ex;
     if(n.kind==='reflap')return who+' reflapped your flap 🔁';
     if(n.kind==='friend')return who+' '+esc(n.excerpt||'sent you a friend request')+' 👯';
+    if(n.kind==='follow')return who+' followed you 👤';
     if(n.kind==='dm')    return who+' messaged you:'+ex;
     return who+' interacted with you';
   }
@@ -3193,10 +3872,11 @@
       document.getElementById('youCount').textContent=myFlapCount;
       /* members list — powers real photos everywhere + the banner */
       try{
-        var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at,handle,device,banned');
+        var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at,handle,device,banned,muted_until,violations');
         if(!um.error&&um.data){USERS={};um.data.forEach(function(u){USERS[u.name.toLowerCase()]=u;});}
       }catch(eu){}
       try{ if(ME.name&&USERS[ME.name.toLowerCase()]){ ME.handle=USERS[ME.name.toLowerCase()].handle||ME.handle||''; } }catch(eh){}
+      try{ if(ME.name && !FOLLOWS_LOADED){ FOLLOWS_LOADED=true; await loadFollows(); } }catch(efl){}
       try{ if(ME.name&&!ME.admin&&USERS[ME.name.toLowerCase()]&&USERS[ME.name.toLowerCase()].banned){ toast('This account has been banned.'); setTimeout(function(){try{clearSession();}catch(e){}location.reload();},1600); return; } }catch(ebn){}
       if(ONLINE&&ME.name&&!HANDLE_CHECKED){ HANDLE_CHECKED=true; try{ensureHandle();}catch(eh2){} }
       REPLIES={};
@@ -3248,6 +3928,8 @@
     var inp=document.getElementById('ri-'+id);
     var text=(inp&&inp.value||'').trim();
     if(!text){toast('Type a reply first!');return;}
+    if(blockedByMute())return;
+    if(checkAutoMod(text)){ autoModBlock('reply',text); return; }
     var ekey='L'+id, emo=REPLY_EMOJI[ekey]||'', body=emo?emo+RE_SEP+text:text;
     if(!ONLINE){
       (REPLIES[id]=REPLIES[id]||[]).push({flap_id:id,name:ME.name,body:body});
@@ -3296,6 +3978,7 @@
   function markLiked(id){MY_LIKES[id]=1;try{localStorage.setItem('flap_likes',JSON.stringify(MY_LIKES));}catch(e){}}
   async function likeLive(btn){
     if(!requireAuth())return;
+    if(blockedByMute())return;
     var id=btn.getAttribute('data-id');
     if(hasLiked(id)){toast('You already flapped this one! 👍');return;}   /* one flap per person, survives reloads */
     var n=parseInt(btn.getAttribute('data-n'),10)||0;
@@ -3464,6 +4147,8 @@
     var ta=document.getElementById('composeText');
     var text=ta.value.trim();
     if(!text&&!attachBlob){toast('Type something (or add a pic) first!');return;}
+    if(blockedByMute())return;                                  /* timed-out members can read but not post */
+    if(text&&checkAutoMod(text)){ autoModBlock('flap',text); return; }   /* auto-mod: remove + alert lock, don't post */
     var mood=document.getElementById('moodSel').value;
     if(!ONLINE){
       localPosts.unshift({id:Date.now(),name:ME.name,avatar_url:ME.pic||null,mood:mood,body:text,pic_url:attachURL,likes:0,created_at:new Date().toISOString()});
@@ -3551,7 +4236,52 @@
   }
   function isSentinelName(n){ return String(n||'').indexOf('::')===0; }
   var ADMIN_DATA=null, ADMIN_TAB='dash';
-  function adminTab(t){ ADMIN_TAB=t; renderAdmin(); var b=document.querySelector('.hq-body'); if(b)b.scrollTop=0; }
+  function adminTab(t){ ADMIN_TAB=t; if(t!=='messages')MSG_OPEN=null; renderAdmin(); var b=document.querySelector('.hq-body'); if(b)b.scrollTop=0; }
+  /* ---- admin Messages oversight (DMs, admin-gated only) ---- */
+  var MSG_SEARCH='', MSG_OPEN=null;
+  function _b64(s){ try{ return btoa(unescape(encodeURIComponent(s))); }catch(e){ return ''; } }
+  function _unb64(s){ try{ return decodeURIComponent(escape(atob(s))); }catch(e){ return ''; } }
+  function hqMsgSearch(v){ MSG_SEARCH=v; renderAdmin(); var i=document.getElementById('hqMsgSearch'); if(i){ i.focus(); try{i.setSelectionRange(i.value.length,i.value.length);}catch(e){} } }
+  function hqMsgOpen(b64){ MSG_OPEN=_unb64(b64); renderAdmin(); }
+  function hqMsgBack(){ MSG_OPEN=null; renderAdmin(); }
+  function hqMessages(){
+    if(!ME.admin) return '';
+    var d=ADMIN_DATA||{};
+    var msgs=(d.dms||[]).map(function(x){ var p=String(x.body||'').split(PSEP); return {from:p[0]||'',to:p[1]||'',text:p.slice(2).join(PSEP),at:x.created_at}; }).filter(function(m){ return m.from&&m.to; });
+    var convs={};
+    msgs.forEach(function(m){
+      var lo=m.from.toLowerCase(), hi=m.to.toLowerCase(), key=(lo<hi?lo+''+hi:hi+''+lo);
+      if(!convs[key])convs[key]={key:key,a:m.from,b:m.to,list:[]};
+      convs[key].list.push(m);
+    });
+    Object.keys(convs).forEach(function(k){ convs[k].list.reverse(); });   /* rows came newest-first → make each thread chronological */
+    var h='';
+    h+='<div style="font-size:11px;color:#7a2b22;background:#fff6ee;border:1px solid #ffd8ad;border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.5;">🔒 <b>Admin oversight.</b> You can review any member\'s direct messages for safety &amp; moderation. Members are told messages aren\'t private from moderation (House Rules + Privacy Policy).</div>';
+    if(MSG_OPEN && convs[MSG_OPEN]){
+      var cc=convs[MSG_OPEN];
+      h+='<div style="margin-bottom:8px;"><a onclick="hqMsgBack()" style="color:#22398f;font-weight:bold;cursor:pointer;">← all conversations</a></div>';
+      h+='<div style="font-weight:bold;color:#22398f;font-size:14px;margin-bottom:8px;">'+esc(cc.a)+' ⇄ '+esc(cc.b)+' <span style="color:#8a93c0;font-weight:normal;font-size:11px;">('+cc.list.length+' messages)</span></div>';
+      h+='<div style="max-height:52vh;overflow-y:auto;">'+cc.list.map(function(m){
+        return '<div style="margin:5px 0;padding:7px 10px;background:#f2f7ff;border-radius:10px;font-size:12.5px;line-height:1.45;"><b style="color:#22398f;">'+esc(m.from)+'</b> <span style="color:#8a93c0;font-size:10px;">→ '+esc(m.to)+' · '+(m.at?new Date(m.at).toLocaleString():'')+'</span><br>'+esc(m.text)+'</div>';
+      }).join('')+'</div>';
+      return h;
+    }
+    h+='<input type="text" id="hqMsgSearch" placeholder="🔍 Search conversations by username…" value="'+esc(MSG_SEARCH)+'" oninput="hqMsgSearch(this.value)" autocomplete="off" style="width:100%;box-sizing:border-box;padding:9px 11px;border:2px solid #cfe0f5;border-radius:9px;font-family:Verdana,Arial,sans-serif;font-size:15px;color:#22398f;margin-bottom:8px;">';
+    var arr=Object.keys(convs).map(function(k){return convs[k];});
+    arr.sort(function(a,b){ var la=a.list[a.list.length-1], lb=b.list[b.list.length-1]; return (new Date(lb.at||0))-(new Date(la.at||0)); });
+    var q=(MSG_SEARCH||'').trim().toLowerCase();
+    if(q) arr=arr.filter(function(c){ return c.a.toLowerCase().indexOf(q)>-1 || c.b.toLowerCase().indexOf(q)>-1; });
+    if(!arr.length){ h+='<div style="text-align:center;color:#8a93c0;font-size:12.5px;padding:20px;">'+(q?'No conversations match “'+esc(q)+'”.':'No messages yet.')+'</div>'; return h; }
+    h+='<div style="font-size:11px;color:#8a93c0;margin:2px 0 6px;">'+arr.length+' conversation'+(arr.length===1?'':'s')+':</div>';
+    h+=arr.map(function(c){
+      var last=c.list[c.list.length-1];
+      return '<div onclick="hqMsgOpen(\''+_b64(c.key)+'\')" style="cursor:pointer;padding:9px 8px;border-bottom:1px solid #eef2fa;">'+
+        '<div style="font-weight:bold;color:#22398f;font-size:13px;">'+esc(c.a)+' ⇄ '+esc(c.b)+' <span style="color:#8a93c0;font-weight:normal;font-size:11px;">('+c.list.length+')</span></div>'+
+        '<div style="font-size:12px;color:#556;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><b>'+esc(last.from)+':</b> '+esc(last.text)+'</div>'+
+        '</div>';
+    }).join('');
+    return h;
+  }
   async function showAdmin(){
     if(!ME.admin){toast('Admins only.');return;}
     var box=document.getElementById('profCardBox');
@@ -3566,9 +4296,10 @@
       var repIds=reports.filter(function(r){return r.target_type==='post'&&r.target_id;}).map(function(r){return r.target_id;});
       var repPosts={}; if(repIds.length){try{((await sb.from('flaps').select('id,body,name').in('id',repIds)).data||[]).forEach(function(p){repPosts[p.id]=p;});}catch(e){}}
       var tickets=[]; try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(80)).data||[];}catch(e){}
+      var dms=[]; try{dms=(await sb.from('flaps').select('id,body,created_at').eq('name','::dm::').order('id',{ascending:false}).limit(3000)).data||[];}catch(e){}   /* admin message oversight */
       async function sen(nm){try{var r=await sb.from('flaps').select('body').eq('name',nm).order('id',{ascending:false}).limit(1);return (r.data&&r.data[0])?r.data[0].body:'';}catch(e){return '';}}
       var tickerCur=await sen('::ticker::'), verCur=await sen('::verified::'), pollCur=await sen('::poll::');
-      ADMIN_DATA={us:us,flAll:flAll,replyCount:rc.count||0,repliesRecent:repliesRecent,reports:reports,repPosts:repPosts,tickets:tickets,tickerCur:tickerCur,verCur:verCur,pollCur:pollCur,now:Date.now()};
+      ADMIN_DATA={us:us,flAll:flAll,replyCount:rc.count||0,repliesRecent:repliesRecent,reports:reports,repPosts:repPosts,tickets:tickets,dms:dms,tickerCur:tickerCur,verCur:verCur,pollCur:pollCur,now:Date.now()};
       renderAdmin();
     }catch(e){
       box.innerHTML='<div class="pc-strip hq-strip"><span>👑 TheFlap HQ</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">Could not load HQ — check your connection and try again.</div>';
@@ -3576,9 +4307,9 @@
   }
   function renderAdmin(){
     var box=document.getElementById('profCardBox'); if(!box||!ADMIN_DATA)return;
-    var tabs=[['dash','📊','Home'],['mod','🛡️','Moderation'],['members','👥','Members'],['support','🎫','Support'],['settings','⚙️','Settings']];
+    var tabs=[['dash','📊','Home'],['mod','🛡️','Moderation'],['members','👥','Members'],['messages','💬','Messages'],['support','🎫','Support'],['settings','⚙️','Settings']];
     var bar='<div class="hq-tabs">'+tabs.map(function(t){return '<button class="hq-tab'+(ADMIN_TAB===t[0]?' on':'')+'" type="button" onclick="adminTab(\''+t[0]+'\')"><span class="hq-ico">'+t[1]+'</span>'+t[2]+'</button>';}).join('')+'</div>';
-    var body = ADMIN_TAB==='dash'?hqDash() : ADMIN_TAB==='mod'?hqMod() : ADMIN_TAB==='members'?hqMembers() : ADMIN_TAB==='support'?hqSupport() : hqSettings();
+    var body = ADMIN_TAB==='dash'?hqDash() : ADMIN_TAB==='mod'?hqMod() : ADMIN_TAB==='members'?hqMembers() : ADMIN_TAB==='messages'?hqMessages() : ADMIN_TAB==='support'?hqSupport() : hqSettings();
     box.innerHTML='<div class="pc-strip hq-strip"><span>👑 TheFlap HQ</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>'+bar+'<div class="pc-body hq-body">'+body+'</div>';
   }
   function hqStats(){
@@ -3794,7 +4525,10 @@
     }catch(e){return [];}
   }
   async function sendDM(name){
-    var inp=document.getElementById('dmInput'); if(!inp)return; var text=(inp.value||'').trim(); if(!text)return; inp.value='';
+    var inp=document.getElementById('dmInput'); if(!inp)return; var text=(inp.value||'').trim(); if(!text)return;
+    if(blockedByMute())return;
+    if(checkAutoMod(text)){ inp.value=''; autoModBlock('DM',text); return; }
+    inp.value='';
     /* show my message instantly, like a real text — before the server round-trip */
     var th=document.getElementById('dmThread');
     if(th){ var ph=th.querySelector('.dm-empty'); if(ph)ph.remove();
@@ -3818,7 +4552,7 @@
     if(!requireAuth())return;
     SOCIAL_TAB=tab||SOCIAL_TAB;
     var box=document.getElementById('profCardBox');
-    document.getElementById('profModal').classList.add('open');
+    var _pm=document.getElementById('profModal'); _pm.classList.add('open'); _pm.classList.remove('dm-full');
     box.innerHTML='<div class="pc-strip"><span>👯 Friends & Messages</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body" style="padding:22px;text-align:center;">loading…</div>';
     await loadFriends();
     var tabs=[['friends','👯 Friends'],['requests','📨 Requests'],['messages','💬 Messages']];
@@ -3839,7 +4573,7 @@
   }
   async function openDM(name){
     if(!FEATURES.social)return;
-    var box=document.getElementById('profCardBox'); document.getElementById('profModal').classList.add('open');
+    var box=document.getElementById('profCardBox'); var pm=document.getElementById('profModal'); pm.classList.add('open'); pm.classList.add('dm-full');
     box.innerHTML='<div class="pc-strip"><span><a onclick="openSocial(\'messages\')" style="cursor:pointer;color:#c86a10;">‹ back</a> · '+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕</span></div><div class="pc-body" style="padding:22px;text-align:center;">loading…</div>';
     var msgs=await loadDM(name), me=(ME.name||'').toLowerCase();
     var thread=msgs.length?msgs.map(function(m){var mine=m.from.toLowerCase()===me;return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+dmText(m.text)+'</span></div>';}).join(''):'<div class="dm-empty" style="text-align:center;color:#889;font-size:12px;padding:24px;">No messages yet — say hi 👋</div>';
@@ -3889,7 +4623,12 @@
   try{setTimeout(inAppTip,1500);}catch(e){}
   (function restoreSession(){
     var saved=readSession();
-    if(!saved){ if(typeof ONLINE!=='undefined'&&ONLINE){try{handleGoogleReturn();}catch(e){}} return; }
+    if(!saved){
+      if(typeof ONLINE!=='undefined'&&ONLINE){try{handleGoogleReturn();}catch(e){}}
+      /* logged out: show the feed dimmed + locked BEHIND the login gate (read-only backdrop) */
+      try{ if(!ME||!ME.name){ ME={name:'',admin:false}; loadBlocks().then(function(){loadFeed();}).catch(function(){try{loadFeed();}catch(e){}}); } }catch(e){}
+      return;
+    }
     var m;
     try{m=JSON.parse(saved);}catch(e){return;}
     if(!m||!m.name)return;
@@ -4008,30 +4747,38 @@ function toggleDrawer(force){
     }
     x0=y0=null;
   },{passive:true});
-  var lastY=0, ticking=false;
-  window.addEventListener('scroll',function(){
-    if(!compact()||ticking)return; ticking=true;
-    requestAnimationFrame(function(){
-      var y=window.scrollY||document.documentElement.scrollTop||0;
-      if(y>90 && y>lastY+5) document.body.classList.add('bar-hidden');
-      else if(y<lastY-5 || y<50) document.body.classList.remove('bar-hidden');
-      lastY=y; ticking=false;
-    });
-  },{passive:true});
-  /* fresh, self-contained auto-hide toggler — reliably reveals the top bar on scroll-up in the app */
+  /* ---- robust hide-on-scroll (whole sticky top: bar + tabs + search) ----
+     Hides on scroll-down, snaps back on the SLIGHTEST scroll-up. We poll the scroll
+     position every animation frame instead of trusting scroll events, because real
+     touch scrolling inside the iOS/Android webview does not always emit window
+     'scroll' events (that's what fooled us before). Reading the position every frame
+     works no matter which element is actually scrolling. */
   (function(){
-    var lastY=window.scrollY||0, tk=false;
-    window.addEventListener('scroll',function(){
-      if(tk)return; tk=true;
-      requestAnimationFrame(function(){
-        var y=window.scrollY||document.documentElement.scrollTop||0;
-        if(document.documentElement.classList.contains('is-app')){
-          if(y>110 && y>lastY+4) document.body.classList.add('bar-hidden');           /* scrolling down → hide */
-          else if(y<lastY-4 || y<60) document.body.classList.remove('bar-hidden');      /* scroll up a touch → reveal */
-        }
-        lastY=y; tk=false;
-      });
-    },{passive:true});
+    function sy(){
+      return window.pageYOffset
+        || (document.scrollingElement && document.scrollingElement.scrollTop)
+        || document.documentElement.scrollTop
+        || (document.body && document.body.scrollTop) || 0;
+    }
+    var lastY=sy(), hidden=false, MIN=64;
+    function setHidden(h){ if(h===hidden)return; hidden=h; document.body.classList.toggle('bar-hidden',h); }
+    function check(){
+      var y=sy(), d=y-lastY;
+      if(y<=MIN)        setHidden(false);   /* near the top → always show the whole header */
+      else if(d>2)      setHidden(true);    /* moving down → tuck the header up */
+      else if(d<-2)     setHidden(false);   /* the slightest move up → pop it back instantly */
+      lastY=y;
+    }
+    /* Belt-and-suspenders: run the check from BOTH a rAF loop AND scroll/touch/wheel
+       events. Whichever the webview actually delivers, the header still responds.
+       (Pure event listeners fooled us before when the iOS webview didn't emit them;
+       pure rAF can be throttled when idle — together they cover every case.) */
+    function loop(){ check(); requestAnimationFrame(loop); }
+    requestAnimationFrame(loop);
+    ['scroll','touchmove','wheel','touchstart','touchend'].forEach(function(ev){
+      window.addEventListener(ev,check,{passive:true});
+      document.addEventListener(ev,check,{passive:true});
+    });
   })();
   /* hard block pinch-zoom in the app so it can never get stuck zoomed (viewport lock + this) */
   if(compact()){
