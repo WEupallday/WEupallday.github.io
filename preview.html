@@ -924,23 +924,34 @@
   html.is-app body.hdr-x .launcher .ltxt b{font-size:12.5px;}
   html.is-app body.hdr-x .launcher .ltxt span{font-size:9px;}
   html.is-app body.hdr-x .launcher .comp-btn.go{font-size:11px;padding:6px 12px;animation:none;box-shadow:0 2px 0 #b45c00;}
-  /* --- app top bar: avatar + a big transparent 🔍 on the left, brand centered, HQ/bell right --- */
+  /* --- app top bar: avatar + big transparent 🔍 (left), brand centered, 💬 messages + HQ + 🔔 (right) --- */
   html.is-app body.hdr-x .topbar-inner{display:flex;align-items:center;gap:4px;}
   html.is-app body.hdr-x .menu-btn{order:0;flex:0 0 auto;}
   html.is-app body.hdr-x .search-nav{order:1;flex:0 0 auto;background:transparent!important;border:none!important;box-shadow:none!important;color:#fff!important;padding:2px 4px;line-height:1;}
   html.is-app body.hdr-x .search-nav .rf-long{display:none!important;}
   html.is-app body.hdr-x .search-nav .rf-short{display:inline!important;font-size:23px;}
   html.is-app body.hdr-x .topbrand{order:2;margin:0 auto;}
-  html.is-app body.hdr-x .hqbtn{order:3;flex:0 0 auto;margin:0!important;}
-  html.is-app body.hdr-x .bell{order:4;flex:0 0 auto;}
-  /* --- full-screen DM conversation on the app (was a cramped half-screen box) --- */
-  html.is-app #profModal.dm-full{align-items:stretch;justify-content:stretch;padding:0;background:#eef2fb;}
-  html.is-app #profModal.dm-full .profcard{width:100vw;max-width:100vw;height:100vh;max-height:100vh;border:none;border-radius:0;box-shadow:none;display:flex;flex-direction:column;animation:none;}
-  html.is-app #profModal.dm-full .pc-strip{flex:0 0 auto;font-size:13px;letter-spacing:.5px;padding:calc(max(env(safe-area-inset-top,0px),44px) + 8px) 14px 10px;}
-  html.is-app #profModal.dm-full .pc-strip a{font-size:15px;}
-  html.is-app #profModal.dm-full .dm-thread{flex:1 1 auto;max-height:none;height:auto;}
-  html.is-app #profModal.dm-full .dm-compose{flex:0 0 auto;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));}
-  html.is-app #profModal.dm-full .dm-tray{flex:0 0 auto;}
+  html.is-app body.hdr-x .msg-nav{order:3;flex:0 0 auto;}
+  html.is-app body.hdr-x .hqbtn{order:4;flex:0 0 auto;margin:0!important;}
+  html.is-app body.hdr-x .bell{order:5;flex:0 0 auto;}
+  /* messages icon lives in the top bar next to the bell; only when the social feature is on */
+  .msg-nav{display:none;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.45);color:#fff;text-shadow:none;border-radius:50%;font-size:15px;line-height:1;padding:5px 7px;position:relative;}
+  body.social-on .msg-nav{display:inline-flex;align-items:center;justify-content:center;}
+  /* --- full-screen Friends/Messages page + DM conversation on the app (was a cramped half-screen box) --- */
+  html.is-app #profModal.mob-full{align-items:stretch;justify-content:stretch;padding:0;background:#eef2fb;}
+  html.is-app #profModal.mob-full .profcard{width:100vw;max-width:100vw;height:100vh;max-height:100vh;border:none;border-radius:0;box-shadow:none;display:flex;flex-direction:column;animation:none;}
+  html.is-app #profModal.mob-full .pc-strip{flex:0 0 auto;font-size:13px;letter-spacing:.5px;padding:calc(max(env(safe-area-inset-top,0px),44px) + 8px) 14px 10px;}
+  html.is-app #profModal.mob-full .pc-strip a{font-size:15px;}
+  html.is-app #profModal.mob-full .pc-body{flex:1 1 auto;max-height:none;height:auto;overflow:auto;}
+  html.is-app #profModal.mob-full .dm-thread{flex:1 1 auto;max-height:none;height:auto;}
+  html.is-app #profModal.mob-full .dm-compose{flex:0 0 auto;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));}
+  html.is-app #profModal.mob-full .dm-tray{flex:0 0 auto;}
+  /* hide the floating + whenever any modal / messaging screen is open (it must never float over a conversation) */
+  html.is-app body:has(#profModal.open) .fab-compose{display:none!important;}
+  body.modal-on .fab-compose{display:none!important;}
+  /* lock the background so the feed can't scroll while the side menu is open */
+  body.drawer-open{overflow:hidden!important;}
+  body.drawer-open .wrap,body.drawer-open .topbar{touch-action:none;}
   /* auto-hide the top bar on scroll-down, reveal on scroll-up. Uses `top` (transform is blocked on this
      sticky bar in-app), slid far enough up to fully clear even tall safe-area bars. */
   html.is-app .topbar{transition:top .26s ease;}
@@ -1119,6 +1130,7 @@
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Statuses</button>
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Pix</button>
     <button class="navbtn hqbtn" id="hqBtn" type="button" onclick="showAdmin()" title="Admin HQ">👑</button>
+    <button class="navbtn msg-nav" id="msgBtn" type="button" onclick="openSocial('messages')" title="Friends & Messages">💬<span id="msgCount" class="bell-count"></span></button>
     <button class="navbtn bell" id="bellBtn" type="button" onclick="toggleNotifs(event)">🔔<span id="bellCount" class="bell-count"></span></button>
   </div>
 </div>
@@ -1230,7 +1242,6 @@
   </div>
   <div id="drawerBody"></div>
   <div class="drawer-nav">
-    <button class="social-btn" type="button" onclick="openSocial('friends');toggleDrawer(false);">👯 Friends &amp; Messages</button>
     <button type="button" onclick="openSupport();toggleDrawer(false);">🎫 Support</button>
     <button type="button" onclick="loadFeed(true);toggleDrawer(false);">🔄 Refresh Feed</button>
   </div>
@@ -2594,7 +2605,7 @@
   setInterval(heartbeat,60000);
 
   /* ============ user profile pages ============ */
-  function closeProfile(){var pm=document.getElementById('profModal');pm.classList.remove('open');pm.classList.remove('dm-full');DM_OPEN=null;}
+  function closeProfile(){var pm=document.getElementById('profModal');pm.classList.remove('open');pm.classList.remove('mob-full');document.body.classList.remove('modal-on');DM_OPEN=null;}
   /* ================= PEOPLE SEARCH ================= */
   var SRCH_T=null, SRCH_ROWS=[];
   function openSearch(){
@@ -4552,7 +4563,7 @@
     if(!requireAuth())return;
     SOCIAL_TAB=tab||SOCIAL_TAB;
     var box=document.getElementById('profCardBox');
-    var _pm=document.getElementById('profModal'); _pm.classList.add('open'); _pm.classList.remove('dm-full');
+    var _pm=document.getElementById('profModal'); _pm.classList.add('open'); _pm.classList.add('mob-full'); document.body.classList.add('modal-on');
     box.innerHTML='<div class="pc-strip"><span>👯 Friends & Messages</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body" style="padding:22px;text-align:center;">loading…</div>';
     await loadFriends();
     var tabs=[['friends','👯 Friends'],['requests','📨 Requests'],['messages','💬 Messages']];
@@ -4573,7 +4584,7 @@
   }
   async function openDM(name){
     if(!FEATURES.social)return;
-    var box=document.getElementById('profCardBox'); var pm=document.getElementById('profModal'); pm.classList.add('open'); pm.classList.add('dm-full');
+    var box=document.getElementById('profCardBox'); var pm=document.getElementById('profModal'); pm.classList.add('open'); pm.classList.add('mob-full'); document.body.classList.add('modal-on');
     box.innerHTML='<div class="pc-strip"><span><a onclick="openSocial(\'messages\')" style="cursor:pointer;color:#c86a10;">‹ back</a> · '+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕</span></div><div class="pc-body" style="padding:22px;text-align:center;">loading…</div>';
     var msgs=await loadDM(name), me=(ME.name||'').toLowerCase();
     var thread=msgs.length?msgs.map(function(m){var mine=m.from.toLowerCase()===me;return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+dmText(m.text)+'</span></div>';}).join(''):'<div class="dm-empty" style="text-align:center;color:#889;font-size:12px;padding:24px;">No messages yet — say hi 👋</div>';
@@ -4727,6 +4738,13 @@ function toggleDrawer(force){
   var d = document.getElementById('sideDrawer');
   if(d){ d.setAttribute('aria-hidden', open ? 'false' : 'true'); if(open) d.scrollTop = 0; }
 }
+/* while the side menu is open, freeze the background — only the drawer itself may scroll.
+   (iOS ignores overflow:hidden for touch momentum, so we cancel touchmoves outside the drawer.) */
+document.addEventListener('touchmove',function(e){
+  if(document.body.classList.contains('drawer-open')){
+    if(!(e.target && e.target.closest && e.target.closest('#sideDrawer'))){ e.preventDefault(); }
+  }
+},{passive:false});
 /* App-feel gestures (app + phone-width only): swipe-from-left opens the menu,
    and the top bar auto-hides on scroll-down / reappears on scroll-up. */
 (function(){
@@ -4760,13 +4778,13 @@ function toggleDrawer(force){
         || document.documentElement.scrollTop
         || (document.body && document.body.scrollTop) || 0;
     }
-    var lastY=sy(), hidden=false, MIN=64;
+    var lastY=sy(), hidden=false, MIN=64, downAcc=0;
     function setHidden(h){ if(h===hidden)return; hidden=h; document.body.classList.toggle('bar-hidden',h); }
     function check(){
       var y=sy(), d=y-lastY;
-      if(y<=MIN)        setHidden(false);   /* near the top → always show the whole header */
-      else if(d>2)      setHidden(true);    /* moving down → tuck the header up */
-      else if(d<-2)     setHidden(false);   /* the slightest move up → pop it back instantly */
+      if(y<=MIN){ downAcc=0; setHidden(false); }        /* near the top → always show the whole header */
+      else if(d>0){ downAcc+=d; if(downAcc>10) setHidden(true); }  /* accumulate downward → hide after ~10px */
+      else if(d<0){ downAcc=0; setHidden(false); }       /* ANY upward movement → reveal instantly (finger drags are only ~1px/frame, so no threshold) */
       lastY=y;
     }
     /* Belt-and-suspenders: run the check from BOTH a rAF loop AND scroll/touch/wheel
