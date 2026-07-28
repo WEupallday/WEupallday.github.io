@@ -1168,6 +1168,26 @@
   </div>
 </div>
 
+<!-- AUTO-MOD violation popup (shown to the violator) -->
+<div id="violModal" onclick="if(event.target===this)closeViol()">
+  <div class="set-card" style="border-color:#c0392b;">
+    <div class="set-head" style="background:linear-gradient(#e35d4f,#c0392b);"><span>⚠</span><b>Content removed</b><span class="set-x" onclick="closeViol()">✕</span></div>
+    <div class="set-body">
+      <p style="font-size:13px;color:#333;margin:2px 0 10px;">Your <b id="violKind">flap</b> broke our <b>House Rules</b> (hate speech / slurs / severe abuse) and was <b>not posted</b>.</p>
+      <div style="background:#fbeceb;border:1px solid #f0c0b8;border-radius:9px;padding:10px 12px;font-size:12.5px;color:#7a2b22;word-break:break-word;" id="violContent"></div>
+      <p style="font-size:11.5px;color:#667;margin:10px 0 2px;">Repeated violations may lead to a time-out or removal. If you believe this was flagged by mistake, you can appeal and <b>lock</b> will personally review it.</p>
+      <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+        <span class="set-btn" onclick="closeViol()">OK, got it</span>
+        <span class="set-btn" style="background:#c0392b;" onclick="submitAppeal()">📩 Appeal — this was a mistake</span>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+  #violModal{position:fixed;inset:0;z-index:200;background:rgba(15,8,32,.65);display:none;align-items:flex-start;justify-content:center;padding:50px 14px 20px;overflow-y:auto;}
+  #violModal.open{display:flex;}
+</style>
+
 <div class="banner" id="banner"></div>
 
 <div class="ticker"><span id="tickerText">★ WELCOME TO THEFLAP.COM — FRIENDS EDITION ★ INVITE ONLY ★ BE NICE OR LOCK DELETES YOU ★ OPEN MIC NIGHT THIS FRIDAY ★ WHAT'S FLAPPENING? ★</span></div>
@@ -1286,12 +1306,13 @@
     <div class="sidebox">
       <div class="sidehead">House Rules</div>
       <div class="sidetext">
-        1. be nice.<br>
+        1. be nice — no slurs, hate speech, or harassment.<br>
         2. no explicit pictures, nudity, or nsfw content.<br>
         3. no last names, phone numbers, addresses.<br>
         4. what flaps here stays here.<br>
         5. lock can delete anything. lock is the law.<br>
-        6. taco tuesday is sacred.
+        6. taco tuesday is sacred.<br>
+        <span style="opacity:.85;">⚙ auto-moderation is on: posts, replies &amp; DMs with slurs or severe abuse are blocked automatically and reviewed by lock. wrongly flagged? tap “Appeal.”</span>
       </div>
     </div>
     <div class="sidebox">
@@ -1798,6 +1819,7 @@
     return RE_MOODS.map(function(m){return '<button type="button" class="moodbtn" title="'+m+'" onclick="pickReplyMood(\''+key+'\',\''+m+'\',this)">'+emoHTML(m,true)+'</button>';}).join('');
   }
   function reactPick(key,token,btn){
+    if(blockedByMute())return;
     var scope=btn.closest('.rcol')||btn.parentNode;
     var already=(REPLY_EMOJI[key]===token);
     var all=scope.querySelectorAll('.remoji-bar button');
@@ -2108,6 +2130,80 @@
   async function unbanUser(name){
     if(!ME.admin)return;
     try{ await sb.from('flap_users').update({banned:false}).ilike('name',name); if(USERS[(name||'').toLowerCase()])USERS[(name||'').toLowerCase()].banned=false; toast('♻ '+name+' un-banned.'); try{closeProfile();}catch(e){} }catch(e){toast('Could not un-ban.');}
+  }
+
+  /* ================= AUTO-MODERATION + TIME-OUTS (mutes) =================
+     Rule-based, no AI, $0. Auto-mod ONLY removes the content + alerts lock (Discord + HQ).
+     Lock alone decides any time-out/ban. The violator gets a popup + an Appeal button. */
+  function _amNorm(s){ s=String(s||'').toLowerCase(); var map={'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','8':'b','9':'g','@':'a','$':'s','!':'i','|':'i'}; return s.replace(/[013457890@$!|]/g,function(c){return map[c]||c;}); }
+  var AUTOMOD_PATTERNS=[
+    /\bn[\s\W_]*i[\s\W_]*g[\s\W_]*g[\s\W_]*(?:e[\s\W_]*r|a|ah|az|as)\b/i,
+    /\bf[\s\W_]*a[\s\W_]*g(?:[\s\W_]*g|[\s\W_]*o[\s\W_]*t|s?\b)/i,
+    /\bk[\s\W_]*i[\s\W_]*k[\s\W_]*es?\b/i,
+    /\br[\s\W_]*e[\s\W_]*t[\s\W_]*a[\s\W_]*r[\s\W_]*d(?:ed)?\b/i,
+    /\btr[a4]nn(?:y|ie)\b/i
+  ];
+  function checkAutoMod(text){
+    if(!text) return false;
+    var raw=String(text).toLowerCase(), norm=_amNorm(raw);
+    for(var i=0;i<AUTOMOD_PATTERNS.length;i++){ if(AUTOMOD_PATTERNS[i].test(raw)||AUTOMOD_PATTERNS[i].test(norm)) return true; }
+    return false;
+  }
+  /* returns the ISO time you're muted until (if still active), else null */
+  function muteRemaining(){
+    try{ var u=(ME.name&&USERS[ME.name.toLowerCase()])||{}; var mu=u.muted_until||ME.muted_until; if(mu && new Date(mu)>new Date()) return mu; }catch(e){}
+    return null;
+  }
+  function blockedByMute(){
+    var mu=muteRemaining();
+    if(mu){ toast('⏳ You\'re timed out until '+new Date(mu).toLocaleString()+' for breaking the House Rules. You can still read.'); return true; }
+    return false;
+  }
+  /* ---- lock-only time-outs (mutes): read allowed, posting/replies/DMs/reactions blocked ---- */
+  async function muteUser(name,hours){
+    if(!ME.admin)return;
+    var until=new Date(Date.now()+hours*3600*1000).toISOString();
+    try{
+      await sb.from('flap_users').update({muted_until:until}).ilike('name',name);
+      if(USERS[(name||'').toLowerCase()])USERS[(name||'').toLowerCase()].muted_until=until;
+      var label=hours>=168?'7 days':(hours>=24?(Math.round(hours/24)+' day(s)'):hours+' hour(s)');
+      toast('⏳ '+name+' is timed out for '+label+'.');
+      try{ showUserProfile(name); }catch(e){}
+    }catch(e){toast('Could not time out — try again.');}
+  }
+  async function unmuteUser(name){
+    if(!ME.admin)return;
+    try{
+      await sb.from('flap_users').update({muted_until:null}).ilike('name',name);
+      if(USERS[(name||'').toLowerCase()])USERS[(name||'').toLowerCase()].muted_until=null;
+      toast('✓ '+name+'\'s time-out was lifted.'); try{ showUserProfile(name); }catch(e){}
+    }catch(e){toast('Could not lift the time-out.');}
+  }
+  function customMute(name){ var h=prompt('Time out '+name+' for how many HOURS?','12'); if(h===null)return; h=parseFloat(h); if(!(h>0)){toast('Enter a number of hours.');return;} muteUser(name,h); }
+  /* called when auto-mod removes a submission. content is NOT posted. */
+  async function autoModBlock(kind,text){
+    var name=ME.name||'someone', snippet=String(text).slice(0,200);
+    try{ await sb.from('flap_reports').insert({reporter:'auto-mod',reason:'[AUTO-MOD removed a '+kind+'] '+snippet,target_type:'automod',target_name:name,resolved:false}); }catch(e){}
+    try{ discordPing('automod',name,'🚨 auto-mod removed a '+kind+' from '+name+': "'+snippet+'"'); }catch(e){}
+    try{ var lc=name.toLowerCase(); var cur=((USERS[lc]||{}).violations)||0; await sb.from('flap_users').update({violations:cur+1}).ilike('name',name); if(USERS[lc])USERS[lc].violations=cur+1; }catch(e){}
+    showViolationPopup(kind,snippet);
+  }
+  var APPEAL_CTX=null;
+  function showViolationPopup(kind,snippet){
+    APPEAL_CTX={kind:kind,content:snippet};
+    var m=document.getElementById('violModal'); if(!m){ toast('⚠ That broke the House Rules and wasn\'t posted.'); return; }
+    var el=document.getElementById('violContent'); if(el)el.textContent=snippet;
+    var kl=document.getElementById('violKind'); if(kl)kl.textContent=(kind==='DM'?'message':kind);
+    m.classList.add('open');
+  }
+  function closeViol(){ var m=document.getElementById('violModal'); if(m)m.classList.remove('open'); APPEAL_CTX=null; }
+  async function submitAppeal(){
+    var c=APPEAL_CTX, name=ME.name||'someone';
+    if(!c){ closeViol(); return; }
+    try{ await sb.from('flap_reports').insert({reporter:name,reason:'[APPEAL — user says wrongly flagged | '+c.kind+'] '+c.content,target_type:'appeal',target_name:name,resolved:false}); }catch(e){}
+    try{ discordPing('appeal',name,'📩 '+name+' is APPEALING an auto-mod removal ('+c.kind+'): "'+c.content+'"'); }catch(e){}
+    closeViol();
+    toast('Appeal sent — lock will review it. Thanks!');
   }
 
   /* ================= invite gate ================= */
@@ -2593,6 +2689,17 @@
              ?'<button type="button" onclick="unbanUser(\''+_pn+'\')">♻ Unban</button>'
              :'<button type="button" class="danger" onclick="banUser(\''+_pn+'\')">🔨 Permanently ban</button>')+
            '</div>';
+        var _mo=_au.muted_until && new Date(_au.muted_until)>new Date();
+        h+='<div class="pc-actions" style="margin-top:4px;flex-wrap:wrap;align-items:center;gap:6px;">'+
+           '<span style="font-size:11px;color:#2a4a6e;margin-right:auto;">'+(_mo?('⏳ Timed out until <b>'+new Date(_au.muted_until).toLocaleString()+'</b>'):'⏳ Time-out (can read, can\'t post/reply/react):')+'</span>'+
+           (_mo
+             ? '<button type="button" onclick="unmuteUser(\''+_pn+'\')">✓ Lift time-out</button>'
+             : '<button type="button" onclick="muteUser(\''+_pn+'\',1)">1h</button>'+
+               '<button type="button" onclick="muteUser(\''+_pn+'\',24)">24h</button>'+
+               '<button type="button" onclick="muteUser(\''+_pn+'\',168)">7d</button>'+
+               '<button type="button" onclick="customMute(\''+_pn+'\')">Custom</button>')+
+           '</div>';
+        if((_au.violations||0)>0){ h+='<div style="font-size:10.5px;color:#a35a00;padding:2px 2px 0;">⚠ '+_au.violations+' auto-mod removal(s) on record for this member.</div>'; }
       }
       h+='<div class="pc-tabs">'+
          '<button class="pc-tab on" id="ptab-posts" onclick="profileTab(\'posts\')">📝 Flaps ('+mine.length+')</button>'+
@@ -2933,6 +3040,7 @@
   }
   async function reflapPost(id){
     if(!requireAuth())return;
+    if(blockedByMute())return;
     var key=String(id);
     if(REFLAPPING[key])return;   /* ignore double / ghost taps while a reflap toggle is in flight */
     REFLAPPING[key]=1;
@@ -3657,7 +3765,7 @@
       document.getElementById('youCount').textContent=myFlapCount;
       /* members list — powers real photos everywhere + the banner */
       try{
-        var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at,handle,device,banned');
+        var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at,handle,device,banned,muted_until,violations');
         if(!um.error&&um.data){USERS={};um.data.forEach(function(u){USERS[u.name.toLowerCase()]=u;});}
       }catch(eu){}
       try{ if(ME.name&&USERS[ME.name.toLowerCase()]){ ME.handle=USERS[ME.name.toLowerCase()].handle||ME.handle||''; } }catch(eh){}
@@ -3712,6 +3820,8 @@
     var inp=document.getElementById('ri-'+id);
     var text=(inp&&inp.value||'').trim();
     if(!text){toast('Type a reply first!');return;}
+    if(blockedByMute())return;
+    if(checkAutoMod(text)){ autoModBlock('reply',text); return; }
     var ekey='L'+id, emo=REPLY_EMOJI[ekey]||'', body=emo?emo+RE_SEP+text:text;
     if(!ONLINE){
       (REPLIES[id]=REPLIES[id]||[]).push({flap_id:id,name:ME.name,body:body});
@@ -3760,6 +3870,7 @@
   function markLiked(id){MY_LIKES[id]=1;try{localStorage.setItem('flap_likes',JSON.stringify(MY_LIKES));}catch(e){}}
   async function likeLive(btn){
     if(!requireAuth())return;
+    if(blockedByMute())return;
     var id=btn.getAttribute('data-id');
     if(hasLiked(id)){toast('You already flapped this one! 👍');return;}   /* one flap per person, survives reloads */
     var n=parseInt(btn.getAttribute('data-n'),10)||0;
@@ -3928,6 +4039,8 @@
     var ta=document.getElementById('composeText');
     var text=ta.value.trim();
     if(!text&&!attachBlob){toast('Type something (or add a pic) first!');return;}
+    if(blockedByMute())return;                                  /* timed-out members can read but not post */
+    if(text&&checkAutoMod(text)){ autoModBlock('flap',text); return; }   /* auto-mod: remove + alert lock, don't post */
     var mood=document.getElementById('moodSel').value;
     if(!ONLINE){
       localPosts.unshift({id:Date.now(),name:ME.name,avatar_url:ME.pic||null,mood:mood,body:text,pic_url:attachURL,likes:0,created_at:new Date().toISOString()});
@@ -4258,7 +4371,10 @@
     }catch(e){return [];}
   }
   async function sendDM(name){
-    var inp=document.getElementById('dmInput'); if(!inp)return; var text=(inp.value||'').trim(); if(!text)return; inp.value='';
+    var inp=document.getElementById('dmInput'); if(!inp)return; var text=(inp.value||'').trim(); if(!text)return;
+    if(blockedByMute())return;
+    if(checkAutoMod(text)){ inp.value=''; autoModBlock('DM',text); return; }
+    inp.value='';
     /* show my message instantly, like a real text — before the server round-trip */
     var th=document.getElementById('dmThread');
     if(th){ var ph=th.querySelector('.dm-empty'); if(ph)ph.remove();
