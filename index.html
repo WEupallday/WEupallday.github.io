@@ -1418,7 +1418,7 @@
     document.body.appendChild(b);
   }
   if(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase){
-    sb=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY);
+    sb=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY,{auth:{detectSessionInUrl:true,persistSession:true,autoRefreshToken:true,flowType:'implicit'}});
     ONLINE=true;
     /* Google/Apple OAuth finishes the token handshake asynchronously — when the session lands, log the person in
        (a one-time getSession check on load races the handshake and can miss it, dumping you back on the gate). */
@@ -2265,10 +2265,23 @@
     if(ME&&ME.name)return;              /* already logged in */
     GRET_RUNNING=true;
     try{
+      /* OAuth can return either an implicit #access_token hash OR a ?code query.
+         Apply it manually so login never depends on auto-detection timing. */
+      try{
+        if(/access_token=/.test(location.hash||'')){
+          var _hp=new URLSearchParams((location.hash||'').replace(/^#/,''));
+          var _at=_hp.get('access_token'), _rt=_hp.get('refresh_token');
+          if(_at){ await sb.auth.setSession({access_token:_at, refresh_token:_rt||''}); }
+        } else if(/[?&]code=/.test(location.search||'')){
+          try{ await sb.auth.exchangeCodeForSession(location.href); }catch(_e){}
+        }
+      }catch(_e){}
       var s=await sb.auth.getSession();
       var sess=s&&s.data&&s.data.session;
       if(!sess||!sess.user){ GRET_RUNNING=false; return; }   /* handshake not done yet — let the SIGNED_IN event retry */
       if(ME&&ME.name){ GRET_RUNNING=false; return; }
+      /* strip the token/code out of the address bar now that we've consumed it */
+      try{ if(/access_token=|[?&]code=/.test((location.hash||'')+(location.search||''))){ history.replaceState({}, document.title, location.pathname); } }catch(_e){}
       var u=sess.user, email=(u.email||'').toLowerCase();
       if(!email){ GRET_RUNNING=false; return; }
       var meta=u.user_metadata||{};
