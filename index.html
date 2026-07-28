@@ -1920,7 +1920,7 @@
     h+='<div class="card-strip"'+(o.liveId?' style="cursor:pointer;" onclick="openFlap('+o.liveId+')"':'')+'>'+o.date+' &nbsp;·&nbsp; <span class="rate">Rating: '+o.rating+' Flaps</span></div>';
     h+='<div class="card-body">';
     h+='<div class="moodbox"><div class="mlabel">Mood</div>'+emoHTML(o.mood)+'<div class="mword">'+esc(o.mood)+'</div></div>';
-    h+='<div class="poster'+(o.profileName?' clickable" onclick="showUserProfile(\''+esc(o.profileName).replace(/'/g,'')+'\')" title="View profile':'')+'"><div class="pava">'+o.ava+'</div><div class="pname" title="'+esc(o.name)+'">'+esc(o.name)+vbadge(o.name)+'</div>'+(o.profileName?followBtnHTML(o.profileName):'')+'</div>';
+    h+='<div class="poster'+(o.profileName?' clickable" onclick="showUserProfile(\''+esc(o.profileName).replace(/'/g,'')+'\')" title="View profile':'')+'"><div class="pava">'+o.ava+'</div><div class="pname" title="'+esc(o.name)+'">'+esc(o.name)+vbadge(o.name)+'</div></div>';
     h+='<div class="statustxt"'+(o.liveId?' style="cursor:pointer;" onclick="openFlap('+o.liveId+')"':'')+'>'+o.body+'</div>';
     if(o.pic)h+='<div class="post-pic"><img src="'+esc(o.pic)+'" alt="flap pic" loading="lazy" style="cursor:zoom-in;" onclick="event.stopPropagation();openLightbox(this.src)" onerror="this.closest(\'.post-pic\').style.display=\'none\'"></div>';
     var reps=(o.replies||[]).join('');
