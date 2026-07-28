@@ -155,6 +155,13 @@
   .poster .pava{width:70px;height:76px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);margin:0 auto;overflow:hidden;background:#123;}
   .poster .pava img{width:100%;height:100%;object-fit:cover;display:block;}
   .poster .pname{color:var(--name-navy);font-weight:bold;font-size:12px;margin-top:4px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .follow-btn{margin-top:4px;font-size:9.5px;font-weight:bold;padding:3px 8px;border-radius:11px;border:1.5px solid var(--orange);background:#fff;color:#c05e00;cursor:pointer;line-height:1;white-space:nowrap;max-width:100%;font-family:Verdana,Arial,sans-serif;}
+  .follow-btn.following{background:var(--orange);color:#fff;border-color:var(--orange);}
+  .follow-btn:active{transform:translateY(1px);}
+  .pc-actions .follow-btn{font-size:12px;padding:6px 12px;border-radius:16px;margin-top:0;}
+  .feedtabs{display:flex;gap:6px;margin:0 0 8px;}
+  .feedtab{flex:1;padding:8px;border-radius:9px;border:2px solid #cfe0f5;background:#fff;color:var(--navy,#22398f);font-weight:bold;font-size:12.5px;cursor:pointer;font-family:Verdana,Arial,sans-serif;}
+  .feedtab.on{background:linear-gradient(#ffb14d,#f5820a);color:#fff;border-color:var(--orange);}
   .poster.clickable{cursor:pointer;}
   .poster.clickable:hover .pava{box-shadow:0 0 0 2px var(--orange), 0 2px 6px rgba(0,0,0,.35);}
   .moodbox{float:right;width:106px;background:#fff;border:3px solid var(--red);border-radius:10px;text-align:center;padding:5px 4px 7px;margin-left:10px;box-shadow:0 3px 8px rgba(0,0,0,.3);}
@@ -1913,7 +1920,7 @@
     h+='<div class="card-strip"'+(o.liveId?' style="cursor:pointer;" onclick="openFlap('+o.liveId+')"':'')+'>'+o.date+' &nbsp;·&nbsp; <span class="rate">Rating: '+o.rating+' Flaps</span></div>';
     h+='<div class="card-body">';
     h+='<div class="moodbox"><div class="mlabel">Mood</div>'+emoHTML(o.mood)+'<div class="mword">'+esc(o.mood)+'</div></div>';
-    h+='<div class="poster'+(o.profileName?' clickable" onclick="showUserProfile(\''+esc(o.profileName).replace(/'/g,'')+'\')" title="View profile':'')+'"><div class="pava">'+o.ava+'</div><div class="pname" title="'+esc(o.name)+'">'+esc(o.name)+vbadge(o.name)+'</div></div>';
+    h+='<div class="poster'+(o.profileName?' clickable" onclick="showUserProfile(\''+esc(o.profileName).replace(/'/g,'')+'\')" title="View profile':'')+'"><div class="pava">'+o.ava+'</div><div class="pname" title="'+esc(o.name)+'">'+esc(o.name)+vbadge(o.name)+'</div>'+(o.profileName?followBtnHTML(o.profileName):'')+'</div>';
     h+='<div class="statustxt"'+(o.liveId?' style="cursor:pointer;" onclick="openFlap('+o.liveId+')"':'')+'>'+o.body+'</div>';
     if(o.pic)h+='<div class="post-pic"><img src="'+esc(o.pic)+'" alt="flap pic" loading="lazy" style="cursor:zoom-in;" onclick="event.stopPropagation();openLightbox(this.src)" onerror="this.closest(\'.post-pic\').style.display=\'none\'"></div>';
     var reps=(o.replies||[]).join('');
@@ -2204,6 +2211,58 @@
     try{ discordPing('appeal',name,'📩 '+name+' is APPEALING an auto-mod removal ('+c.kind+'): "'+c.content+'"'); }catch(e){}
     closeViol();
     toast('Appeal sent — lock will review it. Thanks!');
+  }
+
+  /* ================= FOLLOWING (one-way, no accept — lighter-weight than friends) ================= */
+  var FOLLOWING={};   /* names I currently follow (lowercased keys) */
+  var FOLLOWS_LOADED=false;
+  async function loadFollows(){
+    if(!ONLINE||!ME.name){ FOLLOWING={}; return; }
+    try{ var r=await sb.from('flap_follows').select('following').ilike('follower',ME.name); FOLLOWING={}; (r.data||[]).forEach(function(x){ if(x.following)FOLLOWING[String(x.following).toLowerCase()]=true; }); }catch(e){}
+  }
+  function isFollowing(name){ return !!FOLLOWING[(name||'').toLowerCase()]; }
+  function followBtnHTML(name){
+    if(!name || (ME.name&&name.toLowerCase()===ME.name.toLowerCase())) return '';
+    var f=isFollowing(name), pn=esc(name).replace(/'/g,'');
+    return '<button type="button" class="follow-btn'+(f?' following':'')+'" data-follow="'+esc(name).replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();toggleFollow(\''+pn+'\')">'+(f?'✓ Following':'+ Follow')+'</button>';
+  }
+  function updateFollowButtons(name){
+    var f=isFollowing(name), lc=(name||'').toLowerCase();
+    document.querySelectorAll('.follow-btn').forEach(function(b){
+      if((b.getAttribute('data-follow')||'').toLowerCase()===lc){ b.className='follow-btn'+(f?' following':''); b.textContent=f?'✓ Following':'+ Follow'; }
+    });
+  }
+  async function toggleFollow(name){
+    if(!requireAuth())return;
+    if(!name || name.toLowerCase()===(ME.name||'').toLowerCase())return;
+    if(blockedByMute())return;
+    var was=isFollowing(name), lc=name.toLowerCase();
+    if(was){ delete FOLLOWING[lc]; } else { FOLLOWING[lc]=true; }
+    updateFollowButtons(name);
+    try{
+      if(was){ await sb.from('flap_follows').delete().ilike('follower',ME.name).ilike('following',name); toast('Unfollowed '+name+'.'); }
+      else{ await sb.from('flap_follows').insert({follower:ME.name,following:name}); addNotif(name,ME.name,'follow',null,''); try{discordPing('follow',ME.name,ME.name+' followed '+name);}catch(e){} toast('You\'re now following '+name+' 👤'); }
+    }catch(e){ if(was){FOLLOWING[lc]=true;}else{delete FOLLOWING[lc];} updateFollowButtons(name); toast('Could not update follow — try again.'); return; }
+    try{ if(document.getElementById('profModal')&&document.getElementById('profModal').classList.contains('open')) refreshFollowCounts(name); }catch(e){}
+    try{ if(FOLLOW_FILTER) loadFeed(); }catch(e){}
+  }
+  async function refreshFollowCounts(name){
+    try{
+      var fr=await sb.from('flap_follows').select('follower',{count:'exact',head:true}).ilike('following',name);
+      var fg=await sb.from('flap_follows').select('following',{count:'exact',head:true}).ilike('follower',name);
+      var e1=document.getElementById('pcFollowers'), e2=document.getElementById('pcFollowing');
+      if(e1)e1.textContent=(fr&&fr.count!=null?fr.count:0);
+      if(e2)e2.textContent=(fg&&fg.count!=null?fg.count:0);
+    }catch(e){}
+  }
+  /* "Following" feed filter */
+  var FOLLOW_FILTER=false;
+  function toggleFollowFilter(){
+    if(!requireAuth())return;
+    FOLLOW_FILTER=!FOLLOW_FILTER;
+    var b=document.getElementById('followFilterBtn'); if(b){ b.textContent=FOLLOW_FILTER?'★ Following':'☆ Following'; b.classList.toggle('on',FOLLOW_FILTER); }
+    var a=document.getElementById('allFeedBtn'); if(a)a.classList.toggle('on',!FOLLOW_FILTER);
+    try{ renderLive(); }catch(e){ loadFeed(); }
   }
 
   /* ================= invite gate ================= */
@@ -2667,6 +2726,7 @@
       h+='<div class="pc-head"><div class="pc-ava">'+av+'</div><div>';
       h+='<div class="pc-name">'+esc(name)+vbadge(name)+(on?' <span style="font-size:9px;color:#1a8a1a;">● online</span>':'')+'</div>';
       h+='<div class="pc-meta">'+(u?'joined '+new Date(u.created_at).toLocaleDateString()+' · ':'')+mine.length+' flaps · '+refl.length+' reflaps</div>';
+      h+='<div class="pc-meta" style="margin-top:2px;"><b id="pcFollowers">·</b> followers · <b id="pcFollowing">·</b> following</div>';
       h+='<div class="pc-feel">feeling: '+emoHTML(feeling,true)+' '+esc(feeling)+'</div>';
       h+='</div></div>';
       if((name||'').toLowerCase()===(ME.name||'').toLowerCase()){
@@ -2675,6 +2735,7 @@
       if((name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
         var pn2=esc(name).replace(/'/g,'');
         h+='<div class="pc-actions">'+
+           followBtnHTML(name)+
            '<button type="button" onclick="openReport(\'user\',null,\''+pn2+'\')">⚑ Report user</button>'+
            (isBlocked(name)
              ?'<button type="button" onclick="unblockUser(\''+pn2+'\')">✓ Unblock</button>'
@@ -2707,6 +2768,7 @@
       h+='<div id="profList">'+(mine.length?mine.map(liveCard).join(''):'<div style="font-size:11px;padding:8px;">no flaps yet!</div>')+'</div>';
       h+='</div>';
       box.innerHTML=h;
+      try{ refreshFollowCounts(name); }catch(efc){}
     }catch(e){
       box.innerHTML='<div class="pc-strip"><span>Profile</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">could not load profile — try again.</div>';
     }
@@ -3129,7 +3191,15 @@
        loading in ABOVE the viewport can't shove the reader to a different spot (fixes the feed "jumping") */
     var __anchorId=null, __anchorTop=0;
     (function(){ var cs=box.querySelectorAll('.card[id^="flap-"]'); for(var i=0;i<cs.length;i++){ var rc=cs[i].getBoundingClientRect(); if(rc.bottom>4){ __anchorId=cs[i].id; __anchorTop=rc.top; break; } } })();
-    var rows=(LAST_ROWS||[]).filter(function(r){return !isBlocked(r.name)&&!parseReflap(r.body);}),head='';
+    var rows=(LAST_ROWS||[]).filter(function(r){
+      if(isBlocked(r.name)||parseReflap(r.body))return false;
+      if(FOLLOW_FILTER){ var rn=(r.name||'').toLowerCase(); if(rn!==(ME.name||'').toLowerCase() && !FOLLOWING[rn]) return false; }
+      return true;
+    }),head='';
+    if(ME.name && !FEED_FILTER){
+      head+='<div class="feedtabs"><button id="allFeedBtn" class="feedtab'+(FOLLOW_FILTER?'':' on')+'" onclick="if(FOLLOW_FILTER)toggleFollowFilter()">🌎 All flaps</button>'+
+            '<button id="followFilterBtn" class="feedtab'+(FOLLOW_FILTER?' on':'')+'" onclick="if(!FOLLOW_FILTER)toggleFollowFilter()">'+(FOLLOW_FILTER?'★ Following':'☆ Following')+'</button></div>';
+    }
     if(FEED_FILTER){
       var f=FEED_FILTER.toLowerCase();
       if(f[0]==='#'){
@@ -3150,7 +3220,7 @@
     box.innerHTML=head+(rows.length
       ? rows.map(liveCard).join('')
       : '<div class="card"><div class="card-body" style="text-align:center;font-size:11px;">'+
-        (FEED_FILTER?'no flaps for @'+esc(FEED_FILTER)+' yet!':(ONLINE?'no flaps yet — be the first!':'demo mode — configure the backend (see setup file) and your friends\' flaps will appear here!'))+
+        (FEED_FILTER?'no flaps for @'+esc(FEED_FILTER)+' yet!':(FOLLOW_FILTER?'You\'re not following anyone who\'s flapped yet — tap 🔍 Search or a name to find people to follow! 👤':(ONLINE?'no flaps yet — be the first!':'demo mode — configure the backend (see setup file) and your friends\' flaps will appear here!')))+
         '</div></div>');
     /* "load older flaps" control at the bottom so the feed never dead-ends */
     if(!FEED_FILTER && rows.length && FEED_HAS_MORE){
@@ -3227,7 +3297,7 @@
     try{await sb.from('flap_notifs').insert({recipient:recipient,actor:actor,kind:kind,flap_id:flap_id||null,excerpt:(excerpt||'').slice(0,120)});}catch(e){}
     /* also fire a phone push to the recipient */
     var ex=excerpt?(' "'+String(excerpt).slice(0,60)+'"'):'';
-    var body=kind==='reply'?(actor+' replied to your flap:'+ex):kind==='like'?(actor+' flapped your post 👍'):kind==='tag'?(actor+' tagged you in a flap:'+ex):kind==='reflap'?(actor+' reflapped your flap 🔁'):(actor+' interacted with you');
+    var body=kind==='reply'?(actor+' replied to your flap:'+ex):kind==='like'?(actor+' flapped your post 👍'):kind==='tag'?(actor+' tagged you in a flap:'+ex):kind==='reflap'?(actor+' reflapped your flap 🔁'):kind==='follow'?(actor+' followed you 👤'):(actor+' interacted with you');
     if(kind!=='reflap')sendPush(recipient,'TheFlap 🐦',body); /* reflaps: quiet — bell only, no phone push */
   }
   function notifText(n){
@@ -3238,6 +3308,7 @@
     if(n.kind==='tag')  return who+' tagged you in a flap:'+ex;
     if(n.kind==='reflap')return who+' reflapped your flap 🔁';
     if(n.kind==='friend')return who+' '+esc(n.excerpt||'sent you a friend request')+' 👯';
+    if(n.kind==='follow')return who+' followed you 👤';
     if(n.kind==='dm')    return who+' messaged you:'+ex;
     return who+' interacted with you';
   }
@@ -3769,6 +3840,7 @@
         if(!um.error&&um.data){USERS={};um.data.forEach(function(u){USERS[u.name.toLowerCase()]=u;});}
       }catch(eu){}
       try{ if(ME.name&&USERS[ME.name.toLowerCase()]){ ME.handle=USERS[ME.name.toLowerCase()].handle||ME.handle||''; } }catch(eh){}
+      try{ if(ME.name && !FOLLOWS_LOADED){ FOLLOWS_LOADED=true; await loadFollows(); } }catch(efl){}
       try{ if(ME.name&&!ME.admin&&USERS[ME.name.toLowerCase()]&&USERS[ME.name.toLowerCase()].banned){ toast('This account has been banned.'); setTimeout(function(){try{clearSession();}catch(e){}location.reload();},1600); return; } }catch(ebn){}
       if(ONLINE&&ME.name&&!HANDLE_CHECKED){ HANDLE_CHECKED=true; try{ensureHandle();}catch(eh2){} }
       REPLIES={};
