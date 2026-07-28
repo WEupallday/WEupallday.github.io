@@ -384,6 +384,65 @@
   .gatecard input{width:100%;border:2px solid var(--card-border);border-radius:6px;padding:8px 10px;font-family:Verdana,Arial,sans-serif;font-size:12px;margin-bottom:8px;outline:none;}
   .gatecard input:focus{border-color:var(--orange);}
   .gatecard .comp-btn.go{width:100%;margin:4px 0 0;font-size:12px;padding:8px;}
+  /* ---- redesigned gate: Google primary, feed visible+dimmed behind ---- */
+  #gate{background:rgba(15,8,32,.60);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+  .gate-logo{width:54px;height:50px;margin:0 auto 2px;display:block;}
+  .gatecard h2{font-size:30px;margin:0;}
+  .gate-tag{font-size:11px !important;color:#5b6aa0 !important;margin:2px 0 14px !important;}
+  .gate-google{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:#3c4043;border:2px solid #dadce0;border-radius:10px;padding:12px;font-weight:bold;font-size:15px;cursor:pointer;font-family:Verdana,Arial,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.12);}
+  .gate-google:active{background:#f3f3f3;}
+  .gate-or{display:flex;align-items:center;gap:8px;color:#8a93c0;font-size:11px;margin:12px 2px;}
+  .gate-or::before,.gate-or::after{content:"";flex:1;height:1px;background:#c9d6ee;}
+  .gate-alt{margin-top:2px;}
+  .gate-alt.hidden{display:none;}
+  .gate-toggle{display:inline-block;margin-top:4px;font-size:11.5px;color:var(--navy,#22398f);font-weight:bold;cursor:pointer;text-decoration:underline;}
+  .gate-browse{display:block;margin-top:12px;font-size:10.5px;color:#8a93c0;cursor:pointer;text-decoration:underline;}
+  /* ---- onboarding wizard (new accounts) ---- */
+  #onboard{position:fixed;inset:0;z-index:210;background:rgba(15,8,32,.75);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 14px;}
+  #onboard.hidden{display:none;}
+  .ob-card{width:360px;max-width:94vw;background:#fff;border:4px solid var(--orange);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.7);overflow:hidden;}
+  .ob-head{background:linear-gradient(#f5920f,#e07d0a);color:#fff;padding:14px;text-align:center;}
+  .ob-head h2{margin:5px 0 0;font-size:19px;font-family:'Chewy',cursive;}
+  .ob-head svg{width:40px;height:36px;}
+  .ob-step{padding:18px 18px 22px;}
+  .ob-step.hidden{display:none;}
+  .ob-step h3{color:var(--navy,#22398f);margin:0 0 3px;font-size:16px;}
+  .ob-step p{font-size:12px;color:#556;margin:0 0 10px;line-height:1.45;}
+  .ob-step input[type=text]{width:100%;box-sizing:border-box;padding:12px;border:2px solid #cfe0f5;border-radius:9px;font-family:Verdana,Arial,sans-serif;font-size:16px;color:var(--navy,#22398f);}
+  .ob-inrow{position:relative;}
+  .ob-at{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#9aa;font-weight:bold;font-size:16px;}
+  .ob-hasat{padding-left:26px !important;}
+  .ob-hint{font-size:11px;color:#8a94b8;margin-top:5px;line-height:1.4;min-height:14px;}
+  .ob-hint.good{color:#1a9d5a;} .ob-hint.bad{color:#c0392b;}
+  .ob-btn{width:100%;padding:13px;margin-top:16px;background:linear-gradient(#ffb14d,#f5820a);color:#fff;border:none;border-radius:11px;font-weight:bold;font-size:15px;cursor:pointer;font-family:Verdana,Arial,sans-serif;box-shadow:0 4px 0 #c96b00;}
+  .ob-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #c96b00;}
+  .ob-btn:disabled{filter:grayscale(.6) opacity(.6);box-shadow:0 4px 0 #999;cursor:not-allowed;}
+  .ob-avmain{display:flex;flex-direction:column;align-items:center;gap:9px;margin:4px 0 12px;}
+  .ob-avbig{width:96px;height:96px;border-radius:50%;border:4px solid var(--orange);display:flex;align-items:center;justify-content:center;font-size:46px;background:#dfe7f7;overflow:hidden;}
+  .ob-avbig img{width:100%;height:100%;object-fit:cover;}
+  .ob-upload{display:inline-block;padding:8px 15px;background:var(--navy,#22398f);color:#fff;border-radius:18px;font-size:12.5px;font-weight:bold;cursor:pointer;}
+  .ob-avgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:4px;}
+  .ob-avopt{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;cursor:pointer;border:3px solid transparent;}
+  .ob-avopt.sel{border-color:var(--navy,#22398f);}
+  .ob-policy{background:#fff6ee;border:2px solid #ffd8ad;border-radius:11px;padding:11px 13px;margin:14px 0 2px;font-size:11.5px;color:#7a5a30;line-height:1.5;}
+  .ob-policy b{color:#a35a00;} .ob-policy a{color:var(--navy,#22398f);font-weight:bold;}
+  /* ---- people search ---- */
+  #searchModal{position:fixed;inset:0;z-index:180;background:rgba(15,8,32,.6);display:none;align-items:flex-start;justify-content:center;padding:60px 14px 20px;}
+  #searchModal.open{display:flex;}
+  .srch-card{width:420px;max-width:96vw;background:#fff;border:3px solid var(--orange);border-radius:14px;box-shadow:0 18px 46px rgba(0,0,0,.6);overflow:hidden;}
+  .srch-head{background:linear-gradient(#f5920f,#e07d0a);color:#fff;padding:11px 14px;display:flex;align-items:center;gap:8px;}
+  .srch-head b{font-size:15px;flex:1;}
+  .srch-x{cursor:pointer;font-size:18px;font-weight:bold;line-height:1;}
+  .srch-body{padding:12px 14px 16px;}
+  .srch-input{width:100%;box-sizing:border-box;padding:11px 12px;border:2px solid #cfe0f5;border-radius:9px;font-family:Verdana,Arial,sans-serif;font-size:16px;color:var(--navy,#22398f);}
+  .srch-results{margin-top:10px;max-height:52vh;overflow-y:auto;}
+  .srch-row{display:flex;align-items:center;gap:10px;padding:8px 6px;border-radius:9px;cursor:pointer;}
+  .srch-row:hover{background:#f2f7ff;}
+  .srch-av{width:40px;height:40px;border-radius:50%;flex:0 0 40px;background:#dfe7f7 center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--navy,#22398f);font-weight:bold;font-size:16px;overflow:hidden;}
+  .srch-av img{width:100%;height:100%;object-fit:cover;}
+  .srch-name{font-weight:bold;color:var(--navy,#22398f);font-size:14px;}
+  .srch-handle{font-size:12px;color:#8a93c0;}
+  .srch-empty{color:#8a93c0;font-size:12.5px;text-align:center;padding:16px 0;}
   .gate-err{color:var(--red);font-size:10px;font-weight:bold;min-height:14px;}
   /* replies + tag filter */
   .replyrow{display:flex;gap:6px;flex:1;align-items:center;}
@@ -913,35 +972,87 @@
 <!-- INVITE GATE -->
 <div id="gate">
   <div class="gatecard">
-    <h2>theFLAP.com</h2>
-    <p>First time? Pick a name, a password + <b>a profile pic</b> — that makes your account. Coming back? Same name + password logs you in. Your profile follows you.</p>
-    <input type="text" id="gateName" name="username" autocomplete="username" maxlength="20" placeholder="Your name (what everyone sees)">
-    <input type="password" id="gatePass" name="password" autocomplete="current-password" maxlength="40" placeholder="Your password">
-    <select id="gateDevice" style="width:100%;box-sizing:border-box;font-family:Verdana,Arial,sans-serif;font-size:13px;padding:9px;border:2px solid #cfe0f5;border-radius:8px;margin-top:8px;color:#22398f;background:#fff;">
-      <option value="">📱 What device are you on? (new accounts)</option>
-      <option value="iPhone / iPad">iPhone / iPad</option>
-      <option value="Samsung">Samsung phone/tablet</option>
-      <option value="Android (other)">Android (other)</option>
-      <option value="Windows PC">Windows computer</option>
-      <option value="Mac">Mac computer</option>
-      <option value="Other">Other</option>
-    </select>
-    <div class="gate-ava-wrap">
-      <div class="gate-ava" id="gateAva" onclick="document.getElementById('gateAvatarFile').click()" title="Add your profile pic">＋</div>
-      <div class="gate-ava-label">New here? Tap the circle to add your <b>profile pic</b></div>
-    </div>
-    <input type="file" id="gateAvatarFile" accept="image/*" hidden>
-    <div class="gate-err" id="gateErr"></div>
-    <button class="comp-btn go" type="button" onclick="enterGate()">Let Me In!</button>
-    <div style="text-align:center;font-size:11px;color:#7a86b8;margin:10px 0 6px;">— or —</div>
-    <button class="gate-google" type="button" onclick="googleSignIn()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:#3c4043;border:2px solid #dadce0;border-radius:8px;padding:9px;font-weight:bold;font-size:13px;cursor:pointer;font-family:Verdana,Arial,sans-serif;">
+    <svg class="gate-logo" viewBox="0 0 130 110" xmlns="http://www.w3.org/2000/svg"><g stroke="#fff" stroke-width="4" stroke-linejoin="round">
+      <path transform="rotate(-56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/>
+      <path transform="rotate(-28 65 96)" d="M65 96 C 53 60 51 26 65 12 C 79 26 77 60 65 96 Z" fill="#ff8a1e"/>
+      <path d="M65 96 C 52 58 50 22 65 8 C 80 22 78 58 65 96 Z" fill="#ff8a1e"/>
+      <path transform="rotate(28 65 96)" d="M65 96 C 53 60 51 26 65 12 C 79 26 77 60 65 96 Z" fill="#ff8a1e"/>
+      <path transform="rotate(56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/>
+      <circle cx="65" cy="96" r="9" fill="#e05e00"/></g></svg>
+    <h2>The<span style="color:var(--orange)">Flap</span></h2>
+    <p class="gate-tag">where everybody flaps 🐦 · friends edition</p>
+
+    <button class="gate-google" type="button" onclick="googleSignIn()">
       <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
       Continue with Google
     </button>
-    <a onclick="browseGuest()" style="display:block;margin-top:10px;font-size:11px;color:var(--card-border);font-weight:bold;cursor:pointer;text-decoration:underline;">👀 just browse for now</a>
+
+    <div class="gate-or">or</div>
+
+    <div id="gateAlt" class="gate-alt hidden">
+      <p style="font-size:10.5px;color:#2a4a6e;margin:0 0 8px;line-height:1.4;">First time? Pick a name, a password + <b>a profile pic</b>. Coming back? Same name + password logs you in.</p>
+      <input type="text" id="gateName" name="username" autocomplete="username" maxlength="20" placeholder="Your name (what everyone sees)">
+      <input type="password" id="gatePass" name="password" autocomplete="current-password" maxlength="40" placeholder="Your password">
+      <select id="gateDevice" style="width:100%;box-sizing:border-box;font-family:Verdana,Arial,sans-serif;font-size:13px;padding:9px;border:2px solid #cfe0f5;border-radius:8px;margin-top:8px;color:#22398f;background:#fff;">
+        <option value="">📱 What device are you on? (new accounts)</option>
+        <option value="iPhone / iPad">iPhone / iPad</option>
+        <option value="Samsung">Samsung phone/tablet</option>
+        <option value="Android (other)">Android (other)</option>
+        <option value="Windows PC">Windows computer</option>
+        <option value="Mac">Mac computer</option>
+        <option value="Other">Other</option>
+      </select>
+      <div class="gate-ava-wrap">
+        <div class="gate-ava" id="gateAva" onclick="document.getElementById('gateAvatarFile').click()" title="Add your profile pic">＋</div>
+        <div class="gate-ava-label">New here? Tap the circle to add your <b>profile pic</b></div>
+      </div>
+      <input type="file" id="gateAvatarFile" accept="image/*" hidden>
+      <button class="comp-btn go" type="button" onclick="enterGate()">Let Me In!</button>
+    </div>
+    <div class="gate-err" id="gateErr"></div>
+    <a class="gate-toggle" id="gateAltToggle" onclick="toggleGateAlt()">Use a name &amp; password instead</a>
+
+    <a onclick="browseGuest()" class="gate-browse">👀 just browse for now</a>
     <div class="offline-note" id="offlineNote" style="display:none;">
       ⚠ Backend not configured yet — you can look around in demo mode, but posts won't be shared.
       (See TheFlap_online_SETUP.md)
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING WIZARD (new accounts only) -->
+<div id="onboard" class="hidden">
+  <div class="ob-card">
+    <div class="ob-step" id="obStep1">
+      <div class="ob-head">
+        <svg viewBox="0 0 130 110" xmlns="http://www.w3.org/2000/svg"><g stroke="#fff" stroke-width="4" stroke-linejoin="round"><path transform="rotate(-56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/><path d="M65 96 C 52 58 50 22 65 8 C 80 22 78 58 65 96 Z" fill="#ff8a1e"/><path transform="rotate(56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/><circle cx="65" cy="96" r="9" fill="#e05e00"/></g></svg>
+        <h2>Almost in! Set up your name</h2>
+      </div>
+      <div style="padding:16px 16px 0;">
+        <h3>Your handle</h3>
+        <p>How friends tag you — like <b>@you_name</b>. Letters, numbers &amp; underscores only, so tagging is always easy.</p>
+        <div class="ob-inrow"><span class="ob-at">@</span><input type="text" id="obHandle" class="ob-hasat" maxlength="20" oninput="obCheckHandle()" placeholder="your_handle"></div>
+        <div class="ob-hint" id="obHandleHint">Only a–z, 0–9 and _ — no spaces or symbols.</div>
+        <h3 style="margin-top:16px;">Display name</h3>
+        <p>The name shown on your posts.</p>
+        <input type="text" id="obName" maxlength="24" oninput="obCheckName()" placeholder="Your name">
+        <div class="ob-hint good" id="obNameHint"></div>
+        <button class="ob-btn" id="obNextBtn" onclick="obNext()" disabled>Continue</button>
+      </div>
+    </div>
+    <div class="ob-step hidden" id="obStep2">
+      <div class="ob-head">
+        <svg viewBox="0 0 130 110" xmlns="http://www.w3.org/2000/svg"><g stroke="#fff" stroke-width="4" stroke-linejoin="round"><path transform="rotate(-56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/><path d="M65 96 C 52 58 50 22 65 8 C 80 22 78 58 65 96 Z" fill="#ff8a1e"/><path transform="rotate(56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/><circle cx="65" cy="96" r="9" fill="#e05e00"/></g></svg>
+        <h2>Pick your profile pic</h2>
+      </div>
+      <div style="padding:16px 16px 0;">
+        <p style="text-align:center;">Keep your Google photo, upload your own, or pick a TheFlap avatar.</p>
+        <div class="ob-avmain"><div class="ob-avbig" id="obAvBig">🙂</div><span class="ob-upload" onclick="document.getElementById('obAvatarFile').click()">📷 Upload a photo</span></div>
+        <input type="file" id="obAvatarFile" accept="image/*" hidden onchange="obUploadPic(event)">
+        <div class="ob-avgrid" id="obAvGrid"></div>
+        <div class="ob-policy">📸 <b>Keep it friendly.</b> No inappropriate pictures and no personal info (home address, phone number, etc.) in your photo. See our <a href="https://weupallday.github.io/privacy.html" target="_blank" rel="noopener">Community Guidelines &amp; Privacy Policy</a>.</div>
+        <button class="ob-btn" id="obFinishBtn" onclick="obFinish()">Enter TheFlap 🐦</button>
+      </div>
     </div>
   </div>
 </div>
@@ -952,6 +1063,7 @@
     <span class="topbrand" onclick="window.scrollTo({top:0,behavior:'smooth'})">the<b>FLAP</b></span>
     <button class="navbtn home-nav" onclick="toast('You are home!')">Home</button>
     <button class="navbtn nav-refresh" onclick="loadFeed(true)"><span class="rf-long">Refresh Feed</span><span class="rf-short">🔄</span></button>
+    <button class="navbtn search-nav" type="button" onclick="openSearch()" title="Find people"><span class="rf-long">🔍 Search</span><span class="rf-short">🔍</span></button>
     <button class="navbtn support-nav" onclick="openSupport()">🎫 Support</button>
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">What's On TheFlap?</button>
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Tunes</button>
@@ -988,6 +1100,17 @@
     </ol>
     <p class="ios-note">On iPhone, notifications only work after you add TheFlap to your Home Screen and open it from there (iOS 16.4+).</p>
     <button class="comp-btn go" type="button" onclick="document.getElementById('iosSheet').classList.remove('open')">Got it!</button>
+  </div>
+</div>
+
+<!-- PEOPLE SEARCH -->
+<div id="searchModal" onclick="if(event.target===this)closeSearch()">
+  <div class="srch-card">
+    <div class="srch-head"><span>🔍</span><b>Find people</b><span class="srch-x" onclick="closeSearch()">✕</span></div>
+    <div class="srch-body">
+      <input type="text" id="srchInput" class="srch-input" placeholder="Search by name or @handle…" oninput="runSearch()" autocomplete="off">
+      <div class="srch-results" id="srchResults"><div class="srch-empty">Type a name to find your friends on TheFlap.</div></div>
+    </div>
   </div>
 </div>
 
@@ -2006,6 +2129,124 @@
     try{ if('Notification' in window && Notification.permission==='default'){ Notification.requestPermission().then(function(){subscribePush();}); }else{subscribePush();} }catch(e){}
     try{ ensureHandle(); }catch(e){}
   }
+  /* ---- gate: show/hide the name & password panel ---- */
+  function toggleGateAlt(){
+    var a=document.getElementById('gateAlt'), t=document.getElementById('gateAltToggle');
+    if(!a)return;
+    a.classList.toggle('hidden');
+    var open=!a.classList.contains('hidden');
+    if(t)t.textContent=open?'Hide name & password':'Use a name & password instead';
+    if(open){ try{document.getElementById('gateName').focus();}catch(e){} }
+  }
+  /* ================= ONBOARDING WIZARD (new accounts pick handle + name + pic) ================= */
+  var OB={row:null,pic:null,picBlob:null,handle:'',name:''};
+  var OB_AVS=[['🐦','#f5820a'],['😎','#1565c0'],['🦊','#e07d0a'],['🐱','#8e24aa'],['🐸','#2e7d32'],['🌸','#d81b60'],['⭐','#f9a825'],['🎧','#3949ab'],['🍕','#c62828'],['👾','#00838f']];
+  function startOnboarding(row){
+    OB.row=row; OB.pic=row.avatar_url||null; OB.picBlob=null; OB.handle=''; OB.name='';
+    try{document.getElementById('obHandle').value=row.handle||'';}catch(e){}
+    try{document.getElementById('obName').value=row.name||'';}catch(e){}
+    obBuildGrid(); obRenderBig();
+    document.getElementById('obStep2').classList.add('hidden');
+    document.getElementById('obStep1').classList.remove('hidden');
+    var g=document.getElementById('gate'); if(g)g.classList.add('hidden');
+    document.getElementById('onboard').classList.remove('hidden');
+    obCheckHandle(); obCheckName();
+  }
+  function obRenderBig(){
+    var big=document.getElementById('obAvBig'); if(!big)return;
+    if(OB.pic){ big.innerHTML='<img src="'+OB.pic+'" alt="">'; big.style.background='#dfe7f7'; }
+    else { big.textContent='🙂'; big.style.background='#dfe7f7'; }
+  }
+  function obBuildGrid(){
+    var g=document.getElementById('obAvGrid'); if(!g)return;
+    g.innerHTML=OB_AVS.map(function(a,i){return '<div class="ob-avopt" style="background:'+a[1]+'" onclick="obPickAvatar('+i+')">'+a[0]+'</div>';}).join('');
+  }
+  function obCheckHandle(){
+    var el=document.getElementById('obHandle'); if(!el)return;
+    var clean=(el.value||'').toLowerCase().replace(/[^a-z0-9_]/g,''); if(clean!==el.value)el.value=clean;
+    var h=document.getElementById('obHandleHint');
+    if(clean.length===0){h.className='ob-hint';h.textContent='Only a–z, 0–9 and _ — no spaces or symbols.';}
+    else if(clean.length<3){h.className='ob-hint bad';h.textContent='A little longer, please (3+ characters).';}
+    else{h.className='ob-hint good';h.textContent='✓ @'+clean+' looks good!';}
+    obValidate();
+  }
+  function obCheckName(){
+    var el=document.getElementById('obName'); if(!el)return;
+    var h=document.getElementById('obNameHint');
+    if((el.value||'').trim().length===0){h.className='ob-hint';h.textContent='';}
+    else{h.className='ob-hint good';h.textContent='✓ Looks good.';}
+    obValidate();
+  }
+  function obValidate(){
+    var h=(((document.getElementById('obHandle')||{}).value)||'').replace(/[^a-z0-9_]/g,'');
+    var n=(((document.getElementById('obName')||{}).value)||'').trim();
+    var b=document.getElementById('obNextBtn'); if(b)b.disabled=!(h.length>=3 && n.length>=1);
+  }
+  function obPickAvatar(i){
+    var opts=document.querySelectorAll('.ob-avopt');
+    opts.forEach(function(o){o.classList.remove('sel');});
+    if(opts[i])opts[i].classList.add('sel');
+    var a=OB_AVS[i];
+    var big=document.getElementById('obAvBig'); big.innerHTML=''; big.style.background=a[1]; big.textContent=a[0];
+    OB.pic=null;
+    try{
+      var c=document.createElement('canvas'); c.width=256;c.height=256; var ctx=c.getContext('2d');
+      ctx.fillStyle=a[1]; ctx.beginPath(); ctx.arc(128,128,128,0,Math.PI*2); ctx.fill();
+      ctx.font='150px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(a[0],128,146);
+      c.toBlob(function(b){ OB.picBlob=b; },'image/png');
+    }catch(e){ OB.picBlob=null; }
+  }
+  function obUploadPic(ev){
+    var f=ev&&ev.target&&ev.target.files&&ev.target.files[0]; if(!f)return;
+    OB.picBlob=f; OB.pic=null;
+    try{ var url=URL.createObjectURL(f); var big=document.getElementById('obAvBig'); big.innerHTML='<img src="'+url+'" alt="">'; }catch(e){}
+    document.querySelectorAll('.ob-avopt').forEach(function(o){o.classList.remove('sel');});
+  }
+  async function obNext(){
+    var handle=(((document.getElementById('obHandle')||{}).value)||'').replace(/[^a-z0-9_]/g,'');
+    var name=(((document.getElementById('obName')||{}).value)||'').trim().slice(0,24);
+    if(handle.length<3||!name)return;
+    var btn=document.getElementById('obNextBtn'); btn.disabled=true;
+    var hh=document.getElementById('obHandleHint'), nh=document.getElementById('obNameHint');
+    if(ONLINE&&sb){
+      try{
+        var chk=await sb.from('flap_users').select('name').ilike('handle',handle).limit(5);
+        if(chk&&chk.data&&chk.data.some(function(r){return (r.name||'').toLowerCase()!==(OB.row.name||'').toLowerCase();})){
+          hh.className='ob-hint bad'; hh.textContent='@'+handle+' is taken — try another.'; btn.disabled=false; return;
+        }
+        if(name.toLowerCase()!==(OB.row.name||'').toLowerCase()){
+          var chkn=await sb.from('flap_users').select('name').ilike('name',name).limit(1);
+          if(chkn&&chkn.data&&chkn.data.length){ nh.className='ob-hint bad'; nh.textContent='That name is taken — try another.'; btn.disabled=false; return; }
+        }
+      }catch(e){}
+    }
+    OB.handle=handle; OB.name=name; btn.disabled=false;
+    document.getElementById('obStep1').classList.add('hidden');
+    document.getElementById('obStep2').classList.remove('hidden');
+  }
+  async function obFinish(){
+    var btn=document.getElementById('obFinishBtn'); if(btn)btn.disabled=true;
+    var picUrl=OB.pic||OB.row.avatar_url||null;
+    try{
+      if(OB.picBlob&&ONLINE&&sb&&sb.storage){
+        var path='avatar-'+Date.now()+'-'+Math.random().toString(36).slice(2,6)+'.png';
+        var up=await sb.storage.from('pics').upload(path,OB.picBlob,{contentType:(OB.picBlob.type||'image/png'),upsert:false});
+        if(!up.error)picUrl=sb.storage.from('pics').getPublicUrl(path).data.publicUrl;
+      }
+    }catch(e){}
+    var oldName=OB.row.name;
+    try{
+      if(ONLINE&&sb){
+        var upd={handle:OB.handle,avatar_url:picUrl};
+        if(OB.name&&OB.name.toLowerCase()!==(oldName||'').toLowerCase())upd.name=OB.name;
+        await sb.from('flap_users').update(upd).ilike('name',oldName);
+      }
+    }catch(e){}
+    ME={name:(OB.name||oldName),admin:((OB.name||oldName||'').toLowerCase()==='lock'),pic:picUrl||null,handle:OB.handle,email:OB.row.email||''};
+    document.getElementById('onboard').classList.add('hidden');
+    toast('Welcome to TheFlap, '+ME.name+'! 🎉');
+    enterAppAfterLogin();
+  }
   async function googleSignIn(){
     if(!ONLINE||!sb||!sb.auth){toast('Google sign-in needs the server.');return;}
     try{
@@ -2039,10 +2280,11 @@
         row=(ins&&ins.data)?ins.data:{name:tryName,avatar_url:gpic,handle:handle,email:email};
         try{ discordPing('join',row.name); }catch(e){}
         try{ sendPush('lock','TheFlap 🐦',row.name+' just joined TheFlap with Google! 🎉'); }catch(e){}
-        toast('Welcome to TheFlap, '+row.name+'! 🎉');
-      }else{
-        toast('Welcome back, '+row.name+'!');
+        row.email=email; row.avatar_url=(row.avatar_url||gpic||null);
+        startOnboarding(row);   /* new Google user: pick handle + display name + profile pic */
+        return;
       }
+      toast('Welcome back, '+row.name+'!');
       ME={name:row.name,admin:false,pic:row.avatar_url||gpic||null,handle:row.handle||'',email:email};
       enterAppAfterLogin();
     }catch(e){}
@@ -2076,6 +2318,41 @@
 
   /* ============ user profile pages ============ */
   function closeProfile(){document.getElementById('profModal').classList.remove('open');DM_OPEN=null;}
+  /* ================= PEOPLE SEARCH ================= */
+  var SRCH_T=null, SRCH_ROWS=[];
+  function openSearch(){
+    var m=document.getElementById('searchModal'); if(!m)return;
+    m.classList.add('open');
+    var i=document.getElementById('srchInput'); if(i){i.value='';setTimeout(function(){try{i.focus();}catch(e){}},60);}
+    document.getElementById('srchResults').innerHTML='<div class="srch-empty">Type a name to find your friends on TheFlap.</div>';
+  }
+  function closeSearch(){ var m=document.getElementById('searchModal'); if(m)m.classList.remove('open'); }
+  function runSearch(){
+    var q=(((document.getElementById('srchInput')||{}).value)||'').trim().replace(/^@/,'');
+    if(SRCH_T)clearTimeout(SRCH_T);
+    var res=document.getElementById('srchResults');
+    if(q.length<1){ res.innerHTML='<div class="srch-empty">Type a name to find your friends on TheFlap.</div>'; return; }
+    SRCH_T=setTimeout(function(){ doSearch(q); },220);
+  }
+  async function doSearch(q){
+    var res=document.getElementById('srchResults');
+    if(!ONLINE||!sb){ res.innerHTML='<div class="srch-empty">Search needs the server.</div>'; return; }
+    try{
+      var pat=q.replace(/[*%,()]/g,'');
+      var r=await sb.from('flap_users').select('name,handle,avatar_url,banned').or('name.ilike.*'+pat+'*,handle.ilike.*'+pat+'*').limit(25);
+      var rows=(r&&r.data)?r.data:[];
+      rows=rows.filter(function(u){ return u.name && String(u.name).indexOf('::')!==0 && !u.banned; });
+      SRCH_ROWS=rows;
+      if(!rows.length){ res.innerHTML='<div class="srch-empty">No one found for “'+q.replace(/</g,'&lt;')+'”.</div>'; return; }
+      res.innerHTML=rows.map(function(u,i){
+        var nm=String(u.name||'').replace(/</g,'&lt;');
+        var hd=u.handle?('@'+String(u.handle).replace(/</g,'&lt;')):'';
+        var av=u.avatar_url?('<img src="'+String(u.avatar_url).replace(/"/g,'&quot;')+'" alt="">'):(nm.slice(0,1).toUpperCase());
+        return '<div class="srch-row" onclick="pickSearch('+i+')"><div class="srch-av">'+av+'</div><div><div class="srch-name">'+nm+'</div><div class="srch-handle">'+hd+'</div></div></div>';
+      }).join('');
+    }catch(e){ res.innerHTML='<div class="srch-empty">Could not search — try again.</div>'; }
+  }
+  function pickSearch(i){ var u=SRCH_ROWS[i]; if(!u)return; closeSearch(); try{ showUserProfile(u.name); }catch(e){ toast('Could not open profile.'); } }
   var PROFILE_DATA={posts:[],reflaps:[]};
   function profileTab(which){
     var lst=document.getElementById('profList');if(!lst)return;
@@ -3889,7 +4166,12 @@
   try{setTimeout(inAppTip,1500);}catch(e){}
   (function restoreSession(){
     var saved=readSession();
-    if(!saved){ if(typeof ONLINE!=='undefined'&&ONLINE){try{handleGoogleReturn();}catch(e){}} return; }
+    if(!saved){
+      if(typeof ONLINE!=='undefined'&&ONLINE){try{handleGoogleReturn();}catch(e){}}
+      /* logged out: show the feed dimmed + locked BEHIND the login gate (read-only backdrop) */
+      try{ if(!ME||!ME.name){ ME={name:'',admin:false}; loadBlocks().then(function(){loadFeed();}).catch(function(){try{loadFeed();}catch(e){}}); } }catch(e){}
+      return;
+    }
     var m;
     try{m=JSON.parse(saved);}catch(e){return;}
     if(!m||!m.name)return;
