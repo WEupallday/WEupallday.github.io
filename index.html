@@ -951,8 +951,9 @@
   /* lock the background so the feed can't scroll while the side menu is open */
   body.drawer-open{overflow:hidden!important;}
   body.drawer-open .wrap,body.drawer-open .topbar{touch-action:none;}
-  /* in the app the floating + is the composer, so drop the big "Post A New Flap" launcher card */
-  html.is-app .composeblock{display:none!important;}
+  /* ONLY hide the "Post A New Flap" launcher where the floating + actually exists (the real app / hdr-x).
+     On the website — any width — keep the launcher so people can always post. */
+  html.is-app body.hdr-x .composeblock{display:none!important;}
   /* clear back arrow inside a DM conversation (returns to the messages list; ✕ still fully closes) */
   .dm-back{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);color:#fff;font-size:16px;line-height:1;border-radius:8px;padding:3px 10px;margin-right:8px;cursor:pointer;font-weight:bold;}
   .dm-back:hover{background:rgba(255,255,255,.32);}
