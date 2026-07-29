@@ -317,6 +317,15 @@
   .reflapbtn:hover{filter:brightness(1.09);}
   .pinned-tag{background:linear-gradient(180deg,#ffe08a,#f5c542);color:#7a4a00;font-weight:bold;font-size:10px;padding:4px 12px;border:2px solid #d9a72a;border-bottom:none;border-radius:6px 6px 0 0;letter-spacing:.5px;}
   .pinned-card{box-shadow:0 0 0 2px #f5c542,0 5px 14px rgba(0,0,0,.35);}
+  /* ===== official announcement card — sits ABOVE the pinned slot, from the TheFlap official account ===== */
+  .announce-card{border:3px solid #1a5fa8;border-radius:6px;margin-bottom:16px;background:#fff;box-shadow:0 0 0 2px #7fd0ff,0 6px 18px rgba(0,0,0,.45);overflow:hidden;}
+  .announce-head{display:flex;align-items:center;gap:7px;background:linear-gradient(180deg,#2f7ac9 0%,#1a5fa8 55%,#134a86 100%);padding:8px 12px;color:#fff;font-weight:bold;font-size:13px;letter-spacing:.3px;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+  .announce-head .ann-seal{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6c2,#f5c542 60%,#d9a72a);border:1.5px solid #b8860b;color:#7a4a00;font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.35);flex:none;}
+  .announce-head .ann-name{display:flex;flex-direction:column;line-height:1.05;}
+  .announce-head .ann-name small{font-size:9px;font-weight:bold;color:#cfe6ff;letter-spacing:1px;text-transform:uppercase;}
+  .announce-head .ann-official{margin-left:auto;font-size:9px;font-weight:bold;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.5);border-radius:10px;padding:2px 8px;letter-spacing:.5px;white-space:nowrap;}
+  .announce-body{background:linear-gradient(180deg,#eaf6ff 0%,#d6ecfb 100%);padding:13px 15px;color:#123;font-size:13px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere;}
+  .announce-body .ann-title{font-weight:bold;font-size:15px;color:#134a86;margin-bottom:6px;display:block;}
   .pinbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:10px;color:#7a4a00;background:linear-gradient(180deg,#ffe08a,#f5c542);border:1px solid #d9a72a;border-radius:5px;padding:5px 9px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;margin-left:6px;}
   .pinbtn:hover{filter:brightness(1.05);}
   .reflapbtn.on{background:linear-gradient(180deg,#1c7a42,#12592f);box-shadow:inset 0 2px 4px rgba(0,0,0,.35);}
@@ -3298,7 +3307,9 @@
       if(pi>0){ var pr=rows.splice(pi,1)[0]; rows.unshift(pr); }
     }
     rows.forEach(function(r){ r.__pinned=(!FEED_FILTER && String(r.id)===String(PINNED_ID)); });
-    box.innerHTML=head+(rows.length
+    /* official announcement renders ABOVE everything (including the pinned flap), but not while a filter is active */
+    var annHTML=(!FEED_FILTER)?announceCardHTML():'';
+    box.innerHTML=head+annHTML+(rows.length
       ? rows.map(liveCard).join('')
       : '<div class="card"><div class="card-body" style="text-align:center;font-size:11px;">'+
         (FEED_FILTER?'no flaps for @'+esc(FEED_FILTER)+' yet!':(FOLLOW_FILTER?'You\'re not following anyone who\'s flapped yet — tap 🔍 Search or a name to find people to follow! 👤':(ONLINE?'no flaps yet — be the first!':'demo mode — configure the backend (see setup file) and your friends\' flaps will appear here!')))+
@@ -3811,6 +3822,44 @@
       PINNED_ID=(r.data && r.data[0] && String(r.data[0].body||'').trim())?String(r.data[0].body).trim():null;
     }catch(e){}
   }
+  /* ===== official announcement — a hidden ::announce:: sentinel row holds the current text; empty = none.
+     Renders as an official card ABOVE the pinned slot for everyone. Editable from HQ → Settings. ===== */
+  var ANNOUNCE_TXT='';
+  async function loadAnnounce(){
+    if(!ONLINE)return;
+    try{ var r=await sb.from('flaps').select('body').eq('name','::announce::').order('id',{ascending:false}).limit(1);
+      ANNOUNCE_TXT=(r.data && r.data[0] && String(r.data[0].body||'').trim())?String(r.data[0].body):'';
+    }catch(e){}
+  }
+  function announceCardHTML(){
+    var txt=String(ANNOUNCE_TXT||'').trim(); if(!txt)return '';
+    /* first line becomes a bold title if it looks like a heading (e.g. "📢 The Flap Update") */
+    var lines=txt.split(/\n/), title='', rest=txt;
+    if(lines.length>1 && lines[0].trim().length<=60){ title=lines[0].trim(); rest=lines.slice(1).join('\n').replace(/^\n+/,''); }
+    return '<div class="announce-card">'+
+      '<div class="announce-head"><span class="ann-seal">🛡</span>'+
+        '<span class="ann-name">TheFlap<small>Official</small></span>'+
+        '<span class="ann-official">📢 Announcement</span></div>'+
+      '<div class="announce-body">'+(title?'<span class="ann-title">'+esc(title)+'</span>':'')+esc(rest)+'</div>'+
+    '</div>';
+  }
+  async function saveAnnounce(){
+    if(!ME.admin){toast('Admins only.');return;}
+    var ta=document.getElementById('adminAnnounce'); var body=ta?String(ta.value||'').trim():'';
+    try{
+      var ex=await sb.from('flaps').select('id').eq('name','::announce::').order('id',{ascending:false}).limit(1);
+      if(ex.data && ex.data[0]){ await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id); }
+      else { await sb.from('flaps').insert({name:'::announce::',body:body,mood:'flappy',likes:0}); }
+      ANNOUNCE_TXT=body; if(ADMIN_DATA)ADMIN_DATA.annCur=body;
+      await loadFeed();
+      toast(body?'📢 Announcement posted to the top!':'Announcement cleared.');
+    }catch(e){toast('Could not save announcement — try again.');}
+  }
+  async function clearAnnounce(){
+    if(!ME.admin)return;
+    var ta=document.getElementById('adminAnnounce'); if(ta)ta.value='';
+    await saveAnnounce();
+  }
   async function pinPost(id){
     if(!ME.admin && !ME.mod)return;
     var cur=String(id), newVal=(PINNED_ID===cur)?'':cur;
@@ -3943,6 +3992,7 @@
       loadMods();
       loadFeatures();
       await loadPinned();
+      await loadAnnounce();
       /* a pinned flap can be OLDER than the newest-N window we just loaded — fetch it directly
          so it always appears (pinned at the top), instead of silently vanishing when newer flaps push it out. */
       if(PINNED_ID && !LAST_ROWS.some(function(r){return String(r.id)===String(PINNED_ID);})){
@@ -4380,8 +4430,8 @@
       var tickets=[]; try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(80)).data||[];}catch(e){}
       var dms=[]; try{dms=(await sb.from('flaps').select('id,body,created_at').eq('name','::dm::').order('id',{ascending:false}).limit(3000)).data||[];}catch(e){}   /* admin message oversight */
       async function sen(nm){try{var r=await sb.from('flaps').select('body').eq('name',nm).order('id',{ascending:false}).limit(1);return (r.data&&r.data[0])?r.data[0].body:'';}catch(e){return '';}}
-      var tickerCur=await sen('::ticker::'), verCur=await sen('::verified::'), pollCur=await sen('::poll::');
-      ADMIN_DATA={us:us,flAll:flAll,replyCount:rc.count||0,repliesRecent:repliesRecent,reports:reports,repPosts:repPosts,tickets:tickets,dms:dms,tickerCur:tickerCur,verCur:verCur,pollCur:pollCur,now:Date.now()};
+      var tickerCur=await sen('::ticker::'), verCur=await sen('::verified::'), pollCur=await sen('::poll::'), annCur=await sen('::announce::');
+      ADMIN_DATA={us:us,flAll:flAll,replyCount:rc.count||0,repliesRecent:repliesRecent,reports:reports,repPosts:repPosts,tickets:tickets,dms:dms,tickerCur:tickerCur,verCur:verCur,pollCur:pollCur,annCur:annCur,now:Date.now()};
       renderAdmin();
     }catch(e){
       box.innerHTML='<div class="pc-strip hq-strip"><span>👑 TheFlap HQ</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">Could not load HQ — check your connection and try again.</div>';
@@ -4483,6 +4533,11 @@
   function hqSettings(){
     var d=ADMIN_DATA, h='';
     var pp=d.pollCur?String(d.pollCur).split('␟'):[];
+    h+='<div class="hq-sec">📣 Official announcement</div>';
+    h+='<textarea id="adminAnnounce" class="hq-input" style="min-height:130px;">'+esc(d.annCur||'')+'</textarea>';
+    h+='<button class="hq-btn hq-go" style="width:100%;margin-bottom:4px;background:linear-gradient(180deg,#2f7ac9,#134a86);color:#fff;" onclick="saveAnnounce()">📢 Post announcement to the top</button>';
+    h+='<button class="hq-btn" style="width:100%;background:linear-gradient(180deg,#c0603a,#8f3c1c);color:#fff;margin-bottom:8px;" onclick="clearAnnounce()">Clear announcement</button>';
+    h+='<div style="font-size:10px;color:#889;margin-bottom:12px;">Posts an official TheFlap card <b>above the pinned flap</b> for everyone. First line becomes the bold title. Leave blank &amp; save (or tap Clear) to remove it.</div>';
     h+='<div class="hq-sec">📢 Scrolling ticker</div>';
     h+='<textarea id="adminTicker" class="hq-input" style="min-height:56px;">'+esc(d.tickerCur||((document.getElementById('tickerText')||{}).textContent||''))+'</textarea>';
     h+='<button class="hq-btn hq-go" style="width:100%;margin-bottom:4px;" onclick="saveTicker()">Save ticker for everyone</button>';
