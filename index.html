@@ -161,10 +161,11 @@
   .card-strip{background:linear-gradient(180deg,#22398f,var(--strip-navy));padding:3px 8px;font-size:9px;color:#b8c4e8;text-align:right;font-weight:bold;}
   .card-strip .rate{color:#ff4030;margin-left:6px;}
   .card-body{background:linear-gradient(180deg,var(--body-top) 0%,var(--body-mid) 55%,var(--body-bot) 100%);padding:12px;overflow:hidden;}
-  .poster{float:left;width:78px;margin-right:12px;text-align:center;}
+  .poster{float:left;width:88px;margin-right:12px;text-align:center;}
   .poster .pava{width:70px;height:76px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);margin:0 auto;overflow:hidden;background:#123;}
   .poster .pava img{width:100%;height:100%;object-fit:cover;display:block;}
-  .poster .pname{color:var(--name-navy);font-weight:bold;font-size:12px;margin-top:4px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  /* names WRAP to fit (no more brutal ellipsis crop); long single words break; clamped to 3 lines as a safety */
+  .poster .pname{color:var(--name-navy);font-weight:bold;font-size:12px;margin-top:4px;line-height:1.2;white-space:normal;overflow-wrap:anywhere;word-break:break-word;max-width:100%;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
   .follow-btn{margin-top:4px;font-size:9.5px;font-weight:bold;padding:3px 8px;border-radius:11px;border:1.5px solid var(--orange);background:#fff;color:#c05e00;cursor:pointer;line-height:1;white-space:nowrap;max-width:100%;font-family:Verdana,Arial,sans-serif;}
   .follow-btn.following{background:var(--orange);color:#fff;border-color:var(--orange);}
   .follow-btn:active{transform:translateY(1px);}
@@ -320,10 +321,10 @@
   .pinbtn:hover{filter:brightness(1.05);}
   .reflapbtn.on{background:linear-gradient(180deg,#1c7a42,#12592f);box-shadow:inset 0 2px 4px rgba(0,0,0,.35);}
   .reflap-count-line{font-size:11px;font-weight:bold;color:#2f9e5a;padding:4px 4px 0;}
-  .vbadge{display:inline-block;width:17px;height:17px;vertical-align:-4px;margin-left:3px;cursor:pointer;transition:transform .1s;}
+  .vbadge{display:inline-block;width:21px;height:21px;vertical-align:-5px;margin-left:3px;cursor:pointer;transition:transform .1s;}
   .vbadge svg{width:100%;height:100%;display:block;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));}
   .vbadge:hover,.vbadge:active{transform:scale(1.2) rotate(-6deg);}
-  .pc-name .vbadge{width:23px;height:23px;vertical-align:-5px;}
+  .pc-name .vbadge{width:28px;height:28px;vertical-align:-6px;}
   .tile .vcheck{position:absolute;right:0;bottom:0;width:18px;height:18px;z-index:3;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4));}
   .tile .vcheck svg{width:100%;height:100%;display:block;}
   /* real-member Flappers sidebar */
@@ -3398,8 +3399,8 @@
     if(c){c.textContent=unseen>9?'9+':unseen;c.classList.toggle('show',unseen>0);}
     var p=document.getElementById('notifPanel');if(!p)return;
     var h='<div class="notif-head"><span>🔔 Notifications</span>'+(NOTIFS.length?'<span onclick="markAllSeen()">mark all read</span>':'')+'</div>';
-    h+=NOTIFS.length?NOTIFS.map(function(n){
-      return '<div class="notif-item '+(n.seen?'':'unseen')+'" onclick="openNotif('+(n.flap_id||'null')+')">'+
+    h+=NOTIFS.length?NOTIFS.map(function(n,i){
+      return '<div class="notif-item '+(n.seen?'':'unseen')+'" onclick="openNotif('+i+')">'+
         '<span class="ni-ava">'+avatarFor(n.actor)+'</span>'+
         '<span>'+notifText(n)+'<br><span class="ni-when">'+new Date(n.created_at).toLocaleString()+'</span></span></div>';
     }).join(''):'<div class="notif-empty">No notifications yet.<br>When someone replies to, likes, or tags you, it shows up here 🔔</div>';
@@ -3432,24 +3433,20 @@
     NOTIFS.forEach(function(n){n.seen=true;});renderBell();
     if(ONLINE&&uns.length){try{await sb.from('flap_notifs').update({seen:true}).in('id',uns);}catch(e){}}
   }
-  function openNotif(flapId){
-    document.getElementById('notifPanel').classList.remove('open');
+  /* Tapping a notification jumps to its target:
+     • follow / friend → the person's profile
+     • dm            → the conversation
+     • reply/like/tag/reflap → the flap's single-post detail view (deep-link, works even for old flaps) */
+  function openNotif(i){
+    var n=(typeof i==='number' && NOTIFS)?NOTIFS[i]:null;
+    var p=document.getElementById('notifPanel'); if(p)p.classList.remove('open');
     try{toggleDrawer(false);}catch(e){}
-    function jump(){
-      if(!flapId)return false;
-      var el=document.getElementById('flap-'+flapId);
-      if(el){
-        el.scrollIntoView({behavior:'smooth',block:'center'});
-        el.classList.add('flap-highlight');
-        setTimeout(function(){el.classList.remove('flap-highlight');},2300);
-        return true;
-      }
-      return false;
-    }
-    if(jump())return;
-    /* post isn't rendered yet — refresh the feed, then jump to it */
-    var lf=document.getElementById('liveFeed');if(lf)lf.scrollIntoView({behavior:'smooth',block:'start'});
-    if(flapId&&typeof loadFeed==='function'){ try{ var p=loadFeed(); if(p&&p.then)p.then(function(){setTimeout(jump,350);}); else setTimeout(jump,350); }catch(e){} }
+    if(!n)return;
+    if(n.kind==='follow' || n.kind==='friend'){ try{ showUserProfile(n.actor); }catch(e){} return; }
+    if(n.kind==='dm'){ try{ openDM(n.actor); }catch(e){} return; }
+    if(n.flap_id){ try{ openFlap(n.flap_id); }catch(e){ try{ location.hash='flap/'+n.flap_id; }catch(_){} } return; }
+    /* no flap attached → fall back to the actor's profile */
+    try{ showUserProfile(n.actor); }catch(e){}
   }
   /* close the panel when tapping elsewhere */
   document.addEventListener('click',function(e){
