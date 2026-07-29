@@ -3946,6 +3946,13 @@
       loadMods();
       loadFeatures();
       await loadPinned();
+      /* a pinned flap can be OLDER than the newest-N window we just loaded — fetch it directly
+         so it always appears (pinned at the top), instead of silently vanishing when newer flaps push it out. */
+      if(PINNED_ID && !LAST_ROWS.some(function(r){return String(r.id)===String(PINNED_ID);})){
+        try{ var _pf=await sb.from('flaps').select('*').eq('id',PINNED_ID).limit(1);
+          if(_pf.data && _pf.data[0] && String(_pf.data[0].name||'').indexOf('::')!==0){ LAST_ROWS.unshift(_pf.data[0]); }
+        }catch(_e){}
+      }
       myFlapCount=res.data.filter(function(r){return r.name===ME.name;}).length;
       document.getElementById('youCount').textContent=myFlapCount;
       /* members list — powers real photos everywhere + the banner */
@@ -3958,7 +3965,7 @@
       try{ if(ME.name&&!ME.admin&&USERS[ME.name.toLowerCase()]&&USERS[ME.name.toLowerCase()].banned){ toast('This account has been banned.'); setTimeout(function(){try{clearSession();}catch(e){}location.reload();},1600); return; } }catch(ebn){}
       if(ONLINE&&ME.name&&!HANDLE_CHECKED){ HANDLE_CHECKED=true; try{ensureHandle();}catch(eh2){} }
       REPLIES={};
-      var ids=res.data.map(function(r){return r.id;});
+      var ids=LAST_ROWS.map(function(r){return r.id;});   /* LAST_ROWS (no sentinels) + any directly-fetched pinned flap → its replies load too */
       if(ids.length){
         var rr=await sb.from('flap_replies').select('*').in('flap_id',ids).order('id',{ascending:true});
         if(!rr.error&&rr.data)rr.data.forEach(function(r){(REPLIES[r.flap_id]=REPLIES[r.flap_id]||[]).push(r);});
