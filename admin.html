@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>TheFlap · Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--navy:#12357a;--navy2:#0d2456;--blue:#2f7ac9;--blue-d:#1a5fa8;--gold:#f5c542;--red:#c0392b;--green:#1c7a42;--purple:#5f2ea0;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:#0d1a2e;color:#e8eef7;font-family:-apple-system,Segoe UI,Verdana,Arial,sans-serif;font-size:14px;line-height:1.4;}
+  a{color:#7fd0ff;}
+  /* ---- login gate ---- */
+  #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .gatebox{width:100%;max-width:360px;background:#152a4a;border:1px solid #24406e;border-radius:14px;padding:26px 24px;box-shadow:0 12px 40px rgba(0,0,0,.5);}
+  .gatebox h1{font-size:20px;margin:0 0 4px;color:#fff;}
+  .gatebox .sub{font-size:12px;color:#9db4d6;margin-bottom:18px;}
+  .gatebox label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#9db4d6;margin:12px 0 5px;}
+  .gatebox input{width:100%;padding:11px 12px;border-radius:9px;border:1px solid #2c4a7a;background:#0f2440;color:#fff;font-size:15px;}
+  .gatebox button{width:100%;margin-top:18px;padding:12px;border:none;border-radius:9px;background:linear-gradient(180deg,var(--blue),var(--blue-d));color:#fff;font-weight:bold;font-size:15px;cursor:pointer;}
+  .gatebox button:hover{filter:brightness(1.08);}
+  .gate-err{color:#ff8a7a;font-size:12px;margin-top:12px;min-height:16px;}
+  /* ---- app shell ---- */
+  #app{display:none;max-width:1080px;margin:0 auto;padding:0 16px 60px;}
+  header.topbar{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,#16305a,#0d1f3d);border-bottom:1px solid #24406e;padding:12px 16px;display:flex;align-items:center;gap:12px;margin:0 -16px 18px;}
+  header.topbar .crown{font-size:20px;}
+  header.topbar h1{font-size:16px;margin:0;color:#fff;flex:1;}
+  header.topbar .who{font-size:12px;color:#9db4d6;}
+  header.topbar button{background:#24406e;border:none;color:#cfe0f6;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:bold;cursor:pointer;}
+  header.topbar button:hover{background:#2e5290;}
+  .sec{background:#132747;border:1px solid #22406e;border-radius:14px;padding:18px;margin-bottom:18px;}
+  .sec > h2{margin:0 0 14px;font-size:15px;color:#fff;display:flex;align-items:center;gap:8px;border-bottom:1px solid #22406e;padding-bottom:10px;}
+  .sec .refresh{margin-left:auto;font-size:11px;font-weight:normal;background:#24406e;border:none;color:#cfe0f6;border-radius:7px;padding:5px 10px;cursor:pointer;}
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;}
+  .stat{background:#0f2340;border:1px solid #23406e;border-radius:11px;padding:14px 12px;text-align:center;}
+  .stat b{display:block;font-size:26px;color:#fff;line-height:1;}
+  .stat span{display:block;font-size:11px;color:#9db4d6;margin-top:6px;letter-spacing:.3px;}
+  .stat.hot{background:linear-gradient(180deg,#3a2a0e,#241c0c);border-color:#7a5a1a;}
+  .stat.hot b{color:var(--gold);}
+  .stat.danger b{color:#ff9a86;}
+  /* rows */
+  .row{background:#0f2340;border:1px solid #23406e;border-radius:10px;padding:11px 13px;margin-bottom:9px;}
+  .row .r-top{font-weight:bold;color:#fff;}
+  .row .r-meta{font-size:11px;color:#8ba3c9;margin-top:2px;}
+  .row .r-body{margin:6px 0;color:#d5e2f5;word-break:break-word;}
+  .row.appeal{border-color:#8a5a1a;background:#241c0c;}
+  .row.reportrow{border-color:#7a2a1a;}
+  .acts{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;}
+  .btn{border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:bold;cursor:pointer;color:#fff;background:#24406e;}
+  .btn:hover{filter:brightness(1.1);}
+  .btn.del{background:linear-gradient(180deg,#c0603a,#8f3c1c);}
+  .btn.red{background:linear-gradient(180deg,#d0453a,#9f2a1c);}
+  .btn.green{background:linear-gradient(180deg,#2f9e5a,#1c7a42);}
+  .btn.blue{background:linear-gradient(180deg,var(--blue),var(--blue-d));}
+  .btn.gold{background:linear-gradient(180deg,#e0b23a,#b8860b);color:#3a2a00;}
+  .btn.purple{background:linear-gradient(180deg,#8a4fd8,#5f2ea0);}
+  .empty{color:#7fae7f;font-size:13px;padding:6px 0;}
+  .muted{color:#8ba3c9;font-size:12px;}
+  /* members */
+  .mem{display:flex;align-items:center;gap:11px;background:#0f2340;border:1px solid #23406e;border-radius:10px;padding:9px 12px;margin-bottom:8px;flex-wrap:wrap;}
+  .mem .ava{width:38px;height:38px;border-radius:8px;overflow:hidden;background:#24406e;flex:none;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#cfe0f6;}
+  .mem .ava img{width:100%;height:100%;object-fit:cover;}
+  .mem .m-name{flex:1;min-width:140px;}
+  .mem .m-name b{color:#fff;}
+  .mem .m-sub{font-size:11px;color:#8ba3c9;}
+  .pill{display:inline-block;font-size:10px;font-weight:bold;border-radius:9px;padding:1px 7px;margin-left:5px;}
+  .pill.ver{background:#3a2f0a;color:var(--gold);}
+  .pill.on{background:#0e3a20;color:#4fe08a;}
+  .pill.ban{background:#3a1010;color:#ff8a7a;}
+  .pill.mute{background:#2a1c3a;color:#c9a0ff;}
+  .inp{width:100%;padding:10px 12px;border-radius:9px;border:1px solid #2c4a7a;background:#0f2340;color:#fff;font-size:13px;font-family:inherit;margin-bottom:8px;}
+  textarea.inp{min-height:56px;resize:vertical;}
+  .hint{font-size:11px;color:#8ba3c9;margin:-2px 0 12px;}
+  .wfull{width:100%;}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#0f2340;border:1px solid #2e5290;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .2s;z-index:50;max-width:90vw;}
+  .toast.show{opacity:1;}
+  .subhead{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#7f9bc4;margin:16px 0 8px;font-weight:bold;}
+  .dmrow{background:#0f2340;border:1px solid #23406e;border-radius:9px;padding:8px 11px;margin-bottom:6px;font-size:12.5px;}
+  .dmrow .dm-who{color:#9fd0ff;font-weight:bold;}
+  .dmrow .dm-t{color:#7f9bc4;font-size:10.5px;float:right;}
+  .loading{padding:24px;text-align:center;color:#9db4d6;}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN GATE ===== -->
+<div id="gate">
+  <div class="gatebox">
+    <h1>👑 TheFlap Admin</h1>
+    <div class="sub">Private moderation console. Sign in with the admin account.</div>
+    <label for="aName">Admin name</label>
+    <input type="text" id="aName" autocomplete="username" placeholder="admin account name" autocapitalize="off" spellcheck="false">
+    <label for="aPass">Password</label>
+    <input type="password" id="aPass" autocomplete="current-password" placeholder="password">
+    <button id="loginBtn" type="button">Sign in</button>
+    <div class="gate-err" id="gateErr"></div>
+  </div>
+</div>
+
+<!-- ===== ADMIN APP ===== -->
+<div id="app">
+  <header class="topbar">
+    <span class="crown">👑</span>
+    <h1>TheFlap HQ</h1>
+    <span class="who" id="whoLabel"></span>
+    <button type="button" id="reloadAll">↻ Refresh</button>
+    <button type="button" id="logoutBtn">Sign out</button>
+  </header>
+  <div id="panel"><div class="loading">Loading your HQ…</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var SUPABASE_URL="https://zclappstgkjebltkdzlq.supabase.co";
+  var SUPABASE_ANON_KEY="sb_publishable_fn7Fzyx9B95U8FY_5cSO3Q_Mn43ce1H";
+  var ADMIN_ACCOUNT="lock"; /* only this account may enter */
+  var PSEP="␟"; /* ␟ */
+  var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false}});
+  var ADMIN_NAME=""; var DATA=null;
+
+  /* ---------- helpers ---------- */
+  function $(id){return document.getElementById(id);}
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function esq(s){return String(s==null?'':s).replace(/'/g,'');}
+  function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show');},2600);}
+  function isSentinel(n){return String(n||'').indexOf('::')===0;}
+  function T(v){return v?new Date(v).getTime():0;}
+  async function sha256(s){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}
+  function initials(n){n=String(n||'?').trim();return (n[0]||'?').toUpperCase();}
+  async function sen(nm){try{var r=await sb.from('flaps').select('body').eq('name',nm).order('id',{ascending:false}).limit(1);return (r.data&&r.data[0])?r.data[0].body:'';}catch(e){return '';}}
+  async function setSen(nm,body){
+    try{ var ex=await sb.from('flaps').select('id').eq('name',nm).order('id',{ascending:false}).limit(1);
+      if(ex.data&&ex.data[0]) await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id);
+      else await sb.from('flaps').insert({name:nm,body:body,mood:'flappy',likes:0});
+    }catch(e){}
+  }
+
+  /* ---------- auth ---------- */
+  async function doLogin(){
+    var name=$('aName').value.trim(), pass=$('aPass').value, err=$('gateErr');
+    err.textContent='';
+    if(!name||!pass){err.textContent='Enter the admin name and password.';return;}
+    err.textContent='checking…';
+    try{
+      var hash=await sha256('flapsalt:'+name.toLowerCase()+':'+pass);
+      var res=await sb.from('flap_users').select('name,pass_hash,banned').ilike('name',name).maybeSingle();
+      if(res.error)throw res.error;
+      if(!res.data){err.textContent='No such account.';return;}
+      if(res.data.pass_hash!==hash){err.textContent='Wrong password.';return;}
+      if((res.data.name||'').toLowerCase()!==ADMIN_ACCOUNT){err.textContent='That account is not an administrator.';return;}
+      /* real credential match against the DB + admin-account check passed */
+      ADMIN_NAME=res.data.name;
+      try{sessionStorage.setItem('flap_admin_ok',ADMIN_NAME);}catch(e){}
+      enterApp();
+    }catch(e){err.textContent='Could not reach the server — try again.';}
+  }
+  function enterApp(){
+    $('gate').style.display='none';
+    $('app').style.display='block';
+    $('whoLabel').textContent='signed in as '+ADMIN_NAME;
+    loadAll();
+  }
+  function logout(){
+    try{sessionStorage.removeItem('flap_admin_ok');}catch(e){}
+    ADMIN_NAME=''; DATA=null;
+    $('app').style.display='none'; $('gate').style.display='flex';
+    $('aPass').value=''; $('gateErr').textContent='';
+  }
+
+  /* ---------- data load ---------- */
+  async function loadAll(){
+    $('panel').innerHTML='<div class="loading">Loading your HQ…</div>';
+    try{
+      var us=(await sb.from('flap_users').select('*').order('created_at',{ascending:false})).data||[];
+      var flAll=(await sb.from('flaps').select('id,name,body,pic_url,mood,created_at').order('id',{ascending:false}).limit(500)).data||[];
+      var rcRes=await sb.from('flap_replies').select('*',{count:'exact',head:true});
+      var repliesRecent=[];try{repliesRecent=(await sb.from('flap_replies').select('*').order('id',{ascending:false}).limit(80)).data||[];}catch(e){}
+      var reports=[];try{reports=(await sb.from('flap_reports').select('*').eq('resolved',false).order('id',{ascending:false})).data||[];}catch(e){}
+      var repIds=reports.filter(function(r){return r.target_type==='post'&&r.target_id;}).map(function(r){return r.target_id;});
+      var repPosts={};if(repIds.length){try{((await sb.from('flaps').select('id,body,name').in('id',repIds)).data||[]).forEach(function(p){repPosts[p.id]=p;});}catch(e){}}
+      var tickets=[];try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(100)).data||[];}catch(e){}
+      var dms=[];try{dms=(await sb.from('flaps').select('id,body,created_at').eq('name','::dm::').order('id',{ascending:false}).limit(400)).data||[];}catch(e){}
+      DATA={
+        us:us, flAll:flAll, replyCount:(rcRes.count||0), repliesRecent:repliesRecent,
+        reports:reports, repPosts:repPosts, tickets:tickets, dms:dms,
+        tickerCur:await sen('::ticker::'), verCur:await sen('::verified::'),
+        pollCur:await sen('::poll::'), annCur:await sen('::announce::'),
+        featuresOn:/on/i.test(await sen('::features::')||''),
+        delCount:(parseInt(await sen('::delcount::'),10)||0),
+        now:Date.now()
+      };
+      render();
+    }catch(e){
+      $('panel').innerHTML='<div class="sec"><h2>⚠ Could not load</h2><div class="muted">Check your connection and tap Refresh.</div></div>';
+    }
+  }
+
+  /* ---------- stats ---------- */
+  function stats(){
+    var d=DATA, now=d.now, dayAgo=now-864e5, weekAgo=now-7*864e5;
+    var real=d.flAll.filter(function(r){return !isSentinel(r.name);});
+    return {
+      members:d.us.length,
+      online:d.us.filter(function(u){return u.last_seen&&now-T(u.last_seen)<12e4;}).length,
+      joinsToday:d.us.filter(function(u){return T(u.created_at)>dayAgo;}).length,
+      joinsWeek:d.us.filter(function(u){return T(u.created_at)>weekAgo;}).length,
+      flapsToday:real.filter(function(r){return T(r.created_at)>dayAgo;}).length,
+      repliesToday:d.repliesRecent.filter(function(r){return r.created_at&&T(r.created_at)>dayAgo;}).length,
+      totalFlaps:real.length, totalReplies:d.replyCount,
+      banned:d.us.filter(function(u){return u.banned;}).length,
+      muted:d.us.filter(function(u){return u.muted_until&&new Date(u.muted_until)>new Date();}).length,
+      deleted:d.delCount,
+      openIssues:d.reports.length+d.tickets.length
+    };
+  }
+
+  /* ---------- render ---------- */
+  function render(){
+    var d=DATA, s=stats(), h='';
+    /* STATISTICS */
+    h+='<div class="sec"><h2>📊 Statistics <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2><div class="stats">'+
+      statCard(s.joinsWeek,'joined this week','hot')+
+      statCard(s.joinsToday,'joined today','')+
+      statCard(s.online,'online now','')+
+      statCard(s.members,'total members','')+
+      statCard(s.flapsToday,'flaps today','')+
+      statCard(s.repliesToday,'replies today','')+
+      statCard(s.totalFlaps,'total flaps','')+
+      statCard(s.totalReplies,'total replies','')+
+      statCard(s.deleted,'deleted accounts','danger')+
+      statCard(s.banned,'banned','danger')+
+      statCard(s.muted,'timed out','')+
+      statCard(s.openIssues,'open issues','')+
+    '</div></div>';
+
+    /* MODERATION: appeals + reports */
+    var appeals=d.reports.filter(function(r){return r.target_type==='appeal'||/^\[APPEAL/i.test(r.reason||'');});
+    var reports=d.reports.filter(function(r){return !(r.target_type==='appeal'||/^\[APPEAL/i.test(r.reason||''));});
+    h+='<div class="sec"><h2>🛡️ Moderation queue</h2>';
+    h+='<div class="subhead">📩 Appeals ('+appeals.length+')</div>';
+    h+= appeals.length? appeals.map(function(r){
+      return '<div class="row appeal"><div class="r-top">📩 '+esc(r.target_name||r.reporter||'?')+' is appealing</div>'+
+        '<div class="r-body">'+esc((r.reason||'').replace(/^\[APPEAL[^\]]*\]\s*/i,''))+'</div>'+
+        '<div class="r-meta">'+new Date(r.created_at).toLocaleString()+'</div>'+
+        '<div class="acts"><button class="btn green" onclick="ADMIN.resolveReport('+r.id+')">Resolve appeal</button>'+
+        (r.target_name?'<button class="btn blue" onclick="ADMIN.liftMute(\''+esq(r.target_name)+'\')">Lift time-out</button>':'')+'</div></div>';
+    }).join(''):'<div class="empty">No open appeals. 🎉</div>';
+
+    h+='<div class="subhead">⚑ Reports ('+reports.length+')</div>';
+    h+= reports.length? reports.map(function(r){
+      var isPost=r.target_type==='post'&&r.target_id;
+      var tgt=isPost?('flap by <b>'+esc((d.repPosts[r.target_id]||{}).name||r.target_name||'?')+'</b>: “'+esc(((d.repPosts[r.target_id]||{}).body||'(deleted)').replace(/<[^>]+>/g,'').slice(0,140))+'”'):('user <b>'+esc(r.target_name||'?')+'</b>');
+      var act=isPost?'<button class="btn del" onclick="ADMIN.modDeletePost('+r.target_id+','+r.id+')">Delete flap</button>':'';
+      return '<div class="row reportrow"><div class="r-top" style="color:#ff9a86;">'+esc(r.reason||'reported')+'</div><div class="r-body">'+tgt+'</div>'+
+        '<div class="r-meta">by '+esc(r.reporter||'?')+' · '+new Date(r.created_at).toLocaleString()+'</div>'+
+        '<div class="acts">'+act+'<button class="btn" onclick="ADMIN.resolveReport('+r.id+')">Dismiss</button></div></div>';
+    }).join(''):'<div class="empty">No open reports. 🎉</div>';
+
+    /* recent flaps + replies to remove */
+    var real=d.flAll.filter(function(r){return !isSentinel(r.name);}).slice(0,30);
+    h+='<div class="subhead">🗂 Recent flaps — remove anything</div>';
+    h+= real.length? real.map(function(r){
+      var txt=esc((r.body||'').replace(/<[^>]+>/g,'').slice(0,120))||'(photo)';
+      return '<div class="row"><div class="r-top">'+esc(r.name)+' <span class="r-meta">· '+new Date(r.created_at).toLocaleString()+'</span></div><div class="r-body">'+txt+(r.pic_url?' <span style="color:#7fd0ff;">📷</span>':'')+'</div><div class="acts">'+(r.pic_url?'<button class="btn" onclick="ADMIN.removePhoto('+r.id+')">Remove photo</button>':'')+'<button class="btn del" onclick="ADMIN.deleteFlap('+r.id+')">Delete flap</button></div></div>';
+    }).join(''):'<div class="empty">No flaps.</div>';
+
+    var reps=(d.repliesRecent||[]).filter(function(r){return !isSentinel(r.name);}).slice(0,25);
+    h+='<div class="subhead">💬 Recent replies — remove anything</div>';
+    h+= reps.length? reps.map(function(r){
+      return '<div class="row"><div class="r-top">'+esc(r.name)+'</div><div class="r-body">'+esc(String(r.body||'').replace(/[␞␟]/g,' ').slice(0,140))+'</div><div class="acts"><button class="btn del" onclick="ADMIN.deleteReply('+r.id+')">Delete reply</button></div></div>';
+    }).join(''):'<div class="empty">No replies.</div>';
+    h+='</div>';
+
+    /* MESSAGES OVERSIGHT */
+    h+='<div class="sec"><h2>💬 Messages oversight</h2>';
+    h+='<div class="hint">Private DMs, newest first — for safety review only. '+d.dms.length+' recent message(s).</div>';
+    h+= d.dms.length? d.dms.slice(0,120).map(function(m){
+      var p=String(m.body||'').split(PSEP); var from=p[0]||'?',to=p[1]||'?',text=p.slice(2).join(PSEP);
+      return '<div class="dmrow"><span class="dm-t">'+new Date(m.created_at).toLocaleString()+'</span><span class="dm-who">'+esc(from)+' → '+esc(to)+'</span><div>'+esc(text)+'</div></div>';
+    }).join(''):'<div class="empty">No messages yet.</div>';
+    h+='</div>';
+
+    /* MEMBER MANAGEMENT */
+    var counts={}; d.flAll.forEach(function(f){ if(!isSentinel(f.name)) counts[f.name]=(counts[f.name]||0)+1; });
+    var verList=(d.verCur||'').split(/[,\s]+/).filter(Boolean).map(function(x){return x.toLowerCase();});
+    h+='<div class="sec"><h2>👥 Member management ('+d.us.length+')</h2>';
+    h+='<div class="hint">Verify, time out, ban, or remove members. Removing a member deletes their flaps &amp; replies too.</div>';
+    h+= d.us.map(function(u){
+      var lc=(u.name||'').toLowerCase();
+      var on=u.last_seen&&d.now-T(u.last_seen)<12e4;
+      var isVer=verList.indexOf(lc)>-1||lc===ADMIN_ACCOUNT;
+      var muted=u.muted_until&&new Date(u.muted_until)>new Date();
+      var av=u.avatar_url?'<img src="'+esc(u.avatar_url)+'" alt="">':initials(u.name);
+      var nm=esq(u.name);
+      var pills=(isVer?'<span class="pill ver">✔ verified</span>':'')+(on?'<span class="pill on">● online</span>':'')+(u.banned?'<span class="pill ban">banned</span>':'')+(muted?'<span class="pill mute">timed out</span>':'');
+      var acts='<button class="btn gold" onclick="ADMIN.toggleVerified(\''+nm+'\')">'+(isVer?'Unverify':'Verify')+'</button>';
+      if(lc!==ADMIN_ACCOUNT){
+        acts+= muted?'<button class="btn blue" onclick="ADMIN.liftMute(\''+nm+'\')">Lift time-out</button>'
+                    :'<button class="btn" onclick="ADMIN.mute(\''+nm+'\',12)">12h</button><button class="btn" onclick="ADMIN.mute(\''+nm+'\',168)">7d</button><button class="btn" onclick="ADMIN.muteCustom(\''+nm+'\')">Custom</button>';
+        acts+= u.banned?'<button class="btn green" onclick="ADMIN.unban(\''+nm+'\')">Un-ban</button>'
+                      :'<button class="btn red" onclick="ADMIN.ban(\''+nm+'\')">Ban</button>';
+        acts+='<button class="btn del" onclick="ADMIN.removeUser(\''+nm+'\')">🗑 Remove</button>';
+      }
+      return '<div class="mem"><span class="ava">'+av+'</span>'+
+        '<div class="m-name"><b>'+esc(u.name)+'</b>'+pills+'<div class="m-sub">'+(counts[u.name]||0)+' flaps · joined '+(u.created_at?new Date(u.created_at).toLocaleDateString():'?')+((u.violations||0)>0?' · ⚠ '+u.violations+' auto-mod removal(s)':'')+'</div></div>'+
+        '<div class="acts" style="margin-top:0;">'+acts+'</div></div>';
+    }).join('');
+    h+='</div>';
+
+    /* SUPPORT TICKETS */
+    h+='<div class="sec"><h2>🎫 Support tickets ('+d.tickets.length+')</h2>';
+    h+= d.tickets.length? d.tickets.map(function(tk){
+      var parts=String(tk.body||'').split(PSEP); var who=parts[0]||'?'; var msg=parts.slice(2).join(PSEP)||parts[1]||'';
+      return '<div class="row"><div class="r-top">🎫 from '+esc(who)+'</div><div class="r-body">'+esc(msg.slice(0,600))+'</div><div class="r-meta">'+new Date(tk.created_at).toLocaleString()+'</div><div class="acts"><button class="btn green" onclick="ADMIN.resolveTicket('+tk.id+')">Resolve &amp; remove</button></div></div>';
+    }).join(''):'<div class="empty">No open tickets. 🎉</div>';
+    h+='</div>';
+
+    /* SITE CONTROLS */
+    var pp=d.pollCur?String(d.pollCur).split(PSEP):[];
+    h+='<div class="sec"><h2>⚙️ Site controls</h2>';
+    h+='<div class="subhead">📣 Official announcement</div>';
+    h+='<textarea class="inp" id="cAnnounce" style="min-height:130px;">'+esc(d.annCur||'')+'</textarea>';
+    h+='<button class="btn blue wfull" style="margin-bottom:6px;" onclick="ADMIN.saveAnnounce()">📢 Post announcement to the top</button>';
+    h+='<button class="btn del wfull" onclick="ADMIN.clearAnnounce()">Clear announcement</button>';
+    h+='<div class="hint">Shows an official card above the pinned flap for everyone. First line = bold title.</div>';
+
+    h+='<div class="subhead">📢 Scrolling ticker</div>';
+    h+='<textarea class="inp" id="cTicker">'+esc(d.tickerCur||'')+'</textarea>';
+    h+='<button class="btn green wfull" onclick="ADMIN.saveTicker()">Save ticker for everyone</button>';
+    h+='<div class="hint">The scrolling message at the top. Separate phrases with ★.</div>';
+
+    h+='<div class="subhead">🗳️ Flap poll of the day</div>';
+    h+='<input class="inp" id="cPollQ" value="'+esc(pp[0]||'')+'" placeholder="Poll question">';
+    h+='<input class="inp" id="cPollO1" value="'+esc(pp[1]||'')+'" placeholder="Option 1">';
+    h+='<input class="inp" id="cPollO2" value="'+esc(pp[2]||'')+'" placeholder="Option 2">';
+    h+='<input class="inp" id="cPollO3" value="'+esc(pp[3]||'')+'" placeholder="Option 3">';
+    h+='<button class="btn purple wfull" onclick="ADMIN.savePoll()">Save custom poll (resets votes)</button>';
+
+    h+='<div class="subhead">✔ Verified members list</div>';
+    h+='<textarea class="inp" id="cVerified">'+esc(d.verCur||'')+'</textarea>';
+    h+='<button class="btn gold wfull" onclick="ADMIN.saveVerified()">Save verified list</button>';
+    h+='<div class="hint">Names (comma/space separated) that get the ✔ badge. Or use Verify buttons above.</div>';
+
+    h+='<div class="subhead">🚀 Friends &amp; Messaging</div>';
+    h+='<div class="hint">Currently <b>'+(d.featuresOn?'LIVE ✅ for everyone':'OFF (hidden)')+'</b>.</div>';
+    h+='<button class="btn wfull '+(d.featuresOn?'del':'green')+'" onclick="ADMIN.toggleSocial('+(d.featuresOn?'false':'true')+')">'+(d.featuresOn?'⏸ Turn OFF Friends & Messaging':'🚀 Turn ON Friends & Messaging')+'</button>';
+    h+='</div>';
+
+    $('panel').innerHTML=h;
+  }
+  function statCard(n,label,cls){return '<div class="stat'+(cls?' '+cls:'')+'"><b>'+n+'</b><span>'+label+'</span></div>';}
+
+  /* ---------- actions ---------- */
+  var ADMIN={
+    reload:function(){loadAll();},
+    resolveReport:async function(id){try{await sb.from('flap_reports').update({resolved:true}).eq('id',id);}catch(e){}toast('Resolved.');loadAll();},
+    modDeletePost:async function(pid,rid){if(!confirm('Delete this flap for everyone?'))return;try{await sb.from('flaps').delete().eq('id',pid);}catch(e){}try{await sb.from('flap_reports').update({resolved:true}).eq('id',rid);}catch(e){}toast('Flap deleted.');loadAll();},
+    deleteFlap:async function(id){if(!confirm('Delete this flap (and its photo) for everyone?'))return;try{await sb.from('flaps').delete().eq('id',id);}catch(e){}toast('Flap deleted.');loadAll();},
+    removePhoto:async function(id){if(!confirm('Remove just the photo? The text stays.'))return;try{await sb.from('flaps').update({pic_url:null}).eq('id',id);}catch(e){}toast('Photo removed.');loadAll();},
+    deleteReply:async function(id){if(!confirm('Delete this reply for everyone?'))return;try{await sb.from('flap_replies').delete().eq('id',id);}catch(e){}toast('Reply deleted.');loadAll();},
+    resolveTicket:async function(id){try{await sb.from('flaps').delete().eq('id',id);}catch(e){}toast('Ticket resolved.');loadAll();},
+    toggleVerified:async function(name){
+      name=(name||'').trim();if(!name)return;
+      var cur=(DATA?DATA.verCur:'')||'';var list=cur.split(/[,\s]+/).filter(Boolean);var low=name.toLowerCase();
+      var has=list.some(function(x){return x.toLowerCase()===low;});
+      list=has?list.filter(function(x){return x.toLowerCase()!==low;}):list.concat([name]);
+      await setSen('::verified::',list.join(', '));
+      toast((has?'Removed':'Granted')+' verified: '+name);loadAll();
+    },
+    mute:async function(name,hours){var until=new Date(Date.now()+hours*3600*1000).toISOString();try{await sb.from('flap_users').update({muted_until:until}).ilike('name',name);}catch(e){}toast('⏳ '+name+' timed out for '+(hours>=168?'7 days':hours+'h')+'.');loadAll();},
+    muteCustom:function(name){var h=prompt('Time out '+name+' for how many HOURS?','12');if(h===null)return;h=parseFloat(h);if(!(h>0)){toast('Enter a number of hours.');return;}ADMIN.mute(name,h);},
+    liftMute:async function(name){try{await sb.from('flap_users').update({muted_until:null}).ilike('name',name);}catch(e){}toast('✓ Time-out lifted for '+name+'.');loadAll();},
+    ban:async function(name){if(!confirm('Ban '+name+'? They will be locked out.'))return;try{await sb.from('flap_users').update({banned:true}).ilike('name',name);}catch(e){}toast('🔨 '+name+' banned.');loadAll();},
+    unban:async function(name){try{await sb.from('flap_users').update({banned:false}).ilike('name',name);}catch(e){}toast('♻ '+name+' un-banned.');loadAll();},
+    removeUser:async function(name){
+      if((name||'').toLowerCase()===ADMIN_ACCOUNT){toast("Can't remove the admin account.");return;}
+      if(!confirm('Remove '+name+' and delete ALL their flaps & replies? This cannot be undone.'))return;
+      try{ await sb.from('flaps').delete().ilike('name',name); await sb.from('flap_replies').delete().ilike('name',name); await sb.from('flap_users').delete().ilike('name',name); }catch(e){}
+      /* count it toward deleted accounts */
+      try{ var ex=await sb.from('flaps').select('id,body').eq('name','::delcount::').order('id',{ascending:false}).limit(1);
+        if(ex.data&&ex.data[0]){ await sb.from('flaps').update({body:String((parseInt(ex.data[0].body,10)||0)+1)}).eq('id',ex.data[0].id); }
+        else { await sb.from('flaps').insert({name:'::delcount::',body:'1',mood:'flappy',likes:0}); }
+      }catch(e){}
+      toast('Removed '+name+'.');loadAll();
+    },
+    saveAnnounce:async function(){var v=($('cAnnounce').value||'').trim();await setSen('::announce::',v);toast(v?'📢 Announcement posted.':'Announcement cleared.');loadAll();},
+    clearAnnounce:async function(){await setSen('::announce::','');$('cAnnounce').value='';toast('Announcement cleared.');loadAll();},
+    saveTicker:async function(){await setSen('::ticker::',($('cTicker').value||'').trim());toast('Ticker saved.');loadAll();},
+    savePoll:async function(){
+      var q=($('cPollQ').value||'').trim(),o1=($('cPollO1').value||'').trim(),o2=($('cPollO2').value||'').trim(),o3=($('cPollO3').value||'').trim();
+      if(!q||!o1||!o2||!o3){toast('Fill in the question and all 3 options.');return;}
+      /* same body format the app expects: q␟o1␟o2␟o3␟MANUAL␟<ts> */
+      await setSen('::poll::',[q,o1,o2,o3,'MANUAL',String(Date.now())].join(PSEP));
+      try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){} /* reset votes (delete is RLS-locked) */
+      toast('Poll saved (votes reset).');loadAll();
+    },
+    saveVerified:async function(){await setSen('::verified::',($('cVerified').value||'').trim());toast('Verified list saved.');loadAll();},
+    toggleSocial:async function(on){await setSen('::features::',on?'on':'off');toast(on?'🚀 Friends & Messaging is LIVE.':'Friends & Messaging turned off.');loadAll();}
+  };
+  window.ADMIN=ADMIN;
+
+  /* ---------- wire up ---------- */
+  $('loginBtn').addEventListener('click',doLogin);
+  $('aPass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+  $('aName').addEventListener('keydown',function(e){if(e.key==='Enter')$('aPass').focus();});
+  $('logoutBtn').addEventListener('click',logout);
+  $('reloadAll').addEventListener('click',function(){loadAll();});
+
+  /* restore session (per-tab only) */
+  try{ var saved=sessionStorage.getItem('flap_admin_ok'); if(saved && saved.toLowerCase()===ADMIN_ACCOUNT){ ADMIN_NAME=saved; enterApp(); } }catch(e){}
+})();
+</script>
+</body>
+</html>
