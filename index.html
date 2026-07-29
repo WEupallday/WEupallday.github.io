@@ -2128,11 +2128,23 @@
   function sanitizeHandle(s){ try{ s=String(s||'').toLowerCase().normalize('NFKD'); }catch(e){ s=String(s||'').toLowerCase(); } return s.replace(/[^a-z0-9_]+/g,'').slice(0,20); }
   /* Reserved / brand-protected names — nobody but the app can use "flap" or impersonate staff.
      Applies to both the display name and the @handle. */
+  /* normalize a name/handle for reserved-word matching: lowercase, strip accents,
+     un-leet (4→a 3→e 1→i 0→o 5/$→s 7→t 8→b @→a), then keep only a-z0-9. So
+     "Jáde W3st", "cat.valentine", "beck0liver" all collapse to the plain identity. */
+  function _rnNorm(s){
+    s=String(s||'').toLowerCase();
+    try{ s=s.normalize('NFD').replace(/[̀-ͯ]/g,''); }catch(e){}
+    s=s.replace(/[4@]/g,'a').replace(/3/g,'e').replace(/1/g,'i').replace(/0/g,'o').replace(/[5$]/g,'s').replace(/7/g,'t').replace(/8/g,'b');
+    return s.replace(/[^a-z0-9]/g,'');
+  }
+  /* Victorious cast — reserved so people can't keep signing up as the characters */
+  var VICTORIOUS_NAMES=['torivega','jadewest','catvalentine','beckoliver','andreharris','robbieshapiro','trinavega','sikowitz'];
   function isReservedName(s){
-    var t=String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+    var t=_rnNorm(s);
     if(!t) return false;
     if(/flap|admin|support|official|moderator/.test(t)) return true;   /* blocks theflap, flapsupport, flap, admin, support, etc. */
     if(/^(mod|staff|root|owner|team|lock|theteam)$/.test(t)) return true;
+    for(var i=0;i<VICTORIOUS_NAMES.length;i++){ if(t.indexOf(VICTORIOUS_NAMES[i])>-1) return true; }   /* Victorious character names + variations */
     return false;
   }
   async function genUniqueHandle(name){
@@ -2347,7 +2359,7 @@
           try{await ensureHandle();}catch(eh){}
         }else{
           /* new account — create it, then send them through onboarding to pick handle + name + profile pic */
-          if(isReservedName(name)){ err.textContent='That name isn’t allowed — pick another (no “flap” or staff names).'; return; }
+          if(isReservedName(name)){ err.textContent='That name’s reserved — pick your own! ✨'; return; }
           var newName=name.slice(0,20);
           err.textContent='creating your account…';
           var newHandle=await genUniqueHandle(newName);
@@ -2471,8 +2483,8 @@
     if(handle.length<3||!name)return;
     var btn=document.getElementById('obNextBtn'); btn.disabled=true;
     var hh=document.getElementById('obHandleHint'), nh=document.getElementById('obNameHint');
-    if(isReservedName(handle)){ hh.className='ob-hint bad'; hh.textContent='That handle isn’t allowed — pick another (no “flap” or staff names).'; btn.disabled=false; return; }
-    if(isReservedName(name)){ nh.className='ob-hint bad'; nh.textContent='That name isn’t allowed — pick another (no “flap” or staff names).'; btn.disabled=false; return; }
+    if(isReservedName(handle)){ hh.className='ob-hint bad'; hh.textContent='That handle’s reserved — pick your own! ✨'; btn.disabled=false; return; }
+    if(isReservedName(name)){ nh.className='ob-hint bad'; nh.textContent='That name’s reserved — pick your own! ✨'; btn.disabled=false; return; }
     if(ONLINE&&sb){
       try{
         var chk=await sb.from('flap_users').select('name').ilike('handle',handle).limit(5);
@@ -2682,7 +2694,7 @@
     var hint=document.getElementById('setNameHint');
     if(!newName){ hint.className='set-hint bad'; hint.textContent='Pick a name.'; return; }
     if(newName.toLowerCase()===(SET.row.name||'').toLowerCase()){ hint.className='set-hint'; hint.textContent='That’s already your name.'; return; }
-    if(isReservedName(newName)){ hint.className='set-hint bad'; hint.textContent='That name isn’t allowed (no “flap” or staff names).'; return; }
+    if(isReservedName(newName)){ hint.className='set-hint bad'; hint.textContent='That name’s reserved — pick your own! ✨'; return; }
     var btn=document.getElementById('setNameSave'); btn.classList.add('disabled');
     try{
       var chk=await sb.from('flap_users').select('name').ilike('name',newName).limit(1);
@@ -2706,7 +2718,7 @@
     var hint=document.getElementById('setHandleHint');
     if(newH.length<3){ hint.className='set-hint bad'; hint.textContent='Handles are 3+ letters, numbers or _.'; return; }
     if(newH===(SET.row.handle||'').toLowerCase()){ hint.className='set-hint'; hint.textContent='That’s already your handle.'; return; }
-    if(isReservedName(newH)){ hint.className='set-hint bad'; hint.textContent='That handle isn’t allowed (no “flap” or staff names).'; return; }
+    if(isReservedName(newH)){ hint.className='set-hint bad'; hint.textContent='That handle’s reserved — pick your own! ✨'; return; }
     var btn=document.getElementById('setHandleSave'); btn.classList.add('disabled');
     try{
       var chk=await sb.from('flap_users').select('name').ilike('handle',newH).limit(1);
