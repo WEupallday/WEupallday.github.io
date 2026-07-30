@@ -155,7 +155,6 @@
       if((res.data.name||'').toLowerCase()!==ADMIN_ACCOUNT){err.textContent='That account is not an administrator.';return;}
       /* real credential match against the DB + admin-account check passed */
       ADMIN_NAME=res.data.name;
-      try{sessionStorage.setItem('flap_admin_ok',ADMIN_NAME);}catch(e){}
       enterApp();
     }catch(e){err.textContent='Could not reach the server — try again.';}
   }
@@ -166,7 +165,6 @@
     loadAll();
   }
   function logout(){
-    try{sessionStorage.removeItem('flap_admin_ok');}catch(e){}
     ADMIN_NAME=''; DATA=null;
     $('app').style.display='none'; $('gate').style.display='flex';
     $('aPass').value=''; $('gateErr').textContent='';
@@ -410,9 +408,7 @@
   $('aName').addEventListener('keydown',function(e){if(e.key==='Enter')$('aPass').focus();});
   $('logoutBtn').addEventListener('click',logout);
   $('reloadAll').addEventListener('click',function(){loadAll();});
-
-  /* restore session (per-tab only) */
-  try{ var saved=sessionStorage.getItem('flap_admin_ok'); if(saved && saved.toLowerCase()===ADMIN_ACCOUNT){ ADMIN_NAME=saved; enterApp(); } }catch(e){}
+  /* no session persistence — the admin password is required on every visit */
 })();
 </script>
 </body>

@@ -1154,7 +1154,6 @@
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Profiles</button>
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Statuses</button>
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Pix</button>
-    <button class="navbtn hqbtn" id="hqBtn" type="button" onclick="showAdmin()" title="Admin HQ">👑</button>
     <button class="navbtn msg-nav" id="msgBtn" type="button" onclick="openSocial('messages')" title="Friends & Messages">💬<span id="msgCount" class="bell-count"></span></button>
     <button class="navbtn bell" id="bellBtn" type="button" onclick="toggleNotifs(event)">🔔<span id="bellCount" class="bell-count"></span></button>
   </div>
@@ -1242,7 +1241,7 @@
     <div class="set-body">
       <p style="font-size:13px;color:#333;margin:2px 0 10px;">Your <b id="violKind">flap</b> broke our <b>House Rules</b> (hate speech / slurs / severe abuse) and was <b>not posted</b>.</p>
       <div style="background:#fbeceb;border:1px solid #f0c0b8;border-radius:9px;padding:10px 12px;font-size:12.5px;color:#7a2b22;word-break:break-word;" id="violContent"></div>
-      <p style="font-size:11.5px;color:#667;margin:10px 0 2px;">Repeated violations may lead to a time-out or removal. If you believe this was flagged by mistake, you can appeal and <b>lock</b> will personally review it.</p>
+      <p style="font-size:11.5px;color:#667;margin:10px 0 2px;">Repeated violations may lead to a time-out or removal. If you believe this was flagged by mistake, you can appeal and <b>our moderation team</b> will review it.</p>
       <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
         <span class="set-btn" onclick="closeViol()">OK, got it</span>
         <span class="set-btn" style="background:#c0392b;" onclick="submitAppeal()">📩 Appeal — this was a mistake</span>
@@ -1257,7 +1256,7 @@
 
 <div class="banner" id="banner"></div>
 
-<div class="ticker"><span id="tickerText">★ WELCOME TO THEFLAP.COM — FRIENDS EDITION ★ INVITE ONLY ★ BE NICE OR LOCK DELETES YOU ★ OPEN MIC NIGHT THIS FRIDAY ★ WHAT'S FLAPPENING? ★</span></div>
+<div class="ticker"><span id="tickerText">★ WELCOME TO THEFLAP.COM — FRIENDS EDITION ★ INVITE ONLY ★ BE NICE — MODERATION KEEPS IT CHILL ★ OPEN MIC NIGHT THIS FRIDAY ★ WHAT'S FLAPPENING? ★</span></div>
 
 <div id="drawerScrim" onclick="toggleDrawer(false)"></div>
 <aside id="sideDrawer" aria-hidden="true">
@@ -1306,7 +1305,7 @@
         Welcome to TheFlap.com — where you'll find all the hottest pics, clips, and flaps
         from your favorite Westbrook High students (and teachers!). The friends-only edition:
         real flaps from real friends, plus the classic crew below.<br><br>
-        Run by: <a onclick="toast('That would be Lock. Obviously.')">@lock</a>
+        Run by: <a onclick="toast('The TheFlap moderation team. 🐦')">the TheFlap moderation team</a>
       </div>
     </div>
 
@@ -1320,7 +1319,6 @@
         <button class="you-update" type="button" style="margin-top:8px;background:linear-gradient(180deg,#3c6ec9,#22398f);" onclick="if(ME.name)showUserProfile(ME.name);else requireAuth();">👤 VIEW MY PROFILE</button>
         <div class="hint">upload your real pic to replace the cartoon!</div>
         <button class="you-update" type="button" style="background:linear-gradient(180deg,#4a4a5e,#2c2c3a);margin-top:8px;" onclick="openSettings()">⚙ SETTINGS</button>
-        <button class="adminbtn" id="adminBtn" type="button" onclick="showAdmin()">👑 ADMIN PANEL</button>
         <div style="margin-top:8px;"><a class="privacy-link" onclick="openPrivacy()">Privacy Policy</a></div>
       </div>
       <input type="file" id="avatarFile" accept="image/*" hidden>
@@ -1375,10 +1373,10 @@
         2. no explicit pictures, nudity, or nsfw content.<br>
         3. no last names, phone numbers, addresses.<br>
         4. what flaps here stays here.<br>
-        5. lock can delete anything. lock is the law.<br>
+        5. our moderation team can remove anything that breaks the rules.<br>
         6. taco tuesday is sacred.<br>
-        <span style="opacity:.85;">⚙ auto-moderation is on: posts, replies &amp; DMs with slurs or severe abuse are blocked automatically and reviewed by lock. wrongly flagged? tap “Appeal.”</span><br>
-        <span style="opacity:.85;">💬 heads up: direct messages are <b>not private from moderation</b> — lock may review messages to keep TheFlap safe.</span>
+        <span style="opacity:.85;">⚙ auto-moderation is on: posts, replies &amp; DMs with slurs or severe abuse are blocked automatically and reviewed by our moderation team. wrongly flagged? tap “Appeal.”</span><br>
+        <span style="opacity:.85;">💬 heads up: direct messages are <b>not private from moderation</b> — moderators may review messages to keep TheFlap safe.</span>
       </div>
     </div>
     <div class="sidebox">
@@ -2281,7 +2279,7 @@
     try{ await sb.from('flap_reports').insert({reporter:name,reason:'[APPEAL — user says wrongly flagged | '+c.kind+'] '+c.content,target_type:'appeal',target_name:name,resolved:false}); }catch(e){}
     try{ discordPing('appeal',name,'📩 '+name+' is APPEALING an auto-mod removal ('+c.kind+'): "'+c.content+'"'); }catch(e){}
     closeViol();
-    toast('Appeal sent — lock will review it. Thanks!');
+    toast('Appeal sent — our moderation team will review it. Thanks!');
   }
 
   /* ================= FOLLOWING (one-way, no accept — lighter-weight than friends) ================= */
@@ -2826,30 +2824,7 @@
              :'<button type="button" class="danger" onclick="blockUser(\''+pn2+'\')">🚫 Block user</button>')+
            '</div>';
       }
-      if(ME.admin && (name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
-        var _au=USERS[(name||'').toLowerCase()]||{}; var _dev=_au.device||'unknown'; var _pn=esc(name).replace(/'/g,'');
-        h+='<div class="pc-actions" style="border-top:1px dashed #cbd5e8;margin-top:6px;padding-top:8px;flex-wrap:wrap;align-items:center;">'+
-           '<span style="font-size:11px;color:#2a4a6e;margin-right:auto;">📱 Device: <b>'+esc(_dev)+'</b></span>'+
-           (_au.banned
-             ?'<button type="button" onclick="unbanUser(\''+_pn+'\')">♻ Unban</button>'
-             :'<button type="button" class="danger" onclick="banUser(\''+_pn+'\')">🔨 Permanently ban</button>')+
-           '</div>';
-        var _mo=_au.muted_until && new Date(_au.muted_until)>new Date();
-        h+='<div class="pc-actions" style="margin-top:4px;flex-wrap:wrap;align-items:center;gap:6px;">'+
-           '<span style="font-size:11px;color:#2a4a6e;margin-right:auto;">'+(_mo?('⏳ Timed out until <b>'+new Date(_au.muted_until).toLocaleString()+'</b>'):'⏳ Time-out (can read, can\'t post/reply/react):')+'</span>'+
-           (_mo
-             ? '<button type="button" onclick="unmuteUser(\''+_pn+'\')">✓ Lift time-out</button>'
-             : '<button type="button" onclick="muteUser(\''+_pn+'\',1)">1h</button>'+
-               '<button type="button" onclick="muteUser(\''+_pn+'\',24)">24h</button>'+
-               '<button type="button" onclick="muteUser(\''+_pn+'\',168)">7d</button>'+
-               '<button type="button" onclick="customMute(\''+_pn+'\')">Custom</button>')+
-           '</div>';
-        h+='<div class="pc-actions" style="margin-top:4px;flex-wrap:wrap;align-items:center;gap:6px;">'+
-           '<span style="font-size:11px;color:#2a4a6e;margin-right:auto;">🛡 Moderator (can pin & remove posts/replies):</span>'+
-           '<button type="button" onclick="toggleMod(\''+_pn+'\')">'+(isMod(name)?'✓ Remove moderator':'🛡 Make moderator')+'</button>'+
-           '</div>';
-        if((_au.violations||0)>0){ h+='<div style="font-size:10.5px;color:#a35a00;padding:2px 2px 0;">⚠ '+_au.violations+' auto-mod removal(s) on record for this member.</div>'; }
-      }
+      /* member moderation (ban / time-out / moderator) lives on the separate admin site now — no admin UI in the main app */
       h+='<div class="pc-tabs">'+
          '<button class="pc-tab on" id="ptab-posts" onclick="profileTab(\'posts\')">📝 Flaps ('+mine.length+')</button>'+
          '<button class="pc-tab" id="ptab-reflaps" onclick="profileTab(\'reflaps\')">🔁 Reflaps ('+refl.length+')</button></div>';
@@ -3005,6 +2980,15 @@
     if(m){ document.getElementById('delModalName').textContent=ME.name; m.classList.add('open'); }
   }
   function closeDelModal(){ var m=document.getElementById('delModal'); if(m)m.classList.remove('open'); }
+  /* keep a running tally of deleted accounts in a hidden ::delcount:: sentinel row so the admin site can show it */
+  async function bumpDelCount(){
+    if(!ONLINE)return;
+    try{
+      var ex=await sb.from('flaps').select('id,body').eq('name','::delcount::').order('id',{ascending:false}).limit(1);
+      if(ex.data&&ex.data[0]){ var n=(parseInt(ex.data[0].body,10)||0)+1; await sb.from('flaps').update({body:String(n)}).eq('id',ex.data[0].id); }
+      else { await sb.from('flaps').insert({name:'::delcount::',body:'1',mood:'flappy',likes:0}); }
+    }catch(e){}
+  }
   async function reallyDeleteAccount(){
     closeDelModal();
     if(!ME.name)return;
@@ -3019,6 +3003,7 @@
         try{await sb.from('push_subs').delete().eq('name',name);}catch(e){}
         try{await sb.from('flap_blocks').delete().eq('blocker',name);}catch(e){}
         await sb.from('flap_users').delete().ilike('name',name);
+        try{await bumpDelCount();}catch(e){}
       }catch(e){}
     }
     clearSession();
@@ -3075,8 +3060,7 @@
     renderLive();
     renderSidebar();
     loadPoll();
-    if(ME.admin)document.getElementById('adminBtn').classList.add('show');
-    document.body.classList.toggle('admin-on', !!ME.admin);   /* shows the 👑 HQ button in the top bar */
+    /* admin panel moved to the separate private admin site — no admin UI in the main app */
     try{applyHdrX();}catch(e){}   /* refresh the X-style avatar in the header once we know who you are */
     heartbeat();
   }
@@ -3795,7 +3779,7 @@
   async function toggleMod(name){
     if(!ME.admin)return;
     var key=(name||'').toLowerCase(); if(!key)return;
-    if(key==='lock'){ toast('Lock is always an admin.'); return; }
+    if(key==='lock'){ toast('The admin account is always an admin.'); return; }
     var making=!MODS[key];
     if(making)MODS[key]=1; else delete MODS[key];
     var body=Object.keys(MODS).join(', ');
@@ -4577,7 +4561,7 @@
   }
   async function removeUser(name){
     if(!ME.admin)return;
-    if((name||'').toLowerCase()==='lock'){toast("Can't remove lock.");return;}
+    if((name||'').toLowerCase()==='lock'){toast("Can't remove the admin account.");return;}
     if(!confirm('Remove '+name+' and delete all their flaps & replies? This cannot be undone.'))return;
     try{ await sb.from('flaps').delete().ilike('name',name); await sb.from('flap_replies').delete().ilike('name',name); await sb.from('flap_users').delete().ilike('name',name); }catch(e){}
     toast('Removed '+name+'.'); try{await loadFeed();}catch(e){} showAdmin();
