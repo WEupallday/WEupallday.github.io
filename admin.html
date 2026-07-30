@@ -7,7 +7,7 @@
 <title>TheFlap · Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{--navy:#12357a;--navy2:#0d2456;--blue:#2f7ac9;--blue-d:#1a5fa8;--gold:#f5c542;--red:#c0392b;--green:#1c7a42;--purple:#5f2ea0;}
+  :root{--navy:#12357a;--blue:#2f7ac9;--blue-d:#1a5fa8;--gold:#f5c542;--red:#c0392b;--green:#1c7a42;--purple:#5f2ea0;}
   *{box-sizing:border-box;}
   body{margin:0;background:#0d1a2e;color:#e8eef7;font-family:-apple-system,Segoe UI,Verdana,Arial,sans-serif;font-size:14px;line-height:1.4;}
   a{color:#7fd0ff;}
@@ -22,24 +22,37 @@
   .gatebox button:hover{filter:brightness(1.08);}
   .gate-err{color:#ff8a7a;font-size:12px;margin-top:12px;min-height:16px;}
   /* ---- app shell ---- */
-  #app{display:none;max-width:1080px;margin:0 auto;padding:0 16px 60px;}
-  header.topbar{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,#16305a,#0d1f3d);border-bottom:1px solid #24406e;padding:12px 16px;display:flex;align-items:center;gap:12px;margin:0 -16px 18px;}
+  #app{display:none;max-width:1080px;margin:0 auto;padding:0 0 60px;}
+  header.topbar{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#16305a,#0d1f3d);border-bottom:1px solid #24406e;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   header.topbar .crown{font-size:20px;}
-  header.topbar h1{font-size:16px;margin:0;color:#fff;flex:1;}
-  header.topbar .who{font-size:12px;color:#9db4d6;}
-  header.topbar button{background:#24406e;border:none;color:#cfe0f6;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:bold;cursor:pointer;}
-  header.topbar button:hover{background:#2e5290;}
-  .sec{background:#132747;border:1px solid #22406e;border-radius:14px;padding:18px;margin-bottom:18px;}
-  .sec > h2{margin:0 0 14px;font-size:15px;color:#fff;display:flex;align-items:center;gap:8px;border-bottom:1px solid #22406e;padding-bottom:10px;}
+  header.topbar h1{font-size:16px;margin:0;color:#fff;}
+  header.topbar .who{font-size:11px;color:#9db4d6;margin-left:auto;}
+  header.topbar button.hbtn{background:#24406e;border:none;color:#cfe0f6;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:bold;cursor:pointer;}
+  header.topbar button.hbtn:hover{background:#2e5290;}
+  /* compact stat strip */
+  .statstrip{display:flex;flex-wrap:wrap;gap:8px 16px;background:#0f2340;border-bottom:1px solid #22406e;padding:9px 16px;position:sticky;top:47px;z-index:19;}
+  .statstrip .s{font-size:12px;color:#9db4d6;white-space:nowrap;}
+  .statstrip .s b{color:#fff;font-size:14px;}
+  .statstrip .s.hot b{color:var(--gold);}
+  .statstrip .s.danger b{color:#ff9a86;}
+  /* sticky tab nav */
+  nav.tabs{position:sticky;top:83px;z-index:18;display:flex;gap:6px;flex-wrap:wrap;background:#0d1f3d;border-bottom:1px solid #24406e;padding:8px 12px;}
+  nav.tabs button{background:#152a4a;border:1px solid #24406e;color:#bcd0ee;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:bold;cursor:pointer;}
+  nav.tabs button:hover{background:#1d3career;background:#1d385f;}
+  nav.tabs button.on{background:linear-gradient(180deg,var(--blue),var(--blue-d));color:#fff;border-color:#3b7fd0;}
+  /* section container */
+  .wrap{padding:16px;}
+  .sec{background:#132747;border:1px solid #22406e;border-radius:14px;padding:16px;margin-bottom:16px;}
+  .sec > h2{margin:0 0 12px;font-size:15px;color:#fff;display:flex;align-items:center;gap:8px;border-bottom:1px solid #22406e;padding-bottom:9px;}
   .sec .refresh{margin-left:auto;font-size:11px;font-weight:normal;background:#24406e;border:none;color:#cfe0f6;border-radius:7px;padding:5px 10px;cursor:pointer;}
-  /* stats */
+  .subhead{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#7f9bc4;margin:16px 0 8px;font-weight:bold;}
+  .subhead:first-child{margin-top:0;}
+  /* stat cards (Stats tab) */
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;}
   .stat{background:#0f2340;border:1px solid #23406e;border-radius:11px;padding:14px 12px;text-align:center;}
   .stat b{display:block;font-size:26px;color:#fff;line-height:1;}
-  .stat span{display:block;font-size:11px;color:#9db4d6;margin-top:6px;letter-spacing:.3px;}
-  .stat.hot{background:linear-gradient(180deg,#3a2a0e,#241c0c);border-color:#7a5a1a;}
-  .stat.hot b{color:var(--gold);}
-  .stat.danger b{color:#ff9a86;}
+  .stat span{display:block;font-size:11px;color:#9db4d6;margin-top:6px;}
+  .stat.hot b{color:var(--gold);} .stat.danger b{color:#ff9a86;}
   /* rows */
   .row{background:#0f2340;border:1px solid #23406e;border-radius:10px;padding:11px 13px;margin-bottom:9px;}
   .row .r-top{font-weight:bold;color:#fff;}
@@ -58,13 +71,14 @@
   .btn.purple{background:linear-gradient(180deg,#8a4fd8,#5f2ea0);}
   .empty{color:#7fae7f;font-size:13px;padding:6px 0;}
   .muted{color:#8ba3c9;font-size:12px;}
+  .note{font-size:11.5px;color:#cbd8ee;background:#0f2340;border:1px solid #2a4a7a;border-radius:9px;padding:9px 11px;margin-bottom:12px;line-height:1.5;}
   /* members */
   .mem{display:flex;align-items:center;gap:11px;background:#0f2340;border:1px solid #23406e;border-radius:10px;padding:9px 12px;margin-bottom:8px;flex-wrap:wrap;}
   .mem .ava{width:38px;height:38px;border-radius:8px;overflow:hidden;background:#24406e;flex:none;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#cfe0f6;}
   .mem .ava img{width:100%;height:100%;object-fit:cover;}
-  .mem .m-name{flex:1;min-width:140px;}
+  .mem .m-name{flex:1;min-width:150px;}
   .mem .m-name b{color:#fff;}
-  .mem .m-sub{font-size:11px;color:#8ba3c9;}
+  .mem .m-sub{font-size:11px;color:#8ba3c9;margin-top:1px;}
   .pill{display:inline-block;font-size:10px;font-weight:bold;border-radius:9px;padding:1px 7px;margin-left:5px;}
   .pill.ver{background:#3a2f0a;color:var(--gold);}
   .pill.on{background:#0e3a20;color:#4fe08a;}
@@ -72,14 +86,19 @@
   .pill.mute{background:#2a1c3a;color:#c9a0ff;}
   .inp{width:100%;padding:10px 12px;border-radius:9px;border:1px solid #2c4a7a;background:#0f2340;color:#fff;font-size:13px;font-family:inherit;margin-bottom:8px;}
   textarea.inp{min-height:56px;resize:vertical;}
+  select.inp{cursor:pointer;}
   .hint{font-size:11px;color:#8ba3c9;margin:-2px 0 12px;}
   .wfull{width:100%;}
-  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#0f2340;border:1px solid #2e5290;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .2s;z-index:50;max-width:90vw;}
+  .msrch{width:100%;padding:10px 12px;border-radius:9px;border:1px solid #2c4a7a;background:#0f2340;color:#fff;font-size:14px;margin-bottom:10px;}
+  .conv{cursor:pointer;padding:10px;border:1px solid #23406e;border-radius:9px;margin-bottom:7px;background:#0f2340;}
+  .conv:hover{background:#12294a;}
+  .conv .c-top{font-weight:bold;color:#cfe0f6;font-size:13px;}
+  .conv .c-last{font-size:12px;color:#8ba3c9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;}
+  .dmmsg{margin:5px 0;padding:8px 11px;background:#12294a;border-radius:10px;font-size:12.5px;line-height:1.45;}
+  .dmmsg b{color:#9fd0ff;}
+  .dmmsg .t{color:#7f9bc4;font-size:10px;}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#0f2340;border:1px solid #2e5290;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .2s;z-index:60;max-width:90vw;}
   .toast.show{opacity:1;}
-  .subhead{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#7f9bc4;margin:16px 0 8px;font-weight:bold;}
-  .dmrow{background:#0f2340;border:1px solid #23406e;border-radius:9px;padding:8px 11px;margin-bottom:6px;font-size:12.5px;}
-  .dmrow .dm-who{color:#9fd0ff;font-weight:bold;}
-  .dmrow .dm-t{color:#7f9bc4;font-size:10.5px;float:right;}
   .loading{padding:24px;text-align:center;color:#9db4d6;}
 </style>
 </head>
@@ -105,10 +124,12 @@
     <span class="crown">👑</span>
     <h1>TheFlap HQ</h1>
     <span class="who" id="whoLabel"></span>
-    <button type="button" id="reloadAll">↻ Refresh</button>
-    <button type="button" id="logoutBtn">Sign out</button>
+    <button type="button" class="hbtn" id="reloadAll">↻ Refresh</button>
+    <button type="button" class="hbtn" id="logoutBtn">Sign out</button>
   </header>
-  <div id="panel"><div class="loading">Loading your HQ…</div></div>
+  <div class="statstrip" id="statStrip"></div>
+  <nav class="tabs" id="tabNav"></nav>
+  <div class="wrap" id="panel"><div class="loading">Loading your HQ…</div></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -118,10 +139,35 @@
   "use strict";
   var SUPABASE_URL="https://zclappstgkjebltkdzlq.supabase.co";
   var SUPABASE_ANON_KEY="sb_publishable_fn7Fzyx9B95U8FY_5cSO3Q_Mn43ce1H";
-  var ADMIN_ACCOUNT="lock"; /* only this account may enter */
-  var PSEP="␟"; /* ␟ */
+  var ADMIN_ACCOUNT="lock";
+  var PSEP="␟";
   var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false}});
-  var ADMIN_NAME=""; var DATA=null;
+  var ADMIN_NAME="", DATA=null, TAB="controls", MSG_SEARCH="", MSG_OPEN=null;
+
+  /* ---------- house personas (seed the feed / post-as) ---------- */
+  var HOUSE_PERSONAS=[
+    {name:'moonchild',c1:'#ff7ab8',c2:'#c23f8f',mood:'tired',posts:["who else is awake rn or is it just me and my thoughts","3am and i've replanned my whole life again lol","not me watching the sunrise on a school night","brain said no sleep tonight so here i am","if you're reading this you should be asleep. hi"]},
+    {name:'the plug',c1:'#4f8cff',c2:'#2b4fc0',mood:'hyped',posts:["pull up we outside today","who's tryna do something im so bored","link up or lose out i don't make the rules","energy is UP today let's move","someone plan something i'll be there in 20"]},
+    {name:'sunny',c1:'#ffb14d',c2:'#e07d0a',mood:'happy',posts:["reminder: you're doing better than you think","small wins count, i made my bed today lol","proud of everyone just showing up today","drink some water this is your sign","today was actually good and i'll take it"]},
+    {name:'lowkey',c1:'#8a97b5',c2:'#4a5978',mood:'chillin',posts:["been reading everyone's flaps and saying nothing, as one does","lurking is a personality trait and it's mine","i see everything, i say nothing, i log off","no thoughts just vibes today","reflapping in silence like a professional"]},
+    {name:'dramaqueen',c1:'#e0361f',c2:'#8f1408',mood:'freakin',posts:["so much just happened i can't even post about it","why is it always something with these people","not saying names but you know who you are","the drama writes itself i just report it","grab your snacks it's about to be a day"]},
+    {name:'bestie',c1:'#16a34a',c2:'#0e7a34',mood:'pumped',posts:["everyone post something i wanna hype you up","reflap this if you're having a good day i'll reflap back","we're all besties on here whether you like it or not","shoutout to whoever's reading this, you're that girl/guy","let's get everybody flapping today"]}
+  ];
+  var POLL_POOL=[
+    {q:"What's the best pizza topping? 🍕",opts:["Pepperoni, obviously 🐷","Pineapple (fight me) 🍍","Extra cheese, no notes 🧀"]},
+    {q:"Best animal, no contest? 🐾",opts:["Dogs — loyal kings 🐶","Cats — chaotic royalty 🐱","Capybara — unbothered icon 🦫"]},
+    {q:"What do you love most about TheFlap? 🐦",opts:["The unhinged flaps 🍿","My friends are here 💛","No algorithm, no ads 🚫"]},
+    {q:"Your texting-back speed? ⏱️",opts:["Instant, no shame 📲","Read it, forgot 😴","3–5 business days 📅"]},
+    {q:"Best late-night snack? 🌙",opts:["Leftover pizza 🍕","Cereal, obviously 🥣","Whatever's closest 🤷"]},
+    {q:"Your toxic trait, be honest 😈",opts:["Always right (I am) 💅","Leave on read 😶","Start drama, then watch 🍿"]},
+    {q:"Coffee or tea — pick a side ☕",opts:["Coffee or I'm feral ☕","Tea, I'm zen 🍵","Energy drinks 💀"]},
+    {q:"Group chat goes silent. You? 💬",opts:["Send a meme 🤡","Type 'anyway' 😐","Screenshot & scheme 🕵️"]},
+    {q:"Best season, final answer? 🍂",opts:["Fall — cozy supremacy 🍁","Summer — sun's out ☀️","Winter — hoodie szn 🧥"]},
+    {q:"Ideal Friday night? 🌃",opts:["Out, obviously 🕺","Home, blanket, snacks 🛋️","Depends who's asking 👀"]},
+    {q:"Cereal: milk first or last? 🥣",opts:["Cereal first, always 🥣","Milk first, you monster 🥛","I don't do cereal 🚫"]},
+    {q:"Beach or mountains? 🏖️",opts:["Beach — sand everywhere 🏖️","Mountains — cozy views 🏔️","Neither, I'm inside 🏠"]},
+    {q:"Best emoji, be honest 😭",opts:["💀 (I'm deceased)","😭 (crying-laughing)","🐦 (obviously)"]}
+  ];
 
   /* ---------- helpers ---------- */
   function $(id){return document.getElementById(id);}
@@ -132,12 +178,22 @@
   function T(v){return v?new Date(v).getTime():0;}
   async function sha256(s){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}
   function initials(n){n=String(n||'?').trim();return (n[0]||'?').toUpperCase();}
+  function b64(s){try{return btoa(unescape(encodeURIComponent(s)));}catch(e){return '';}}
+  function unb64(s){try{return decodeURIComponent(escape(atob(s)));}catch(e){return '';}}
   async function sen(nm){try{var r=await sb.from('flaps').select('body').eq('name',nm).order('id',{ascending:false}).limit(1);return (r.data&&r.data[0])?r.data[0].body:'';}catch(e){return '';}}
   async function setSen(nm,body){
     try{ var ex=await sb.from('flaps').select('id').eq('name',nm).order('id',{ascending:false}).limit(1);
       if(ex.data&&ex.data[0]) await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id);
       else await sb.from('flaps').insert({name:nm,body:body,mood:'flappy',likes:0});
     }catch(e){}
+  }
+  function personaAva(p){
+    var s='<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+p.c1+'"/><stop offset="1" stop-color="'+p.c2+'"/></linearGradient></defs><rect width="120" height="120" fill="url(#g)"/><text x="60" y="80" font-family="Verdana,Arial" font-size="58" font-weight="bold" fill="#ffffff" text-anchor="middle">'+(p.name[0]||'?').toUpperCase()+'</text></svg>';
+    return 'data:image/svg+xml,'+encodeURIComponent(s);
+  }
+  async function postAsPersonaBody(p,body){
+    try{ await sb.from('flap_users').upsert({name:p.name,avatar_url:personaAva(p),last_seen:new Date().toISOString()},{onConflict:'name'}); }catch(e){}
+    try{ await sb.from('flaps').insert({name:p.name,avatar_url:personaAva(p),mood:p.mood||'happy',body:body,likes:Math.floor(Math.random()*4)}); }catch(e){}
   }
 
   /* ---------- auth ---------- */
@@ -153,7 +209,6 @@
       if(!res.data){err.textContent='No such account.';return;}
       if(res.data.pass_hash!==hash){err.textContent='Wrong password.';return;}
       if((res.data.name||'').toLowerCase()!==ADMIN_ACCOUNT){err.textContent='That account is not an administrator.';return;}
-      /* real credential match against the DB + admin-account check passed */
       ADMIN_NAME=res.data.name;
       enterApp();
     }catch(e){err.textContent='Could not reach the server — try again.';}
@@ -164,11 +219,7 @@
     $('whoLabel').textContent='signed in as '+ADMIN_NAME;
     loadAll();
   }
-  function logout(){
-    ADMIN_NAME=''; DATA=null;
-    $('app').style.display='none'; $('gate').style.display='flex';
-    $('aPass').value=''; $('gateErr').textContent='';
-  }
+  function logout(){ ADMIN_NAME=""; DATA=null; $('app').style.display='none'; $('gate').style.display='flex'; $('aPass').value=''; $('gateErr').textContent=''; }
 
   /* ---------- data load ---------- */
   async function loadAll(){
@@ -182,7 +233,7 @@
       var repIds=reports.filter(function(r){return r.target_type==='post'&&r.target_id;}).map(function(r){return r.target_id;});
       var repPosts={};if(repIds.length){try{((await sb.from('flaps').select('id,body,name').in('id',repIds)).data||[]).forEach(function(p){repPosts[p.id]=p;});}catch(e){}}
       var tickets=[];try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(100)).data||[];}catch(e){}
-      var dms=[];try{dms=(await sb.from('flaps').select('id,body,created_at').eq('name','::dm::').order('id',{ascending:false}).limit(400)).data||[];}catch(e){}
+      var dms=[];try{dms=(await sb.from('flaps').select('id,body,created_at').eq('name','::dm::').order('id',{ascending:false}).limit(600)).data||[];}catch(e){}
       DATA={
         us:us, flAll:flAll, replyCount:(rcRes.count||0), repliesRecent:repliesRecent,
         reports:reports, repPosts:repPosts, tickets:tickets, dms:dms,
@@ -192,7 +243,7 @@
         delCount:(parseInt(await sen('::delcount::'),10)||0),
         now:Date.now()
       };
-      render();
+      renderStrip(); renderTabs(); renderTab();
     }catch(e){
       $('panel').innerHTML='<div class="sec"><h2>⚠ Could not load</h2><div class="muted">Check your connection and tap Refresh.</div></div>';
     }
@@ -216,30 +267,120 @@
       openIssues:d.reports.length+d.tickets.length
     };
   }
+  function renderStrip(){
+    var s=stats();
+    $('statStrip').innerHTML=
+      strip(s.joinsWeek,'joined this week','hot')+strip(s.online,'online')+strip(s.members,'members')+
+      strip(s.flapsToday,'flaps today')+strip(s.repliesToday,'replies today')+
+      strip(s.deleted,'deleted','danger')+strip(s.openIssues,'open issues',s.openIssues?'danger':'');
+  }
+  function strip(n,label,cls){return '<span class="s'+(cls?' '+cls:'')+'"><b>'+n+'</b> '+label+'</span>';}
 
-  /* ---------- render ---------- */
-  function render(){
-    var d=DATA, s=stats(), h='';
-    /* STATISTICS */
-    h+='<div class="sec"><h2>📊 Statistics <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2><div class="stats">'+
-      statCard(s.joinsWeek,'joined this week','hot')+
-      statCard(s.joinsToday,'joined today','')+
-      statCard(s.online,'online now','')+
-      statCard(s.members,'total members','')+
-      statCard(s.flapsToday,'flaps today','')+
-      statCard(s.repliesToday,'replies today','')+
-      statCard(s.totalFlaps,'total flaps','')+
-      statCard(s.totalReplies,'total replies','')+
-      statCard(s.deleted,'deleted accounts','danger')+
-      statCard(s.banned,'banned','danger')+
-      statCard(s.muted,'timed out','')+
-      statCard(s.openIssues,'open issues','')+
-    '</div></div>';
+  /* ---------- tab nav ---------- */
+  var TABS=[['controls','⚙️ Controls'],['members','👥 Members'],['moderation','🛡️ Moderation'],['messages','💬 Messages'],['support','🎫 Support'],['stats','📊 Stats']];
+  function renderTabs(){
+    $('tabNav').innerHTML=TABS.map(function(t){return '<button class="'+(TAB===t[0]?'on':'')+'" onclick="ADMIN.tab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');
+  }
+  function renderTab(){
+    var h='';
+    if(TAB==='controls')h=secControls();
+    else if(TAB==='members')h=secMembers();
+    else if(TAB==='moderation')h=secModeration();
+    else if(TAB==='messages')h=secMessages();
+    else if(TAB==='support')h=secSupport();
+    else h=secStats();
+    $('panel').innerHTML=h;
+    window.scrollTo(0,0);
+  }
 
-    /* MODERATION: appeals + reports */
+  /* ---------- CONTROLS (front & center) ---------- */
+  function secControls(){
+    var d=DATA, pp=d.pollCur?String(d.pollCur).split(PSEP):[];
+    var h='<div class="sec"><h2>⚙️ Site controls <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
+    h+='<div class="subhead">📣 Official announcement</div>';
+    h+='<textarea class="inp" id="cAnnounce" style="min-height:120px;">'+esc(d.annCur||'')+'</textarea>';
+    h+='<button class="btn blue wfull" style="margin-bottom:6px;" onclick="ADMIN.saveAnnounce()">📢 Post announcement to the top</button>';
+    h+='<button class="btn del wfull" onclick="ADMIN.clearAnnounce()">Clear announcement</button>';
+    h+='<div class="hint">Shows an official card above the pinned flap for everyone. First line = bold title.</div>';
+
+    h+='<div class="subhead">📢 Scrolling ticker</div>';
+    h+='<textarea class="inp" id="cTicker">'+esc(d.tickerCur||'')+'</textarea>';
+    h+='<button class="btn green wfull" onclick="ADMIN.saveTicker()">Save ticker for everyone</button>';
+    h+='<div class="hint">The scrolling message at the top. Separate phrases with ★.</div>';
+
+    h+='<div class="subhead">🗳️ Flap poll of the day</div>';
+    h+='<input class="inp" id="cPollQ" value="'+esc(pp[0]||'')+'" placeholder="Poll question">';
+    h+='<input class="inp" id="cPollO1" value="'+esc(pp[1]||'')+'" placeholder="Option 1">';
+    h+='<input class="inp" id="cPollO2" value="'+esc(pp[2]||'')+'" placeholder="Option 2">';
+    h+='<input class="inp" id="cPollO3" value="'+esc(pp[3]||'')+'" placeholder="Option 3">';
+    h+='<button class="btn green wfull" style="margin-bottom:6px;" onclick="ADMIN.randomPoll()">🎲 Generate random poll</button>';
+    h+='<button class="btn purple wfull" style="margin-bottom:6px;" onclick="ADMIN.savePoll()">Save custom poll (starts votes fresh)</button>';
+    h+='<button class="btn del wfull" onclick="ADMIN.resetVotes()">↺ Reset votes only</button>';
+    h+='</div>';
+
+    /* verified + toggles */
+    h+='<div class="sec"><h2>🎛️ Members &amp; features</h2>';
+    h+='<div class="subhead">✔ Verified members list</div>';
+    h+='<textarea class="inp" id="cVerified">'+esc(d.verCur||'')+'</textarea>';
+    h+='<button class="btn gold wfull" onclick="ADMIN.saveVerified()">Save verified list</button>';
+    h+='<div class="hint">Names (comma/space separated) get the ✔ badge. Or use Verify buttons in the Members tab.</div>';
+    h+='<div class="subhead">🚀 Friends &amp; Messaging (Go Live)</div>';
+    h+='<div class="hint">Currently <b>'+(d.featuresOn?'LIVE ✅ for everyone':'OFF (hidden)')+'</b>.</div>';
+    h+='<button class="btn wfull '+(d.featuresOn?'del':'green')+'" onclick="ADMIN.toggleSocial('+(d.featuresOn?'false':'true')+')">'+(d.featuresOn?'⏸ Turn OFF Friends & Messaging':'🚀 Turn ON Friends & Messaging')+'</button>';
+    h+='<div class="subhead">🖼️ Member banner</div>';
+    h+='<div class="note">The desktop top banner auto-shows members who have a profile pic — no setup needed. Grant verified or seed house accounts and they appear automatically.</div>';
+    h+='</div>';
+
+    /* seed the feed / post as house account */
+    h+='<div class="sec"><h2>🌱 Seed the feed</h2>';
+    h+='<div class="hint">When it\'s quiet, drop a flap from a house account. You control every post — nothing auto-posts.</div>';
+    h+='<button class="btn green wfull" style="margin-bottom:12px;" onclick="ADMIN.seedRandom()">🌱 Seed a random flap now</button>';
+    h+='<div class="subhead">✍️ Post as a house account</div>';
+    h+='<select class="inp" id="cPersona">'+HOUSE_PERSONAS.map(function(p,i){return '<option value="'+i+'">'+esc(p.name)+'</option>';}).join('')+'</select>';
+    h+='<textarea class="inp" id="cSeedText" placeholder="Type a flap to post as the selected house account…"></textarea>';
+    h+='<button class="btn purple wfull" onclick="ADMIN.postAs()">Post as this account</button>';
+    h+='</div>';
+    return h;
+  }
+
+  /* ---------- MEMBERS ---------- */
+  function secMembers(){
+    var d=DATA, counts={};
+    d.flAll.forEach(function(f){ if(!isSentinel(f.name)) counts[f.name]=(counts[f.name]||0)+1; });
+    var verList=(d.verCur||'').split(/[,\s]+/).filter(Boolean).map(function(x){return x.toLowerCase();});
+    var h='<div class="sec"><h2>👥 Member management ('+d.us.length+') <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
+    h+='<div class="hint">Verify, time out, ban, or remove members. Removing deletes their flaps &amp; replies too.</div>';
+    h+= d.us.map(function(u){
+      var lc=(u.name||'').toLowerCase();
+      var on=u.last_seen&&d.now-T(u.last_seen)<12e4;
+      var isVer=verList.indexOf(lc)>-1||lc===ADMIN_ACCOUNT;
+      var muted=u.muted_until&&new Date(u.muted_until)>new Date();
+      var av=u.avatar_url?'<img src="'+esc(u.avatar_url)+'" alt="">':initials(u.name);
+      var nm=esq(u.name);
+      var pills=(isVer?'<span class="pill ver">✔ verified</span>':'')+(on?'<span class="pill on">● online</span>':'')+(u.banned?'<span class="pill ban">banned</span>':'')+(muted?'<span class="pill mute">timed out</span>':'');
+      var sub=(counts[u.name]||0)+' flaps · joined '+(u.created_at?new Date(u.created_at).toLocaleDateString():'?')+' · 📱 '+esc(u.device||'unknown')+((u.violations||0)>0?' · ⚠ '+u.violations+' auto-mod removal(s)':'')+(muted?' · until '+new Date(u.muted_until).toLocaleString():'');
+      var acts='<button class="btn gold" onclick="ADMIN.toggleVerified(\''+nm+'\')">'+(isVer?'Unverify':'Verify')+'</button>';
+      if(lc!==ADMIN_ACCOUNT){
+        acts+= muted?'<button class="btn blue" onclick="ADMIN.liftMute(\''+nm+'\')">Lift time-out</button>'
+                    :'<button class="btn" onclick="ADMIN.mute(\''+nm+'\',1)">1h</button><button class="btn" onclick="ADMIN.mute(\''+nm+'\',24)">24h</button><button class="btn" onclick="ADMIN.mute(\''+nm+'\',168)">7d</button><button class="btn" onclick="ADMIN.muteCustom(\''+nm+'\')">Custom</button>';
+        acts+= u.banned?'<button class="btn green" onclick="ADMIN.unban(\''+nm+'\')">Un-ban</button>'
+                      :'<button class="btn red" onclick="ADMIN.ban(\''+nm+'\')">Ban</button>';
+        acts+='<button class="btn del" onclick="ADMIN.removeUser(\''+nm+'\')">🗑 Remove</button>';
+      }
+      return '<div class="mem"><span class="ava">'+av+'</span>'+
+        '<div class="m-name"><b>'+esc(u.name)+'</b>'+pills+'<div class="m-sub">'+sub+'</div></div>'+
+        '<div class="acts" style="margin-top:0;">'+acts+'</div></div>';
+    }).join('');
+    h+='</div>';
+    return h;
+  }
+
+  /* ---------- MODERATION ---------- */
+  function secModeration(){
+    var d=DATA;
     var appeals=d.reports.filter(function(r){return r.target_type==='appeal'||/^\[APPEAL/i.test(r.reason||'');});
     var reports=d.reports.filter(function(r){return !(r.target_type==='appeal'||/^\[APPEAL/i.test(r.reason||''));});
-    h+='<div class="sec"><h2>🛡️ Moderation queue</h2>';
+    var h='<div class="sec"><h2>🛡️ Moderation queue <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
     h+='<div class="subhead">📩 Appeals ('+appeals.length+')</div>';
     h+= appeals.length? appeals.map(function(r){
       return '<div class="row appeal"><div class="r-top">📩 '+esc(r.target_name||r.reporter||'?')+' is appealing</div>'+
@@ -258,104 +399,87 @@
         '<div class="r-meta">by '+esc(r.reporter||'?')+' · '+new Date(r.created_at).toLocaleString()+'</div>'+
         '<div class="acts">'+act+'<button class="btn" onclick="ADMIN.resolveReport('+r.id+')">Dismiss</button></div></div>';
     }).join(''):'<div class="empty">No open reports. 🎉</div>';
+    h+='</div>';
 
-    /* recent flaps + replies to remove */
-    var real=d.flAll.filter(function(r){return !isSentinel(r.name);}).slice(0,30);
-    h+='<div class="subhead">🗂 Recent flaps — remove anything</div>';
+    var real=d.flAll.filter(function(r){return !isSentinel(r.name);}).slice(0,40);
+    h+='<div class="sec"><h2>🗂 Recent flaps</h2>';
     h+= real.length? real.map(function(r){
       var txt=esc((r.body||'').replace(/<[^>]+>/g,'').slice(0,120))||'(photo)';
       return '<div class="row"><div class="r-top">'+esc(r.name)+' <span class="r-meta">· '+new Date(r.created_at).toLocaleString()+'</span></div><div class="r-body">'+txt+(r.pic_url?' <span style="color:#7fd0ff;">📷</span>':'')+'</div><div class="acts">'+(r.pic_url?'<button class="btn" onclick="ADMIN.removePhoto('+r.id+')">Remove photo</button>':'')+'<button class="btn del" onclick="ADMIN.deleteFlap('+r.id+')">Delete flap</button></div></div>';
     }).join(''):'<div class="empty">No flaps.</div>';
+    h+='</div>';
 
-    var reps=(d.repliesRecent||[]).filter(function(r){return !isSentinel(r.name);}).slice(0,25);
-    h+='<div class="subhead">💬 Recent replies — remove anything</div>';
+    var reps=(d.repliesRecent||[]).filter(function(r){return !isSentinel(r.name);}).slice(0,30);
+    h+='<div class="sec"><h2>💬 Recent replies</h2>';
     h+= reps.length? reps.map(function(r){
       return '<div class="row"><div class="r-top">'+esc(r.name)+'</div><div class="r-body">'+esc(String(r.body||'').replace(/[␞␟]/g,' ').slice(0,140))+'</div><div class="acts"><button class="btn del" onclick="ADMIN.deleteReply('+r.id+')">Delete reply</button></div></div>';
     }).join(''):'<div class="empty">No replies.</div>';
     h+='</div>';
+    return h;
+  }
 
-    /* MESSAGES OVERSIGHT */
-    h+='<div class="sec"><h2>💬 Messages oversight</h2>';
-    h+='<div class="hint">Private DMs, newest first — for safety review only. '+d.dms.length+' recent message(s).</div>';
-    h+= d.dms.length? d.dms.slice(0,120).map(function(m){
-      var p=String(m.body||'').split(PSEP); var from=p[0]||'?',to=p[1]||'?',text=p.slice(2).join(PSEP);
-      return '<div class="dmrow"><span class="dm-t">'+new Date(m.created_at).toLocaleString()+'</span><span class="dm-who">'+esc(from)+' → '+esc(to)+'</span><div>'+esc(text)+'</div></div>';
-    }).join(''):'<div class="empty">No messages yet.</div>';
-    h+='</div>';
-
-    /* MEMBER MANAGEMENT */
-    var counts={}; d.flAll.forEach(function(f){ if(!isSentinel(f.name)) counts[f.name]=(counts[f.name]||0)+1; });
-    var verList=(d.verCur||'').split(/[,\s]+/).filter(Boolean).map(function(x){return x.toLowerCase();});
-    h+='<div class="sec"><h2>👥 Member management ('+d.us.length+')</h2>';
-    h+='<div class="hint">Verify, time out, ban, or remove members. Removing a member deletes their flaps &amp; replies too.</div>';
-    h+= d.us.map(function(u){
-      var lc=(u.name||'').toLowerCase();
-      var on=u.last_seen&&d.now-T(u.last_seen)<12e4;
-      var isVer=verList.indexOf(lc)>-1||lc===ADMIN_ACCOUNT;
-      var muted=u.muted_until&&new Date(u.muted_until)>new Date();
-      var av=u.avatar_url?'<img src="'+esc(u.avatar_url)+'" alt="">':initials(u.name);
-      var nm=esq(u.name);
-      var pills=(isVer?'<span class="pill ver">✔ verified</span>':'')+(on?'<span class="pill on">● online</span>':'')+(u.banned?'<span class="pill ban">banned</span>':'')+(muted?'<span class="pill mute">timed out</span>':'');
-      var acts='<button class="btn gold" onclick="ADMIN.toggleVerified(\''+nm+'\')">'+(isVer?'Unverify':'Verify')+'</button>';
-      if(lc!==ADMIN_ACCOUNT){
-        acts+= muted?'<button class="btn blue" onclick="ADMIN.liftMute(\''+nm+'\')">Lift time-out</button>'
-                    :'<button class="btn" onclick="ADMIN.mute(\''+nm+'\',12)">12h</button><button class="btn" onclick="ADMIN.mute(\''+nm+'\',168)">7d</button><button class="btn" onclick="ADMIN.muteCustom(\''+nm+'\')">Custom</button>';
-        acts+= u.banned?'<button class="btn green" onclick="ADMIN.unban(\''+nm+'\')">Un-ban</button>'
-                      :'<button class="btn red" onclick="ADMIN.ban(\''+nm+'\')">Ban</button>';
-        acts+='<button class="btn del" onclick="ADMIN.removeUser(\''+nm+'\')">🗑 Remove</button>';
-      }
-      return '<div class="mem"><span class="ava">'+av+'</span>'+
-        '<div class="m-name"><b>'+esc(u.name)+'</b>'+pills+'<div class="m-sub">'+(counts[u.name]||0)+' flaps · joined '+(u.created_at?new Date(u.created_at).toLocaleDateString():'?')+((u.violations||0)>0?' · ⚠ '+u.violations+' auto-mod removal(s)':'')+'</div></div>'+
-        '<div class="acts" style="margin-top:0;">'+acts+'</div></div>';
+  /* ---------- MESSAGES (grouped + search + drill-in) ---------- */
+  function secMessages(){
+    var d=DATA;
+    var msgs=(d.dms||[]).map(function(x){var p=String(x.body||'').split(PSEP);return {from:p[0]||'',to:p[1]||'',text:p.slice(2).join(PSEP),at:x.created_at};}).filter(function(m){return m.from&&m.to;});
+    var convs={};
+    msgs.forEach(function(m){var lo=m.from.toLowerCase(),hi=m.to.toLowerCase(),key=(lo<hi?lo+'|'+hi:hi+'|'+lo);if(!convs[key])convs[key]={key:key,a:m.from,b:m.to,list:[]};convs[key].list.push(m);});
+    Object.keys(convs).forEach(function(k){convs[k].list.reverse();});
+    var h='<div class="sec"><h2>💬 Messages oversight</h2>';
+    h+='<div class="note">🔒 <b>Admin oversight.</b> Review any member\'s DMs for safety. Members are told messages aren\'t private from moderation (House Rules + Privacy Policy).</div>';
+    if(MSG_OPEN && convs[MSG_OPEN]){
+      var cc=convs[MSG_OPEN];
+      h+='<div style="margin-bottom:8px;"><a onclick="ADMIN.msgBack()" style="cursor:pointer;font-weight:bold;">← all conversations</a></div>';
+      h+='<div style="font-weight:bold;color:#cfe0f6;font-size:14px;margin-bottom:8px;">'+esc(cc.a)+' ⇄ '+esc(cc.b)+' <span class="muted">('+cc.list.length+' messages)</span></div>';
+      h+=cc.list.map(function(m){return '<div class="dmmsg"><b>'+esc(m.from)+'</b> <span class="t">→ '+esc(m.to)+' · '+(m.at?new Date(m.at).toLocaleString():'')+'</span><br>'+esc(m.text)+'</div>';}).join('');
+      h+='</div>';
+      return h;
+    }
+    h+='<input class="msrch" id="cMsgSearch" placeholder="🔍 Search conversations by username…" value="'+esc(MSG_SEARCH)+'" oninput="ADMIN.msgSearch(this.value)" autocomplete="off">';
+    var arr=Object.keys(convs).map(function(k){return convs[k];});
+    arr.sort(function(a,b){var la=a.list[a.list.length-1],lb=b.list[b.list.length-1];return (new Date(lb.at||0))-(new Date(la.at||0));});
+    var q=(MSG_SEARCH||'').trim().toLowerCase();
+    if(q)arr=arr.filter(function(c){return c.a.toLowerCase().indexOf(q)>-1||c.b.toLowerCase().indexOf(q)>-1;});
+    if(!arr.length){h+='<div class="empty">'+(q?'No conversations match “'+esc(q)+'”.':'No messages yet.')+'</div></div>';return h;}
+    h+='<div class="muted" style="margin-bottom:8px;">'+arr.length+' conversation'+(arr.length===1?'':'s')+':</div>';
+    h+=arr.map(function(c){var last=c.list[c.list.length-1];
+      return '<div class="conv" onclick="ADMIN.msgOpen(\''+b64(c.key)+'\')"><div class="c-top">'+esc(c.a)+' ⇄ '+esc(c.b)+' <span class="muted">('+c.list.length+')</span></div><div class="c-last"><b>'+esc(last.from)+':</b> '+esc(last.text)+'</div></div>';
     }).join('');
     h+='</div>';
+    return h;
+  }
 
-    /* SUPPORT TICKETS */
-    h+='<div class="sec"><h2>🎫 Support tickets ('+d.tickets.length+')</h2>';
+  /* ---------- SUPPORT ---------- */
+  function secSupport(){
+    var d=DATA, h='<div class="sec"><h2>🎫 Support tickets ('+d.tickets.length+') <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
     h+= d.tickets.length? d.tickets.map(function(tk){
       var parts=String(tk.body||'').split(PSEP); var who=parts[0]||'?'; var msg=parts.slice(2).join(PSEP)||parts[1]||'';
       return '<div class="row"><div class="r-top">🎫 from '+esc(who)+'</div><div class="r-body">'+esc(msg.slice(0,600))+'</div><div class="r-meta">'+new Date(tk.created_at).toLocaleString()+'</div><div class="acts"><button class="btn green" onclick="ADMIN.resolveTicket('+tk.id+')">Resolve &amp; remove</button></div></div>';
     }).join(''):'<div class="empty">No open tickets. 🎉</div>';
+    h+='<div class="subhead">⚑ Open reports</div>';
+    h+= d.reports.length?'<div class="muted">'+d.reports.length+' open — see the <b>Moderation</b> tab to act on them.</div>':'<div class="empty">No open reports.</div>';
     h+='</div>';
-
-    /* SITE CONTROLS */
-    var pp=d.pollCur?String(d.pollCur).split(PSEP):[];
-    h+='<div class="sec"><h2>⚙️ Site controls</h2>';
-    h+='<div class="subhead">📣 Official announcement</div>';
-    h+='<textarea class="inp" id="cAnnounce" style="min-height:130px;">'+esc(d.annCur||'')+'</textarea>';
-    h+='<button class="btn blue wfull" style="margin-bottom:6px;" onclick="ADMIN.saveAnnounce()">📢 Post announcement to the top</button>';
-    h+='<button class="btn del wfull" onclick="ADMIN.clearAnnounce()">Clear announcement</button>';
-    h+='<div class="hint">Shows an official card above the pinned flap for everyone. First line = bold title.</div>';
-
-    h+='<div class="subhead">📢 Scrolling ticker</div>';
-    h+='<textarea class="inp" id="cTicker">'+esc(d.tickerCur||'')+'</textarea>';
-    h+='<button class="btn green wfull" onclick="ADMIN.saveTicker()">Save ticker for everyone</button>';
-    h+='<div class="hint">The scrolling message at the top. Separate phrases with ★.</div>';
-
-    h+='<div class="subhead">🗳️ Flap poll of the day</div>';
-    h+='<input class="inp" id="cPollQ" value="'+esc(pp[0]||'')+'" placeholder="Poll question">';
-    h+='<input class="inp" id="cPollO1" value="'+esc(pp[1]||'')+'" placeholder="Option 1">';
-    h+='<input class="inp" id="cPollO2" value="'+esc(pp[2]||'')+'" placeholder="Option 2">';
-    h+='<input class="inp" id="cPollO3" value="'+esc(pp[3]||'')+'" placeholder="Option 3">';
-    h+='<button class="btn purple wfull" onclick="ADMIN.savePoll()">Save custom poll (resets votes)</button>';
-
-    h+='<div class="subhead">✔ Verified members list</div>';
-    h+='<textarea class="inp" id="cVerified">'+esc(d.verCur||'')+'</textarea>';
-    h+='<button class="btn gold wfull" onclick="ADMIN.saveVerified()">Save verified list</button>';
-    h+='<div class="hint">Names (comma/space separated) that get the ✔ badge. Or use Verify buttons above.</div>';
-
-    h+='<div class="subhead">🚀 Friends &amp; Messaging</div>';
-    h+='<div class="hint">Currently <b>'+(d.featuresOn?'LIVE ✅ for everyone':'OFF (hidden)')+'</b>.</div>';
-    h+='<button class="btn wfull '+(d.featuresOn?'del':'green')+'" onclick="ADMIN.toggleSocial('+(d.featuresOn?'false':'true')+')">'+(d.featuresOn?'⏸ Turn OFF Friends & Messaging':'🚀 Turn ON Friends & Messaging')+'</button>';
-    h+='</div>';
-
-    $('panel').innerHTML=h;
+    return h;
   }
-  function statCard(n,label,cls){return '<div class="stat'+(cls?' '+cls:'')+'"><b>'+n+'</b><span>'+label+'</span></div>';}
+
+  /* ---------- STATS ---------- */
+  function secStats(){
+    var s=stats();
+    return '<div class="sec"><h2>📊 Launch metrics <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2><div class="stats">'+
+      card(s.joinsWeek,'joined this week','hot')+card(s.joinsToday,'joined today','')+card(s.online,'online now','')+card(s.members,'total members','')+
+      card(s.flapsToday,'flaps today','')+card(s.repliesToday,'replies today','')+card(s.totalFlaps,'total flaps','')+card(s.totalReplies,'total replies','')+
+      card(s.deleted,'deleted accounts','danger')+card(s.banned,'banned','danger')+card(s.muted,'timed out','')+card(s.openIssues,'open issues','')+
+    '</div></div>';
+  }
+  function card(n,label,cls){return '<div class="stat'+(cls?' '+cls:'')+'"><b>'+n+'</b><span>'+label+'</span></div>';}
 
   /* ---------- actions ---------- */
   var ADMIN={
-    reload:function(){loadAll();},
+    tab:function(t){ TAB=t; if(t!=='messages')MSG_OPEN=null; renderTabs(); renderTab(); },
+    reload:function(){ loadAll(); },
+    msgSearch:function(v){ MSG_SEARCH=v; renderTab(); var i=$('cMsgSearch'); if(i){i.focus();try{i.setSelectionRange(i.value.length,i.value.length);}catch(e){}} },
+    msgOpen:function(k){ MSG_OPEN=unb64(k); renderTab(); },
+    msgBack:function(){ MSG_OPEN=null; renderTab(); },
     resolveReport:async function(id){try{await sb.from('flap_reports').update({resolved:true}).eq('id',id);}catch(e){}toast('Resolved.');loadAll();},
     modDeletePost:async function(pid,rid){if(!confirm('Delete this flap for everyone?'))return;try{await sb.from('flaps').delete().eq('id',pid);}catch(e){}try{await sb.from('flap_reports').update({resolved:true}).eq('id',rid);}catch(e){}toast('Flap deleted.');loadAll();},
     deleteFlap:async function(id){if(!confirm('Delete this flap (and its photo) for everyone?'))return;try{await sb.from('flaps').delete().eq('id',id);}catch(e){}toast('Flap deleted.');loadAll();},
@@ -370,7 +494,7 @@
       await setSen('::verified::',list.join(', '));
       toast((has?'Removed':'Granted')+' verified: '+name);loadAll();
     },
-    mute:async function(name,hours){var until=new Date(Date.now()+hours*3600*1000).toISOString();try{await sb.from('flap_users').update({muted_until:until}).ilike('name',name);}catch(e){}toast('⏳ '+name+' timed out for '+(hours>=168?'7 days':hours+'h')+'.');loadAll();},
+    mute:async function(name,hours){var until=new Date(Date.now()+hours*3600*1000).toISOString();try{await sb.from('flap_users').update({muted_until:until}).ilike('name',name);}catch(e){}toast('⏳ '+name+' timed out for '+(hours>=168?'7 days':(hours>=24?Math.round(hours/24)+'d':hours+'h'))+'.');loadAll();},
     muteCustom:function(name){var h=prompt('Time out '+name+' for how many HOURS?','12');if(h===null)return;h=parseFloat(h);if(!(h>0)){toast('Enter a number of hours.');return;}ADMIN.mute(name,h);},
     liftMute:async function(name){try{await sb.from('flap_users').update({muted_until:null}).ilike('name',name);}catch(e){}toast('✓ Time-out lifted for '+name+'.');loadAll();},
     ban:async function(name){if(!confirm('Ban '+name+'? They will be locked out.'))return;try{await sb.from('flap_users').update({banned:true}).ilike('name',name);}catch(e){}toast('🔨 '+name+' banned.');loadAll();},
@@ -379,7 +503,6 @@
       if((name||'').toLowerCase()===ADMIN_ACCOUNT){toast("Can't remove the admin account.");return;}
       if(!confirm('Remove '+name+' and delete ALL their flaps & replies? This cannot be undone.'))return;
       try{ await sb.from('flaps').delete().ilike('name',name); await sb.from('flap_replies').delete().ilike('name',name); await sb.from('flap_users').delete().ilike('name',name); }catch(e){}
-      /* count it toward deleted accounts */
       try{ var ex=await sb.from('flaps').select('id,body').eq('name','::delcount::').order('id',{ascending:false}).limit(1);
         if(ex.data&&ex.data[0]){ await sb.from('flaps').update({body:String((parseInt(ex.data[0].body,10)||0)+1)}).eq('id',ex.data[0].id); }
         else { await sb.from('flaps').insert({name:'::delcount::',body:'1',mood:'flappy',likes:0}); }
@@ -387,18 +510,30 @@
       toast('Removed '+name+'.');loadAll();
     },
     saveAnnounce:async function(){var v=($('cAnnounce').value||'').trim();await setSen('::announce::',v);toast(v?'📢 Announcement posted.':'Announcement cleared.');loadAll();},
-    clearAnnounce:async function(){await setSen('::announce::','');$('cAnnounce').value='';toast('Announcement cleared.');loadAll();},
+    clearAnnounce:async function(){await setSen('::announce::','');toast('Announcement cleared.');loadAll();},
     saveTicker:async function(){await setSen('::ticker::',($('cTicker').value||'').trim());toast('Ticker saved.');loadAll();},
+    randomPoll:function(){
+      var p=POLL_POOL[Math.floor(Math.random()*POLL_POOL.length)];
+      $('cPollQ').value=p.q; $('cPollO1').value=p.opts[0]; $('cPollO2').value=p.opts[1]; $('cPollO3').value=p.opts[2];
+      toast('🎲 Random poll filled in — tap Save to publish.');
+    },
     savePoll:async function(){
       var q=($('cPollQ').value||'').trim(),o1=($('cPollO1').value||'').trim(),o2=($('cPollO2').value||'').trim(),o3=($('cPollO3').value||'').trim();
       if(!q||!o1||!o2||!o3){toast('Fill in the question and all 3 options.');return;}
-      /* same body format the app expects: q␟o1␟o2␟o3␟MANUAL␟<ts> */
       await setSen('::poll::',[q,o1,o2,o3,'MANUAL',String(Date.now())].join(PSEP));
-      try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){} /* reset votes (delete is RLS-locked) */
-      toast('Poll saved (votes reset).');loadAll();
+      try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){}
+      toast('🗳️ Poll saved for everyone (votes reset).');loadAll();
     },
+    resetVotes:async function(){if(!confirm('Reset all votes on the current poll?'))return;try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){}toast('↺ Votes reset.');},
     saveVerified:async function(){await setSen('::verified::',($('cVerified').value||'').trim());toast('Verified list saved.');loadAll();},
-    toggleSocial:async function(on){await setSen('::features::',on?'on':'off');toast(on?'🚀 Friends & Messaging is LIVE.':'Friends & Messaging turned off.');loadAll();}
+    toggleSocial:async function(on){await setSen('::features::',on?'on':'off');toast(on?'🚀 Friends & Messaging is LIVE.':'Friends & Messaging turned off.');loadAll();},
+    seedRandom:async function(){var p=HOUSE_PERSONAS[Math.floor(Math.random()*HOUSE_PERSONAS.length)];var body=p.posts[Math.floor(Math.random()*p.posts.length)];await postAsPersonaBody(p,body);toast('🌱 Seeded a flap as '+p.name+'.');loadAll();},
+    postAs:async function(){
+      var sel=$('cPersona'),ta=$('cSeedText'); if(!sel||!ta)return;
+      var p=HOUSE_PERSONAS[parseInt(sel.value,10)||0]; var body=(ta.value||'').trim();
+      if(!body){toast('Type something to post first.');return;}
+      ta.value=''; await postAsPersonaBody(p,body); toast('Posted as '+p.name+'!');loadAll();
+    }
   };
   window.ADMIN=ADMIN;
 
