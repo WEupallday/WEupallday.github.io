@@ -2151,11 +2151,11 @@
   function _rnNorm(s){
     s=String(s||'').toLowerCase();
     try{ s=s.normalize('NFD').replace(/[̀-ͯ]/g,''); }catch(e){}
-    s=s.replace(/[4@]/g,'a').replace(/3/g,'e').replace(/1/g,'i').replace(/0/g,'o').replace(/[5$]/g,'s').replace(/7/g,'t').replace(/8/g,'b');
+    s=s.replace(/[4@]/g,'a').replace(/3/g,'e').replace(/[1!|]/g,'i').replace(/0/g,'o').replace(/[5$]/g,'s').replace(/7/g,'t').replace(/8/g,'b');
     return s.replace(/[^a-z0-9]/g,'');
   }
   /* Victorious cast — reserved so people can't keep signing up as the characters */
-  var VICTORIOUS_NAMES=['torivega','jadewest','catvalentine','beckoliver','andreharris','robbieshapiro','trinavega','sikowitz'];
+  var VICTORIOUS_NAMES=['torivega','jadewest','catvalentine','beckoliver','andreharris','robbieshapiro','robbie','trinavega','sikowitz'];
   function isReservedName(s){
     var t=_rnNorm(s);
     if(!t) return false;
