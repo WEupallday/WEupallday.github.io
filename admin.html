@@ -40,6 +40,17 @@
   nav.tabs button{background:#152a4a;border:1px solid #24406e;color:#bcd0ee;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:bold;cursor:pointer;}
   nav.tabs button:hover{background:#1d3career;background:#1d385f;}
   nav.tabs button.on{background:linear-gradient(180deg,var(--blue),var(--blue-d));color:#fff;border-color:#3b7fd0;}
+  .badgecard{background:#0c1836;border:1.5px solid #2f5aa0;border-radius:10px;padding:12px;margin:10px 0;}
+  .badgecard .bc-h{display:flex;align-items:center;gap:9px;}
+  .badgecard .bc-ic{font-size:22px;}
+  .badgecard .bc-h b{font-size:15px;color:#fff;flex:1;}
+  .badgecard .bc-del{padding:5px 10px;font-size:12px;}
+  .badgecard .bc-desc{font-size:12.5px;color:#a9c2e8;margin:6px 0 8px;}
+  .badgecard .bc-grant{display:flex;gap:8px;align-items:center;}
+  .badgecard .bc-inp{margin:0;flex:1;}
+  .badgecard .bc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .badgecard .gchip{background:#183a6e;border:1px solid #3f7ad0;border-radius:12px;padding:3px 8px;font-size:12px;color:#cfe2ff;display:inline-flex;align-items:center;gap:7px;}
+  .badgecard .gchip span{cursor:pointer;color:#ff9db4;font-weight:bold;}
   /* section container */
   .wrap{padding:16px;}
   .sec{background:#132747;border:1px solid #22406e;border-radius:14px;padding:16px;margin-bottom:16px;}
@@ -241,8 +252,11 @@
         pollCur:await sen('::poll::'), annCur:await sen('::announce::'),
         featuresOn:/on/i.test(await sen('::features::')||''),
         delCount:(parseInt(await sen('::delcount::'),10)||0),
+        badgeDefs:[], badgeGrants:{},
         now:Date.now()
       };
+      try{ var _bd=await sen('::badgedefs::'); DATA.badgeDefs=_bd?(JSON.parse(_bd)||[]):[]; }catch(e){ DATA.badgeDefs=[]; }
+      try{ var _bg=await sen('::badgegrants::'); DATA.badgeGrants=_bg?(JSON.parse(_bg)||{}):{}; }catch(e){ DATA.badgeGrants={}; }
       renderStrip(); renderTabs(); renderTab();
     }catch(e){
       $('panel').innerHTML='<div class="sec"><h2>⚠ Could not load</h2><div class="muted">Check your connection and tap Refresh.</div></div>';
@@ -277,7 +291,7 @@
   function strip(n,label,cls){return '<span class="s'+(cls?' '+cls:'')+'"><b>'+n+'</b> '+label+'</span>';}
 
   /* ---------- tab nav ---------- */
-  var TABS=[['controls','⚙️ Controls'],['members','👥 Members'],['moderation','🛡️ Moderation'],['messages','💬 Messages'],['support','🎫 Support'],['stats','📊 Stats']];
+  var TABS=[['controls','⚙️ Controls'],['members','👥 Members'],['badges','🏅 Badges'],['moderation','🛡️ Moderation'],['messages','💬 Messages'],['support','🎫 Support'],['stats','📊 Stats']];
   function renderTabs(){
     $('tabNav').innerHTML=TABS.map(function(t){return '<button class="'+(TAB===t[0]?'on':'')+'" onclick="ADMIN.tab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');
   }
@@ -285,12 +299,41 @@
     var h='';
     if(TAB==='controls')h=secControls();
     else if(TAB==='members')h=secMembers();
+    else if(TAB==='badges')h=secBadges();
     else if(TAB==='moderation')h=secModeration();
     else if(TAB==='messages')h=secMessages();
     else if(TAB==='support')h=secSupport();
     else h=secStats();
     $('panel').innerHTML=h;
     window.scrollTo(0,0);
+  }
+
+  /* ---------- BADGES ---------- */
+  function secBadges(){
+    var d=DATA, defs=d.badgeDefs||[], grants=d.badgeGrants||{};
+    var h='<div class="sec"><h2>🏅 Custom badges <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
+    h+='<div class="hint">Invent a badge, then grant it to specific members. Granted badges appear on their profile (tap shows the info). The built-in badges — Founder, Verified, Early Supporter, Top Contributor, Streaks — are automatic and already live.</div>';
+    h+='<div class="subhead">➕ Create a badge</div>';
+    h+='<input class="inp" id="nbName" placeholder="Badge name (e.g. Prom Court 2026)">';
+    h+='<input class="inp" id="nbEmoji" placeholder="Emoji / icon (e.g. 👑)" maxlength="6">';
+    h+='<input class="inp" id="nbDesc" placeholder="Description — how it&#39;s earned">';
+    h+='<button class="btn purple wfull" onclick="ADMIN.createBadge()">＋ Create badge</button>';
+    h+='</div>';
+    h+='<div class="sec"><h2>Your badges</h2>';
+    if(!defs.length){ h+='<div class="empty">No custom badges yet. Create one above.</div>'; }
+    else{
+      defs.forEach(function(b){
+        var members=Object.keys(grants).filter(function(m){return (grants[m]||[]).indexOf(b.id)>-1;});
+        h+='<div class="badgecard">';
+        h+='<div class="bc-h"><span class="bc-ic">'+esc(b.ic||'🏷')+'</span><b>'+esc(b.name)+'</b><button class="btn del bc-del" onclick="ADMIN.deleteBadge(\''+b.id+'\')">Delete</button></div>';
+        h+='<div class="bc-desc">'+esc(b.desc||'')+'</div>';
+        h+='<div class="bc-grant"><input class="inp bc-inp" id="gr_'+b.id+'" placeholder="member name to grant"><button class="btn green" onclick="ADMIN.grantBadge(\''+b.id+'\')">Grant</button></div>';
+        h+='<div class="bc-chips">'+(members.length?members.map(function(m){var me=esc(m).replace(/'/g,'');return '<span class="gchip">'+esc(m)+'<span onclick="ADMIN.revokeBadge(\''+b.id+'\',\''+me+'\')">✕</span></span>';}).join(''):'<span class="muted">Not granted to anyone yet.</span>')+'</div>';
+        h+='</div>';
+      });
+    }
+    h+='</div>';
+    return h;
   }
 
   /* ---------- CONTROLS (front & center) ---------- */
@@ -526,6 +569,34 @@
     },
     resetVotes:async function(){if(!confirm('Reset all votes on the current poll?'))return;try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){}toast('↺ Votes reset.');},
     saveVerified:async function(){await setSen('::verified::',($('cVerified').value||'').trim());toast('Verified list saved.');loadAll();},
+    createBadge:async function(){
+      var name=($('nbName').value||'').trim(); if(!name){toast('Give the badge a name.');return;}
+      var ic=($('nbEmoji').value||'').trim()||'🏷';
+      var desc=($('nbDesc').value||'').trim()||'A special badge from the TheFlap team.';
+      var defs=(DATA.badgeDefs||[]).slice();
+      defs.push({id:'b'+Date.now(), ic:ic, name:name, desc:desc});
+      await setSen('::badgedefs::', JSON.stringify(defs));
+      toast('Badge created 🏅'); loadAll();
+    },
+    deleteBadge:async function(id){
+      if(!confirm('Delete this badge for everyone?'))return;
+      var defs=(DATA.badgeDefs||[]).filter(function(b){return b.id!==id;});
+      var grants=DATA.badgeGrants||{}; Object.keys(grants).forEach(function(m){ grants[m]=(grants[m]||[]).filter(function(x){return x!==id;}); if(!grants[m].length)delete grants[m]; });
+      await setSen('::badgedefs::', JSON.stringify(defs));
+      await setSen('::badgegrants::', JSON.stringify(grants));
+      toast('Badge deleted.'); loadAll();
+    },
+    grantBadge:async function(id){
+      var el=$('gr_'+id); var m=((el&&el.value)||'').trim().toLowerCase().replace(/^@/,''); if(!m){toast('Type a member name.');return;}
+      var grants=DATA.badgeGrants||{}; grants[m]=grants[m]||[]; if(grants[m].indexOf(id)<0)grants[m].push(id);
+      await setSen('::badgegrants::', JSON.stringify(grants));
+      toast('Granted to '+m+' ✅'); loadAll();
+    },
+    revokeBadge:async function(id,m){
+      var grants=DATA.badgeGrants||{}; if(grants[m]){ grants[m]=grants[m].filter(function(x){return x!==id;}); if(!grants[m].length)delete grants[m]; }
+      await setSen('::badgegrants::', JSON.stringify(grants));
+      toast('Revoked from '+m+'.'); loadAll();
+    },
     toggleSocial:async function(on){await setSen('::features::',on?'on':'off');toast(on?'🚀 Friends & Messaging is LIVE.':'Friends & Messaging turned off.');loadAll();},
     seedRandom:async function(){var p=HOUSE_PERSONAS[Math.floor(Math.random()*HOUSE_PERSONAS.length)];var body=p.posts[Math.floor(Math.random()*p.posts.length)];await postAsPersonaBody(p,body);toast('🌱 Seeded a flap as '+p.name+'.');loadAll();},
     postAs:async function(){

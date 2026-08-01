@@ -330,7 +330,7 @@
   .pinbtn:hover{filter:brightness(1.05);}
   .reflapbtn.on{background:linear-gradient(180deg,#1c7a42,#12592f);box-shadow:inset 0 2px 4px rgba(0,0,0,.35);}
   .reflap-count-line{font-size:11px;font-weight:bold;color:#2f9e5a;padding:4px 4px 0;}
-  .vbadge{display:inline-block;width:21px;height:21px;vertical-align:-5px;margin-left:3px;cursor:pointer;transition:transform .1s;}
+  .vbadge{display:inline-block;width:23px;height:23px;vertical-align:-6px;margin-left:3px;cursor:pointer;transition:transform .1s;}
   .vbadge svg{width:100%;height:100%;display:block;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));}
   .vbadge:hover,.vbadge:active{transform:scale(1.2) rotate(-6deg);}
   .pc-name .vbadge{width:28px;height:28px;vertical-align:-6px;}
@@ -543,7 +543,19 @@
   .pc-links{display:flex;flex-wrap:wrap;gap:8px;margin:5px 0 2px;}
   .pc-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:bold;color:#12357a;background:#eef2fb;border:1.5px solid var(--card-border);border-radius:14px;padding:3px 9px;text-decoration:none;}
   .pc-badges{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0 4px;}
-  .pc-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:bold;border-radius:12px;padding:3px 9px;border:1.5px solid;}
+  .pc-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:bold;border-radius:12px;padding:3px 9px;border:1.5px solid;cursor:pointer;transition:transform .08s;}
+  .pc-badge:active{transform:scale(.94);}
+  .bd-custom{background:#efe6ff;border-color:#7a3fd0;color:#4a1f8a;}
+  .binfo-wrap{position:fixed;inset:0;background:rgba(20,8,40,.6);display:none;align-items:center;justify-content:center;z-index:220;padding:20px;}
+  .binfo-wrap.open{display:flex;}
+  .binfo{background:linear-gradient(180deg,#ffffff,#eef5ff);border:3px solid var(--card-border);border-radius:14px;max-width:340px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.5);overflow:hidden;}
+  .binfo-h{background:linear-gradient(180deg,#22398f,var(--strip-navy));color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;}
+  .binfo-ic{font-size:26px;line-height:1;}
+  .binfo-h b{font-size:15px;}
+  .binfo-b{padding:14px 16px;}
+  .binfo-l{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--side-blue);font-weight:bold;margin-bottom:4px;}
+  .binfo-b p{font-size:13px;line-height:1.5;color:#22324f;}
+  .binfo-x{width:100%;margin-top:14px;padding:9px;border:none;border-radius:9px;background:var(--orange);color:#fff;font-weight:bold;font-size:13px;cursor:pointer;}
   .bd-founder{background:#fff6d6;border-color:#e0a500;color:#8a6100;}
   .bd-verified{background:#e3f0ff;border-color:#2f7ac9;color:#12467a;}
   .bd-early{background:#e5ffe9;border-color:#1a8a1a;color:#116611;}
@@ -2446,6 +2458,7 @@
           var newRow=(ins&&ins.data)?ins.data:{name:newName,avatar_url:null,handle:newHandle};
           try{ discordPing('join',newRow.name); }catch(e5){}   /* ping the admin's Discord on a real new signup */
           try{ sendPush('lock','TheFlap 🐦',newRow.name+' just joined TheFlap! 🎉'); }catch(e5){}
+          try{ if((newRow.name||'').toLowerCase()!=='lock') await sb.from('flap_follows').insert({follower:newRow.name,following:'lock'}); }catch(e5){}   /* new members auto-follow the official account */
           err.textContent='';
           startOnboarding(newRow);   /* pick handle + display name + profile pic, then enter */
           return;
@@ -2665,6 +2678,7 @@
         row=(ins&&ins.data)?ins.data:{name:tryName,avatar_url:gpic,handle:handle,email:email};
         try{ discordPing('join',row.name); }catch(e){}
         try{ sendPush('lock','TheFlap 🐦',row.name+' just joined TheFlap with Google! 🎉'); }catch(e){}
+        try{ if((row.name||'').toLowerCase()!=='lock') await sb.from('flap_follows').insert({follower:row.name,following:'lock'}); }catch(e){}   /* new members auto-follow the official account */
         row.email=email; row.avatar_url=(row.avatar_url||gpic||null);
         startOnboarding(row);   /* new Google user: pick handle + display name + profile pic */
         return;
@@ -2882,8 +2896,42 @@
   }
   /* ===== lean profile: banners, streak, badges, links ===== */
   var BANNER_THEMES=[['cosmic','Cosmic'],['sunset','Sunset'],['aqua','Aqua'],['slime','Slime'],['graffiti','Graffiti'],['midnight','Midnight']];
-  var EARLY_CUTOFF=new Date('2026-10-01T00:00:00Z').getTime();  /* joined before this = Early Supporter (launch wave) */
+  var EARLY_CUTOFF=new Date('2026-07-22T00:00:00Z').getTime();  /* joined before this = Early Supporter (launch wave) */
   var PROFILE_MORE=null;
+  var CUSTOM_BADGES=[], CUSTOM_GRANTS={};
+  var BADGE_INFO={
+    verified:{ic:'blue',name:'Verified',desc:'A blue check granted by the TheFlap team to confirm a real, notable account. Admin-granted only — it can’t be earned automatically.'},
+    founder:{ic:'👑',name:'Founder',desc:'The official account that runs TheFlap. Permanently reserved for the founder — nobody else can hold it.'},
+    early:{ic:'🌱',name:'Early Supporter',desc:'Joined during the launch wave — before July 22, 2026. Only the earliest members qualify, and it can never be earned again.'},
+    top:{ic:'⭐',name:'Top Contributor',desc:'Posted 50+ flaps. A genuine high bar that only the most active members reach. Keep flapping to unlock it.'},
+    streak:{ic:'🔥',name:'Streak badge',desc:'Earned for consecutive active days: 5, 10, 15, and 30-day streaks. Your profile shows the highest milestone you’ve hit, and the 🔥 chip tracks your current run.'}
+  };
+  function badgeDesc(id){
+    if(id&&id.indexOf('c:')===0){ var d=CUSTOM_BADGES.filter(function(b){return b.id===id.slice(2);})[0]; return d?{ic:d.ic,name:d.name,desc:d.desc}:null; }
+    return BADGE_INFO[id]||null;
+  }
+  function openBadgeInfo(id){
+    var d=badgeDesc(id); if(!d)return;
+    var w=document.getElementById('badgeInfoWrap');
+    if(!w){
+      w=document.createElement('div'); w.id='badgeInfoWrap'; w.className='binfo-wrap';
+      w.onclick=function(e){ if(e.target===w) closeBadgeInfo(); };
+      w.innerHTML='<div class="binfo"><div class="binfo-h"><span class="binfo-ic" id="binfoIc"></span><b id="binfoName"></b></div><div class="binfo-b"><div class="binfo-l">How it’s earned</div><p id="binfoDesc"></p><button class="binfo-x" onclick="closeBadgeInfo()">Got it</button></div></div>';
+      document.body.appendChild(w);
+    }
+    document.getElementById('binfoIc').innerHTML=(d.ic==='blue')?'<span style="display:inline-block;width:30px;height:30px;vertical-align:middle;">'+VBADGE_SVG+'</span>':(d.ic||'🏷');
+    document.getElementById('binfoName').textContent=d.name;
+    document.getElementById('binfoDesc').textContent=d.desc;
+    w.classList.add('open');
+  }
+  function closeBadgeInfo(){ var w=document.getElementById('badgeInfoWrap'); if(w)w.classList.remove('open'); }
+  async function loadCustomBadges(){
+    if(!ONLINE)return;
+    try{ var r=await sb.from('flaps').select('body').eq('name','::badgedefs::').order('id',{ascending:false}).limit(1);
+      CUSTOM_BADGES=[]; if(!r.error&&r.data&&r.data[0]&&r.data[0].body){ try{ CUSTOM_BADGES=JSON.parse(r.data[0].body)||[]; }catch(e){} } }catch(e){}
+    try{ var g=await sb.from('flaps').select('body').eq('name','::badgegrants::').order('id',{ascending:false}).limit(1);
+      CUSTOM_GRANTS={}; if(!g.error&&g.data&&g.data[0]&&g.data[0].body){ try{ CUSTOM_GRANTS=JSON.parse(g.data[0].body)||{}; }catch(e){} } }catch(e){}
+  }
   function bannerClass(u){ var k=(u&&u.banner)||'cosmic'; if(!/^(cosmic|sunset|aqua|slime|graffiti|midnight)$/.test(k))k='cosmic'; return 'bn-'+k; }
   function computeStreak(posts){
     if(!posts||!posts.length) return 0;
@@ -2896,11 +2944,13 @@
   }
   function userBadges(name,u,flapCount,streak){
     var out=[], lc=(name||'').toLowerCase();
-    if(lc==='lock') out.push(['👑','Founder','bd-founder']);
-    if(isVerified(name)) out.push(['✔','Verified','bd-verified']);
-    if(u&&u.created_at && new Date(u.created_at).getTime()<EARLY_CUTOFF) out.push(['🌱','Early Supporter','bd-early']);
-    if(flapCount>=50) out.push(['⭐','Top Contributor','bd-top']);
-    var ms=[30,15,10,5]; for(var i=0;i<ms.length;i++){ if(streak>=ms[i]){ out.push(['🔥',ms[i]+'-Day Streak','bd-streak']); break; } }
+    if(lc==='lock') out.push(['👑','Founder','bd-founder','founder']);
+    if(isVerified(name)) out.push(['✔','Verified','bd-verified','verified']);
+    if(u&&u.created_at && new Date(u.created_at).getTime()<EARLY_CUTOFF) out.push(['🌱','Early Supporter','bd-early','early']);
+    if(flapCount>=50) out.push(['⭐','Top Contributor','bd-top','top']);
+    var ms=[30,15,10,5]; for(var i=0;i<ms.length;i++){ if(streak>=ms[i]){ out.push(['🔥',ms[i]+'-Day Streak','bd-streak','streak']); break; } }
+    var g=CUSTOM_GRANTS[lc]||[];
+    g.forEach(function(bid){ var d=CUSTOM_BADGES.filter(function(b){return b.id===bid;})[0]; if(d) out.push([d.ic||'🏷', d.name, 'bd-custom', 'c:'+bid]); });
     return out;
   }
   function profileLinksHTML(links){
@@ -2958,7 +3008,7 @@
       h+=(u&&u.handle?'<div class="pc-handle">@'+esc(u.handle)+'</div>':'')+'</div></div>';
       if(u&&u.bio) h+='<div class="pc-bio">'+esc(u.bio)+'</div>';
       h+=profileLinksHTML(u&&u.links);
-      if(badges.length){ h+='<div class="pc-badges">'+badges.map(function(b){return '<span class="pc-badge '+b[2]+'">'+b[0]+' '+esc(b[1])+'</span>';}).join('')+'</div>'; }
+      if(badges.length){ h+='<div class="pc-badges">'+badges.map(function(b){return '<span class="pc-badge '+b[2]+'" onclick="openBadgeInfo(\''+b[3]+'\')">'+b[0]+' '+esc(b[1])+'</span>';}).join('')+'</div>'; }
       h+='<div class="pc-meta" style="margin-top:9px;font-size:11px;"><b>'+flapCount+'</b> Flaps &nbsp;·&nbsp; <b id="pcFollowers">0</b> Followers &nbsp;·&nbsp; <b id="pcFollowing">0</b> Following</div>';
       h+='<div class="pc-meta" style="margin-top:3px;color:#5a6a8a;font-weight:normal;">'+(u&&u.created_at?'Joined '+new Date(u.created_at).toLocaleDateString(undefined,{month:'short',year:'numeric'}):'')+'</div>';
       if(lc===(ME.name||'').toLowerCase()){
@@ -3885,28 +3935,23 @@
   /* ===== verified badges — admin-granted, persisted as a hidden sentinel row ===== */
   var VERIFIED={};
   function isVerified(n){n=(n||'').toLowerCase(); return n==='lock' || !!(VERIFIED && VERIFIED[n]);}
-  /* nostalgic glossy gold-star "seal" badge (built once) */
-  var VBADGE_SVG=(function(){
-    var cx=16,cy=16,n=11,R=15,r=11.6,pts='';
-    for(var i=0;i<n*2;i++){var a=(Math.PI*i/n)-Math.PI/2;var rad=(i%2===0)?R:r;pts+=(i===0?'M':'L')+(cx+rad*Math.cos(a)).toFixed(1)+' '+(cy+rad*Math.sin(a)).toFixed(1)+' ';}
-    pts+='Z';
-    var star='M16 9.2 L17.7 13.3 L22.1 13.6 L18.6 16.4 L19.9 20.6 L16 18.1 L12.1 20.6 L13.4 16.4 L9.9 13.6 L14.3 13.3 Z';
-    return '<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">'+
-      '<path d="'+pts+'" fill="#f5820a" stroke="#a85400" stroke-width="1.1" stroke-linejoin="round"/>'+
-      '<circle cx="16" cy="16" r="9.6" fill="#ffce4d" stroke="#fff" stroke-width="1.4"/>'+
-      '<path d="'+star+'" fill="#fff8e6" stroke="#e0a800" stroke-width=".6" stroke-linejoin="round"/>'+
-      '<ellipse cx="12" cy="10.5" rx="5" ry="2.3" fill="#fff" opacity=".45"/>'+
-      '</svg>';
-  })();
+  /* glossy blue circular verification check (Web-2.0 era gloss, built once) */
+  var VBADGE_SVG='<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">'+
+    '<defs><radialGradient id="vbg" cx="50%" cy="34%" r="72%"><stop offset="0%" stop-color="#7cc6ff"/><stop offset="52%" stop-color="#1e86e8"/><stop offset="100%" stop-color="#0b56bd"/></radialGradient>'+
+    '<linearGradient id="vbgl" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity=".8"/><stop offset="46%" stop-color="#fff" stop-opacity=".12"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>'+
+    '<circle cx="20" cy="20" r="18" fill="url(#vbg)" stroke="#fff" stroke-width="2.6"/>'+
+    '<ellipse cx="20" cy="14" rx="13.5" ry="7.5" fill="url(#vbgl)"/>'+
+    '<path d="M12 20.5 L17.6 26 L28 14.4" fill="none" stroke="#fff" stroke-width="3.7" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '</svg>';
   function vbadge(n){
     if(!isVerified(n))return '';
     var safe=String(n).replace(/['"]/g,'');
-    return ' <span class="vbadge" title="Verified member — tap" onclick="showVerified(event,\''+safe+'\')">'+VBADGE_SVG+'</span>';
+    return ' <span class="vbadge" title="Verified — tap" onclick="showVerified(event,\''+safe+'\')">'+VBADGE_SVG+'</span>';
   }
   function showVerified(e,name){
     if(e){try{e.stopPropagation();e.preventDefault();}catch(_){}}
-    var who=(name||'This member');
-    toast('⭐ '+who+' is a Verified member of TheFlap!');
+    if(typeof openBadgeInfo==='function'){ openBadgeInfo('verified'); return; }
+    toast('✔ '+(name||'This account')+' is verified on TheFlap.');
   }
   async function loadVerified(){
     if(!ONLINE)return;
@@ -4140,6 +4185,7 @@
       LAST_ROWS=(res.data||[]).filter(function(r){return String(r.name||'').indexOf('::')!==0;}); /* keep ALL hidden ::sentinel:: rows (ticker, poll, friend, dm, features…) out of the feed */
       loadTicker();
       loadVerified().then(applyMsgLimits);
+      loadCustomBadges();
       loadMods();
       loadFeatures();
       await loadPinned();
