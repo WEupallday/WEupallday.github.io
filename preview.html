@@ -14,6 +14,10 @@
   var mq = window.matchMedia('(max-width:760px)');
   function apply(){ document.documentElement.classList.toggle('is-app', isApp || mq.matches); }
   apply();
+  /* .native-app = the actual iOS/Android app (or ?app=1 preview), NOT phone-width browsers.
+     v1.0 ships name+password only inside the app so Apple's Sign-in-with-Apple rule (Guideline 4.8,
+     triggered by third-party logins) never applies. The website keeps "Continue with Google". */
+  document.documentElement.classList.toggle('native-app', isApp);
   if(mq.addEventListener) mq.addEventListener('change', apply); else if(mq.addListener) mq.addListener(apply);
   /* the preview frame passes ?safe=NN to simulate the iPhone's Dynamic Island gap;
      on a real device this stays 0 and the true env(safe-area-inset-top) is used instead. */
@@ -65,14 +69,13 @@
   }
 
   .topbar{background:linear-gradient(180deg,#ff9a2e 0%,var(--orange) 55%,#d96f00 100%);border-bottom:3px solid #a85400;padding:5px 0;box-shadow:0 3px 10px rgba(0,0,0,.4);}
-  /* hide-on-scroll: bar tucks up when scrolling down, pops back on scroll up (all viewports) */
-  .topbar{position:sticky;top:0;z-index:95;transition:transform .28s ease;will-change:transform;}
-  body.bar-hidden .topbar{transform:translateY(-105%);}
+  /* hide-on-scroll: APP ONLY — the desktop website keeps its original static top bar unchanged */
+  html.is-app .topbar{position:sticky;top:0;z-index:95;transition:transform .28s ease;will-change:transform;}
+  html.is-app body.bar-hidden .topbar{transform:translateY(-105%);}
   .topbar-inner{width:1010px;margin:0 auto;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
   .navbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:9px;letter-spacing:.5px;color:#fff;text-transform:uppercase;cursor:pointer;background:linear-gradient(180deg,#c22a1a 0%,#8f1408 100%);border:1px solid #6b0e04;border-radius:4px;padding:4px 9px;text-shadow:0 1px 1px rgba(0,0,0,.5);}
-  /* clean, neat Search — a light "field" pill instead of the red action buttons */
-  .navbtn.search-nav{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.45);border-radius:16px;text-shadow:none;text-transform:none;letter-spacing:.3px;padding:5px 14px;font-size:11px;box-shadow:none;}
-  .navbtn.search-nav:hover{background:rgba(255,255,255,.24);}
+  /* clean, neat Search — a light "field" pill instead of the red action buttons (desktop website) */
+  .navbtn.search-nav{background:#fff;color:var(--navy,#22398f);border:1.5px solid #e0b06a;border-radius:14px;text-shadow:none;text-transform:none;letter-spacing:.2px;padding:4px 12px;box-shadow:inset 0 1px 2px rgba(0,0,0,.05);}
   .navbtn.search-nav:hover{border-color:var(--orange);color:var(--orange-dark,#c05e00);}
   .rf-short{display:none;}
   /* side drawer + hamburger + reply toggle are app-only; hidden on the website */
@@ -158,10 +161,11 @@
   .card-strip{background:linear-gradient(180deg,#22398f,var(--strip-navy));padding:3px 8px;font-size:9px;color:#b8c4e8;text-align:right;font-weight:bold;}
   .card-strip .rate{color:#ff4030;margin-left:6px;}
   .card-body{background:linear-gradient(180deg,var(--body-top) 0%,var(--body-mid) 55%,var(--body-bot) 100%);padding:12px;overflow:hidden;}
-  .poster{float:left;width:78px;margin-right:12px;text-align:center;}
+  .poster{float:left;width:88px;margin-right:12px;text-align:center;}
   .poster .pava{width:70px;height:76px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);margin:0 auto;overflow:hidden;background:#123;}
   .poster .pava img{width:100%;height:100%;object-fit:cover;display:block;}
-  .poster .pname{color:var(--name-navy);font-weight:bold;font-size:12px;margin-top:4px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  /* names WRAP to fit (no more brutal ellipsis crop); long single words break; clamped to 3 lines as a safety */
+  .poster .pname{color:var(--name-navy);font-weight:bold;font-size:12px;margin-top:4px;line-height:1.2;white-space:normal;overflow-wrap:anywhere;word-break:break-word;max-width:100%;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
   .follow-btn{margin-top:4px;font-size:9.5px;font-weight:bold;padding:3px 8px;border-radius:11px;border:1.5px solid var(--orange);background:#fff;color:#c05e00;cursor:pointer;line-height:1;white-space:nowrap;max-width:100%;font-family:Verdana,Arial,sans-serif;}
   .follow-btn.following{background:var(--orange);color:#fff;border-color:var(--orange);}
   .follow-btn:active{transform:translateY(1px);}
@@ -313,14 +317,23 @@
   .reflapbtn:hover{filter:brightness(1.09);}
   .pinned-tag{background:linear-gradient(180deg,#ffe08a,#f5c542);color:#7a4a00;font-weight:bold;font-size:10px;padding:4px 12px;border:2px solid #d9a72a;border-bottom:none;border-radius:6px 6px 0 0;letter-spacing:.5px;}
   .pinned-card{box-shadow:0 0 0 2px #f5c542,0 5px 14px rgba(0,0,0,.35);}
+  /* ===== official announcement card — sits ABOVE the pinned slot, from the TheFlap official account ===== */
+  .announce-card{border:3px solid #1a5fa8;border-radius:6px;margin-bottom:16px;background:#fff;box-shadow:0 0 0 2px #7fd0ff,0 6px 18px rgba(0,0,0,.45);overflow:hidden;}
+  .announce-head{display:flex;align-items:center;gap:7px;background:linear-gradient(180deg,#2f7ac9 0%,#1a5fa8 55%,#134a86 100%);padding:8px 12px;color:#fff;font-weight:bold;font-size:13px;letter-spacing:.3px;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+  .announce-head .ann-seal{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6c2,#f5c542 60%,#d9a72a);border:1.5px solid #b8860b;color:#7a4a00;font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.35);flex:none;}
+  .announce-head .ann-name{display:flex;flex-direction:column;line-height:1.05;}
+  .announce-head .ann-name small{font-size:9px;font-weight:bold;color:#cfe6ff;letter-spacing:1px;text-transform:uppercase;}
+  .announce-head .ann-official{margin-left:auto;font-size:9px;font-weight:bold;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.5);border-radius:10px;padding:2px 8px;letter-spacing:.5px;white-space:nowrap;}
+  .announce-body{background:linear-gradient(180deg,#eaf6ff 0%,#d6ecfb 100%);padding:13px 15px;color:#123;font-size:13px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere;}
+  .announce-body .ann-title{font-weight:bold;font-size:15px;color:#134a86;margin-bottom:6px;display:block;}
   .pinbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:10px;color:#7a4a00;background:linear-gradient(180deg,#ffe08a,#f5c542);border:1px solid #d9a72a;border-radius:5px;padding:5px 9px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;margin-left:6px;}
   .pinbtn:hover{filter:brightness(1.05);}
   .reflapbtn.on{background:linear-gradient(180deg,#1c7a42,#12592f);box-shadow:inset 0 2px 4px rgba(0,0,0,.35);}
   .reflap-count-line{font-size:11px;font-weight:bold;color:#2f9e5a;padding:4px 4px 0;}
-  .vbadge{display:inline-block;width:17px;height:17px;vertical-align:-4px;margin-left:3px;cursor:pointer;transition:transform .1s;}
+  .vbadge{display:inline-block;width:21px;height:21px;vertical-align:-5px;margin-left:3px;cursor:pointer;transition:transform .1s;}
   .vbadge svg{width:100%;height:100%;display:block;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));}
   .vbadge:hover,.vbadge:active{transform:scale(1.2) rotate(-6deg);}
-  .pc-name .vbadge{width:23px;height:23px;vertical-align:-5px;}
+  .pc-name .vbadge{width:28px;height:28px;vertical-align:-6px;}
   .tile .vcheck{position:absolute;right:0;bottom:0;width:18px;height:18px;z-index:3;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4));}
   .tile .vcheck svg{width:100%;height:100%;display:block;}
   /* real-member Flappers sidebar */
@@ -411,6 +424,10 @@
   .gate-alt.hidden{display:none;}
   .gate-toggle{display:inline-block;margin-top:4px;font-size:11.5px;color:var(--navy,#22398f);font-weight:bold;cursor:pointer;text-decoration:underline;}
   .gate-browse{display:block;margin-top:12px;font-size:10.5px;color:#8a93c0;cursor:pointer;text-decoration:underline;}
+  /* v1.0 iOS/Android app: name+password only (no Google/Apple buttons → no Sign-in-with-Apple requirement).
+     Website is unaffected. Coming back in 1.1. */
+  html.native-app .gate-google,html.native-app .gate-or,html.native-app #gateAltToggle{display:none!important;}
+  html.native-app #gateAlt{display:block!important;margin-top:2px;}
   /* ---- onboarding wizard (new accounts) ---- */
   #onboard{position:fixed;inset:0;z-index:210;background:rgba(15,8,32,.75);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 14px;}
   #onboard.hidden{display:none;}
@@ -506,8 +523,40 @@
   .pc-head{display:flex;gap:12px;align-items:center;margin-bottom:8px;}
   .pc-ava{width:70px;height:76px;border:3px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.35);overflow:hidden;background:#123;flex:none;position:relative;}
   .pc-ava svg,.pc-ava img{width:100%;height:100%;display:block;object-fit:cover;}
-  .pc-name{color:var(--name-navy);font-weight:bold;font-size:16px;}
+  .pc-name{font-family:'Chewy','Comic Sans MS',cursive;color:var(--name-navy);font-weight:normal;font-size:24px;line-height:1.12;letter-spacing:.3px;-webkit-text-stroke:.4px #fff;text-shadow:0 2px 0 rgba(255,255,255,.55);}
   .pc-meta{font-size:10px;color:#2a4a6e;font-weight:bold;}
+  /* ===== lean profile (real) ===== */
+  .pc-banner{height:98px;margin:0;position:relative;overflow:hidden;border-bottom:3px solid var(--orange-dark);}
+  .bn-cosmic{background:linear-gradient(135deg,#5b2ea6,#c0459b 55%,#f5820a);}
+  .bn-sunset{background:linear-gradient(135deg,#f5820a,#e01818 60%,#7a1050);}
+  .bn-aqua{background:linear-gradient(135deg,#2f7ac9,#46c795 60%,#c9ecf5);}
+  .bn-slime{background:linear-gradient(135deg,#46c795,#8fdfc8 55%,#c9f24a);}
+  .bn-graffiti{background:linear-gradient(135deg,#241035,#2f7ac9 45%,#e8125e);}
+  .bn-midnight{background:linear-gradient(135deg,#16255e,#123a8f 60%,#2f7ac9);}
+  .pc-streak{position:absolute;right:10px;top:10px;background:linear-gradient(#fff3d6,#ffd97a);border:2px solid var(--orange-dark);color:#7a3d00;font-weight:bold;font-size:12px;border-radius:14px;padding:3px 10px;box-shadow:0 2px 6px rgba(0,0,0,.3);}
+  .pc-topwrap{padding:0 14px 4px;}
+  .pc-avwrap{display:flex;align-items:flex-end;gap:11px;}
+  .pc-avwrap .pc-ava{margin-top:-42px;}
+  .pc-nameblock{padding-bottom:2px;}
+  .pc-handle{font-size:12px;color:#5566a0;font-weight:bold;margin-top:0;}
+  .pc-bio{font-size:12.5px;color:#233;line-height:1.42;margin:9px 0 4px;white-space:pre-wrap;word-break:break-word;}
+  .pc-links{display:flex;flex-wrap:wrap;gap:8px;margin:5px 0 2px;}
+  .pc-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:bold;color:#12357a;background:#eef2fb;border:1.5px solid var(--card-border);border-radius:14px;padding:3px 9px;text-decoration:none;}
+  .pc-badges{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0 4px;}
+  .pc-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:bold;border-radius:12px;padding:3px 9px;border:1.5px solid;}
+  .bd-founder{background:#fff6d6;border-color:#e0a500;color:#8a6100;}
+  .bd-verified{background:#e3f0ff;border-color:#2f7ac9;color:#12467a;}
+  .bd-early{background:#e5ffe9;border-color:#1a8a1a;color:#116611;}
+  .bd-top{background:#ffe9f2;border-color:#e8125e;color:#a3164e;}
+  .bd-streak{background:#fff0dc;border-color:#f5820a;color:#a35200;}
+  .pc-viewmore{display:block;width:100%;font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:12px;padding:9px;margin:8px 0 2px;border-radius:10px;border:2px solid var(--card-border);background:#eef2fb;color:#22305e;cursor:pointer;}
+  .pc-viewmore:hover{background:#e3ebff;}
+  .set-banners{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 2px;}
+  .set-bn{height:44px;border-radius:8px;border:3px solid transparent;cursor:pointer;position:relative;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+  .set-bn.on{border-color:var(--orange-dark);}
+  .set-bn span{position:absolute;bottom:2px;left:5px;font-size:9px;font-weight:bold;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7);}
+  .set-plus-lock{margin-top:9px;font-size:12px;font-weight:bold;color:#8a93a8;background:#f0f2f7;border:1.5px dashed #c3c9d6;border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:7px;cursor:not-allowed;}
+  .plus-tag{margin-left:auto;background:linear-gradient(#ffd97a,#f5820a);color:#5a2d00;font-size:9px;padding:2px 7px;border-radius:10px;border:1px solid var(--orange-dark);letter-spacing:.5px;}
   .pc-feel{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:bold;color:var(--red);text-transform:lowercase;margin-top:2px;}
   .pc-flaps-h{font-size:9px;color:var(--name-navy);letter-spacing:2px;text-transform:uppercase;font-weight:bold;margin:8px 0 4px;border-bottom:2px dotted var(--card-border);padding-bottom:2px;}
   .poster.clickable{cursor:pointer;}
@@ -936,7 +985,7 @@
   html.is-app body.hdr-x .bell{order:5;flex:0 0 auto;}
   /* messages icon lives in the top bar next to the bell; only when the social feature is on */
   .msg-nav{display:none;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.45);color:#fff;text-shadow:none;border-radius:50%;font-size:15px;line-height:1;padding:5px 7px;position:relative;}
-  body.social-on .msg-nav{display:inline-flex;align-items:center;justify-content:center;}
+  html.is-app body.social-on .msg-nav{display:inline-flex;align-items:center;justify-content:center;}
   /* --- full-screen Friends/Messages page + DM conversation on the app (was a cramped half-screen box) --- */
   html.is-app #profModal.mob-full{align-items:stretch;justify-content:stretch;padding:0;background:#eef2fb;}
   html.is-app #profModal.mob-full .profcard{width:100vw;max-width:100vw;height:100vh;max-height:100vh;border:none;border-radius:0;box-shadow:none;display:flex;flex-direction:column;animation:none;}
@@ -952,8 +1001,9 @@
   /* lock the background so the feed can't scroll while the side menu is open */
   body.drawer-open{overflow:hidden!important;}
   body.drawer-open .wrap,body.drawer-open .topbar{touch-action:none;}
-  /* in the app the floating + is the composer, so drop the big "Post A New Flap" launcher card */
-  html.is-app .composeblock{display:none!important;}
+  /* ONLY hide the "Post A New Flap" launcher where the floating + actually exists (the real app / hdr-x).
+     On the website — any width — keep the launcher so people can always post. */
+  html.is-app body.hdr-x .composeblock{display:none!important;}
   /* clear back arrow inside a DM conversation (returns to the messages list; ✕ still fully closes) */
   .dm-back{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);color:#fff;font-size:16px;line-height:1;border-radius:8px;padding:3px 10px;margin-right:8px;cursor:pointer;font-weight:bold;}
   .dm-back:hover{background:rgba(255,255,255,.32);}
@@ -1136,7 +1186,6 @@
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Profiles</button>
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Statuses</button>
     <button class="navbtn nav-soon" onclick="toast('Coming soon!')">Pix</button>
-    <button class="navbtn hqbtn" id="hqBtn" type="button" onclick="showAdmin()" title="Admin HQ">👑</button>
     <button class="navbtn msg-nav" id="msgBtn" type="button" onclick="openSocial('messages')" title="Friends & Messages">💬<span id="msgCount" class="bell-count"></span></button>
     <button class="navbtn bell" id="bellBtn" type="button" onclick="toggleNotifs(event)">🔔<span id="bellCount" class="bell-count"></span></button>
   </div>
@@ -1206,6 +1255,24 @@
         <span class="set-btn save" id="setHandleSave" onclick="saveHandle()">Save handle</span>
       </div>
       <div class="set-sec">
+        <div class="set-label">Bio</div>
+        <textarea id="setBio" maxlength="160" rows="3" placeholder="Say something about yourself…" style="width:100%;box-sizing:border-box;font-family:Verdana,Arial,sans-serif;font-size:13px;border:2px solid var(--card-border);border-radius:8px;padding:8px;resize:vertical;"></textarea>
+        <div class="set-hint" id="setBioHint"></div>
+        <span class="set-btn save" id="setBioSave" onclick="saveBio()">Save bio</span>
+      </div>
+      <div class="set-sec">
+        <div class="set-label">Profile links</div>
+        <input type="text" id="setLink1" maxlength="120" placeholder="Website — yoursite.com" style="width:100%;box-sizing:border-box;">
+        <input type="text" id="setLink2" maxlength="120" placeholder="Instagram — instagram.com/you" style="width:100%;box-sizing:border-box;margin-top:6px;">
+        <div class="set-hint" id="setLinkHint"></div>
+        <span class="set-btn save" id="setLinkSave" onclick="saveLinks()">Save links</span>
+      </div>
+      <div class="set-sec">
+        <div class="set-label">Profile banner</div>
+        <div class="set-banners" id="setBanners"></div>
+        <div class="set-plus-lock">🔒 Upload your own banner <span class="plus-tag">PLUS</span></div>
+      </div>
+      <div class="set-sec">
         <div class="set-label">People you've blocked</div>
         <div class="set-blocked" id="setBlocked"><div class="set-empty">You haven't blocked anyone.</div></div>
       </div>
@@ -1224,7 +1291,7 @@
     <div class="set-body">
       <p style="font-size:13px;color:#333;margin:2px 0 10px;">Your <b id="violKind">flap</b> broke our <b>House Rules</b> (hate speech / slurs / severe abuse) and was <b>not posted</b>.</p>
       <div style="background:#fbeceb;border:1px solid #f0c0b8;border-radius:9px;padding:10px 12px;font-size:12.5px;color:#7a2b22;word-break:break-word;" id="violContent"></div>
-      <p style="font-size:11.5px;color:#667;margin:10px 0 2px;">Repeated violations may lead to a time-out or removal. If you believe this was flagged by mistake, you can appeal and <b>lock</b> will personally review it.</p>
+      <p style="font-size:11.5px;color:#667;margin:10px 0 2px;">Repeated violations may lead to a time-out or removal. If you believe this was flagged by mistake, you can appeal and <b>our moderation team</b> will review it.</p>
       <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
         <span class="set-btn" onclick="closeViol()">OK, got it</span>
         <span class="set-btn" style="background:#c0392b;" onclick="submitAppeal()">📩 Appeal — this was a mistake</span>
@@ -1239,7 +1306,7 @@
 
 <div class="banner" id="banner"></div>
 
-<div class="ticker"><span id="tickerText">★ WELCOME TO THEFLAP.COM — FRIENDS EDITION ★ INVITE ONLY ★ BE NICE OR LOCK DELETES YOU ★ OPEN MIC NIGHT THIS FRIDAY ★ WHAT'S FLAPPENING? ★</span></div>
+<div class="ticker"><span id="tickerText">★ WELCOME TO THEFLAP.COM — FRIENDS EDITION ★ INVITE ONLY ★ BE NICE — MODERATION KEEPS IT CHILL ★ OPEN MIC NIGHT THIS FRIDAY ★ WHAT'S FLAPPENING? ★</span></div>
 
 <div id="drawerScrim" onclick="toggleDrawer(false)"></div>
 <aside id="sideDrawer" aria-hidden="true">
@@ -1288,7 +1355,7 @@
         Welcome to TheFlap.com — where you'll find all the hottest pics, clips, and flaps
         from your favorite Westbrook High students (and teachers!). The friends-only edition:
         real flaps from real friends, plus the classic crew below.<br><br>
-        Run by: <a onclick="toast('That would be Lock. Obviously.')">@lock</a>
+        Run by: <a onclick="toast('The TheFlap moderation team. 🐦')">the TheFlap moderation team</a>
       </div>
     </div>
 
@@ -1301,9 +1368,7 @@
         <div class="you-stats"><b id="youCount">0</b> flaps posted</div>
         <button class="you-update" type="button" style="margin-top:8px;background:linear-gradient(180deg,#3c6ec9,#22398f);" onclick="if(ME.name)showUserProfile(ME.name);else requireAuth();">👤 VIEW MY PROFILE</button>
         <div class="hint">upload your real pic to replace the cartoon!</div>
-        <button class="you-update" type="button" style="background:linear-gradient(180deg,#4a4a5e,#2c2c3a);margin-top:8px;" onclick="logOut()">LOG OUT</button>
-        <button class="you-update danger-btn" type="button" style="margin-top:8px;" onclick="deleteAccount()">DELETE ACCOUNT</button>
-        <button class="adminbtn" id="adminBtn" type="button" onclick="showAdmin()">👑 ADMIN PANEL</button>
+        <button class="you-update" type="button" style="background:linear-gradient(180deg,#4a4a5e,#2c2c3a);margin-top:8px;" onclick="openSettings()">⚙ SETTINGS</button>
         <div style="margin-top:8px;"><a class="privacy-link" onclick="openPrivacy()">Privacy Policy</a></div>
       </div>
       <input type="file" id="avatarFile" accept="image/*" hidden>
@@ -1320,6 +1385,7 @@
           <b>✍️ Tap here to post a flap!</b>
           <span>share a photo, a mood, whatever — it goes live for all your friends</span>
         </div>
+        <button class="comp-btn go" type="button" onclick="event.stopPropagation();openPear()">Post ✏️</button>
       </div>
     </div>
     <input type="file" id="postFile" accept="image/*" hidden>
@@ -1357,10 +1423,10 @@
         2. no explicit pictures, nudity, or nsfw content.<br>
         3. no last names, phone numbers, addresses.<br>
         4. what flaps here stays here.<br>
-        5. lock can delete anything. lock is the law.<br>
+        5. our moderation team can remove anything that breaks the rules.<br>
         6. taco tuesday is sacred.<br>
-        <span style="opacity:.85;">⚙ auto-moderation is on: posts, replies &amp; DMs with slurs or severe abuse are blocked automatically and reviewed by lock. wrongly flagged? tap “Appeal.”</span><br>
-        <span style="opacity:.85;">💬 heads up: direct messages are <b>not private from moderation</b> — lock may review messages to keep TheFlap safe.</span>
+        <span style="opacity:.85;">⚙ auto-moderation is on: posts, replies &amp; DMs with slurs or severe abuse are blocked automatically and reviewed by our moderation team. wrongly flagged? tap “Appeal.”</span><br>
+        <span style="opacity:.85;">💬 heads up: direct messages are <b>not private from moderation</b> — moderators may review messages to keep TheFlap safe.</span>
       </div>
     </div>
     <div class="sidebox">
@@ -1983,8 +2049,8 @@
       var __lk=hasLiked(o.liveId);
       h+='<button class="likebtn'+(__lk?' liked':'')+'" type="button" data-n="'+(o.likes||0)+'" data-id="'+o.liveId+'" onclick="likeLive(this)">'+(__lk?'✔ Flapped! ('+(o.likes||0)+')':'👍 Flap This! ('+(o.likes||0)+')')+'</button>';
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase())h+='<button class="reflapbtn'+(o.reflapped?' on':'')+'" type="button" onclick="reflapPost('+o.liveId+')">🔁 '+(o.reflapped?'Reflapped':'Reflap')+'</button>';
-      if(ME.admin)h+='<button class="pinbtn" type="button" onclick="pinPost('+o.liveId+')">'+(o.pinned?'📌 Unpin':'📌 Pin')+'</button>';
-      if(ME.admin)h+='<button class="delbtn" type="button" onclick="delLive('+o.liveId+')">DELETE</button>';
+      if(ME.admin||ME.mod)h+='<button class="pinbtn" type="button" onclick="pinPost('+o.liveId+')">'+(o.pinned?'📌 Unpin':'📌 Pin')+'</button>';
+      if(ME.admin||ME.mod)h+='<button class="delbtn" type="button" onclick="delLive('+o.liveId+')">DELETE</button>';
       else if(o.memberDel)h+='<button class="delbtn" type="button" title="Delete your own flap (within '+DELETE_WINDOW_MIN+' min of posting)" onclick="delMineFlap('+o.liveId+','+(o.createdMs||0)+')">🗑 Delete</button>';
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
         var pn=esc(o.name).replace(/'/g,'');
@@ -2129,11 +2195,34 @@
   function sanitizeHandle(s){ try{ s=String(s||'').toLowerCase().normalize('NFKD'); }catch(e){ s=String(s||'').toLowerCase(); } return s.replace(/[^a-z0-9_]+/g,'').slice(0,20); }
   /* Reserved / brand-protected names — nobody but the app can use "flap" or impersonate staff.
      Applies to both the display name and the @handle. */
+  /* normalize a name/handle for reserved-word matching: lowercase, strip accents,
+     un-leet (4→a 3→e 1→i 0→o 5/$→s 7→t 8→b @→a), then keep only a-z0-9. So
+     "Jáde W3st", "cat.valentine", "beck0liver" all collapse to the plain identity. */
+  function _rnNorm(s){
+    s=String(s||'').toLowerCase();
+    try{ s=s.normalize('NFD').replace(/[̀-ͯ]/g,''); }catch(e){}
+    s=s.replace(/[4@]/g,'a').replace(/3/g,'e').replace(/[1!|]/g,'i').replace(/0/g,'o').replace(/[5$]/g,'s').replace(/7/g,'t').replace(/8/g,'b');
+    return s.replace(/[^a-z0-9]/g,'');
+  }
+  /* "lock" is the admin identity — reserve it HARD against look-alikes. l-lookalikes (1 ! | i) → l,
+     0 → o, strip spaces/dots/accents, then EXACT match to "lock". So LOCK, l0ck, 1ock, |ock, Iock,
+     "l.o.c.k", "l o c k" all read as lock — but "Lockhart", "Sherlock", "block" do NOT (exact, not substring). */
+  function _lockNorm(s){
+    s=String(s||'').toLowerCase();
+    try{ s=s.normalize('NFD').replace(/[̀-ͯ]/g,''); }catch(e){}
+    s=s.replace(/[1!|i]/g,'l').replace(/0/g,'o');
+    return s.replace(/[^a-z0-9]/g,'');
+  }
+  function isReservedLock(s){ return _lockNorm(s)==='lock'; }
+  /* Victorious cast — reserved so people can't keep signing up as the characters */
+  var VICTORIOUS_NAMES=['torivega','jadewest','catvalentine','beckoliver','andreharris','robbieshapiro','robbie','trinavega','sikowitz'];
   function isReservedName(s){
-    var t=String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+    var t=_rnNorm(s);
     if(!t) return false;
+    if(isReservedLock(s)) return true;   /* the admin username — nobody else can take lock in any casing/variant */
     if(/flap|admin|support|official|moderator/.test(t)) return true;   /* blocks theflap, flapsupport, flap, admin, support, etc. */
-    if(/^(mod|staff|root|owner|team|lock|theteam)$/.test(t)) return true;
+    if(/^(mod|staff|root|owner|team|theteam)$/.test(t)) return true;
+    for(var i=0;i<VICTORIOUS_NAMES.length;i++){ if(t.indexOf(VICTORIOUS_NAMES[i])>-1) return true; }   /* Victorious character names + variations */
     return false;
   }
   async function genUniqueHandle(name){
@@ -2251,7 +2340,7 @@
     try{ await sb.from('flap_reports').insert({reporter:name,reason:'[APPEAL — user says wrongly flagged | '+c.kind+'] '+c.content,target_type:'appeal',target_name:name,resolved:false}); }catch(e){}
     try{ discordPing('appeal',name,'📩 '+name+' is APPEALING an auto-mod removal ('+c.kind+'): "'+c.content+'"'); }catch(e){}
     closeViol();
-    toast('Appeal sent — lock will review it. Thanks!');
+    toast('Appeal sent — our moderation team will review it. Thanks!');
   }
 
   /* ================= FOLLOWING (one-way, no accept — lighter-weight than friends) ================= */
@@ -2348,7 +2437,7 @@
           try{await ensureHandle();}catch(eh){}
         }else{
           /* new account — create it, then send them through onboarding to pick handle + name + profile pic */
-          if(isReservedName(name)){ err.textContent='That name isn’t allowed — pick another (no “flap” or staff names).'; return; }
+          if(isReservedName(name)){ err.textContent='That name’s reserved — pick your own! ✨'; return; }
           var newName=name.slice(0,20);
           err.textContent='creating your account…';
           var newHandle=await genUniqueHandle(newName);
@@ -2472,8 +2561,8 @@
     if(handle.length<3||!name)return;
     var btn=document.getElementById('obNextBtn'); btn.disabled=true;
     var hh=document.getElementById('obHandleHint'), nh=document.getElementById('obNameHint');
-    if(isReservedName(handle)){ hh.className='ob-hint bad'; hh.textContent='That handle isn’t allowed — pick another (no “flap” or staff names).'; btn.disabled=false; return; }
-    if(isReservedName(name)){ nh.className='ob-hint bad'; nh.textContent='That name isn’t allowed — pick another (no “flap” or staff names).'; btn.disabled=false; return; }
+    if(isReservedName(handle)){ hh.className='ob-hint bad'; hh.textContent='That handle’s reserved — pick your own! ✨'; btn.disabled=false; return; }
+    if(isReservedName(name)){ nh.className='ob-hint bad'; nh.textContent='That name’s reserved — pick your own! ✨'; btn.disabled=false; return; }
     if(ONLINE&&sb){
       try{
         var chk=await sb.from('flap_users').select('name').ilike('handle',handle).limit(5);
@@ -2532,7 +2621,8 @@
     }catch(e){toast('Could not start Apple sign-in.');}
   }
   /* reveal the Apple button only inside the native iOS app */
-  try{ if(window.Capacitor && Capacitor.getPlatform && Capacitor.getPlatform()==='ios'){ var _ab=document.getElementById('gateAppleBtn'); if(_ab)_ab.classList.remove('hidden'); } }catch(e){}
+  /* v1.0: Sign in with Apple is intentionally NOT shown in the app (no Google → not required). Re-enable in 1.1. */
+  /* (Apple button stays hidden.) */
   var GRET_RUNNING=false;
   async function handleGoogleReturn(){
     if(!ONLINE||!sb||!sb.auth)return;
@@ -2656,7 +2746,7 @@
     try{ closeProfile(); }catch(e){}
     document.getElementById('settingsModal').classList.add('open');
     try{
-      var r=await sb.from('flap_users').select('name,handle,avatar_url,name_changes,handle_changes').ilike('name',ME.name).maybeSingle();
+      var r=await sb.from('flap_users').select('name,handle,avatar_url,name_changes,handle_changes,bio,banner,links').ilike('name',ME.name).maybeSingle();
       SET.row=(r&&r.data)?r.data:{name:ME.name,handle:ME.handle||'',avatar_url:ME.pic||null,name_changes:0,handle_changes:0};
     }catch(e){ SET.row={name:ME.name,handle:ME.handle||'',avatar_url:ME.pic||null,name_changes:0,handle_changes:0}; }
     document.getElementById('setName').value=SET.row.name||'';
@@ -2664,8 +2754,44 @@
     document.getElementById('setNameHint').textContent=''; document.getElementById('setHandleHint').textContent='';
     var bigA=document.getElementById('setAva');
     if(SET.row.avatar_url){ bigA.innerHTML='<img src="'+esc(SET.row.avatar_url)+'" alt="">'; } else { bigA.textContent='🙂'; }
+    /* bio / links / banner */
+    try{
+      document.getElementById('setBio').value=SET.row.bio||'';
+      var lk=String(SET.row.links||'').split(/[\n,]+/).map(function(s){return s.trim();}).filter(Boolean);
+      document.getElementById('setLink1').value=lk[0]||'';
+      document.getElementById('setLink2').value=lk[1]||'';
+      document.getElementById('setBioHint').textContent=''; document.getElementById('setLinkHint').textContent='';
+      renderBannerPicker(SET.row.banner||'cosmic');
+    }catch(e){}
     settingsUpdateCounts();
     settingsRenderBlocked();
+  }
+  function renderBannerPicker(sel){
+    var el=document.getElementById('setBanners'); if(!el) return;
+    el.innerHTML=BANNER_THEMES.map(function(t){
+      return '<div class="set-bn bn-'+t[0]+(t[0]===sel?' on':'')+'" data-bn="'+t[0]+'" onclick="pickBanner(\''+t[0]+'\')"><span>'+t[1]+'</span></div>';
+    }).join('');
+  }
+  async function pickBanner(k){
+    renderBannerPicker(k);
+    try{ await sb.from('flap_users').update({banner:k}).ilike('name',SET.row.name); SET.row.banner=k; toast('Banner updated! 🎨'); }
+    catch(e){ toast('Could not save banner.'); }
+  }
+  async function saveBio(){
+    var v=(document.getElementById('setBio').value||'').slice(0,160);
+    var hint=document.getElementById('setBioHint'), btn=document.getElementById('setBioSave'); btn.classList.add('disabled');
+    try{ await sb.from('flap_users').update({bio:v}).ilike('name',SET.row.name); SET.row.bio=v; hint.className='set-hint good'; hint.textContent='✓ Saved!'; }
+    catch(e){ hint.className='set-hint bad'; hint.textContent='Could not save.'; }
+    btn.classList.remove('disabled');
+  }
+  async function saveLinks(){
+    var l1=(document.getElementById('setLink1').value||'').trim();
+    var l2=(document.getElementById('setLink2').value||'').trim();
+    var v=[l1,l2].filter(Boolean).join('\n');
+    var hint=document.getElementById('setLinkHint'), btn=document.getElementById('setLinkSave'); btn.classList.add('disabled');
+    try{ await sb.from('flap_users').update({links:v}).ilike('name',SET.row.name); SET.row.links=v; hint.className='set-hint good'; hint.textContent='✓ Saved!'; }
+    catch(e){ hint.className='set-hint bad'; hint.textContent='Could not save.'; }
+    btn.classList.remove('disabled');
   }
   function closeSettings(){ var m=document.getElementById('settingsModal'); if(m)m.classList.remove('open'); }
   function settingsUpdateCounts(){
@@ -2683,11 +2809,11 @@
     var hint=document.getElementById('setNameHint');
     if(!newName){ hint.className='set-hint bad'; hint.textContent='Pick a name.'; return; }
     if(newName.toLowerCase()===(SET.row.name||'').toLowerCase()){ hint.className='set-hint'; hint.textContent='That’s already your name.'; return; }
-    if(isReservedName(newName)){ hint.className='set-hint bad'; hint.textContent='That name isn’t allowed (no “flap” or staff names).'; return; }
+    if(isReservedName(newName)){ hint.className='set-hint bad'; hint.textContent='That name’s reserved — pick your own! ✨'; return; }
     var btn=document.getElementById('setNameSave'); btn.classList.add('disabled');
     try{
       var chk=await sb.from('flap_users').select('name').ilike('name',newName).limit(1);
-      if(chk&&chk.data&&chk.data.length){ hint.className='set-hint bad'; hint.textContent='That name is taken.'; btn.classList.remove('disabled'); return; }
+      if(chk&&chk.data&&chk.data.length){ hint.className='set-hint bad'; hint.textContent='That username isn’t available — pick another.'; btn.classList.remove('disabled'); return; }
       var oldName=SET.row.name;
       var up=await sb.from('flap_users').update({name:newName, name_changes:((SET.row.name_changes||0)+1)}).ilike('name',oldName).select('*').maybeSingle();
       if(up&&up.error) throw up.error;
@@ -2707,7 +2833,7 @@
     var hint=document.getElementById('setHandleHint');
     if(newH.length<3){ hint.className='set-hint bad'; hint.textContent='Handles are 3+ letters, numbers or _.'; return; }
     if(newH===(SET.row.handle||'').toLowerCase()){ hint.className='set-hint'; hint.textContent='That’s already your handle.'; return; }
-    if(isReservedName(newH)){ hint.className='set-hint bad'; hint.textContent='That handle isn’t allowed (no “flap” or staff names).'; return; }
+    if(isReservedName(newH)){ hint.className='set-hint bad'; hint.textContent='That handle’s reserved — pick your own! ✨'; return; }
     var btn=document.getElementById('setHandleSave'); btn.classList.add('disabled');
     try{
       var chk=await sb.from('flap_users').select('name').ilike('handle',newH).limit(1);
@@ -2754,6 +2880,52 @@
     var arr=which==='reflaps'?PROFILE_DATA.reflaps:PROFILE_DATA.posts;
     lst.innerHTML=arr.length?arr.map(liveCard).join(''):'<div style="font-size:11px;padding:8px;">'+(which==='reflaps'?'No reflaps yet!':'No flaps yet!')+'</div>';
   }
+  /* ===== lean profile: banners, streak, badges, links ===== */
+  var BANNER_THEMES=[['cosmic','Cosmic'],['sunset','Sunset'],['aqua','Aqua'],['slime','Slime'],['graffiti','Graffiti'],['midnight','Midnight']];
+  var EARLY_CUTOFF=new Date('2026-10-01T00:00:00Z').getTime();  /* joined before this = Early Supporter (launch wave) */
+  var PROFILE_MORE=null;
+  function bannerClass(u){ var k=(u&&u.banner)||'cosmic'; if(!/^(cosmic|sunset|aqua|slime|graffiti|midnight)$/.test(k))k='cosmic'; return 'bn-'+k; }
+  function computeStreak(posts){
+    if(!posts||!posts.length) return 0;
+    var days={};
+    posts.forEach(function(p){ var t=p.created_at||p.ts||p.time; if(!t)return; var d=new Date(t); if(isNaN(d))return; d.setHours(0,0,0,0); days[d.getTime()]=1; });
+    var oneDay=86400000, cur=new Date(); cur.setHours(0,0,0,0); var t0=cur.getTime();
+    if(!days[t0]){ t0-=oneDay; if(!days[t0]) return 0; }   /* streak counts if active today or yesterday */
+    var streak=0; while(days[t0]){ streak++; t0-=oneDay; }
+    return streak;
+  }
+  function userBadges(name,u,flapCount,streak){
+    var out=[], lc=(name||'').toLowerCase();
+    if(lc==='lock') out.push(['👑','Founder','bd-founder']);
+    if(isVerified(name)) out.push(['✔','Verified','bd-verified']);
+    if(u&&u.created_at && new Date(u.created_at).getTime()<EARLY_CUTOFF) out.push(['🌱','Early Supporter','bd-early']);
+    if(flapCount>=50) out.push(['⭐','Top Contributor','bd-top']);
+    var ms=[30,15,10,5]; for(var i=0;i<ms.length;i++){ if(streak>=ms[i]){ out.push(['🔥',ms[i]+'-Day Streak','bd-streak']); break; } }
+    return out;
+  }
+  function profileLinksHTML(links){
+    if(!links) return '';
+    var arr=String(links).split(/[\n,]+/).map(function(s){return s.trim();}).filter(Boolean).slice(0,4);
+    if(!arr.length) return '';
+    var html=arr.map(function(raw){
+      var url=raw; if(!/^https?:\/\//i.test(url)) url='https://'+url;
+      var host=''; try{ host=new URL(url).hostname.replace(/^www\./,''); }catch(e){ host=raw; }
+      var icon='🔗', label=host;
+      if(/instagram\.com/i.test(url)){ icon='📸'; label='Instagram'; }
+      else if(/(twitter\.com|x\.com)/i.test(url)){ icon='🐦'; label='X'; }
+      else if(/tiktok\.com/i.test(url)){ icon='🎵'; label='TikTok'; }
+      else if(/(youtube\.com|youtu\.be)/i.test(url)){ icon='▶️'; label='YouTube'; }
+      else if(/facebook\.com/i.test(url)){ icon='📘'; label='Facebook'; }
+      else if(/snapchat\.com/i.test(url)){ icon='👻'; label='Snapchat'; }
+      return '<a class="pc-link" href="'+esc(url)+'" target="_blank" rel="noopener nofollow">'+icon+' '+esc(label)+'</a>';
+    }).join('');
+    return '<div class="pc-links">'+html+'</div>';
+  }
+  function profileShowMore(){
+    var lst=document.getElementById('profList'); if(!lst||!PROFILE_MORE) return;
+    lst.innerHTML=PROFILE_MORE.posts.map(liveCard).join('');
+    var b=document.getElementById('profMoreBtn'); if(b) b.remove();
+  }
   async function showUserProfile(name){
     var box=document.getElementById('profCardBox');
     box.innerHTML='<div class="pc-strip"><span>'+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">loading…</div>';
@@ -2772,54 +2944,46 @@
       var refl=posts.filter(function(p){return parseReflap(p.body);});
       PROFILE_DATA={posts:mine,reflaps:refl};
       var av=(u&&u.avatar_url)?'<img src="'+esc(u.avatar_url)+'">':userPortrait(name);
-      var feeling=mine[0]?mine[0].mood:'flappy';
       var on=u&&u.last_seen&&(Date.now()-new Date(u.last_seen).getTime()<2*60*1000);
+      var lc=(name||'').toLowerCase();
+      var flapCount=mine.length;
+      var streak=computeStreak(posts);
+      var badges=userBadges(name,u,flapCount,streak);
       var h='<div class="pc-strip"><span>'+esc(name)+' — Profile</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>';
-      h+='<div class="pc-body">';
-      h+='<div class="pc-head"><div class="pc-ava">'+av+'</div><div>';
-      h+='<div class="pc-name">'+esc(name)+vbadge(name)+(on?' <span style="font-size:9px;color:#1a8a1a;">● online</span>':'')+'</div>';
-      h+='<div class="pc-meta">'+(u?'joined '+new Date(u.created_at).toLocaleDateString()+' · ':'')+mine.length+' flaps · '+refl.length+' reflaps</div>';
-      h+='<div class="pc-meta" style="margin-top:2px;"><b id="pcFollowers">0</b> followers · <b id="pcFollowing">0</b> following</div>';
-      h+='<div class="pc-feel">feeling: '+emoHTML(feeling,true)+' '+esc(feeling)+'</div>';
-      h+='</div></div>';
-      if((name||'').toLowerCase()===(ME.name||'').toLowerCase()){
-        h+='<div class="pc-actions"><button type="button" onclick="openSettings()">⚙ Settings</button></div>';
-      }
-      if((name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
+      h+='<div class="pc-body" style="padding:0;">';
+      h+='<div class="pc-banner '+bannerClass(u)+'">'+(streak>0?'<div class="pc-streak">🔥 '+streak+' day'+(streak===1?'':'s')+'</div>':'')+'</div>';
+      h+='<div class="pc-topwrap">';
+      h+='<div class="pc-avwrap"><div class="pc-ava">'+av+'</div><div class="pc-nameblock">';
+      h+='<div class="pc-name">'+esc(name)+vbadge(name)+((isMod(name)&&lc!=='lock')?' <span class="modtag" title="Moderator" style="font-size:15px;vertical-align:-2px;">🛡</span>':'')+(on?' <span style="font-size:9px;color:#1a8a1a;vertical-align:middle;">● online</span>':'')+'</div>';
+      h+=(u&&u.handle?'<div class="pc-handle">@'+esc(u.handle)+'</div>':'')+'</div></div>';
+      if(u&&u.bio) h+='<div class="pc-bio">'+esc(u.bio)+'</div>';
+      h+=profileLinksHTML(u&&u.links);
+      if(badges.length){ h+='<div class="pc-badges">'+badges.map(function(b){return '<span class="pc-badge '+b[2]+'">'+b[0]+' '+esc(b[1])+'</span>';}).join('')+'</div>'; }
+      h+='<div class="pc-meta" style="margin-top:9px;font-size:11px;"><b>'+flapCount+'</b> Flaps &nbsp;·&nbsp; <b id="pcFollowers">0</b> Followers &nbsp;·&nbsp; <b id="pcFollowing">0</b> Following</div>';
+      h+='<div class="pc-meta" style="margin-top:3px;color:#5a6a8a;font-weight:normal;">'+(u&&u.created_at?'Joined '+new Date(u.created_at).toLocaleDateString(undefined,{month:'short',year:'numeric'}):'')+'</div>';
+      if(lc===(ME.name||'').toLowerCase()){
+        h+='<div class="pc-actions"><button type="button" onclick="openSettings()">⚙ Edit profile</button></div>';
+      } else {
         var pn2=esc(name).replace(/'/g,'');
         h+='<div class="pc-actions">'+
            followBtnHTML(name)+
-           '<button type="button" onclick="openReport(\'user\',null,\''+pn2+'\')">⚑ Report user</button>'+
+           '<button type="button" onclick="openReport(\'user\',null,\''+pn2+'\')">⚑ Report</button>'+
            (isBlocked(name)
              ?'<button type="button" onclick="unblockUser(\''+pn2+'\')">✓ Unblock</button>'
-             :'<button type="button" class="danger" onclick="blockUser(\''+pn2+'\')">🚫 Block user</button>')+
+             :'<button type="button" class="danger" onclick="blockUser(\''+pn2+'\')">🚫 Block</button>')+
            '</div>';
       }
-      if(ME.admin && (name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
-        var _au=USERS[(name||'').toLowerCase()]||{}; var _dev=_au.device||'unknown'; var _pn=esc(name).replace(/'/g,'');
-        h+='<div class="pc-actions" style="border-top:1px dashed #cbd5e8;margin-top:6px;padding-top:8px;flex-wrap:wrap;align-items:center;">'+
-           '<span style="font-size:11px;color:#2a4a6e;margin-right:auto;">📱 Device: <b>'+esc(_dev)+'</b></span>'+
-           (_au.banned
-             ?'<button type="button" onclick="unbanUser(\''+_pn+'\')">♻ Unban</button>'
-             :'<button type="button" class="danger" onclick="banUser(\''+_pn+'\')">🔨 Permanently ban</button>')+
-           '</div>';
-        var _mo=_au.muted_until && new Date(_au.muted_until)>new Date();
-        h+='<div class="pc-actions" style="margin-top:4px;flex-wrap:wrap;align-items:center;gap:6px;">'+
-           '<span style="font-size:11px;color:#2a4a6e;margin-right:auto;">'+(_mo?('⏳ Timed out until <b>'+new Date(_au.muted_until).toLocaleString()+'</b>'):'⏳ Time-out (can read, can\'t post/reply/react):')+'</span>'+
-           (_mo
-             ? '<button type="button" onclick="unmuteUser(\''+_pn+'\')">✓ Lift time-out</button>'
-             : '<button type="button" onclick="muteUser(\''+_pn+'\',1)">1h</button>'+
-               '<button type="button" onclick="muteUser(\''+_pn+'\',24)">24h</button>'+
-               '<button type="button" onclick="muteUser(\''+_pn+'\',168)">7d</button>'+
-               '<button type="button" onclick="customMute(\''+_pn+'\')">Custom</button>')+
-           '</div>';
-        if((_au.violations||0)>0){ h+='<div style="font-size:10.5px;color:#a35a00;padding:2px 2px 0;">⚠ '+_au.violations+' auto-mod removal(s) on record for this member.</div>'; }
+      /* member moderation lives on the separate admin site now — no admin UI in the main app */
+      var PROF_SHOWN=3;
+      h+='<div class="colhead" style="margin:6px 0 4px;">📝 Flaps</div>';
+      if(!mine.length){ h+='<div style="font-size:11px;padding:8px;color:#667;">No flaps yet!</div>'; }
+      else{
+        h+='<div id="profList">'+mine.slice(0,PROF_SHOWN).map(liveCard).join('')+'</div>';
+        if(mine.length>PROF_SHOWN){ h+='<button class="pc-viewmore" id="profMoreBtn" onclick="profileShowMore()">View more ('+(mine.length-PROF_SHOWN)+') ↓</button>'; }
       }
-      h+='<div class="pc-tabs">'+
-         '<button class="pc-tab on" id="ptab-posts" onclick="profileTab(\'posts\')">📝 Flaps ('+mine.length+')</button>'+
-         '<button class="pc-tab" id="ptab-reflaps" onclick="profileTab(\'reflaps\')">🔁 Reflaps ('+refl.length+')</button></div>';
-      h+='<div id="profList">'+(mine.length?mine.map(liveCard).join(''):'<div style="font-size:11px;padding:8px;">no flaps yet!</div>')+'</div>';
-      h+='</div>';
+      h+='</div>';   /* /pc-topwrap */
+      h+='</div>';   /* /pc-body */
+      PROFILE_MORE={posts:mine};
       box.innerHTML=h;
       try{ refreshFollowCounts(name); }catch(efc){}
     }catch(e){
@@ -2970,6 +3134,15 @@
     if(m){ document.getElementById('delModalName').textContent=ME.name; m.classList.add('open'); }
   }
   function closeDelModal(){ var m=document.getElementById('delModal'); if(m)m.classList.remove('open'); }
+  /* keep a running tally of deleted accounts in a hidden ::delcount:: sentinel row so the admin site can show it */
+  async function bumpDelCount(){
+    if(!ONLINE)return;
+    try{
+      var ex=await sb.from('flaps').select('id,body').eq('name','::delcount::').order('id',{ascending:false}).limit(1);
+      if(ex.data&&ex.data[0]){ var n=(parseInt(ex.data[0].body,10)||0)+1; await sb.from('flaps').update({body:String(n)}).eq('id',ex.data[0].id); }
+      else { await sb.from('flaps').insert({name:'::delcount::',body:'1',mood:'flappy',likes:0}); }
+    }catch(e){}
+  }
   async function reallyDeleteAccount(){
     closeDelModal();
     if(!ME.name)return;
@@ -2984,6 +3157,7 @@
         try{await sb.from('push_subs').delete().eq('name',name);}catch(e){}
         try{await sb.from('flap_blocks').delete().eq('blocker',name);}catch(e){}
         await sb.from('flap_users').delete().ilike('name',name);
+        try{await bumpDelCount();}catch(e){}
       }catch(e){}
     }
     clearSession();
@@ -3040,8 +3214,7 @@
     renderLive();
     renderSidebar();
     loadPoll();
-    if(ME.admin)document.getElementById('adminBtn').classList.add('show');
-    document.body.classList.toggle('admin-on', !!ME.admin);   /* shows the 👑 HQ button in the top bar */
+    /* admin panel moved to the separate private admin site — no admin UI in the main app */
     try{applyHdrX();}catch(e){}   /* refresh the X-style avatar in the header once we know who you are */
     heartbeat();
   }
@@ -3200,7 +3373,7 @@
       var p=splitReply(r.body);
       var rMs=r.created_at?Date.parse(r.created_at):0;
       var mineR=((r.name||'').toLowerCase()===(ME.name||'').toLowerCase());
-      var canDel=r.id && mineR && (ME.admin || withinDelWindow(rMs));   /* your OWN reply is deletable for '+DELETE_WINDOW_MIN+' min, then permanent; admins moderate from the HQ */
+      var canDel=r.id && ((ME.admin||ME.mod) || (mineR && withinDelWindow(rMs)));   /* your OWN reply for '+DELETE_WINDOW_MIN+' min; admins & mods can remove any reply */
       var delLink=canDel?'<a class="reply-del" title="Delete this reply (yours, within '+DELETE_WINDOW_MIN+' min)" onclick="delReply('+r.id+','+row.id+')">🗑</a>':'';
       return '<div class="reply"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/'/g,'')+'\')">'+avatarFor(r.name)+'</div>'+
         replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+delLink+'</div>';
@@ -3271,7 +3444,9 @@
       if(pi>0){ var pr=rows.splice(pi,1)[0]; rows.unshift(pr); }
     }
     rows.forEach(function(r){ r.__pinned=(!FEED_FILTER && String(r.id)===String(PINNED_ID)); });
-    box.innerHTML=head+(rows.length
+    /* official announcement renders ABOVE everything (including the pinned flap), but not while a filter is active */
+    var annHTML=(!FEED_FILTER)?announceCardHTML():'';
+    box.innerHTML=head+annHTML+(rows.length
       ? rows.map(liveCard).join('')
       : '<div class="card"><div class="card-body" style="text-align:center;font-size:11px;">'+
         (FEED_FILTER?'no flaps for @'+esc(FEED_FILTER)+' yet!':(FOLLOW_FILTER?'You\'re not following anyone who\'s flapped yet — tap 🔍 Search or a name to find people to follow! 👤':(ONLINE?'no flaps yet — be the first!':'demo mode — configure the backend (see setup file) and your friends\' flaps will appear here!')))+
@@ -3372,8 +3547,8 @@
     if(c){c.textContent=unseen>9?'9+':unseen;c.classList.toggle('show',unseen>0);}
     var p=document.getElementById('notifPanel');if(!p)return;
     var h='<div class="notif-head"><span>🔔 Notifications</span>'+(NOTIFS.length?'<span onclick="markAllSeen()">mark all read</span>':'')+'</div>';
-    h+=NOTIFS.length?NOTIFS.map(function(n){
-      return '<div class="notif-item '+(n.seen?'':'unseen')+'" onclick="openNotif('+(n.flap_id||'null')+')">'+
+    h+=NOTIFS.length?NOTIFS.map(function(n,i){
+      return '<div class="notif-item '+(n.seen?'':'unseen')+'" onclick="openNotif('+i+')">'+
         '<span class="ni-ava">'+avatarFor(n.actor)+'</span>'+
         '<span>'+notifText(n)+'<br><span class="ni-when">'+new Date(n.created_at).toLocaleString()+'</span></span></div>';
     }).join(''):'<div class="notif-empty">No notifications yet.<br>When someone replies to, likes, or tags you, it shows up here 🔔</div>';
@@ -3406,24 +3581,20 @@
     NOTIFS.forEach(function(n){n.seen=true;});renderBell();
     if(ONLINE&&uns.length){try{await sb.from('flap_notifs').update({seen:true}).in('id',uns);}catch(e){}}
   }
-  function openNotif(flapId){
-    document.getElementById('notifPanel').classList.remove('open');
+  /* Tapping a notification jumps to its target:
+     • follow / friend → the person's profile
+     • dm            → the conversation
+     • reply/like/tag/reflap → the flap's single-post detail view (deep-link, works even for old flaps) */
+  function openNotif(i){
+    var n=(typeof i==='number' && NOTIFS)?NOTIFS[i]:null;
+    var p=document.getElementById('notifPanel'); if(p)p.classList.remove('open');
     try{toggleDrawer(false);}catch(e){}
-    function jump(){
-      if(!flapId)return false;
-      var el=document.getElementById('flap-'+flapId);
-      if(el){
-        el.scrollIntoView({behavior:'smooth',block:'center'});
-        el.classList.add('flap-highlight');
-        setTimeout(function(){el.classList.remove('flap-highlight');},2300);
-        return true;
-      }
-      return false;
-    }
-    if(jump())return;
-    /* post isn't rendered yet — refresh the feed, then jump to it */
-    var lf=document.getElementById('liveFeed');if(lf)lf.scrollIntoView({behavior:'smooth',block:'start'});
-    if(flapId&&typeof loadFeed==='function'){ try{ var p=loadFeed(); if(p&&p.then)p.then(function(){setTimeout(jump,350);}); else setTimeout(jump,350); }catch(e){} }
+    if(!n)return;
+    if(n.kind==='follow' || n.kind==='friend'){ try{ showUserProfile(n.actor); }catch(e){} return; }
+    if(n.kind==='dm'){ try{ openDM(n.actor); }catch(e){} return; }
+    if(n.flap_id){ try{ openFlap(n.flap_id); }catch(e){ try{ location.hash='flap/'+n.flap_id; }catch(_){} } return; }
+    /* no flap attached → fall back to the actor's profile */
+    try{ showUserProfile(n.actor); }catch(e){}
   }
   /* close the panel when tapping elsewhere */
   document.addEventListener('click',function(e){
@@ -3453,7 +3624,11 @@
       function startPush(){
         if(!P.PushNotifications) return;
         var PN=P.PushNotifications;
-        PN.addListener('registration',function(t){ try{ window.__pushToken=t.value; if(window.sb && window.ME && ME.name) sb.from('flaps').insert({name:'::push::',body:ME.name+'␟'+PLAT+'␟'+t.value,mood:'flappy',likes:0}); }catch(e){} });
+        /* APNs/FCM device token arrives here — save it per-user in push_subs so the Edge Function can target this device */
+        PN.addListener('registration',function(t){ try{ window.__pushToken=t.value; window.__pushPlat=PLAT; savePushToken(t.value,PLAT); }catch(e){} });
+        /* permission denied / no entitlement → just log, never crash the app */
+        PN.addListener('registrationError',function(e){ try{ console.warn('push registration error',e); }catch(_){} });
+        /* graceful permission prompt: ask once; if the user declines, we simply don't register (bell still works in-app) */
         PN.requestPermissions().then(function(r){ if(r&&r.receive==='granted') PN.register(); }).catch(function(){});
       }
       /* iOS: always. Android: only on app build >=2 (the first build that bundles Firebase);
@@ -3524,7 +3699,17 @@
     for(var i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);
     return out;
   }
+  /* Native (iOS/Android) push token → store in push_subs keyed by the APNs/FCM device token.
+     endpoint "apns:<token>" (or "fcm:<token>") lets the Edge Function tell platforms apart; p256dh holds the platform. */
+  async function savePushToken(token,plat){
+    if(!ONLINE||!window.sb||!ME.name||!token)return;
+    var pfx=(plat==='android')?'fcm:':'apns:';
+    try{ await sb.from('push_subs').upsert({name:ME.name,endpoint:pfx+token,p256dh:(plat||'ios'),auth:''},{onConflict:'endpoint'}); }catch(e){}
+  }
+  /* the device token can arrive BEFORE the user logs in — re-save it once we know who they are */
+  function flushPushToken(){ try{ if(window.__pushToken && ME.name) savePushToken(window.__pushToken, window.__pushPlat||'ios'); }catch(e){} }
   async function subscribePush(){
+    try{ flushPushToken(); }catch(e){}   /* native token (if any) */
     if(!ONLINE||!ME.name||!swReg||!('PushManager' in window))return;
     if(!('Notification' in window)||Notification.permission!=='granted')return;
     try{
@@ -3747,7 +3932,40 @@
       toast('✔ Verified list updated!');
     }catch(e){toast('Could not save — try again.');}
   }
-  /* ===== pin a flap to the top (admin) — persisted as a hidden sentinel row ===== */
+  /* ===== moderators — admin-granted (persisted like the verified list). Mods can pin & remove content. ===== */
+  var MODS={};
+  function isMod(n){n=(n||'').toLowerCase(); return n==='lock' || !!(MODS && MODS[n]);}
+  async function loadMods(){
+    if(!ONLINE)return;
+    try{
+      var r=await sb.from('flaps').select('body').eq('name','::mods::').order('id',{ascending:false}).limit(1);
+      MODS={};
+      if(!r.error && r.data && r.data[0]){ (r.data[0].body||'').split(/[\s,]+/).forEach(function(n){n=n.trim().toLowerCase(); if(n)MODS[n]=1;}); }
+    }catch(e){}
+    try{ if(typeof ME!=='undefined' && ME && ME.name){ ME.mod = !!ME.admin || isMod(ME.name); } }catch(e){}
+  }
+  async function toggleMod(name){
+    if(!ME.admin)return;
+    var key=(name||'').toLowerCase(); if(!key)return;
+    if(key==='lock'){ toast('The admin account is always an admin.'); return; }
+    var making=!MODS[key];
+    if(making)MODS[key]=1; else delete MODS[key];
+    var body=Object.keys(MODS).join(', ');
+    try{
+      var ex=await sb.from('flaps').select('id').eq('name','::mods::').order('id',{ascending:false}).limit(1);
+      if(ex.data&&ex.data[0]){ await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id); }
+      else { await sb.from('flaps').insert({name:'::mods::',body:body,mood:'flappy',likes:0}); }
+      toast(making?('🛡 '+name+' is now a moderator!'):(name+' is no longer a moderator.'));
+      try{ showUserProfile(name); }catch(e){}
+    }catch(e){ toast('Could not update — try again.'); }
+  }
+  /* ===== message length — verified members can send longer flaps & DMs ===== */
+  function msgLimit(){ return isVerified(ME.name) ? 1000 : 300; }
+  function applyMsgLimits(){
+    try{ var ct=document.getElementById('composeText'); if(ct)ct.maxLength=msgLimit(); }catch(e){}
+    try{ var dm=document.getElementById('dmInput'); if(dm)dm.maxLength=msgLimit(); }catch(e){}
+  }
+  /* ===== pin a flap to the top (admin/mod) — persisted as a hidden sentinel row ===== */
   var PINNED_ID=null;
   async function loadPinned(){
     if(!ONLINE)return;
@@ -3755,8 +3973,46 @@
       PINNED_ID=(r.data && r.data[0] && String(r.data[0].body||'').trim())?String(r.data[0].body).trim():null;
     }catch(e){}
   }
-  async function pinPost(id){
+  /* ===== official announcement — a hidden ::announce:: sentinel row holds the current text; empty = none.
+     Renders as an official card ABOVE the pinned slot for everyone. Editable from HQ → Settings. ===== */
+  var ANNOUNCE_TXT='';
+  async function loadAnnounce(){
+    if(!ONLINE)return;
+    try{ var r=await sb.from('flaps').select('body').eq('name','::announce::').order('id',{ascending:false}).limit(1);
+      ANNOUNCE_TXT=(r.data && r.data[0] && String(r.data[0].body||'').trim())?String(r.data[0].body):'';
+    }catch(e){}
+  }
+  function announceCardHTML(){
+    var txt=String(ANNOUNCE_TXT||'').trim(); if(!txt)return '';
+    /* first line becomes a bold title if it looks like a heading (e.g. "📢 The Flap Update") */
+    var lines=txt.split(/\n/), title='', rest=txt;
+    if(lines.length>1 && lines[0].trim().length<=60){ title=lines[0].trim(); rest=lines.slice(1).join('\n').replace(/^\n+/,''); }
+    return '<div class="announce-card">'+
+      '<div class="announce-head"><span class="ann-seal">🛡</span>'+
+        '<span class="ann-name">TheFlap<small>Official</small></span>'+
+        '<span class="ann-official">📢 Announcement</span></div>'+
+      '<div class="announce-body">'+(title?'<span class="ann-title">'+esc(title)+'</span>':'')+esc(rest)+'</div>'+
+    '</div>';
+  }
+  async function saveAnnounce(){
+    if(!ME.admin){toast('Admins only.');return;}
+    var ta=document.getElementById('adminAnnounce'); var body=ta?String(ta.value||'').trim():'';
+    try{
+      var ex=await sb.from('flaps').select('id').eq('name','::announce::').order('id',{ascending:false}).limit(1);
+      if(ex.data && ex.data[0]){ await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id); }
+      else { await sb.from('flaps').insert({name:'::announce::',body:body,mood:'flappy',likes:0}); }
+      ANNOUNCE_TXT=body; if(ADMIN_DATA)ADMIN_DATA.annCur=body;
+      await loadFeed();
+      toast(body?'📢 Announcement posted to the top!':'Announcement cleared.');
+    }catch(e){toast('Could not save announcement — try again.');}
+  }
+  async function clearAnnounce(){
     if(!ME.admin)return;
+    var ta=document.getElementById('adminAnnounce'); if(ta)ta.value='';
+    await saveAnnounce();
+  }
+  async function pinPost(id){
+    if(!ME.admin && !ME.mod)return;
     var cur=String(id), newVal=(PINNED_ID===cur)?'':cur;
     try{
       var ex=await sb.from('flaps').select('id').eq('name','::pinned::').order('id',{ascending:false}).limit(1);
@@ -3883,9 +4139,18 @@
       FEED_HAS_MORE=((res.data||[]).length>=FEED_LIMIT);   /* a full page came back → there are probably older flaps */
       LAST_ROWS=(res.data||[]).filter(function(r){return String(r.name||'').indexOf('::')!==0;}); /* keep ALL hidden ::sentinel:: rows (ticker, poll, friend, dm, features…) out of the feed */
       loadTicker();
-      loadVerified();
+      loadVerified().then(applyMsgLimits);
+      loadMods();
       loadFeatures();
       await loadPinned();
+      await loadAnnounce();
+      /* a pinned flap can be OLDER than the newest-N window we just loaded — fetch it directly
+         so it always appears (pinned at the top), instead of silently vanishing when newer flaps push it out. */
+      if(PINNED_ID && !LAST_ROWS.some(function(r){return String(r.id)===String(PINNED_ID);})){
+        try{ var _pf=await sb.from('flaps').select('*').eq('id',PINNED_ID).limit(1);
+          if(_pf.data && _pf.data[0] && String(_pf.data[0].name||'').indexOf('::')!==0){ LAST_ROWS.unshift(_pf.data[0]); }
+        }catch(_e){}
+      }
       myFlapCount=res.data.filter(function(r){return r.name===ME.name;}).length;
       document.getElementById('youCount').textContent=myFlapCount;
       /* members list — powers real photos everywhere + the banner */
@@ -3898,7 +4163,7 @@
       try{ if(ME.name&&!ME.admin&&USERS[ME.name.toLowerCase()]&&USERS[ME.name.toLowerCase()].banned){ toast('This account has been banned.'); setTimeout(function(){try{clearSession();}catch(e){}location.reload();},1600); return; } }catch(ebn){}
       if(ONLINE&&ME.name&&!HANDLE_CHECKED){ HANDLE_CHECKED=true; try{ensureHandle();}catch(eh2){} }
       REPLIES={};
-      var ids=res.data.map(function(r){return r.id;});
+      var ids=LAST_ROWS.map(function(r){return r.id;});   /* LAST_ROWS (no sentinels) + any directly-fetched pinned flap → its replies load too */
       if(ids.length){
         var rr=await sb.from('flap_replies').select('*').in('flap_id',ids).order('id',{ascending:true});
         if(!rr.error&&rr.data)rr.data.forEach(function(r){(REPLIES[r.flap_id]=REPLIES[r.flap_id]||[]).push(r);});
@@ -3928,7 +4193,7 @@
   async function delReply(rid, fid){
     if(!ME.name)return;
     var rr=(REPLIES[fid]||[]).find(function(x){return x.id===rid;});
-    if(!ME.admin){
+    if(!ME.admin && !ME.mod){
       if(rr && (rr.name||'').toLowerCase()!==(ME.name||'').toLowerCase()){ toast('You can only delete your own replies.'); return; }
       var rMs=rr&&rr.created_at?Date.parse(rr.created_at):0;
       if(!withinDelWindow(rMs)){ toast('This reply is older than '+DELETE_WINDOW_MIN+' min — it can no longer be deleted.'); return; }
@@ -3936,7 +4201,7 @@
     if(!confirm('Delete this reply? This can’t be undone.'))return;
     if(REPLIES[fid])REPLIES[fid]=REPLIES[fid].filter(function(x){return x.id!==rid;});
     renderLive();
-    if(ONLINE){ try{ var q=sb.from('flap_replies').delete().eq('id',rid); if(!ME.admin)q=q.gte('created_at', new Date(Date.now()-DELETE_WINDOW_MS).toISOString()); await q; }catch(e){} }
+    if(ONLINE){ try{ var q=sb.from('flap_replies').delete().eq('id',rid); if(!ME.admin && !ME.mod)q=q.gte('created_at', new Date(Date.now()-DELETE_WINDOW_MS).toISOString()); await q; }catch(e){} }
     toast('Reply deleted.');
   }
   var SENDING_REPLIES={};
@@ -3982,7 +4247,7 @@
     var p=splitReply(r.body);
     var rMs=r.created_at?Date.parse(r.created_at):0;
     var mineR=((r.name||'').toLowerCase()===(ME.name||'').toLowerCase());
-    var canDel=r.id && mineR && (ME.admin || withinDelWindow(rMs));
+    var canDel=r.id && ((ME.admin||ME.mod) || (mineR && withinDelWindow(rMs)));
     var delLink=canDel?'<a class="reply-del" title="Delete this reply (yours, within '+DELETE_WINDOW_MIN+' min)" onclick="delReply('+r.id+','+flapId+')">🗑</a>':'';
     var html='<div class="reply reply-new"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/\x27/g,'')+'\')">'+avatarFor(r.name)+'</div>'+replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+delLink+'</div>';
     var comp=rb.querySelector('.reply-compose');
@@ -4008,7 +4273,7 @@
     toast('You flapped it!');
   }
   async function delLive(id){
-    if(!ME.admin)return;
+    if(!ME.admin && !ME.mod)return;
     if(!confirm('Delete this flap for everyone?'))return;
     if(ONLINE){try{await sb.from('flaps').delete().eq('id',id);}catch(e){}}
     loadFeed();
@@ -4316,8 +4581,8 @@
       var tickets=[]; try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(80)).data||[];}catch(e){}
       var dms=[]; try{dms=(await sb.from('flaps').select('id,body,created_at').eq('name','::dm::').order('id',{ascending:false}).limit(3000)).data||[];}catch(e){}   /* admin message oversight */
       async function sen(nm){try{var r=await sb.from('flaps').select('body').eq('name',nm).order('id',{ascending:false}).limit(1);return (r.data&&r.data[0])?r.data[0].body:'';}catch(e){return '';}}
-      var tickerCur=await sen('::ticker::'), verCur=await sen('::verified::'), pollCur=await sen('::poll::');
-      ADMIN_DATA={us:us,flAll:flAll,replyCount:rc.count||0,repliesRecent:repliesRecent,reports:reports,repPosts:repPosts,tickets:tickets,dms:dms,tickerCur:tickerCur,verCur:verCur,pollCur:pollCur,now:Date.now()};
+      var tickerCur=await sen('::ticker::'), verCur=await sen('::verified::'), pollCur=await sen('::poll::'), annCur=await sen('::announce::');
+      ADMIN_DATA={us:us,flAll:flAll,replyCount:rc.count||0,repliesRecent:repliesRecent,reports:reports,repPosts:repPosts,tickets:tickets,dms:dms,tickerCur:tickerCur,verCur:verCur,pollCur:pollCur,annCur:annCur,now:Date.now()};
       renderAdmin();
     }catch(e){
       box.innerHTML='<div class="pc-strip hq-strip"><span>👑 TheFlap HQ</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">Could not load HQ — check your connection and try again.</div>';
@@ -4419,6 +4684,11 @@
   function hqSettings(){
     var d=ADMIN_DATA, h='';
     var pp=d.pollCur?String(d.pollCur).split('␟'):[];
+    h+='<div class="hq-sec">📣 Official announcement</div>';
+    h+='<textarea id="adminAnnounce" class="hq-input" style="min-height:130px;">'+esc(d.annCur||'')+'</textarea>';
+    h+='<button class="hq-btn hq-go" style="width:100%;margin-bottom:4px;background:linear-gradient(180deg,#2f7ac9,#134a86);color:#fff;" onclick="saveAnnounce()">📢 Post announcement to the top</button>';
+    h+='<button class="hq-btn" style="width:100%;background:linear-gradient(180deg,#c0603a,#8f3c1c);color:#fff;margin-bottom:8px;" onclick="clearAnnounce()">Clear announcement</button>';
+    h+='<div style="font-size:10px;color:#889;margin-bottom:12px;">Posts an official TheFlap card <b>above the pinned flap</b> for everyone. First line becomes the bold title. Leave blank &amp; save (or tap Clear) to remove it.</div>';
     h+='<div class="hq-sec">📢 Scrolling ticker</div>';
     h+='<textarea id="adminTicker" class="hq-input" style="min-height:56px;">'+esc(d.tickerCur||((document.getElementById('tickerText')||{}).textContent||''))+'</textarea>';
     h+='<button class="hq-btn hq-go" style="width:100%;margin-bottom:4px;" onclick="saveTicker()">Save ticker for everyone</button>';
@@ -4459,7 +4729,7 @@
   }
   async function removeUser(name){
     if(!ME.admin)return;
-    if((name||'').toLowerCase()==='lock'){toast("Can't remove lock.");return;}
+    if((name||'').toLowerCase()==='lock'){toast("Can't remove the admin account.");return;}
     if(!confirm('Remove '+name+' and delete all their flaps & replies? This cannot be undone.'))return;
     try{ await sb.from('flaps').delete().ilike('name',name); await sb.from('flap_replies').delete().ilike('name',name); await sb.from('flap_users').delete().ilike('name',name); }catch(e){}
     toast('Removed '+name+'.'); try{await loadFeed();}catch(e){} showAdmin();
@@ -4635,7 +4905,7 @@
     var nm=esc(name).replace(/'/g,'');
     box.innerHTML='<div class="pc-strip"><span><button type="button" class="dm-back" onclick="openSocial(\'messages\')" title="Back to messages">←</button>'+esc(name)+'</span><span class="pc-x" onclick="closeProfile()">✕</span></div>'+
       '<div class="dm-thread" id="dmThread">'+thread+'</div>'+
-      '<div class="dm-compose"><button type="button" class="dm-emoji-toggle" title="emojis & moods" onclick="toggleDmTray()">😊</button><input id="dmInput" placeholder="message '+esc(name)+'…" onkeydown="if(event.key===\'Enter\')sendDM(\''+nm+'\')"><button onclick="sendDM(\''+nm+'\')">Send</button></div>'+
+      '<div class="dm-compose"><button type="button" class="dm-emoji-toggle" title="emojis & moods" onclick="toggleDmTray()">😊</button><input id="dmInput" maxlength="'+msgLimit()+'" placeholder="message '+esc(name)+'…" onkeydown="if(event.key===\'Enter\')sendDM(\''+nm+'\')"><button onclick="sendDM(\''+nm+'\')">Send</button></div>'+
       '<div class="dm-tray" id="dmTray" style="display:none;"><div class="remoji-bar">'+dmEmojiBtns()+'</div><div class="remoji-bar moodrow">'+dmMoodBtns()+'</div></div>';
     var th=document.getElementById('dmThread'); if(th)th.scrollTop=th.scrollHeight;
     DM_OPEN=name;
