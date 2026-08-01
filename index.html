@@ -2154,13 +2154,24 @@
     s=s.replace(/[4@]/g,'a').replace(/3/g,'e').replace(/[1!|]/g,'i').replace(/0/g,'o').replace(/[5$]/g,'s').replace(/7/g,'t').replace(/8/g,'b');
     return s.replace(/[^a-z0-9]/g,'');
   }
+  /* "lock" is the admin identity — reserve it HARD against look-alikes. l-lookalikes (1 ! | i) → l,
+     0 → o, strip spaces/dots/accents, then EXACT match to "lock". So LOCK, l0ck, 1ock, |ock, Iock,
+     "l.o.c.k", "l o c k" all read as lock — but "Lockhart", "Sherlock", "block" do NOT (exact, not substring). */
+  function _lockNorm(s){
+    s=String(s||'').toLowerCase();
+    try{ s=s.normalize('NFD').replace(/[̀-ͯ]/g,''); }catch(e){}
+    s=s.replace(/[1!|i]/g,'l').replace(/0/g,'o');
+    return s.replace(/[^a-z0-9]/g,'');
+  }
+  function isReservedLock(s){ return _lockNorm(s)==='lock'; }
   /* Victorious cast — reserved so people can't keep signing up as the characters */
   var VICTORIOUS_NAMES=['torivega','jadewest','catvalentine','beckoliver','andreharris','robbieshapiro','robbie','trinavega','sikowitz'];
   function isReservedName(s){
     var t=_rnNorm(s);
     if(!t) return false;
+    if(isReservedLock(s)) return true;   /* the admin username — nobody else can take lock in any casing/variant */
     if(/flap|admin|support|official|moderator/.test(t)) return true;   /* blocks theflap, flapsupport, flap, admin, support, etc. */
-    if(/^(mod|staff|root|owner|team|lock|theteam)$/.test(t)) return true;
+    if(/^(mod|staff|root|owner|team|theteam)$/.test(t)) return true;
     for(var i=0;i<VICTORIOUS_NAMES.length;i++){ if(t.indexOf(VICTORIOUS_NAMES[i])>-1) return true; }   /* Victorious character names + variations */
     return false;
   }
@@ -2716,7 +2727,7 @@
     var btn=document.getElementById('setNameSave'); btn.classList.add('disabled');
     try{
       var chk=await sb.from('flap_users').select('name').ilike('name',newName).limit(1);
-      if(chk&&chk.data&&chk.data.length){ hint.className='set-hint bad'; hint.textContent='That name is taken.'; btn.classList.remove('disabled'); return; }
+      if(chk&&chk.data&&chk.data.length){ hint.className='set-hint bad'; hint.textContent='That username isn’t available — pick another.'; btn.classList.remove('disabled'); return; }
       var oldName=SET.row.name;
       var up=await sb.from('flap_users').update({name:newName, name_changes:((SET.row.name_changes||0)+1)}).ilike('name',oldName).select('*').maybeSingle();
       if(up&&up.error) throw up.error;
@@ -3470,7 +3481,11 @@
       function startPush(){
         if(!P.PushNotifications) return;
         var PN=P.PushNotifications;
-        PN.addListener('registration',function(t){ try{ window.__pushToken=t.value; if(window.sb && window.ME && ME.name) sb.from('flaps').insert({name:'::push::',body:ME.name+'␟'+PLAT+'␟'+t.value,mood:'flappy',likes:0}); }catch(e){} });
+        /* APNs/FCM device token arrives here — save it per-user in push_subs so the Edge Function can target this device */
+        PN.addListener('registration',function(t){ try{ window.__pushToken=t.value; window.__pushPlat=PLAT; savePushToken(t.value,PLAT); }catch(e){} });
+        /* permission denied / no entitlement → just log, never crash the app */
+        PN.addListener('registrationError',function(e){ try{ console.warn('push registration error',e); }catch(_){} });
+        /* graceful permission prompt: ask once; if the user declines, we simply don't register (bell still works in-app) */
         PN.requestPermissions().then(function(r){ if(r&&r.receive==='granted') PN.register(); }).catch(function(){});
       }
       /* iOS: always. Android: only on app build >=2 (the first build that bundles Firebase);
@@ -3541,7 +3556,17 @@
     for(var i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);
     return out;
   }
+  /* Native (iOS/Android) push token → store in push_subs keyed by the APNs/FCM device token.
+     endpoint "apns:<token>" (or "fcm:<token>") lets the Edge Function tell platforms apart; p256dh holds the platform. */
+  async function savePushToken(token,plat){
+    if(!ONLINE||!window.sb||!ME.name||!token)return;
+    var pfx=(plat==='android')?'fcm:':'apns:';
+    try{ await sb.from('push_subs').upsert({name:ME.name,endpoint:pfx+token,p256dh:(plat||'ios'),auth:''},{onConflict:'endpoint'}); }catch(e){}
+  }
+  /* the device token can arrive BEFORE the user logs in — re-save it once we know who they are */
+  function flushPushToken(){ try{ if(window.__pushToken && ME.name) savePushToken(window.__pushToken, window.__pushPlat||'ios'); }catch(e){} }
   async function subscribePush(){
+    try{ flushPushToken(); }catch(e){}   /* native token (if any) */
     if(!ONLINE||!ME.name||!swReg||!('PushManager' in window))return;
     if(!('Notification' in window)||Notification.permission!=='granted')return;
     try{
