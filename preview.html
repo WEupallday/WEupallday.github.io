@@ -2390,13 +2390,24 @@
     try{ if(document.getElementById('profModal')&&document.getElementById('profModal').classList.contains('open')) refreshFollowCounts(name); }catch(e){}
     try{ if(FOLLOW_FILTER) loadFeed(); }catch(e){}
   }
+  /* ---- follower display: per-account bonus + K-style formatting (edit FOLLOWER_BONUS here) ---- */
+  var FOLLOWER_BONUS={ lock:334 };   /* added to the account's REAL follower count for display; lock reads ~1.3K now and keeps growing */
+  function followBonus(name){ return FOLLOWER_BONUS[String(name||'').toLowerCase()]||0; }
+  function fmtCount(n){
+    n=Number(n)||0;
+    if(n<1000) return String(n);
+    var k=n/1000, s=(k>=100)?Math.round(k)+'':(k>=10?k.toFixed(1).replace(/\.0$/,''):k.toFixed(1).replace(/\.0$/,''));
+    return s+'K';
+  }
   async function refreshFollowCounts(name){
     try{
       var fr=await sb.from('flap_follows').select('follower',{count:'exact',head:true}).ilike('following',name);
       var fg=await sb.from('flap_follows').select('following',{count:'exact',head:true}).ilike('follower',name);
       var e1=document.getElementById('pcFollowers'), e2=document.getElementById('pcFollowing');
-      if(e1)e1.textContent=(fr&&fr.count!=null?fr.count:0);
-      if(e2)e2.textContent=(fg&&fg.count!=null?fg.count:0);
+      var followers=(fr&&fr.count!=null?fr.count:0)+followBonus(name);
+      var following=(fg&&fg.count!=null?fg.count:0);
+      if(e1)e1.textContent=fmtCount(followers);
+      if(e2)e2.textContent=fmtCount(following);
     }catch(e){ var e1=document.getElementById('pcFollowers'), e2=document.getElementById('pcFollowing'); if(e1&&e1.textContent==='')e1.textContent='0'; if(e2&&e2.textContent==='')e2.textContent='0'; }
   }
   /* "Following" feed filter */
