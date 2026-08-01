@@ -2711,9 +2711,46 @@
   async function heartbeat(){
     if(ONLINE&&ME.name){
       try{await sb.from('flap_users').update({last_seen:new Date().toISOString()}).eq('name',ME.name);}catch(e){}
+      markPresentToday();
     }
   }
   setInterval(heartbeat,60000);
+
+  /* ============ daily presence → streaks (any app-open = an active day) ============ */
+  var MY_PRESENCE_DATE=null, MY_ACTIVE_DAYS=null;
+  function todayUTC(){ return new Date().toISOString().slice(0,10); }
+  async function markPresentToday(){
+    if(!ONLINE||!ME.name) return;
+    var today=todayUTC();
+    if(MY_PRESENCE_DATE===today) return;   /* already recorded this session/day */
+    MY_PRESENCE_DATE=today;
+    try{
+      var set=MY_ACTIVE_DAYS;
+      if(!set){
+        var r=await sb.from('flap_users').select('active_days').ilike('name',ME.name).maybeSingle();
+        var cur=(r&&r.data&&r.data.active_days)?String(r.data.active_days):'';
+        set=cur?cur.split(',').filter(Boolean):[];
+      }
+      if(set.indexOf(today)<0){
+        set.push(today);
+        var seen={}; set=set.filter(function(v){ v=(v||'').trim(); if(!v||seen[v])return false; seen[v]=1; return true; }).sort();
+        if(set.length>180) set=set.slice(set.length-180);
+        await sb.from('flap_users').update({active_days:set.join(',')}).ilike('name',ME.name);
+      }
+      MY_ACTIVE_DAYS=set;
+    }catch(e){ MY_PRESENCE_DATE=null; }   /* let it retry later */
+  }
+  /* streak = consecutive calendar days present, ending today or yesterday */
+  function streakFromDates(daysStr){
+    if(!daysStr) return 0;
+    var days={}; String(daysStr).split(',').forEach(function(d){ d=(d||'').trim(); if(d) days[d]=1; });
+    var oneDay=86400000;
+    function key(ms){ return new Date(ms).toISOString().slice(0,10); }
+    var n=new Date(), cur=Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate());
+    if(!days[key(cur)]){ cur-=oneDay; if(!days[key(cur)]) return 0; }
+    var streak=0; while(days[key(cur)]){ streak++; cur-=oneDay; }
+    return streak;
+  }
 
   /* ============ user profile pages ============ */
   function closeProfile(){var pm=document.getElementById('profModal');pm.classList.remove('open');pm.classList.remove('mob-full');document.body.classList.remove('modal-on');DM_OPEN=null;}
@@ -2997,7 +3034,7 @@
       var on=u&&u.last_seen&&(Date.now()-new Date(u.last_seen).getTime()<2*60*1000);
       var lc=(name||'').toLowerCase();
       var flapCount=mine.length;
-      var streak=computeStreak(posts);
+      var streak=(u&&u.active_days)?streakFromDates(u.active_days):computeStreak(posts);
       var badges=userBadges(name,u,flapCount,streak);
       var h='<div class="pc-strip"><span>'+esc(name)+' — Profile</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>';
       h+='<div class="pc-body" style="padding:0;">';
@@ -4186,6 +4223,7 @@
       loadTicker();
       loadVerified().then(applyMsgLimits);
       loadCustomBadges();
+      markPresentToday();
       loadMods();
       loadFeatures();
       await loadPinned();
