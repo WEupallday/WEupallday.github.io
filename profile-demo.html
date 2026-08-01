@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="robots" content="noindex,nofollow">
+<title>TheFlap — Profile Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Chewy&family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --aqua:#3ad0e0; --navy:#16306a; --navy2:#0d1f47; --navyd:#0a1836;
+    --orange:#f5a623; --orange-d:#e07d0a; --orange-dd:#b45c00;
+    --pink:#ff5cb5; --green:#8dff3a; --cyan:#5fd0ff; --gold:#f5c542;
+    --accent:#e07d0a; --accent2:#f5a623;
+    --banner:linear-gradient(120deg,#2f7ac9,#22398f 55%,#5f2ea0);
+    --ink:#16306a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:Verdana,Geneva,sans-serif;color:#12357a;min-height:100vh;
+    background:#0d1a2e;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(255,92,181,.16), transparent 12%),
+      radial-gradient(circle at 85% 12%, rgba(95,208,255,.16), transparent 12%),
+      radial-gradient(circle at 78% 82%, rgba(141,255,58,.13), transparent 12%),
+      radial-gradient(circle at 18% 88%, rgba(245,166,35,.15), transparent 12%),
+      linear-gradient(160deg,#123a6b,#0d1a2e);
+    padding:0 0 40px;
+  }
+  /* graffiti confetti behind everything */
+  .confetti{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+  .confetti b{position:absolute;font-size:26px;opacity:.5;font-weight:900;}
+  .phone{position:relative;z-index:1;max-width:440px;margin:0 auto;background:#eaf4fc;
+    box-shadow:0 12px 50px rgba(0,0,0,.55);min-height:100vh;overflow:hidden;}
+  @media(min-width:520px){.phone{margin:16px auto;border-radius:26px;border:8px solid #0a1836;min-height:calc(100vh - 32px);}}
+
+  /* top mini bar */
+  .topbar{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,var(--orange),var(--orange-d));
+    display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:3px solid var(--orange-dd);}
+  .topbar .bk{color:#fff;font-size:20px;font-weight:bold;text-shadow:0 1px 1px rgba(0,0,0,.35);}
+  .topbar .tn{color:#fff;font-weight:bold;font-size:14px;text-shadow:0 1px 1px rgba(0,0,0,.35);display:flex;align-items:center;gap:5px;}
+  .topbar .demo{margin-left:auto;font-size:9px;font-weight:bold;background:rgba(0,0,0,.22);color:#fff;border-radius:10px;padding:3px 8px;letter-spacing:.4px;}
+
+  /* banner */
+  .banner{height:150px;background:var(--banner);position:relative;overflow:hidden;}
+  .banner::after{content:"";position:absolute;inset:0;
+    background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.18),transparent 8%),
+      radial-gradient(circle at 70% 60%,rgba(255,255,255,.14),transparent 7%);}
+  .banner .btag{position:absolute;right:8px;top:8px;background:rgba(0,0,0,.32);color:#fff;font-size:9px;
+    font-weight:bold;border-radius:9px;padding:3px 8px;backdrop-filter:blur(2px);}
+  .banner .edit{position:absolute;right:8px;bottom:8px;background:rgba(255,255,255,.92);color:var(--navy);
+    font-size:11px;font-weight:bold;border:none;border-radius:14px;padding:6px 12px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.3);}
+
+  /* profile head */
+  .head{background:#fff;padding:0 14px 14px;position:relative;}
+  .ava-wrap{width:96px;height:96px;margin-top:-48px;position:relative;}
+  .ava{width:96px;height:96px;border-radius:50%;background:#123 center/cover no-repeat;
+    box-shadow:0 3px 10px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;
+    font-family:'Baloo 2';font-weight:800;font-size:38px;color:#fff;
+    background:radial-gradient(circle at 35% 30%,#6fd0ff,#2f7ac9);border:4px solid #fff;}
+  /* frames */
+  .ava-wrap.f-gold .ava{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold),0 3px 10px rgba(0,0,0,.4);}
+  .ava-wrap.f-neon .ava{border-color:#00e0ff;box-shadow:0 0 0 3px #00e0ff,0 0 16px #00e0ff;}
+  .ava-wrap.f-flame .ava{border-color:#ff6a00;box-shadow:0 0 0 3px #ffb300,0 0 18px #ff6a00;}
+  .ava-wrap.f-sparkle .ava{border-color:var(--pink);box-shadow:0 0 0 3px var(--pink),0 0 16px var(--pink);}
+  .ava-wrap .streak{position:absolute;right:-6px;bottom:-2px;background:linear-gradient(180deg,#ff8a3d,#e0361f);
+    color:#fff;font-size:10px;font-weight:bold;border:2px solid #fff;border-radius:12px;padding:2px 7px;white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,.35);}
+
+  .namerow{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .dname{font-family:'Baloo 2';font-weight:800;font-size:23px;color:var(--navy);line-height:1;}
+  .vbadge{width:22px;height:22px;flex:none;}
+  .adminchip{font-size:9px;font-weight:bold;background:linear-gradient(180deg,#ffd23f,#e0a800);color:#5a3600;
+    border:1px solid var(--orange-dd);border-radius:9px;padding:2px 7px;}
+  .handle{color:#5b78a8;font-size:13px;font-weight:bold;margin-top:1px;}
+  .bio{font-size:13px;color:#33456b;line-height:1.45;margin:9px 0 6px;}
+  .links{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:#5b78a8;margin-bottom:4px;}
+  .links a{color:var(--accent-d,#2f7ac9);text-decoration:none;font-weight:bold;}
+  .links span b{color:#33456b;}
+  .joined{font-size:12px;color:#7d8db0;margin-top:2px;}
+  .privchip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:bold;color:#1c7a42;
+    background:#e5f7ec;border:1px solid #b6e8c8;border-radius:10px;padding:2px 8px;margin-top:8px;}
+
+  .actions{display:flex;gap:8px;margin-top:12px;}
+  .btn{flex:1;border:none;border-radius:22px;padding:10px;font-weight:bold;font-size:13px;cursor:pointer;font-family:Verdana;}
+  .btn.follow{background:linear-gradient(180deg,var(--accent2),var(--accent));color:#fff;box-shadow:0 3px 8px rgba(224,125,10,.4);}
+  .btn.msg{background:#eef3fb;color:var(--navy);border:2px solid #cdddf3;}
+  .btn.more{flex:0 0 auto;width:44px;background:#eef3fb;color:var(--navy);border:2px solid #cdddf3;}
+
+  /* stats */
+  .stats{display:flex;background:#fff;border-top:1px solid #e7eefb;}
+  .stats .s{flex:1;text-align:center;padding:11px 4px;cursor:pointer;}
+  .stats .s+.s{border-left:1px solid #eef2fb;}
+  .stats .s b{display:block;font-family:'Baloo 2';font-weight:800;font-size:18px;color:var(--navy);}
+  .stats .s span{font-size:10.5px;color:#7d8db0;text-transform:uppercase;letter-spacing:.4px;}
+
+  .sec{margin:10px;background:#fff;border-radius:14px;box-shadow:0 3px 10px rgba(13,30,70,.12);overflow:hidden;border:2px solid #dfeaf9;}
+  .sec-h{display:flex;align-items:center;gap:7px;font-family:'Baloo 2';font-weight:800;font-size:13px;color:var(--navy);
+    padding:10px 13px;border-bottom:2px solid #eef3fb;background:linear-gradient(180deg,#f4f9ff,#eaf3ff);}
+  .sec-h .r{margin-left:auto;font-size:10px;color:#9aa;font-weight:normal;font-family:Verdana;}
+  .sec-b{padding:12px 13px;}
+
+  /* badges + points */
+  .badgegrid{display:flex;flex-wrap:wrap;gap:8px;}
+  .bdg{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:bold;color:#4a2e00;
+    background:linear-gradient(180deg,#fff5d6,#ffe7a0);border:1px solid #e6c25a;border-radius:20px;padding:5px 11px;}
+  .bdg.blue{background:linear-gradient(180deg,#e2f0ff,#c4e0ff);border-color:#89bdf0;color:#123a6b;}
+  .bdg.green{background:linear-gradient(180deg,#e6ffe9,#c5f5cd);border-color:#7fd08c;color:#0e7a34;}
+  .bdg.pink{background:linear-gradient(180deg,#ffe6f3,#ffc4e2);border-color:#ff8ac1;color:#a01466;}
+  .points{display:flex;align-items:center;gap:12px;margin-top:12px;background:linear-gradient(120deg,#12306a,#0d1f47);
+    border-radius:12px;padding:12px 14px;color:#fff;}
+  .points .pv{font-family:'Baloo 2';font-weight:800;font-size:24px;color:var(--gold);line-height:1;}
+  .points .pl{font-size:10px;color:#a9c2e8;text-transform:uppercase;letter-spacing:.5px;}
+  .points .rep{margin-left:auto;text-align:right;}
+  .points .rep b{color:#8dff3a;font-size:13px;}
+  .repbar{height:8px;border-radius:6px;background:#1e3a6e;margin-top:9px;overflow:hidden;}
+  .repbar i{display:block;height:100%;width:72%;background:linear-gradient(90deg,var(--orange),var(--gold));}
+
+  /* customization */
+  .fld{margin-bottom:11px;}
+  .fld label{display:block;font-size:10.5px;font-weight:bold;text-transform:uppercase;letter-spacing:.5px;color:#7d8db0;margin-bottom:5px;}
+  .inp{width:100%;border:2px solid #dbe6f7;border-radius:10px;padding:9px 11px;font-size:13px;color:#22406e;font-family:Verdana;background:#f7fbff;}
+  .swrow{display:flex;gap:9px;flex-wrap:wrap;}
+  .sw{width:34px;height:34px;border-radius:50%;cursor:pointer;border:3px solid #fff;box-shadow:0 0 0 1px #cdddf3;}
+  .sw.on{box-shadow:0 0 0 3px var(--navy);}
+  .bpre{width:56px;height:34px;border-radius:8px;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px #cdddf3;}
+  .bpre.on{box-shadow:0 0 0 3px var(--navy);}
+  .frow{display:flex;gap:8px;flex-wrap:wrap;}
+  .fr{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-size:9.5px;font-weight:bold;color:#7d8db0;}
+  .fr .ring{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#6fd0ff,#2f7ac9);border:3px solid #fff;}
+  .fr.on{color:var(--navy);}
+  .fr.on .ring{outline:3px solid var(--navy);outline-offset:1px;}
+  .fr[data-frame=gold] .ring{box-shadow:0 0 0 3px var(--gold);}
+  .fr[data-frame=neon] .ring{box-shadow:0 0 0 3px #00e0ff,0 0 10px #00e0ff;}
+  .fr[data-frame=flame] .ring{box-shadow:0 0 0 3px #ffb300,0 0 10px #ff6a00;}
+  .fr[data-frame=sparkle] .ring{box-shadow:0 0 0 3px var(--pink),0 0 10px var(--pink);}
+  .upload{width:100%;margin-top:4px;border:2px dashed #b9cdea;background:#f2f8ff;color:#5b78a8;font-weight:bold;
+    border-radius:10px;padding:9px;font-size:12px;cursor:pointer;}
+
+  /* privacy toggles */
+  .prow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #eef3fb;}
+  .prow:first-child{border-top:none;}
+  .prow .pt{flex:1;}
+  .prow .pt b{display:block;font-size:13px;color:#22406e;}
+  .prow .pt span{font-size:11px;color:#8a99ba;}
+  .toggle{width:46px;height:26px;border-radius:16px;background:#cdd8ea;position:relative;cursor:pointer;flex:none;transition:background .15s;}
+  .toggle i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .15s;}
+  .toggle.on{background:linear-gradient(180deg,var(--accent2),var(--accent));}
+  .toggle.on i{left:23px;}
+  .seg{display:flex;background:#eef3fb;border-radius:12px;padding:3px;flex:none;}
+  .seg button{border:none;background:none;font-size:11px;font-weight:bold;color:#7d8db0;border-radius:9px;padding:6px 10px;cursor:pointer;font-family:Verdana;}
+  .seg button.on{background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.15);}
+
+  /* tabs */
+  .tabs{display:flex;margin:10px 10px 0;background:#fff;border-radius:12px 12px 0 0;border:2px solid #dfeaf9;border-bottom:none;overflow:hidden;}
+  .tabs button{flex:1;border:none;background:#fff;padding:11px 4px;font-size:12px;font-weight:bold;color:#8a99ba;cursor:pointer;font-family:Verdana;}
+  .tabs button.on{color:var(--navy);box-shadow:inset 0 -3px 0 var(--accent);background:#f4f9ff;}
+  .tabwrap{margin:0 10px 10px;background:#fff;border:2px solid #dfeaf9;border-top:none;border-radius:0 0 12px 12px;padding:10px;}
+  .pane{display:none;}
+  .pane.on{display:block;}
+
+  /* posts */
+  .post{border:1px solid #e7eefb;border-radius:12px;padding:11px;margin-bottom:10px;background:#fbfdff;}
+  .post.pin{border-color:var(--gold);box-shadow:0 0 0 2px #fbe9a8;background:#fffdf4;}
+  .post .pinlbl{font-size:10px;font-weight:bold;color:#a67c00;margin-bottom:5px;}
+  .post .ph{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .post .pa{width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#6fd0ff,#2f7ac9);flex:none;}
+  .post .pn{font-weight:bold;font-size:12.5px;color:var(--navy);}
+  .post .pt2{font-size:10px;color:#9aa;}
+  .post .pbody{font-size:13px;color:#2a3f66;line-height:1.45;}
+  .post .pimg{height:130px;border-radius:10px;margin-top:8px;background:linear-gradient(135deg,#ffb14d,#e0361f);}
+  .post .pf{display:flex;gap:16px;margin-top:9px;font-size:11px;color:#7d8db0;font-weight:bold;}
+  .post .pf span:first-child{color:#e0361f;}
+
+  /* media grid */
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;}
+  .grid div{aspect-ratio:1;border-radius:8px;position:relative;overflow:hidden;}
+  .grid div span{position:absolute;right:4px;bottom:3px;color:#fff;font-size:10px;font-weight:bold;text-shadow:0 1px 2px rgba(0,0,0,.5);}
+
+  /* activity */
+  .act{display:flex;gap:9px;padding:9px 0;border-top:1px solid #eef3fb;font-size:12.5px;color:#3a4f78;}
+  .act:first-child{border-top:none;}
+  .act .ai{width:26px;height:26px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;font-size:14px;background:#eef3fb;}
+  .act b{color:var(--navy);}
+  .act .at{margin-left:auto;font-size:10px;color:#aab;white-space:nowrap;}
+
+  /* flap plus */
+  .plus{margin:10px;border-radius:16px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.3);border:2px solid #b8860b;}
+  .plus-h{background:linear-gradient(120deg,#2a1a00,#4a3200);padding:14px;color:#fff;position:relative;}
+  .plus-h .pt3{font-family:'Baloo 2';font-weight:800;font-size:20px;display:flex;align-items:center;gap:8px;}
+  .plus-h .pt3 .z{background:linear-gradient(180deg,#ffe082,var(--gold));color:#3a2a00;border-radius:8px;font-size:11px;padding:2px 8px;}
+  .plus-h .ps{font-size:11.5px;color:#f0d9a0;margin-top:4px;}
+  .plus-b{background:linear-gradient(180deg,#fff8e6,#fff);padding:12px 14px;}
+  .perk{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:12.5px;color:#4a3a12;border-top:1px solid #f0e4c2;}
+  .perk:first-child{border-top:none;}
+  .perk .pi{font-size:16px;width:24px;text-align:center;}
+  .plusbtn{width:100%;margin-top:10px;border:none;border-radius:24px;padding:12px;font-family:'Baloo 2';font-weight:800;font-size:15px;
+    background:linear-gradient(180deg,#ffd23f,#e0a800);color:#3a2600;cursor:pointer;box-shadow:0 4px 12px rgba(224,168,0,.5);}
+  .plus-note{text-align:center;font-size:10px;color:#a68a3a;margin-top:7px;}
+
+  .footnote{text-align:center;color:#9db4d6;font-size:11px;padding:16px 20px 6px;line-height:1.5;}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#12306a;color:#fff;
+    font-size:12.5px;font-weight:bold;padding:11px 18px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.5);
+    opacity:0;transition:opacity .2s;z-index:60;max-width:88vw;text-align:center;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="confetti" id="confetti"></div>
+
+<div class="phone">
+  <!-- top bar -->
+  <div class="topbar">
+    <span class="bk">‹</span>
+    <span class="tn">🐦 lock</span>
+    <span class="demo">PREVIEW · NOT LIVE</span>
+  </div>
+
+  <!-- banner -->
+  <div class="banner" id="banner">
+    <span class="btag" id="btag">🎨 Theme: Cosmic</span>
+    <button class="edit" onclick="scrollTo(0,document.getElementById('custom').offsetTop-8)">✏️ Edit banner</button>
+  </div>
+
+  <!-- head -->
+  <div class="head">
+    <div class="ava-wrap f-gold" id="avaWrap">
+      <div class="ava">🐦</div>
+      <span class="streak">🔥 24</span>
+    </div>
+    <div class="namerow">
+      <span class="dname">lock</span>
+      <svg class="vbadge" viewBox="0 0 24 24"><defs><radialGradient id="g" cx="35%" cy="30%"><stop offset="0" stop-color="#fff6c2"/><stop offset=".6" stop-color="#f5c542"/><stop offset="1" stop-color="#d9a72a"/></radialGradient></defs><path d="M12 1l2.6 2.1 3.3-.4 1 3.2 2.9 1.7-1 3.2 1 3.2-2.9 1.7-1 3.2-3.3-.4L12 23l-2.6-2.1-3.3.4-1-3.2L2.2 14.4l1-3.2-1-3.2 2.9-1.7 1-3.2 3.3.4z" fill="url(#g)" stroke="#b8860b" stroke-width=".6"/><path d="M8 12.2l2.6 2.6L16 9" fill="none" stroke="#7a4a00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="adminchip">👑 FOUNDER</span>
+    </div>
+    <div class="handle">@lock</div>
+    <div class="bio">Run by the flappers, for the flappers. 🐦 Building TheFlap — the friends-only feed where <b>everybody flaps</b>. New drops all August. 💙</div>
+    <div class="links">
+      <span>📍 <b>Westbrook</b></span>
+      <a href="#" onclick="return dm('link')">🔗 theflap.com</a>
+      <a href="#" onclick="return dm('link')">📸 @theflap</a>
+    </div>
+    <div class="joined">🗓️ Joined July 2026</div>
+    <div class="privchip" id="privchip">🌐 Public profile</div>
+
+    <div class="actions">
+      <button class="btn follow" id="followBtn" onclick="follow(this)">＋ Follow</button>
+      <button class="btn msg" onclick="dm('msg')">✉️ Message</button>
+      <button class="btn more" onclick="dm('more')">•••</button>
+    </div>
+  </div>
+
+  <!-- stats -->
+  <div class="stats">
+    <div class="s"><b>143</b><span>Flaps</span></div>
+    <div class="s"><b>8,942</b><span>Followers</span></div>
+    <div class="s"><b>57</b><span>Following</span></div>
+  </div>
+
+  <!-- badges + points -->
+  <div class="sec">
+    <div class="sec-h">🏅 Badges &amp; Reputation</div>
+    <div class="sec-b">
+      <div class="badgegrid">
+        <span class="bdg green">🌱 Early Supporter</span>
+        <span class="bdg">🏆 Top Contributor</span>
+        <span class="bdg blue">🛡️ Verified</span>
+        <span class="bdg pink">🔥 30-Day Streak</span>
+        <span class="bdg">👑 Founder</span>
+      </div>
+      <div class="points">
+        <div><div class="pv">4,820</div><div class="pl">Flap Points</div></div>
+        <div class="rep"><div class="pl">Reputation</div><b>Legendary Flapper</b></div>
+      </div>
+      <div class="repbar"><i></i></div>
+    </div>
+  </div>
+
+  <!-- tabs -->
+  <div class="tabs" id="tabs">
+    <button class="on" data-tab="posts" onclick="tab('posts',this)">📝 Posts</button>
+    <button data-tab="media" onclick="tab('media',this)">🖼️ Media</button>
+    <button data-tab="likes" onclick="tab('likes',this)">❤️ Likes</button>
+    <button data-tab="activity" onclick="tab('activity',this)">⚡ Activity</button>
+  </div>
+  <div class="tabwrap">
+    <!-- POSTS -->
+    <div class="pane on" id="p-posts">
+      <div class="post pin">
+        <div class="pinlbl">📌 PINNED</div>
+        <div class="ph"><div class="pa"></div><div><div class="pn">lock</div><div class="pt2">Jul 30 · 9:34 PM</div></div></div>
+        <div class="pbody">Welcome to TheFlap 🐦 the friends-only feed where everybody flaps. Big things dropping all August — get ready, flappers. 💙</div>
+        <div class="pf"><span>♥ 612</span><span>💬 88</span><span>🔁 140</span></div>
+      </div>
+      <div class="post">
+        <div class="ph"><div class="pa"></div><div><div class="pn">lock</div><div class="pt2">Jul 29 · 6:12 PM</div></div></div>
+        <div class="pbody">new profile pages are looking CLEAN 😮‍💨 banners, badges, streaks... which do you want first?</div>
+        <div class="pimg"></div>
+        <div class="pf"><span>♥ 341</span><span>💬 52</span><span>🔁 61</span></div>
+      </div>
+      <div class="post">
+        <div class="ph"><div class="pa"></div><div><div class="pn">lock</div><div class="pt2">Jul 28 · 1:05 PM</div></div></div>
+        <div class="pbody">taco tuesday is sacred. that's it. that's the flap.</div>
+        <div class="pf"><span>♥ 228</span><span>💬 40</span><span>🔁 33</span></div>
+      </div>
+    </div>
+    <!-- MEDIA -->
+    <div class="pane" id="p-media">
+      <div class="grid">
+        <div style="background:linear-gradient(135deg,#ff8a3d,#e0361f)"><span>♥ 210</span></div>
+        <div style="background:linear-gradient(135deg,#5f2ea0,#2f7ac9)"><span>♥ 188</span></div>
+        <div style="background:linear-gradient(135deg,#1fa9c4,#8dff3a)"><span>♥ 402</span></div>
+        <div style="background:linear-gradient(135deg,#ff5cb5,#c40063)"><span>♥ 331</span></div>
+        <div style="background:linear-gradient(135deg,#f5c542,#e07d0a)"><span>♥ 512</span></div>
+        <div style="background:linear-gradient(135deg,#2f7ac9,#16306a)"><span>♥ 96</span></div>
+        <div style="background:linear-gradient(135deg,#8dff3a,#1c7a42)"><span>♥ 274</span></div>
+        <div style="background:linear-gradient(135deg,#ffb14d,#ff5cb5)"><span>♥ 158</span></div>
+        <div style="background:linear-gradient(135deg,#5fd0ff,#5f2ea0)"><span>♥ 623</span></div>
+      </div>
+      <div class="footnote" style="padding:12px 0 0;">Media tab shows photos only — a clean grid of everything you've posted.</div>
+    </div>
+    <!-- LIKES -->
+    <div class="pane" id="p-likes">
+      <div class="post">
+        <div class="ph"><div class="pa" style="background:radial-gradient(circle at 35% 30%,#ff8fc7,#c40063)"></div><div><div class="pn">serenity rayne.</div><div class="pt2">liked · 2h ago</div></div></div>
+        <div class="pbody">first day of school fit check 💅✨ rate it 1-10</div>
+        <div class="pf"><span>♥ 489</span><span>💬 73</span><span>🔁 21</span></div>
+      </div>
+      <div class="post">
+        <div class="ph"><div class="pa" style="background:radial-gradient(circle at 35% 30%,#9be15d,#1c7a42)"></div><div><div class="pn">DrakeParker</div><div class="pt2">liked · 5h ago</div></div></div>
+        <div class="pbody">who's pulling up to open mic friday 🎤 it's gonna be unreal</div>
+        <div class="pf"><span>♥ 267</span><span>💬 44</span><span>🔁 39</span></div>
+      </div>
+    </div>
+    <!-- ACTIVITY -->
+    <div class="pane" id="p-activity">
+      <div class="act"><div class="ai">🔥</div><div>Hit a <b>24-day flap streak</b> — keep it going!</div><div class="at">1h</div></div>
+      <div class="act"><div class="ai">🏆</div><div>Earned the <b>Top Contributor</b> badge</div><div class="at">3h</div></div>
+      <div class="act"><div class="ai">🔁</div><div>Reflapped <b>@serenity rayne.</b></div><div class="at">6h</div></div>
+      <div class="act"><div class="ai">👤</div><div>Started following <b>@unii</b></div><div class="at">1d</div></div>
+      <div class="act"><div class="ai">♥</div><div>Liked <b>@DrakeParker</b>'s flap</div><div class="at">1d</div></div>
+      <div class="act"><div class="ai">⭐</div><div>Reached <b>Legendary Flapper</b> reputation</div><div class="at">2d</div></div>
+    </div>
+  </div>
+
+  <!-- CUSTOMIZE -->
+  <div class="sec" id="custom">
+    <div class="sec-h">🎨 Customize profile <span class="r">tap to preview</span></div>
+    <div class="sec-b">
+      <div class="fld"><label>Display name</label><input class="inp" value="lock"></div>
+      <div class="fld"><label>@ Handle</label><input class="inp" value="@lock"></div>
+      <div class="fld"><label>Bio</label><input class="inp" value="Building TheFlap 🐦 where everybody flaps 💙"></div>
+
+      <div class="fld"><label>Banner theme</label>
+        <div class="swrow" id="banners">
+          <div class="bpre on" data-name="Cosmic" style="background:linear-gradient(120deg,#2f7ac9,#22398f 55%,#5f2ea0)" onclick="setBanner(this)"></div>
+          <div class="bpre" data-name="Sunset" style="background:linear-gradient(120deg,#ffb14d,#ff5cb5,#c40063)" onclick="setBanner(this)"></div>
+          <div class="bpre" data-name="Aqua" style="background:linear-gradient(120deg,#3ad0e0,#1fa9c4,#22398f)" onclick="setBanner(this)"></div>
+          <div class="bpre" data-name="Slime" style="background:linear-gradient(120deg,#8dff3a,#1fa9c4)" onclick="setBanner(this)"></div>
+          <div class="bpre" data-name="Graffiti" style="background:conic-gradient(from 45deg,#ff5cb5,#f5c542,#8dff3a,#5fd0ff,#ff5cb5)" onclick="setBanner(this)"></div>
+          <div class="bpre" data-name="Midnight" style="background:linear-gradient(120deg,#16306a,#0d1f47)" onclick="setBanner(this)"></div>
+        </div>
+        <button class="upload" onclick="dm('upload a custom banner')">⬆️ Upload your own banner</button>
+      </div>
+
+      <div class="fld"><label>Color theme</label>
+        <div class="swrow" id="colors">
+          <div class="sw on" style="background:#e07d0a" data-a="#e07d0a" data-b="#f5a623" onclick="setColor(this)"></div>
+          <div class="sw" style="background:#2f7ac9" data-a="#2f7ac9" data-b="#5fd0ff" onclick="setColor(this)"></div>
+          <div class="sw" style="background:#c40063" data-a="#c40063" data-b="#ff5cb5" onclick="setColor(this)"></div>
+          <div class="sw" style="background:#5f2ea0" data-a="#5f2ea0" data-b="#a06bff" onclick="setColor(this)"></div>
+          <div class="sw" style="background:#1c7a42" data-a="#1c7a42" data-b="#8dff3a" onclick="setColor(this)"></div>
+          <div class="sw" style="background:#0d1f47" data-a="#12357a" data-b="#3ad0e0" onclick="setColor(this)"></div>
+        </div>
+      </div>
+
+      <div class="fld" style="margin-bottom:0;"><label>Profile-pic frame</label>
+        <div class="frow" id="frames">
+          <div class="fr" data-frame="none" onclick="setFrame(this)"><div class="ring" style="box-shadow:0 0 0 1px #cdddf3"></div>None</div>
+          <div class="fr on" data-frame="gold" onclick="setFrame(this)"><div class="ring"></div>Gold</div>
+          <div class="fr" data-frame="neon" onclick="setFrame(this)"><div class="ring"></div>Neon</div>
+          <div class="fr" data-frame="flame" onclick="setFrame(this)"><div class="ring"></div>Flames</div>
+          <div class="fr" data-frame="sparkle" onclick="setFrame(this)"><div class="ring"></div>Sparkle</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRIVACY -->
+  <div class="sec">
+    <div class="sec-h">🔒 Privacy &amp; safety</div>
+    <div class="sec-b" style="padding-top:2px;padding-bottom:4px;">
+      <div class="prow">
+        <div class="pt"><b>Account</b><span>Who can see your flaps</span></div>
+        <div class="seg" id="acctSeg">
+          <button class="on" onclick="seg(this,'public')">🌐 Public</button>
+          <button onclick="seg(this,'private')">🔒 Private</button>
+        </div>
+      </div>
+      <div class="prow">
+        <div class="pt"><b>Who can message you</b><span>Direct message controls</span></div>
+        <div class="seg">
+          <button class="on" onclick="seg2(this)">Everyone</button>
+          <button onclick="seg2(this)">Followers</button>
+          <button onclick="seg2(this)">No one</button>
+        </div>
+      </div>
+      <div class="prow">
+        <div class="pt"><b>Hide follower list</b><span>Keep your followers private</span></div>
+        <div class="toggle" onclick="tog(this)"><i></i></div>
+      </div>
+      <div class="prow">
+        <div class="pt"><b>Show activity status</b><span>Let friends see when you're online</span></div>
+        <div class="toggle on" onclick="tog(this)"><i></i></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLAP PLUS -->
+  <div class="plus">
+    <div class="plus-h">
+      <div class="pt3">⚡ Flap Plus <span class="z">PLUS</span></div>
+      <div class="ps">Level up your profile with premium perks.</div>
+    </div>
+    <div class="plus-b">
+      <div class="perk"><span class="pi">🎨</span> Exclusive banner &amp; color themes</div>
+      <div class="perk"><span class="pi">🌈</span> Animated banners that move</div>
+      <div class="perk"><span class="pi">⚡</span> Exclusive glowing <b>Plus</b> badge</div>
+      <div class="perk"><span class="pi">✏️</span> Edit your posts after publishing</div>
+      <div class="perk"><span class="pi">📤</span> Higher upload limits — 4K photos &amp; longer clips</div>
+      <button class="plusbtn" onclick="dm('Flap Plus')">Get Flap Plus ⚡</button>
+      <div class="plus-note">Coming soon — this is a preview of what Plus could offer.</div>
+    </div>
+  </div>
+
+  <div class="footnote">🐦 This is a <b>preview demo</b> — nothing here is live in the real app yet.<br>Pick the features you like and we'll build them for real.</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // graffiti confetti
+  (function(){
+    var g=document.getElementById('confetti');
+    var glyphs=['★','✦','✧','~','◦','⌒','☆','∿','●'];
+    var cols=['#ff5cb5','#8dff3a','#5fd0ff','#f5a623','#ffffff','#ff8a3d'];
+    var h='';
+    for(var i=0;i<26;i++){
+      var x=Math.random()*100, y=Math.random()*100;
+      var c=cols[i%cols.length], gl=glyphs[i%glyphs.length];
+      var s=16+Math.random()*22;
+      h+='<b style="left:'+x+'%;top:'+y+'%;color:'+c+';font-size:'+s+'px;transform:rotate('+(Math.random()*60-30)+'deg)">'+gl+'</b>';
+    }
+    g.innerHTML=h;
+  })();
+
+  function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show');},2200);}
+  function dm(what){ toast('“'+what+'” — demo only ✨ (nothing sends in the preview)'); return false; }
+
+  function follow(b){ if(b.classList.toggle('following')){ b.textContent='✓ Following'; b.style.background='#eef3fb'; b.style.color='var(--navy)'; } else { b.textContent='＋ Follow'; b.style.background=''; b.style.color=''; } }
+
+  function tab(name,btn){
+    document.querySelectorAll('#tabs button').forEach(function(x){x.classList.remove('on');});
+    btn.classList.add('on');
+    document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('on');});
+    document.getElementById('p-'+name).classList.add('on');
+  }
+
+  function setBanner(el){
+    document.querySelectorAll('#banners .bpre').forEach(function(x){x.classList.remove('on');});
+    el.classList.add('on');
+    document.getElementById('banner').style.background=el.style.background;
+    document.getElementById('btag').textContent='🎨 Theme: '+el.getAttribute('data-name');
+  }
+  function setColor(el){
+    document.querySelectorAll('#colors .sw').forEach(function(x){x.classList.remove('on');});
+    el.classList.add('on');
+    document.documentElement.style.setProperty('--accent',el.getAttribute('data-a'));
+    document.documentElement.style.setProperty('--accent2',el.getAttribute('data-b'));
+    toast('Theme applied 🎨');
+  }
+  function setFrame(el){
+    document.querySelectorAll('#frames .fr').forEach(function(x){x.classList.remove('on');});
+    el.classList.add('on');
+    var w=document.getElementById('avaWrap');
+    w.className='ava-wrap';
+    var f=el.getAttribute('data-frame');
+    if(f!=='none') w.classList.add('f-'+f);
+  }
+  function seg(btn,mode){
+    btn.parentNode.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});
+    btn.classList.add('on');
+    var chip=document.getElementById('privchip');
+    if(mode==='private'){ chip.textContent='🔒 Private profile'; chip.style.color='#a35a00'; chip.style.background='#fff3e0'; chip.style.borderColor='#ffcf99'; }
+    else { chip.textContent='🌐 Public profile'; chip.style.color='#1c7a42'; chip.style.background='#e5f7ec'; chip.style.borderColor='#b6e8c8'; }
+  }
+  function seg2(btn){ btn.parentNode.querySelectorAll('button').forEach(function(x){x.classList.remove('on');}); btn.classList.add('on'); }
+  function tog(el){ el.classList.toggle('on'); }
+</script>
+</body>
+</html>
