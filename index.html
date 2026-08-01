@@ -1908,8 +1908,12 @@
   function parseTags(text){
     text=(text==null?'':String(text));
     var tags=[], known=[];
-    try{ known=Object.keys(USERS||{}).map(function(k){return USERS[k]&&USERS[k].name;}).filter(Boolean); }catch(e){}
-    known.sort(function(a,b){return (b?b.length:0)-(a?a.length:0);});   /* longest first: "@John Smith" beats "@John" */
+    /* build the match list from REAL members only — both display name and @handle map to the canonical name.
+       A tag ONLY renders as a link if it matches a real account; unknown @text stays plain (no chip, no notify). */
+    try{ Object.keys(USERS||{}).forEach(function(k){ var u=USERS[k]; if(!u||!u.name)return;
+        known.push({t:u.name, name:u.name});
+        if(u.handle) known.push({t:String(u.handle), name:u.name}); }); }catch(e){}
+    known.sort(function(a,b){return b.t.length-a.t.length;});   /* longest first: "@John Smith" beats "@John" */
     var WORD=/[\p{L}\p{N}\p{M}_]/u, RUN=/^[\p{L}\p{N}\p{M}_]+/u;
     function argSafe(s){return String(s).replace(/['"\\<>]/g,'');}       /* safe inside the onclick attribute */
     var out='', i=0, n=text.length;
@@ -1917,14 +1921,13 @@
       var ch=text.charAt(i);
       if(ch==='@'){
         var rest=text.slice(i+1), matched=null;
-        for(var j=0;j<known.length;j++){ var nm=known[j]; if(!nm)continue;
-          if(rest.slice(0,nm.length).toLowerCase()===nm.toLowerCase()){ var after=rest.charAt(nm.length);
-            if(after===''||!WORD.test(after)){ matched=nm; break; } } }   /* whole-name match only */
-        if(!matched){ var mg=rest.match(RUN); if(mg)matched=mg[0]; }       /* fallback: unicode letters/marks/digits */
-        if(matched){ tags.push(matched);
-          out+='<a class="attag" onclick="showUserProfile(\''+argSafe(matched)+'\')">@'+esc(matched)+'</a>';
-          i+=1+matched.length; continue; }
-        out+=esc('@'); i++; continue;
+        for(var j=0;j<known.length;j++){ var e=known[j];
+          if(rest.slice(0,e.t.length).toLowerCase()===e.t.toLowerCase()){ var after=rest.charAt(e.t.length);
+            if(after===''||!WORD.test(after)){ matched=e; break; } } }   /* whole name/handle match against real members only */
+        if(matched){ tags.push(matched.name);
+          out+='<a class="attag" onclick="showUserProfile(\''+argSafe(matched.name)+'\')">@'+esc(matched.t)+'</a>';
+          i+=1+matched.t.length; continue; }
+        out+=esc('@'); i++; continue;   /* no real user matched → plain '@', following text stays plain text */
       }
       if(ch==='#'){ var h=text.slice(i+1).match(RUN);
         if(h){ out+='<a class="attag htag" onclick="tagFilter(\'#'+argSafe(h[0])+'\')">#'+esc(h[0])+'</a>'; i+=1+h[0].length; continue; }
@@ -3035,6 +3038,14 @@
       if(ONLINE){
         var ur=await sb.from('flap_users').select('*').ilike('name',name).maybeSingle();
         u=ur.data;
+        if(!u){   /* no such account — refuse to open a ghost profile; no Follow/Report/Block, nothing created */
+          box.innerHTML='<div class="pc-strip"><span>Not found</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>'+
+            '<div class="pc-body" style="padding:26px 20px;text-align:center;color:#3a4a66;font-size:13px;">'+
+            '<div style="font-size:30px;margin-bottom:8px;">🔍</div>'+
+            'No account named <b>'+esc(name)+'</b> exists on TheFlap.'+
+            '<div style="font-size:11px;color:#7a869e;margin-top:8px;">Tags only work for real members.</div></div>';
+          return;
+        }
         var pr=await sb.from('flaps').select('*').ilike('name',name).order('id',{ascending:false}).limit(40);
         posts=pr.data||[];
       }else{
