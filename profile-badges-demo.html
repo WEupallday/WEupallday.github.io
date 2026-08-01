@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TheFlap — Badges & Verification (Preview)</title>
+<link href="https://fonts.googleapis.com/css2?family=Chewy&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --page-bg:#2a3480; --card-border:#2f7ac9; --strip-navy:#16255e;
+    --body-top:#c9ecf5; --body-mid:#8fdfc8; --body-bot:#46c795;
+    --navy:#1a2440; --name-navy:#123a8f; --red:#e01818;
+    --orange:#f5820a; --orange-dark:#c05e00; --tag-pink:#e8125e;
+    --side-blue:#2f7ac9; --side-row:#3c8ad6;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:Verdana,Arial,sans-serif;background-color:#241035;color:var(--navy);padding:0 0 70px;position:relative;}
+  body::before{
+    content:"";position:fixed;inset:-24px;z-index:-1;background-color:#241035;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(255,30,130,.42), transparent 34%),
+      radial-gradient(circle at 82% 12%, rgba(40,130,255,.45), transparent 36%),
+      radial-gradient(circle at 65% 78%, rgba(0,200,180,.32), transparent 32%),
+      radial-gradient(circle at 28% 82%, rgba(255,140,30,.35), transparent 30%),
+      radial-gradient(circle at 90% 60%, rgba(140,60,220,.4), transparent 38%),
+      linear-gradient(160deg,#321447 0%,#241035 55%,#1a0c28 100%);
+    filter:blur(1.2px) saturate(1.2);transform:translateZ(0);
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:14px;}
+  .preview-flag{background:repeating-linear-gradient(45deg,#ffd23f,#ffd23f 14px,#ffb400 14px,#ffb400 28px);color:#5a2d00;font-weight:bold;text-align:center;padding:9px 12px;font-size:13px;border-bottom:3px solid var(--orange-dark);letter-spacing:.4px;}
+  .preview-flag b{color:#7a1f00;}
+  .brandbar{background:linear-gradient(180deg,#ff9a2e 0%,var(--orange) 55%,#d96f00 100%);border-bottom:3px solid #a85400;padding:10px 0;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.4);}
+  .brandbar .bm{font-family:'Chewy','Comic Sans MS',cursive;font-size:30px;color:#fff;letter-spacing:.5px;text-shadow:0 2px 0 var(--orange-dark);}
+  .brandbar .bm b{color:#ffe08a;}
+  .sec{background:linear-gradient(180deg,#ffffff,#eaf4ff);border:3px solid var(--card-border);border-radius:12px;margin:16px 0;box-shadow:0 6px 16px rgba(0,0,0,.4);overflow:hidden;}
+  .sec-h{background:linear-gradient(180deg,#22398f,var(--strip-navy));color:#fff;font-weight:bold;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;padding:9px 14px;display:flex;align-items:center;gap:8px;}
+  .sec-b{padding:14px 16px;}
+  .sec-b p{font-size:13px;line-height:1.5;color:#20324f;margin:6px 0;}
+  .note{background:#fff7dc;border:1.5px solid #e7c65a;border-radius:9px;padding:10px 12px;font-size:12.5px;color:#5c4a12;margin:10px 0;}
+  .muted{color:#5a6a8a;font-size:11.5px;}
+
+  /* ---- profile card (real skin) ---- */
+  .prof{border:3px solid var(--card-border);border-radius:12px;overflow:hidden;background:linear-gradient(180deg,var(--body-top),var(--body-mid) 55%,var(--body-bot));box-shadow:0 6px 16px rgba(0,0,0,.35);max-width:420px;margin:6px auto;}
+  .pc-strip{background:linear-gradient(180deg,#22398f,var(--strip-navy));color:#fff;font-weight:bold;font-size:10px;letter-spacing:1.5px;padding:6px 12px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
+  .pc-banner{height:98px;position:relative;overflow:hidden;border-bottom:3px solid var(--orange-dark);}
+  .bn-cosmic{background:linear-gradient(135deg,#5b2ea6,#c0459b 55%,#f5820a);}
+  .bn-sunset{background:linear-gradient(135deg,#f5820a,#e01818 60%,#7a1050);}
+  .bn-aqua{background:linear-gradient(135deg,#2f7ac9,#46c795 60%,#c9ecf5);}
+  .pc-streak{position:absolute;right:10px;top:10px;background:linear-gradient(#fff3d6,#ffd97a);border:2px solid var(--orange-dark);color:#7a3d00;font-weight:bold;font-size:12px;border-radius:14px;padding:3px 10px;box-shadow:0 2px 6px rgba(0,0,0,.3);}
+  .pc-topwrap{padding:0 14px 12px;}
+  .pc-avwrap{display:flex;align-items:flex-end;gap:11px;}
+  .pc-ava{width:70px;height:76px;border:3px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.35);overflow:hidden;background:#123;flex:none;margin-top:-42px;border-radius:4px;}
+  .pc-ava img{width:100%;height:100%;object-fit:cover;display:block;}
+  .pc-nameblock{padding-bottom:2px;}
+  .pc-name{font-family:'Chewy','Comic Sans MS',cursive;color:var(--name-navy);font-size:24px;line-height:1.12;letter-spacing:.3px;-webkit-text-stroke:.4px #fff;text-shadow:0 2px 0 rgba(255,255,255,.55);display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+  .pc-handle{font-size:12px;color:#5566a0;font-weight:bold;}
+  .pc-bio{font-size:12.5px;color:#233;line-height:1.42;margin:9px 0 4px;}
+  .pc-meta{font-size:11px;color:#2a4a6e;font-weight:bold;margin-top:9px;}
+  .pc-meta.j{color:#5a6a8a;font-weight:normal;margin-top:3px;}
+  .pc-badges{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0 4px;}
+  .pc-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:bold;border-radius:12px;padding:3px 9px;border:1.5px solid;cursor:pointer;transition:transform .08s;}
+  .pc-badge:active{transform:scale(.94);}
+  .bd-founder{background:#fff6d6;border-color:#e0a500;color:#8a6100;}
+  .bd-verified{background:#e3f0ff;border-color:#2f7ac9;color:#12467a;}
+  .bd-early{background:#e5ffe9;border-color:#1a8a1a;color:#116611;}
+  .bd-top{background:#ffe9f2;border-color:#e8125e;color:#a3164e;}
+  .bd-streak{background:#fff0dc;border-color:#f5820a;color:#a35200;}
+  .bd-custom{background:#efe6ff;border-color:#7a3fd0;color:#4a1f8a;}
+  .pc-actions{display:flex;gap:8px;margin:10px 0 2px;flex-wrap:wrap;}
+  .fbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:12px;padding:7px 16px;border-radius:16px;border:1.5px solid var(--orange-dark);background:linear-gradient(#ffb44d,#f5820a);color:#fff;cursor:pointer;}
+  .fbtn.on{background:#eef2fb;color:#22305e;border-color:var(--card-border);}
+
+  /* ---- blue verification check ---- */
+  .vchk{width:26px;height:26px;vertical-align:-5px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));}
+  .vchk.sm{width:20px;height:20px;vertical-align:-4px;}
+  .vchk.lg{width:34px;height:34px;}
+
+  /* ---- badge popup ---- */
+  .bpop-wrap{position:fixed;inset:0;background:rgba(20,8,40,.6);display:none;align-items:center;justify-content:center;z-index:200;padding:20px;}
+  .bpop-wrap.open{display:flex;}
+  .bpop{background:linear-gradient(180deg,#ffffff,#eef5ff);border:3px solid var(--card-border);border-radius:14px;max-width:340px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.5);overflow:hidden;animation:pop .16s ease;}
+  @keyframes pop{from{transform:scale(.9);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .bpop-h{background:linear-gradient(180deg,#22398f,var(--strip-navy));color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;}
+  .bpop-ic{font-size:26px;line-height:1;}
+  .bpop-h b{font-size:15px;}
+  .bpop-b{padding:14px 16px;}
+  .bpop-b .crit-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--side-blue);font-weight:bold;margin-bottom:4px;}
+  .bpop-b p{font-size:13px;line-height:1.5;color:#22324f;}
+  .bpop-x{width:100%;margin-top:14px;padding:9px;border:none;border-radius:9px;background:var(--orange);color:#fff;font-weight:bold;font-size:13px;cursor:pointer;}
+
+  /* ---- criteria list ---- */
+  .crit{display:flex;gap:11px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed #cdd8ec;}
+  .crit:last-child{border-bottom:none;}
+  .crit .ic{font-size:22px;flex:none;width:30px;text-align:center;}
+  .crit .t{font-size:13.5px;font-weight:bold;color:#12357a;}
+  .crit .d{font-size:12px;color:#3a4a66;margin-top:2px;line-height:1.45;}
+  .crit .rare{display:inline-block;font-size:10px;font-weight:bold;color:#a3164e;background:#ffe9f2;border:1px solid #e8125e;border-radius:8px;padding:1px 7px;margin-left:6px;}
+
+  /* ---- admin badge creator ---- */
+  .adm{background:#12224a;border-radius:10px;padding:14px;color:#dfeaff;}
+  .adm .row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;}
+  .adm label{font-size:11px;font-weight:bold;color:#9fc0f0;display:block;margin-bottom:3px;letter-spacing:.4px;}
+  .adm input,.adm select{font-family:Verdana,Arial,sans-serif;font-size:13px;padding:8px;border-radius:7px;border:2px solid #2f5aa0;background:#0c1836;color:#fff;width:100%;}
+  .adm .f-emoji{max-width:80px;}
+  .adm .btn{background:linear-gradient(#ffb44d,#f5820a);color:#fff;font-weight:bold;font-size:13px;border:none;border-radius:8px;padding:9px 16px;cursor:pointer;}
+  .adm .btn.sm{padding:6px 12px;font-size:12px;}
+  .adm .btn.rev{background:#3a1830;color:#ffb4c8;border:1px solid #a3164e;}
+  .badge-list{margin-top:10px;}
+  .badge-item{background:#0c1836;border:1.5px solid #2f5aa0;border-radius:9px;padding:10px 12px;margin:8px 0;}
+  .badge-item .bt{font-size:13px;font-weight:bold;color:#fff;}
+  .badge-item .bd{font-size:11.5px;color:#a9c2e8;margin:3px 0 6px;}
+  .grant-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .gchip{background:#183a6e;border:1px solid #3f7ad0;border-radius:12px;padding:3px 8px;font-size:11px;color:#cfe2ff;display:inline-flex;align-items:center;gap:6px;}
+  .gchip span{cursor:pointer;color:#ff9db4;font-weight:bold;}
+  .adm .sub{font-size:11px;color:#8fb0e0;margin-top:2px;}
+
+  /* ---- follower / #1 sim ---- */
+  .rankbox{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#fff6d6,#ffe08a);border:2px solid var(--orange-dark);border-radius:12px;padding:14px 16px;}
+  .rankbox .num{font-family:'Chewy',cursive;font-size:34px;color:#a35200;line-height:1;}
+  .rankbox .lbl{font-size:13px;font-weight:bold;color:#7a3d00;}
+  .rankbox .sub{font-size:11px;color:#8a5a1a;}
+  .toggle-row{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:13px;color:#22324f;font-weight:bold;}
+  .switch{position:relative;width:46px;height:26px;flex:none;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:#c3ccdd;border-radius:26px;transition:.2s;cursor:pointer;}
+  .slider:before{content:"";position:absolute;height:20px;width:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .switch input:checked + .slider{background:#46c795;}
+  .switch input:checked + .slider:before{transform:translateX(20px);}
+</style>
+</head>
+<body>
+
+<div class="preview-flag">🔒 <b>PREVIEW — NOT LIVE.</b> Nothing here touches the real app or real data. For your review only.</div>
+<div class="brandbar"><span class="bm">the<b>FLAP</b></span></div>
+
+<div class="wrap">
+
+  <!-- ============ 5. BLUE VERIFICATION + PROFILE ============ -->
+  <div class="sec">
+    <div class="sec-h">✔ New verification check + badges on a profile</div>
+    <div class="sec-b">
+      <p>The verification mark is now a <b>glossy blue circular checkmark</b> — reads instantly as "verified," era-appropriate Web-2.0 gloss, and bigger/clearer next to names everywhere (feed, replies, profiles). Tap any badge to see what it means.</p>
+
+      <div class="prof">
+        <div class="pc-strip"><span>lock — profile</span><span>✕ close</span></div>
+        <div class="pc-banner bn-cosmic"><div class="pc-streak">🔥 31 days</div></div>
+        <div class="pc-topwrap">
+          <div class="pc-avwrap">
+            <div class="pc-ava"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=lock&backgroundColor=1e86e8" alt=""></div>
+            <div class="pc-nameblock">
+              <div class="pc-name">lock <svg class="vchk lg" viewBox="0 0 40 40" aria-label="Verified"></svg></div>
+              <div class="pc-handle">@lock</div>
+            </div>
+          </div>
+          <div class="pc-bio">running the flap 🐦 · dm me your bugs</div>
+          <div class="pc-badges" id="lockBadges"></div>
+          <div class="pc-meta"><b>79</b> Flaps &nbsp;·&nbsp; <b>966</b> Followers &nbsp;·&nbsp; <b>1</b> Following</div>
+          <div class="pc-meta j">Joined Jul 2026</div>
+          <div class="pc-actions"><button class="fbtn on">✓ Following</button></div>
+        </div>
+      </div>
+
+      <p class="muted" style="text-align:center;">Above: the founder account. Below: a regular member — notice <b>far fewer badges</b> (that's the point of tightening).</p>
+
+      <div class="prof">
+        <div class="pc-strip"><span>maya_b — profile</span><span>✕ close</span></div>
+        <div class="pc-banner bn-aqua"><div class="pc-streak">🔥 6 days</div></div>
+        <div class="pc-topwrap">
+          <div class="pc-avwrap">
+            <div class="pc-ava"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=maya&backgroundColor=46c795" alt=""></div>
+            <div class="pc-nameblock">
+              <div class="pc-name">maya_b</div>
+              <div class="pc-handle">@maya_b</div>
+            </div>
+          </div>
+          <div class="pc-bio">westbrook high · volleyball 🏐</div>
+          <div class="pc-badges" id="mayaBadges"></div>
+          <div class="pc-meta"><b>12</b> Flaps &nbsp;·&nbsp; <b>48</b> Followers &nbsp;·&nbsp; <b>63</b> Following</div>
+          <div class="pc-meta j">Joined Aug 2026</div>
+          <div class="pc-actions"><button class="fbtn">＋ Follow</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2. TIGHTENED CRITERIA ============ -->
+  <div class="sec">
+    <div class="sec-h">🏅 Badge earning rules (tightened)</div>
+    <div class="sec-b">
+      <p>Badges are now real achievements, not participation trophies. Tap a badge chip anywhere to see this info in-app.</p>
+      <div id="critList"></div>
+      <div class="note">⚠️ <b>Heads-up on "Top Contributor."</b> You suggested 100+ flaps, but right now the busiest member has <b>79</b> flaps — a 100 bar would mean <b>nobody</b> qualifies. I set it to <b>50+ flaps</b> (2 members today, ~top 0.2%) so it's rare but real. Say the word and I'll change it to 100 (aspirational, earned as people post more) or any number you like.</div>
+    </div>
+  </div>
+
+  <!-- ============ 3. ADMIN BADGE CREATOR ============ -->
+  <div class="sec">
+    <div class="sec-h">👑 Admin: badge creator &amp; granter</div>
+    <div class="sec-b">
+      <p>This lives in your admin console. Invent any badge — name, emoji, description — then grant it to specific members (and revoke anytime). Try it below; it's fully interactive in this demo.</p>
+      <div class="adm">
+        <div class="row">
+          <div style="flex:1;min-width:150px;"><label>Badge name</label><input id="nbName" placeholder="e.g. Prom Court 2026"></div>
+          <div><label>Emoji</label><input id="nbEmoji" class="f-emoji" placeholder="👑" maxlength="4"></div>
+        </div>
+        <div class="row"><div style="flex:1;"><label>Description (how it's earned)</label><input id="nbDesc" placeholder="e.g. Voted onto prom court by the school"></div></div>
+        <button class="btn" onclick="createBadge()">＋ Create badge</button>
+        <div class="badge-list" id="customList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 1. AUTO-FOLLOW / #1 ============ -->
+  <div class="sec">
+    <div class="sec-h">⭐ Make lock #1 — MySpace-Tom auto-follow</div>
+    <div class="sec-b">
+      <p>Every new member <b>automatically follows the official lock account</b> at signup — so your announcements seed everyone's Following feed, and your follower count leads the site.</p>
+      <div class="rankbox">
+        <div><div class="num" id="rankNum">966</div></div>
+        <div><div class="lbl">Followers · <b>#1 on TheFlap</b> 🥇</div><div class="sub">Simulated. Next highest member: ~180.</div></div>
+      </div>
+      <div class="toggle-row"><label class="switch"><input type="checkbox" id="tgNew" checked onchange="simFollow()"><span class="slider"></span></label> New signups auto-follow lock <span class="muted" id="tgNewState">(on)</span></div>
+      <div class="toggle-row"><label class="switch"><input type="checkbox" id="tgBackfill" onchange="simFollow()"><span class="slider"></span></label> One-time backfill: existing 966 members follow lock <span class="muted" id="tgBfState">(off)</span></div>
+      <div class="note"><b>The tradeoff, your call:</b><br>
+        • <b>New-signups-only</b> (gentle): count grows organically from today. You'd start around your current real followers and climb.<br>
+        • <b>+ Backfill all 966</b> (instant #1): everyone follows you the moment it ships — you're #1 immediately, and your next announcement lands in 966 Following feeds. It's a one-time bulk action on real data, so it only runs once you approve.<br>
+        Nothing is written to the database in this preview.</div>
+    </div>
+  </div>
+
+  <p class="muted" style="text-align:center;margin-top:6px;">TheFlap · preview build · <span id="stamp"></span></p>
+</div>
+
+<!-- badge popup -->
+<div class="bpop-wrap" id="bpopWrap" onclick="if(event.target===this)closeBpop()">
+  <div class="bpop">
+    <div class="bpop-h"><span class="bpop-ic" id="bpopIc">🏅</span><b id="bpopName">Badge</b></div>
+    <div class="bpop-b">
+      <div class="crit-label">How it's earned</div>
+      <p id="bpopDesc">—</p>
+      <button class="bpop-x" onclick="closeBpop()">Got it</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // blue verification check svg (reused for the name mark)
+  var VCHK='<defs><radialGradient id="vg" cx="50%" cy="34%" r="72%"><stop offset="0%" stop-color="#7cc6ff"/><stop offset="52%" stop-color="#1e86e8"/><stop offset="100%" stop-color="#0b56bd"/></radialGradient><linearGradient id="vgl" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity=".8"/><stop offset="46%" stop-color="#fff" stop-opacity=".12"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><circle cx="20" cy="20" r="18" fill="url(#vg)" stroke="#fff" stroke-width="2.6"/><ellipse cx="20" cy="14" rx="13.5" ry="7.5" fill="url(#vgl)"/><path d="M12 20.5 L17.6 26 L28 14.4" fill="none" stroke="#fff" stroke-width="3.7" stroke-linecap="round" stroke-linejoin="round"/>';
+  document.querySelectorAll('.vchk').forEach(function(s){ s.innerHTML=VCHK; });
+
+  // ---- badge definitions (built-in) ----
+  var BUILTIN=[
+    {id:'verified', ic:'blue', name:'Verified', cls:'bd-verified', chip:'✔ Verified',
+     desc:'A blue check granted by the TheFlap team to confirm a real, notable account. Admin-granted only — you can’t earn it automatically.'},
+    {id:'founder', ic:'👑', name:'Founder', cls:'bd-founder', chip:'👑 Founder',
+     desc:'The one and only — the official account that runs TheFlap. Permanently locked to the founder; nobody else can hold it.'},
+    {id:'early', ic:'🌱', name:'Early Supporter', cls:'bd-early', chip:'🌱 Early Supporter', rare:true,
+     desc:'Joined during the launch wave — before July 22, 2026. Only the first ~172 members (about 18%) qualify; it can never be earned again.'},
+    {id:'top', ic:'⭐', name:'Top Contributor', cls:'bd-top', chip:'⭐ Top Contributor', rare:true,
+     desc:'Posted 50+ flaps. A genuine high bar — only a couple of members have reached it so far. Keep flapping to unlock it.'},
+    {id:'streak', ic:'🔥', name:'Streak badges', cls:'bd-streak', chip:'🔥 30-Day Streak',
+     desc:'Earned for consecutive active days: 5, 10, 15, and 30-day streaks. Your profile shows the highest milestone you’ve hit, and the 🔥 chip tracks your current run.'}
+  ];
+
+  function badgeChip(b){
+    var icon = b.ic==='blue' ? '<svg class="vchk sm" viewBox="0 0 40 40">'+VCHK+'</svg>' : b.ic;
+    var label = b.chip.replace(/^[^\sA-Za-z0-9]+\s*/,''); // strip leading emoji from chip text when using svg
+    if(b.ic==='blue'){ return '<span class="pc-badge '+b.cls+'" onclick="openBpop(\''+b.id+'\')">'+icon+' Verified</span>'; }
+    return '<span class="pc-badge '+b.cls+'" onclick="openBpop(\''+b.id+'\')">'+b.chip+'</span>';
+  }
+  function byId(id){ return BUILTIN.concat(CUSTOM).filter(function(b){return b.id===id;})[0]; }
+
+  // lock: founder + verified + early + top + a 30-day streak + any custom granted to 'lock'
+  function renderProfileBadges(){
+    var lock=['founder','verified','early','top','streak'];
+    document.getElementById('lockBadges').innerHTML =
+      lock.map(function(id){return badgeChip(byId(id));}).join('') +
+      CUSTOM.filter(function(c){return c.grants.indexOf('lock')>-1;}).map(customChip).join('');
+    // maya: just early? no — joined Aug so NOT early. Only a small streak, not enough for a streak badge (needs 5+; she has 6 → gets 5-day). Show 5-day streak only.
+    var maya=[{id:'streak5'}];
+    document.getElementById('mayaBadges').innerHTML =
+      '<span class="pc-badge bd-streak" onclick="openBpop(\'streak\')">🔥 5-Day Streak</span>' +
+      CUSTOM.filter(function(c){return c.grants.indexOf('maya_b')>-1;}).map(customChip).join('');
+  }
+  function customChip(c){ return '<span class="pc-badge bd-custom" onclick="openBpop(\''+c.id+'\')">'+(c.ic||'🏷')+' '+esc(c.name)+'</span>'; }
+
+  // ---- criteria list ----
+  function renderCrit(){
+    document.getElementById('critList').innerHTML = BUILTIN.map(function(b){
+      var ic = b.ic==='blue' ? '<svg class="vchk" viewBox="0 0 40 40">'+VCHK+'</svg>' : b.ic;
+      return '<div class="crit"><div class="ic">'+ic+'</div><div><div class="t">'+esc(b.name)+(b.rare?'<span class="rare">RARE</span>':'')+'</div><div class="d">'+esc(b.desc)+'</div></div></div>';
+    }).join('');
+  }
+
+  // ---- popup ----
+  function openBpop(id){
+    var b=byId(id); if(!b)return;
+    document.getElementById('bpopName').textContent=b.name;
+    var ie=document.getElementById('bpopIc');
+    if(b.ic==='blue'){ ie.innerHTML='<svg class="vchk lg" viewBox="0 0 40 40">'+VCHK+'</svg>'; }
+    else { ie.textContent=b.ic||'🏷'; }
+    document.getElementById('bpopDesc').textContent=b.desc;
+    document.getElementById('bpopWrap').classList.add('open');
+  }
+  function closeBpop(){ document.getElementById('bpopWrap').classList.remove('open'); }
+
+  // ---- custom badges (admin) ----
+  var CUSTOM=[];
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function createBadge(){
+    var name=(document.getElementById('nbName').value||'').trim();
+    var emoji=(document.getElementById('nbEmoji').value||'').trim()||'🏷';
+    var desc=(document.getElementById('nbDesc').value||'').trim()||'A custom badge granted by the TheFlap team.';
+    if(!name){ document.getElementById('nbName').focus(); return; }
+    var id='c'+Date.now();
+    CUSTOM.push({id:id, ic:emoji, name:name, desc:desc, grants:[]});
+    document.getElementById('nbName').value=''; document.getElementById('nbEmoji').value=''; document.getElementById('nbDesc').value='';
+    renderCustom(); renderProfileBadges();
+  }
+  function renderCustom(){
+    var el=document.getElementById('customList');
+    if(!CUSTOM.length){ el.innerHTML='<div class="sub">No custom badges yet. Create one above.</div>'; return; }
+    el.innerHTML=CUSTOM.map(function(c){
+      return '<div class="badge-item"><div class="bt">'+esc(c.ic)+' '+esc(c.name)+'</div><div class="bd">'+esc(c.desc)+'</div>'+
+        '<div class="row" style="margin:6px 0 0;"><input id="gr_'+c.id+'" placeholder="member name to grant (try: lock or maya_b)" style="flex:1;min-width:140px;"><button class="btn sm" onclick="grant(\''+c.id+'\')">Grant</button></div>'+
+        '<div class="grant-chips" id="chips_'+c.id+'">'+chipsFor(c)+'</div></div>';
+    }).join('');
+  }
+  function chipsFor(c){
+    if(!c.grants.length) return '<span class="sub">Not granted to anyone yet.</span>';
+    return c.grants.map(function(n){ return '<span class="gchip">'+esc(n)+' <span onclick="revoke(\''+c.id+'\',\''+esc(n)+'\')" title="revoke">✕</span></span>'; }).join('');
+  }
+  function grant(id){
+    var inp=document.getElementById('gr_'+id); var n=(inp.value||'').trim().toLowerCase().replace(/^@/,'');
+    if(!n) return; var c=CUSTOM.filter(function(x){return x.id===id;})[0]; if(!c)return;
+    if(c.grants.indexOf(n)<0) c.grants.push(n);
+    inp.value=''; document.getElementById('chips_'+id).innerHTML=chipsFor(c); renderProfileBadges();
+  }
+  function revoke(id,n){
+    var c=CUSTOM.filter(function(x){return x.id===id;})[0]; if(!c)return;
+    c.grants=c.grants.filter(function(x){return x!==n;});
+    document.getElementById('chips_'+id).innerHTML=chipsFor(c); renderProfileBadges();
+  }
+
+  // ---- follower sim ----
+  function simFollow(){
+    var nw=document.getElementById('tgNew').checked, bf=document.getElementById('tgBackfill').checked;
+    document.getElementById('tgNewState').textContent = nw?'(on)':'(off)';
+    document.getElementById('tgBfState').textContent = bf?'(on — instant #1)':'(off)';
+    var base=142; // pretend current real followers
+    var n = base + (bf?824:0) + (nw?0:0);
+    document.getElementById('rankNum').textContent = n;
+  }
+
+  // seed a sample custom badge so the demo shows the full loop
+  CUSTOM.push({id:'seed1', ic:'🏆', name:'Founder’s Circle', desc:'Hand-picked by the founder for going above and beyond for the community.', grants:['lock']});
+
+  renderCrit(); renderCustom(); renderProfileBadges();
+  document.getElementById('stamp').textContent=new Date().toLocaleString();
+</script>
+</body>
+</html>
