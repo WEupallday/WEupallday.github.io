@@ -3589,24 +3589,13 @@
   function tagFilter(name){FEED_FILTER=name;renderLive();toast('Showing flaps for '+(name[0]==='#'?name:'@'+name));document.getElementById('liveFeed').scrollIntoView({behavior:'smooth',block:'nearest'});}
   function clearFilter(){FEED_FILTER=null;renderLive();}
 
-  /* ============ reply notifications ("someone replied to your flap") ============ */
+  /* ============ reply notifications ============
+     The floating "someone replied to your flap!" banner (#notifBar) that overlaid the feed
+     has been removed per request — the 🔔 bell counter is now the sole in-app indicator.
+     This is kept as a no-op that just makes sure the old bar never shows. */
   function checkNotifications(){
-    var bar=document.getElementById('notifBar');if(!bar)return;
-    if(!ME.name){bar.style.display='none';return;}
-    var last=parseInt((function(){try{return localStorage.getItem('flap_lastreply_'+ME.name);}catch(e){return 0;}})()||'0',10);
-    var myIds={};(LAST_ROWS||[]).forEach(function(r){if(r.name===ME.name)myIds[r.id]=1;});
-    var news=[];
-    Object.keys(REPLIES).forEach(function(pid){
-      if(myIds[pid])REPLIES[pid].forEach(function(rp){
-        if(rp.name!==ME.name && rp.id>last)news.push(rp);
-      });
-    });
-    if(news.length){
-      var who=news[news.length-1].name;
-      var extra=news.length>1?(' and '+(news.length-1)+' more'):'';
-      bar.innerHTML='🔔 <b>'+esc(who)+'</b>'+extra+' replied to your flap! <a onclick="dismissNotif()">tap to dismiss</a>';
-      bar.style.display='block';
-    }else{bar.style.display='none';}
+    var bar=document.getElementById('notifBar');
+    if(bar){ bar.style.display='none'; bar.innerHTML=''; }
   }
   function dismissNotif(){
     var maxId=0;
