@@ -112,6 +112,21 @@
   .dmmsg b{color:#9fd0ff;}
   .dmmsg .t{color:#7f9bc4;font-size:10px;}
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#0f2340;border:1px solid #2e5290;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .2s;z-index:60;max-width:90vw;}
+  .mdl-back{position:fixed;inset:0;background:rgba(4,10,24,.72);z-index:80;display:none;align-items:flex-start;justify-content:center;padding:40px 12px;overflow:auto;}
+  .mdl-back.show{display:flex;}
+  .mdl{background:#0c1836;border:1.5px solid #2f5aa0;border-radius:14px;padding:18px;max-width:460px;width:100%;box-shadow:0 18px 60px rgba(0,0,0,.6);}
+  .mdl h3{margin:0 0 4px;font-size:17px;color:#fff;}
+  .mdl .mdl-sub{font-size:12.5px;color:#a9c2e8;margin-bottom:12px;}
+  .mdl .mdl-opt{display:flex;align-items:flex-start;gap:9px;padding:9px 10px;border:1px solid #24406e;border-radius:9px;margin:7px 0;cursor:pointer;}
+  .mdl .mdl-opt:hover{background:#0f2340;}
+  .mdl .mdl-opt input{width:auto;margin-top:2px;}
+  .mdl .mdl-opt .mo-t{font-size:13px;color:#dbe8ff;font-weight:bold;}
+  .mdl .mdl-opt .mo-d{font-size:11.5px;color:#8fa8cf;}
+  .mdl .mdl-opt.danger{border-color:#7a3020;background:rgba(160,50,30,.12);}
+  .mdl .mdl-badges{display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 12px;}
+  .mdl .mb-chip{background:#183a6e;border:1px solid #3f7ad0;border-radius:12px;padding:4px 9px;font-size:12px;color:#cfe2ff;display:inline-flex;align-items:center;gap:8px;}
+  .mdl .mb-chip button{border:none;background:linear-gradient(180deg,#c0603a,#8f3c1c);color:#fff;border-radius:8px;padding:2px 7px;font-size:11px;font-weight:bold;cursor:pointer;}
+  .mdl .mdl-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
   .toast.show{opacity:1;}
   .loading{padding:24px;text-align:center;color:#9db4d6;}
 </style>
@@ -147,6 +162,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="mdl-back" id="mdlBack"><div class="mdl" id="mdlBox"></div></div>
 
 <script>
 (function(){
@@ -188,6 +204,10 @@
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function esq(s){return String(s==null?'':s).replace(/'/g,'');}
   function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show');},2600);}
+  function openModal(html){var b=$('mdlBack');$('mdlBox').innerHTML=html;b.classList.add('show');}
+  function closeModal(){$('mdlBack').classList.remove('show');$('mdlBox').innerHTML='';}
+  window.addEventListener('click',function(e){ if(e.target&&e.target.id==='mdlBack')closeModal(); });
+  async function adminLog(name,action){ try{ await sb.from('flap_reports').insert({reason:'[ADMIN] '+action, reporter:(ADMIN_ACCOUNT||'admin'), target_name:name, target_type:'adminlog', resolved:true}); }catch(e){} }
   function isSentinel(n){return String(n||'').indexOf('::')===0;}
   function T(v){return v?new Date(v).getTime():0;}
   async function sha256(s){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}
@@ -429,6 +449,8 @@
         acts+= u.banned?'<button class="btn green" onclick="ADMIN.unban(\''+nm+'\')">Un-ban</button>'
                       :'<button class="btn red" onclick="ADMIN.ban(\''+nm+'\')">Ban</button>';
         acts+='<button class="btn blue" onclick="ADMIN.resetPassword(\''+nm+'\')">🔑 Reset password</button>';
+        acts+='<button class="btn purple" onclick="ADMIN.manageBadges(\''+nm+'\')">🏅 Badges</button>';
+        acts+='<button class="btn" style="background:linear-gradient(180deg,#b06a2a,#7d4413)" onclick="ADMIN.resetAccount(\''+nm+'\')">♻ Reset account</button>';
         acts+='<button class="btn del" onclick="ADMIN.removeUser(\''+nm+'\')">🗑 Remove</button>';
       }
       return '<div class="mem"><span class="ava">'+av+'</span>'+
@@ -645,6 +667,57 @@
       var grants=DATA.badgeGrants||{}; if(grants[m]){ grants[m]=grants[m].filter(function(x){return x!==id;}); if(!grants[m].length)delete grants[m]; }
       await setSen('::badgegrants::', JSON.stringify(grants));
       toast('Revoked from '+m+'.'); loadAll();
+    },
+    manageBadges:function(name){
+      var lc=(name||'').toLowerCase().replace(/^@/,'');
+      var defs=DATA.badgeDefs||[], grants=DATA.badgeGrants||{}, mine=(grants[lc]||[]);
+      var chips=mine.length?mine.map(function(id){
+        var b=defs.filter(function(x){return x.id===id;})[0]||{name:id,ic:'🏷'};
+        return '<span class="mb-chip">'+esc(b.ic||'🏷')+' '+esc(b.name||id)+(b.drop?' 🎁':'')+'<button onclick="ADMIN.doRevoke(\''+esq(name)+'\',\''+id+'\')">Revoke</button></span>';
+      }).join(''):'<span class="muted">No badges or claimed drops.</span>';
+      var h='<h3>🏅 Badges — '+esc(name)+'</h3>';
+      h+='<div class="mdl-sub">Revoke any granted badge or claimed drop. Removing a claimed drop frees its slot back into the pool automatically.</div>';
+      h+='<div class="mdl-badges">'+chips+'</div>';
+      h+='<div class="mdl-foot">'+(mine.length?'<button class="btn del" onclick="ADMIN.doRevoke(\''+esq(name)+'\',\'*\')">Revoke all</button>':'')+'<button class="btn" onclick="closeModal()">Close</button></div>';
+      openModal(h);
+    },
+    doRevoke:async function(name,id){
+      var lc=(name||'').toLowerCase().replace(/^@/,'');
+      var grants=DATA.badgeGrants||{};
+      if(grants[lc]){ grants[lc]= (id==='*')?[] : grants[lc].filter(function(x){return x!==id;}); if(!grants[lc].length)delete grants[lc]; }
+      await setSen('::badgegrants::', JSON.stringify(grants));
+      await adminLog(name, id==='*'?'Revoked all badges/drops':'Revoked badge '+id+' (drop slot reopened if applicable)');
+      toast(id==='*'?('Cleared all badges for '+name+'.'):('Revoked from '+name+' — slot reopened if it was a drop.'));
+      await loadAll(); ADMIN.manageBadges(name);
+    },
+    resetAccount:function(name){
+      var h='<h3>♻ Reset account — '+esc(name)+'</h3>';
+      h+='<div class="mdl-sub">Pick what to reset. Nothing happens until you confirm.</div>';
+      h+='<label class="mdl-opt"><input type="checkbox" id="ra_prof" checked><span><span class="mo-t">Clear profile customization</span><br><span class="mo-d">Banner, bio, and links back to default.</span></span></label>';
+      h+='<label class="mdl-opt"><input type="checkbox" id="ra_badges"><span><span class="mo-t">Wipe badges</span><br><span class="mo-d">Removes all granted badges &amp; claimed drops (drop slots reopen).</span></span></label>';
+      h+='<label class="mdl-opt"><input type="checkbox" id="ra_photo"><span><span class="mo-t">Clear profile photo</span><br><span class="mo-d">Removes their avatar; falls back to initials.</span></span></label>';
+      h+='<label class="mdl-opt danger"><input type="checkbox" id="ra_posts"><span><span class="mo-t">Also delete posts &amp; replies</span><br><span class="mo-d">Permanently removes every flap and reply. Cannot be undone.</span></span></label>';
+      h+='<label class="mdl-opt danger"><input type="checkbox" id="ra_full" onchange="ADMIN.raFull(this.checked)"><span><span class="mo-t">FULL reset</span><br><span class="mo-d">Ticks everything above.</span></span></label>';
+      h+='<div class="mdl-foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn del" onclick="ADMIN.doResetAccount(\''+esq(name)+'\')">Reset account</button></div>';
+      openModal(h);
+    },
+    raFull:function(on){['ra_prof','ra_badges','ra_photo','ra_posts'].forEach(function(id){var el=$(id);if(el)el.checked=on;});},
+    doResetAccount:async function(name){
+      if((name||'').toLowerCase()===ADMIN_ACCOUNT){toast("Can't reset the admin account.");return;}
+      var prof=$('ra_prof')&&$('ra_prof').checked, badges=$('ra_badges')&&$('ra_badges').checked, photo=$('ra_photo')&&$('ra_photo').checked, posts=$('ra_posts')&&$('ra_posts').checked;
+      if(!prof&&!badges&&!photo&&!posts){toast('Pick at least one thing to reset.');return;}
+      var parts=[]; if(prof)parts.push('profile customization (banner/bio/links)'); if(photo)parts.push('profile photo'); if(badges)parts.push('all badges & claimed drops'); if(posts)parts.push('ALL posts & replies (permanent)');
+      if(!confirm('Reset '+name+'?\n\nThis will clear:\n• '+parts.join('\n• ')+'\n\nContinue?'))return;
+      try{
+        var upd={};
+        if(prof){upd.bio=null; upd.links=null; upd.banner='cosmic';}
+        if(photo){upd.avatar_url=null;}
+        if(Object.keys(upd).length){ var u1=await sb.from('flap_users').update(upd).ilike('name',name); if(u1&&u1.error)throw u1.error; }
+        if(badges){ var lc=(name||'').toLowerCase().replace(/^@/,''); var g=DATA.badgeGrants||{}; if(g[lc]){ delete g[lc]; await setSen('::badgegrants::', JSON.stringify(g)); } }
+        if(posts){ await sb.from('flaps').delete().ilike('name',name); await sb.from('flap_replies').delete().ilike('name',name); }
+        await adminLog(name,'Reset account — cleared: '+parts.join(', '));
+        closeModal(); toast('♻ Reset '+name+' — '+parts.length+' item(s) cleared.'); await loadAll();
+      }catch(e){ toast('Reset failed — try again.'); }
     },
     toggleSocial:async function(on){await setSen('::features::',on?'on':'off');toast(on?'🚀 Friends & Messaging is LIVE.':'Friends & Messaging turned off.');loadAll();},
     seedRandom:async function(){var p=HOUSE_PERSONAS[Math.floor(Math.random()*HOUSE_PERSONAS.length)];var body=p.posts[Math.floor(Math.random()*p.posts.length)];await postAsPersonaBody(p,body);toast('🌱 Seeded a flap as '+p.name+'.');loadAll();},
