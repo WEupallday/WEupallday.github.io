@@ -206,6 +206,7 @@
   function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show');},2600);}
   function openModal(html){var b=$('mdlBack');$('mdlBox').innerHTML=html;b.classList.add('show');}
   function closeModal(){$('mdlBack').classList.remove('show');$('mdlBox').innerHTML='';}
+  window.closeModal=closeModal; window.openModal=openModal;
   window.addEventListener('click',function(e){ if(e.target&&e.target.id==='mdlBack')closeModal(); });
   async function adminLog(name,action){ try{ await sb.from('flap_reports').insert({reason:'[ADMIN] '+action, reporter:(ADMIN_ACCOUNT||'admin'), target_name:name, target_type:'adminlog', resolved:true}); }catch(e){} }
   function isSentinel(n){return String(n||'').indexOf('::')===0;}
@@ -669,8 +670,8 @@
       toast('Revoked from '+m+'.'); loadAll();
     },
     manageBadges:function(name){
-      var lc=(name||'').toLowerCase().replace(/^@/,'');
-      var defs=DATA.badgeDefs||[], grants=DATA.badgeGrants||{}, mine=(grants[lc]||[]);
+      var lc=(name||'').toLowerCase().replace(/^@/,''); var d=DATA||{};
+      var defs=d.badgeDefs||[], grants=d.badgeGrants||{}, mine=(grants[lc]||[]);
       var chips=mine.length?mine.map(function(id){
         var b=defs.filter(function(x){return x.id===id;})[0]||{name:id,ic:'🏷'};
         return '<span class="mb-chip">'+esc(b.ic||'🏷')+' '+esc(b.name||id)+(b.drop?' 🎁':'')+'<button onclick="ADMIN.doRevoke(\''+esq(name)+'\',\''+id+'\')">Revoke</button></span>';
