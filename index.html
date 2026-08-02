@@ -3035,11 +3035,17 @@
     if(h>0) return '⏳ '+h+'h '+m+'m left';
     return '⏳ '+m+'m left';
   }
+  /* true when running inside the Android wrapper (Capacitor) or an Android-device browser (fallback) */
+  function isAndroid(){
+    try{ if(window.Capacitor && typeof Capacitor.getPlatform==='function'){ return Capacitor.getPlatform()==='android'; } }catch(e){}
+    return /Android/i.test((navigator&&navigator.userAgent)||'');
+  }
   /* how long a sold-out / ended drop card lingers in the feed before it auto-hides (lets the FOMO land). Easily tweakable. */
   var DROP_GRACE_MS=3*3600*1000; /* 3 hours */
   function dropFeedVisible(d){
     if(!d||!d.drop) return false;
     if(d.hidden) return false;                                                   /* admin pulled it manually */
+    if(d.androidOnly && !isAndroid()) return false;                              /* Android-only drop: hide on web/iPhone */
     var now=Date.now();
     if(d.endsAt && now>Date.parse(d.endsAt)+DROP_GRACE_MS) return false;         /* ended a while ago */
     if(d.soldAt && now>Date.parse(d.soldAt)+DROP_GRACE_MS) return false;         /* sold out a while ago */
@@ -3086,6 +3092,7 @@
     if(!ME.name){ try{requireAuth();}catch(e){} return; }
     var d=(CUSTOM_BADGES||[]).filter(function(b){return String(b.id).replace(/[^a-z0-9]/gi,'')===String(id);})[0];
     if(!d||!d.drop) return;
+    if(d.androidOnly && !isAndroid()){ toast('This drop is Android-only 🤖'); return; }   /* safety net: block claim off-Android */
     try{
       var g=await sb.from('flaps').select('id,body').eq('name','::badgegrants::').order('id',{ascending:false}).limit(1);
       var grants={}, rowId=null;

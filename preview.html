@@ -392,6 +392,19 @@
   .pearcard textarea{flex:1;border:none;outline:none;resize:none;font-family:Verdana,Arial,sans-serif;font-size:12px;line-height:1.55;color:#222;background:transparent;min-height:100px;}
   .tagbar{min-height:15px;font-size:9px;color:#1a6fd4;font-weight:bold;}
   .tagbar .attag{font-size:10px;}
+  /* admin badge-group tag chip (shown in posts) */
+  .grouptag{display:inline-block;background:linear-gradient(180deg,#8a4fd8,#5f2ea0);color:#fff;font-weight:bold;border-radius:11px;padding:1px 8px;font-size:12px;line-height:1.5;box-shadow:0 1px 3px rgba(0,0,0,.3);white-space:nowrap;}
+  /* group picker popup */
+  #grpBack{position:fixed;inset:0;background:rgba(6,12,30,.55);z-index:120;display:none;}
+  #grpBack.show{display:block;}
+  .grp-menu{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:121;background:#fff;border:3px solid var(--orange);border-radius:14px;box-shadow:0 18px 46px rgba(0,0,0,.6);width:300px;max-width:92vw;padding:10px;display:none;}
+  .grp-menu.show{display:block;}
+  .grp-menu .grp-head{font-weight:bold;color:var(--navy,#22398f);font-size:13px;margin:2px 4px 8px;}
+  .grp-menu .grp-item{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;border:1.5px solid #d8e2f5;background:#f2f6ff;border-radius:9px;padding:8px 10px;margin:5px 0;cursor:pointer;font-family:Verdana,Arial,sans-serif;}
+  .grp-menu .grp-item:hover{background:#e5edff;}
+  .grp-menu .grp-item span{font-weight:bold;color:#5f2ea0;font-size:13px;}
+  .grp-menu .grp-item small{color:#667;font-size:11px;}
+  .grp-menu .grp-empty{color:#667;font-size:12px;padding:10px;text-align:center;}
   .pearfeel{display:flex;align-items:center;gap:6px;border-top:1px dotted #f0b0d0;padding-top:4px;}
   .pearfeel .fl{color:#ff2fa0;font-weight:bold;font-size:11px;letter-spacing:1px;}
   .pearfeel select{font-family:'Comic Sans MS','Chewy',cursive;font-size:13px;font-weight:bold;color:#1a6fd4;border:none;background:transparent;outline:none;cursor:pointer;}
@@ -1539,6 +1552,7 @@
       </div>
       <div class="pearbottom">
         <button class="comp-btn" type="button" onclick="insertAt()">@ Tag</button>
+        <button class="comp-btn" type="button" id="grpTagBtn" style="display:none" onclick="pickGroupTag()">🏅 Group</button>
         <button class="comp-btn" type="button" onclick="document.getElementById('postFile').click()">Add Pic</button>
         <button class="comp-btn go" type="button" onclick="postFlap()">Flap It!</button>
         <div class="dockbtns">
@@ -1936,6 +1950,11 @@
     var out='', i=0, n=text.length;
     while(i<n){
       var ch=text.charAt(i);
+      if(ch==='⟦' && text.slice(i,i+5)==='⟦grp:'){          /* admin badge-group tag token: ⟦grp:id|label⟧ */
+        var gend=text.indexOf('⟧',i);
+        if(gend>-1){ var inner=text.slice(i+5,gend); var bar=inner.indexOf('|'); var glabel=bar>-1?inner.slice(bar+1):inner;
+          out+='<span class="grouptag">🏅 @'+esc(glabel)+'</span>'; i=gend+1; continue; }
+      }
       if(ch==='@'){
         var rest=text.slice(i+1), matched=null;
         for(var j=0;j<known.length;j++){ var e=known[j];
@@ -1950,7 +1969,7 @@
         if(h){ out+='<a class="attag htag" onclick="tagFilter(\'#'+argSafe(h[0])+'\')">#'+esc(h[0])+'</a>'; i+=1+h[0].length; continue; }
         out+=esc('#'); i++; continue;
       }
-      var k=i; while(k<n){ var c=text.charAt(k); if(c==='@'||c==='#')break; k++; }
+      var k=i; while(k<n){ var c=text.charAt(k); if(c==='@'||c==='#'||c==='⟦')break; k++; }
       out+=esc(text.slice(i,k)); i=k;
     }
     return {html:out,tags:tags};
@@ -3016,18 +3035,47 @@
     if(h>0) return '⏳ '+h+'h '+m+'m left';
     return '⏳ '+m+'m left';
   }
-  function activeDropBadges(){ return (CUSTOM_BADGES||[]).filter(function(b){ return b && b.drop && !dropExpired(b); }); }
+  /* true when running inside the Android wrapper (Capacitor) or an Android-device browser (fallback) */
+  function isAndroid(){
+    try{ if(window.Capacitor && typeof Capacitor.getPlatform==='function'){ return Capacitor.getPlatform()==='android'; } }catch(e){}
+    return /Android/i.test((navigator&&navigator.userAgent)||'');
+  }
+  /* how long a sold-out / ended drop card lingers in the feed before it auto-hides (lets the FOMO land). Easily tweakable. */
+  var DROP_GRACE_MS=3*3600*1000; /* 3 hours */
+  function dropFeedVisible(d){
+    if(!d||!d.drop) return false;
+    if(d.hidden) return false;                                                   /* admin pulled it manually */
+    if(d.androidOnly && !isAndroid()) return false;                              /* Android-only drop: hide on web/iPhone */
+    var now=Date.now();
+    if(d.endsAt && now>Date.parse(d.endsAt)+DROP_GRACE_MS) return false;         /* ended a while ago */
+    if(d.soldAt && now>Date.parse(d.soldAt)+DROP_GRACE_MS) return false;         /* sold out a while ago */
+    return true;
+  }
+  function activeDropBadges(){ return (CUSTOM_BADGES||[]).filter(dropFeedVisible); }
+  /* stamp the moment a drop fills, so the "sold out" grace window can start counting */
+  async function stampSoldAt(id){
+    if(!ONLINE) return;
+    try{
+      var r=await sb.from('flaps').select('id,body').eq('name','::badgedefs::').order('id',{ascending:false}).limit(1);
+      if(!r.data||!r.data[0]) return;
+      var defs=[]; try{ defs=JSON.parse(r.data[0].body)||[]; }catch(e){}
+      var changed=false;
+      defs.forEach(function(b){ if(b.id===id && !b.soldAt){ b.soldAt=new Date().toISOString(); changed=true; } });
+      if(changed){ await sb.from('flaps').update({body:JSON.stringify(defs)}).eq('id',r.data[0].id); CUSTOM_BADGES=defs; }
+    }catch(e){}
+  }
   function dropCardsInner(){
     var ds=activeDropBadges(); if(!ds.length) return '';
     return ds.map(function(d){
-      var cnt=dropClaimCount(d.id), lim=d.limit||0, mine=myClaimed(d.id), full=dropFull(d);
+      var cnt=dropClaimCount(d.id), lim=d.limit||0, mine=myClaimed(d.id), full=dropFull(d), ended=dropExpired(d);
       var pct=lim?Math.min(100,Math.round(cnt/lim*100)):0;
       var countTxt=lim?(cnt+' / '+lim+' claimed'):(cnt+' claimed');
-      var timer=d.endsAt?dropTimeLeft(d.endsAt):'';
+      var timer=ended?'⌛ Drop ended':(d.endsAt?dropTimeLeft(d.endsAt):'');
       var btn = mine?'<button class="drop-btn claimed" disabled>✓ Claimed — it’s yours</button>'
+        : ended?'<button class="drop-btn gone" disabled>⌛ Drop ended</button>'
         : full?'<button class="drop-btn gone" disabled>Sold out — all claimed</button>'
         : '<button class="drop-btn" onclick="claimDrop(\''+String(d.id).replace(/[^a-z0-9]/gi,'')+'\')">Claim yours 🎁</button>';
-      return '<div class="dropcard'+((full&&!mine)?' isgone':'')+'">'+
+      return '<div class="dropcard'+(((full||ended)&&!mine)?' isgone':'')+'">'+
         '<div class="dropcard-top"><span class="dropcard-ic">'+esc(d.ic||'🏷')+'</span><div><div class="dropcard-kicker">🎁 Limited badge drop</div><div class="dropcard-name">'+esc(d.name)+'</div></div></div>'+
         '<div class="dropcard-body">'+
           (d.desc?'<div class="dropcard-desc">'+esc(d.desc)+'</div>':'')+
@@ -3044,6 +3092,7 @@
     if(!ME.name){ try{requireAuth();}catch(e){} return; }
     var d=(CUSTOM_BADGES||[]).filter(function(b){return String(b.id).replace(/[^a-z0-9]/gi,'')===String(id);})[0];
     if(!d||!d.drop) return;
+    if(d.androidOnly && !isAndroid()){ toast('This drop is Android-only 🤖'); return; }   /* safety net: block claim off-Android */
     try{
       var g=await sb.from('flaps').select('id,body').eq('name','::badgegrants::').order('id',{ascending:false}).limit(1);
       var grants={}, rowId=null;
@@ -3058,6 +3107,7 @@
       if(rowId) await sb.from('flaps').update({body:JSON.stringify(grants)}).eq('id',rowId);
       else await sb.from('flaps').insert({name:'::badgegrants::',body:JSON.stringify(grants),mood:'flappy',likes:0});
       CUSTOM_GRANTS=grants;
+      if(d.limit){ var fc=0; Object.keys(grants).forEach(function(u){ if((grants[u]||[]).indexOf(d.id)>-1)fc++; }); if(fc>=d.limit && !d.soldAt){ stampSoldAt(d.id); } }
       renderDrops();
       toast('🎉 Claimed "'+d.name+'"! It’s on your profile now.');
       try{ if(document.getElementById('profModal')&&document.getElementById('profModal').classList.contains('open')) showUserProfile(ME.name); }catch(e){}
@@ -3706,7 +3756,7 @@
     try{await sb.from('flap_notifs').insert({recipient:recipient,actor:actor,kind:kind,flap_id:flap_id||null,excerpt:(excerpt||'').slice(0,120)});}catch(e){}
     /* also fire a phone push to the recipient */
     var ex=excerpt?(' "'+String(excerpt).slice(0,60)+'"'):'';
-    var body=kind==='reply'?(actor+' replied to your flap:'+ex):kind==='like'?(actor+' flapped your post 👍'):kind==='tag'?(actor+' tagged you in a flap:'+ex):kind==='reflap'?(actor+' reflapped your flap 🔁'):kind==='follow'?(actor+' followed you 👤'):(actor+' interacted with you');
+    var body=kind==='reply'?(actor+' replied to your flap:'+ex):kind==='like'?(actor+' flapped your post 👍'):kind==='tag'?(actor+' tagged you in a flap:'+ex):kind==='grouptag'?(actor+' tagged all '+(excerpt||'members')+' in a flap 🏅'):kind==='reflap'?(actor+' reflapped your flap 🔁'):kind==='follow'?(actor+' followed you 👤'):(actor+' interacted with you');
     if(kind!=='reflap')sendPush(recipient,'TheFlap 🐦',body); /* reflaps: quiet — bell only, no phone push */
   }
   function notifText(n){
@@ -3715,6 +3765,7 @@
     if(n.kind==='reply')return who+' replied to your flap:'+ex;
     if(n.kind==='like') return who+' flapped your post 👍';
     if(n.kind==='tag')  return who+' tagged you in a flap:'+ex;
+    if(n.kind==='grouptag')return who+' tagged all <b>'+esc(n.excerpt||'members')+'</b> in a flap 🏅';
     if(n.kind==='reflap')return who+' reflapped your flap 🔁';
     if(n.kind==='friend')return who+' '+esc(n.excerpt||'sent you a friend request')+' 👯';
     if(n.kind==='follow')return who+' followed you 👤';
@@ -4498,6 +4549,7 @@
     if(!requireAuth())return;
     var ov=document.getElementById('pearOverlay');
     ov.classList.add('open');
+    try{ var gb=document.getElementById('grpTagBtn'); if(gb)gb.style.display=(ME&&ME.admin)?'inline-block':'none'; }catch(e){}
     fitComposer();
     setTimeout(function(){
       var ta=document.getElementById('composeText');
@@ -4545,6 +4597,62 @@
     ta.selectionStart=ta.selectionEnd=s+1;
     updateTagBar();
     toast('Type the name right after the @');
+  }
+
+  /* ===== admin-only badge-group tagging (@WeekendWarriors → notifies every holder) ===== */
+  /* a "group" = everyone holding a given custom badge. Handle = the badge name with spaces/punctuation stripped. */
+  function groupList(){
+    return (CUSTOM_BADGES||[]).map(function(b){
+      return {id:b.id, label:b.name, handle:String(b.name||'').replace(/[^\p{L}\p{N}]/gu,''), count:dropClaimCount(b.id)};
+    }).filter(function(g){return g.handle;}).sort(function(a,b){return b.handle.length-a.handle.length;});
+  }
+  function closeGrpMenu(){ var m=document.getElementById('grpMenu'),bk=document.getElementById('grpBack'); if(m)m.classList.remove('show'); if(bk)bk.classList.remove('show'); }
+  function pickGroupTag(){
+    if(!(ME&&ME.admin)) return;                 /* belt-and-suspenders: only the admin account can group-tag */
+    var groups=groupList();
+    var bk=document.getElementById('grpBack');
+    if(!bk){ bk=document.createElement('div'); bk.id='grpBack'; bk.onclick=closeGrpMenu; document.body.appendChild(bk); }
+    var m=document.getElementById('grpMenu');
+    if(!m){ m=document.createElement('div'); m.id='grpMenu'; m.className='grp-menu'; document.body.appendChild(m); }
+    m.innerHTML = groups.length
+      ? '<div class="grp-head">Tag a badge group — everyone with it gets a ping</div>'+groups.map(function(g){
+          return '<button type="button" class="grp-item" onclick="insertGroupTag(\''+String(g.id).replace(/[^A-Za-z0-9]/g,'')+'\')"><span>🏅 @'+esc(g.handle)+'</span><small>'+g.count+' member'+(g.count===1?'':'s')+'</small></button>';
+        }).join('')
+      : '<div class="grp-empty">No badges yet — create one in the admin HQ first.</div>';
+    bk.classList.add('show'); m.classList.add('show');
+  }
+  function insertGroupTag(idSafe){
+    var g=groupList().filter(function(x){return String(x.id).replace(/[^A-Za-z0-9]/g,'')===String(idSafe);})[0];
+    closeGrpMenu();
+    if(!g) return;
+    var ta=document.getElementById('composeText'); ta.focus();
+    var s=(typeof ta.selectionStart==='number')?ta.selectionStart:ta.value.length;
+    var e=(typeof ta.selectionEnd==='number')?ta.selectionEnd:s;
+    var ins='@'+g.handle+' ';
+    ta.value=ta.value.slice(0,s)+ins+ta.value.slice(e);
+    ta.selectionStart=ta.selectionEnd=s+ins.length;
+    updateTagBar();
+    toast('Everyone with the "'+g.label+'" badge will be notified 🏅');
+  }
+  /* turn any @GroupHandle the ADMIN typed/picked into a chip token, and report which groups were hit */
+  function transformGroupTags(text){
+    var groups=groupList(); if(!groups.length) return {body:text, hits:[]};
+    var WORD=/[\p{L}\p{N}\p{M}_]/u, out='', i=0, n=text.length, hits=[], seen={};
+    while(i<n){
+      var ch=text.charAt(i);
+      if(ch==='@'){
+        var rest=text.slice(i+1), matched=null;
+        for(var j=0;j<groups.length;j++){ var g=groups[j], hl=g.handle;
+          function fits(len){ var after=rest.charAt(len); return after===''||!WORD.test(after); }
+          if(rest.slice(0,hl.length).toLowerCase()===hl.toLowerCase() && fits(hl.length)){ matched={g:g,len:hl.length}; break; }
+          if(rest.slice(0,hl.length+1).toLowerCase()===(hl+'s').toLowerCase() && fits(hl.length+1)){ matched={g:g,len:hl.length+1}; break; }  /* accept a friendly plural */
+        }
+        if(matched){ var gg=matched.g; out+='⟦grp:'+gg.id+'|'+String(gg.label).replace(/[|⟧]/g,'')+'⟧'; i+=1+matched.len; if(!seen[gg.id]){seen[gg.id]=1; hits.push(gg);} continue; }
+        out+='@'; i++; continue;
+      }
+      out+=ch; i++;
+    }
+    return {body:out, hits:hits};
   }
 
   /* downscale + re-encode any camera photo to a small standard JPEG that uploads fast
@@ -4622,6 +4730,8 @@
     if(blockedByMute())return;                                  /* timed-out members can read but not post */
     if(text&&checkAutoMod(text)){ autoModBlock('flap',text); return; }   /* auto-mod: remove + alert lock, don't post */
     var mood=document.getElementById('moodSel').value;
+    var groupHits=[];
+    if(ME.admin && text){ var _gt=transformGroupTags(text); text=_gt.body; groupHits=_gt.hits; }   /* admin-only: badge-group tags become chips + pings */
     if(!ONLINE){
       localPosts.unshift({id:Date.now(),name:ME.name,avatar_url:ME.pic||null,mood:mood,body:text,pic_url:attachURL,likes:0,created_at:new Date().toISOString()});
       finishPost(ta);loadFeed();
@@ -4650,6 +4760,18 @@
         if(seen[n])return;seen[n]=1;
         if(USERS[n]&&n!==ME.name.toLowerCase())addNotif(USERS[n].name,ME.name,'tag',newId,text);
       });
+      /* admin badge-group tags: ping every holder of each tagged badge */
+      if(ME.admin && groupHits && groupHits.length){
+        var gseen={};
+        groupHits.forEach(function(g){
+          Object.keys(CUSTOM_GRANTS||{}).forEach(function(u){
+            if((CUSTOM_GRANTS[u]||[]).indexOf(g.id)<0)return;
+            var disp=(USERS[u]&&USERS[u].name)||u, lc=disp.toLowerCase();
+            if(lc===ME.name.toLowerCase()||gseen[lc])return; gseen[lc]=1;
+            addNotif(disp,ME.name,'grouptag',newId,g.label);
+          });
+        });
+      }
       posting=false;setFlapButtons(null,false);
       finishPost(ta);
       await loadFeed();
