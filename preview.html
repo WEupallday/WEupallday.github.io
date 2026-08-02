@@ -405,6 +405,16 @@
   .grp-menu .grp-item span{font-weight:bold;color:#5f2ea0;font-size:13px;}
   .grp-menu .grp-item small{color:#667;font-size:11px;}
   .grp-menu .grp-empty{color:#667;font-size:12px;padding:10px;text-align:center;}
+  /* "Get the app" nudge (Android web only) */
+  .getapp-back{position:fixed;inset:0;background:rgba(6,12,30,.62);z-index:200;display:none;align-items:center;justify-content:center;padding:18px;}
+  .getapp-back.open{display:flex;}
+  .getapp-card{background:#fff;border:4px solid var(--orange,#f5821f);border-radius:18px;max-width:340px;width:100%;padding:22px 20px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.55);}
+  .getapp-emoji{font-size:38px;line-height:1;margin-bottom:8px;}
+  .getapp-title{font-size:19px;font-weight:bold;color:var(--name-navy,var(--navy,#22398f));margin-bottom:8px;line-height:1.25;}
+  .getapp-sub{font-size:13px;color:#4a556b;margin-bottom:16px;line-height:1.45;}
+  .getapp-go{display:block;width:100%;background:linear-gradient(180deg,#2fa84f,#1c7a37);color:#fff;border:none;border-radius:11px;padding:13px;font-size:15px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.25);font-family:inherit;}
+  .getapp-go:active{transform:translateY(1px);}
+  .getapp-close{display:block;width:100%;background:none;border:none;color:#8892a6;font-size:13px;font-weight:bold;padding:11px 0 2px;margin-top:6px;cursor:pointer;font-family:inherit;}
   .pearfeel{display:flex;align-items:center;gap:6px;border-top:1px dotted #f0b0d0;padding-top:4px;}
   .pearfeel .fl{color:#ff2fa0;font-weight:bold;font-size:11px;letter-spacing:1px;}
   .pearfeel select{font-family:'Comic Sans MS','Chewy',cursive;font-size:13px;font-weight:bold;color:#1a6fd4;border:none;background:transparent;outline:none;cursor:pointer;}
@@ -3045,6 +3055,34 @@
     try{ if(window.Capacitor && typeof Capacitor.getPlatform==='function'){ return Capacitor.getPlatform()==='android'; } }catch(e){}
     return /Android/i.test((navigator&&navigator.userAgent)||'');
   }
+  /* ===== "Get the app" nudge — ONLY on an Android phone's WEB browser (never inside the app, never iPhone/desktop) ===== */
+  function isNativeApp(){ try{ return !!(window.Capacitor && typeof Capacitor.isNativePlatform==='function' && Capacitor.isNativePlatform()); }catch(e){ return false; } }
+  function isAndroidWeb(){ if(isNativeApp()) return false; return /Android/i.test((navigator&&navigator.userAgent)||''); }
+  var GETAPP_URL='https://play.google.com/store/apps/details?id=com.leoneatelier.theflap';
+  var GETAPP_SNOOZE_MS=14*24*3600*1000;   /* if they don't grab it, gently re-offer after 14 days */
+  function getAppSnoozed(){ try{ var t=parseInt(localStorage.getItem('flap_getapp_dismiss')||'0',10); return !!(t && (Date.now()-t)<GETAPP_SNOOZE_MS); }catch(e){ return false; } }
+  function getAppRemember(){ try{ localStorage.setItem('flap_getapp_dismiss',String(Date.now())); }catch(e){} }
+  function closeGetApp(){ getAppRemember(); var b=document.getElementById('getAppPop'); if(b)b.classList.remove('open'); }
+  function openGetAppStore(){ getAppRemember(); var b=document.getElementById('getAppPop'); if(b)b.classList.remove('open'); try{ window.open(GETAPP_URL,'_blank','noopener'); }catch(e){ try{location.href=GETAPP_URL;}catch(_){} } }
+  function maybeShowGetApp(){
+    if(!isAndroidWeb()) return;      /* Android web browsers only */
+    if(getAppSnoozed()) return;      /* dismissed recently — don't nag */
+    var b=document.getElementById('getAppPop');
+    if(!b){
+      b=document.createElement('div'); b.id='getAppPop'; b.className='getapp-back';
+      b.innerHTML='<div class="getapp-card">'
+        +'<div class="getapp-emoji">🎉🤖</div>'
+        +'<div class="getapp-title">TheFlap is officially on the Play Store!</div>'
+        +'<div class="getapp-sub">Grab the real Android app — smoother, with push notifications and the limited OG Android badge drop.</div>'
+        +'<button type="button" class="getapp-go" onclick="openGetAppStore()">Get it on Google Play</button>'
+        +'<button type="button" class="getapp-close" onclick="closeGetApp()">Not now</button>'
+        +'</div>';
+      b.addEventListener('click',function(e){ if(e.target===b) closeGetApp(); });
+      document.body.appendChild(b);
+    }
+    b.classList.add('open');
+  }
+  try{ window.addEventListener('load', function(){ setTimeout(maybeShowGetApp, 1500); }); }catch(e){}
   /* how long a sold-out / ended drop card lingers in the feed before it auto-hides (lets the FOMO land). Easily tweakable. */
   var DROP_GRACE_MS=3*3600*1000; /* 3 hours */
   function dropFeedVisible(d){
