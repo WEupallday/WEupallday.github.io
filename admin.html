@@ -51,6 +51,9 @@
   .badgecard .bc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
   .badgecard .gchip{background:#183a6e;border:1px solid #3f7ad0;border-radius:12px;padding:3px 8px;font-size:12px;color:#cfe2ff;display:inline-flex;align-items:center;gap:7px;}
   .badgecard .gchip span{cursor:pointer;color:#ff9db4;font-weight:bold;}
+  .status{display:inline-block;font-size:10px;font-weight:bold;padding:2px 8px;border-radius:9px;margin-left:6px;}
+  .st-active{background:#123d1a;color:#7dffa0;border:1px solid #1a8a1a;}
+  .st-ended{background:#3a1830;color:#ff9db4;border:1px solid #a3164e;}
   /* section container */
   .wrap{padding:16px;}
   .sec{background:#132747;border:1px solid #22406e;border-radius:14px;padding:16px;margin-bottom:16px;}
@@ -317,18 +320,35 @@
     h+='<input class="inp" id="nbName" placeholder="Badge name (e.g. Prom Court 2026)">';
     h+='<input class="inp" id="nbEmoji" placeholder="Emoji / icon (e.g. 👑)" maxlength="6">';
     h+='<input class="inp" id="nbDesc" placeholder="Description — how it&#39;s earned">';
-    h+='<button class="btn purple wfull" onclick="ADMIN.createBadge()">＋ Create badge</button>';
+    h+='<label style="display:flex;align-items:center;gap:8px;margin:10px 0 4px;font-size:13px;color:#bcd0ee;font-weight:bold;"><input type="checkbox" id="nbDrop" onchange="ADMIN.toggleDropFields()" style="width:auto;"> 🎁 Make it a claimable DROP (members claim it themselves)</label>';
+    h+='<div id="nbDropFields" style="display:none;">';
+    h+='<input class="inp" id="nbLimit" type="number" min="1" placeholder="Claim limit (e.g. 20) — blank = unlimited">';
+    h+='<input class="inp" id="nbHours" type="number" min="1" placeholder="Ends in N hours — blank = no time limit">';
+    h+='<div class="hint">A drop shows as a claim card in the feed + on profiles. When the limit or time is up, it closes.</div>';
+    h+='</div>';
+    h+='<button class="btn purple wfull" onclick="ADMIN.createBadge()">🚀 Create / launch badge</button>';
     h+='</div>';
     h+='<div class="sec"><h2>Your badges</h2>';
     if(!defs.length){ h+='<div class="empty">No custom badges yet. Create one above.</div>'; }
     else{
       defs.forEach(function(b){
         var members=Object.keys(grants).filter(function(m){return (grants[m]||[]).indexOf(b.id)>-1;});
+        var cnt=members.length;
+        var dropInfo='';
+        if(b.drop){
+          var expired=b.endsAt&&Date.now()>Date.parse(b.endsAt);
+          var full=b.limit&&cnt>=b.limit;
+          var st = expired?'<span class="status st-ended">ENDED</span>':full?'<span class="status st-ended">FULL</span>':'<span class="status st-active">ACTIVE</span>';
+          var cntTxt=b.limit?(cnt+' / '+b.limit+' claimed'):(cnt+' claimed');
+          var tl=b.endsAt?(' · '+(expired?'ended':'ends '+new Date(b.endsAt).toLocaleString())):'';
+          dropInfo='<div class="bc-desc" style="color:#ffd97a;">🎁 DROP '+st+' — '+cntTxt+tl+'</div>';
+        }
         h+='<div class="badgecard">';
-        h+='<div class="bc-h"><span class="bc-ic">'+esc(b.ic||'🏷')+'</span><b>'+esc(b.name)+'</b><button class="btn del bc-del" onclick="ADMIN.deleteBadge(\''+b.id+'\')">Delete</button></div>';
+        h+='<div class="bc-h"><span class="bc-ic">'+esc(b.ic||'🏷')+'</span><b>'+esc(b.name)+(b.drop?' 🎁':'')+'</b><button class="btn del bc-del" onclick="ADMIN.deleteBadge(\''+b.id+'\')">Delete</button></div>';
         h+='<div class="bc-desc">'+esc(b.desc||'')+'</div>';
-        h+='<div class="bc-grant"><input class="inp bc-inp" id="gr_'+b.id+'" placeholder="member name to grant"><button class="btn green" onclick="ADMIN.grantBadge(\''+b.id+'\')">Grant</button></div>';
-        h+='<div class="bc-chips">'+(members.length?members.map(function(m){var me=esc(m).replace(/'/g,'');return '<span class="gchip">'+esc(m)+'<span onclick="ADMIN.revokeBadge(\''+b.id+'\',\''+me+'\')">✕</span></span>';}).join(''):'<span class="muted">Not granted to anyone yet.</span>')+'</div>';
+        h+=dropInfo;
+        h+='<div class="bc-grant"><input class="inp bc-inp" id="gr_'+b.id+'" placeholder="member name to grant (manual)"><button class="btn green" onclick="ADMIN.grantBadge(\''+b.id+'\')">Grant</button></div>';
+        h+='<div class="bc-chips">'+(members.length?members.map(function(m){var me=esc(m).replace(/'/g,'');return '<span class="gchip">'+esc(m)+'<span onclick="ADMIN.revokeBadge(\''+b.id+'\',\''+me+'\')">✕</span></span>';}).join(''):'<span class="muted">'+(b.drop?'No claims yet.':'Not granted to anyone yet.')+'</span>')+'</div>';
         h+='</div>';
       });
     }
@@ -408,6 +428,7 @@
                     :'<button class="btn" onclick="ADMIN.mute(\''+nm+'\',1)">1h</button><button class="btn" onclick="ADMIN.mute(\''+nm+'\',24)">24h</button><button class="btn" onclick="ADMIN.mute(\''+nm+'\',168)">7d</button><button class="btn" onclick="ADMIN.muteCustom(\''+nm+'\')">Custom</button>';
         acts+= u.banned?'<button class="btn green" onclick="ADMIN.unban(\''+nm+'\')">Un-ban</button>'
                       :'<button class="btn red" onclick="ADMIN.ban(\''+nm+'\')">Ban</button>';
+        acts+='<button class="btn blue" onclick="ADMIN.resetPassword(\''+nm+'\')">🔑 Reset password</button>';
         acts+='<button class="btn del" onclick="ADMIN.removeUser(\''+nm+'\')">🗑 Remove</button>';
       }
       return '<div class="mem"><span class="ava">'+av+'</span>'+
@@ -497,7 +518,10 @@
     var d=DATA, h='<div class="sec"><h2>🎫 Support tickets ('+d.tickets.length+') <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
     h+= d.tickets.length? d.tickets.map(function(tk){
       var parts=String(tk.body||'').split(PSEP); var who=parts[0]||'?'; var msg=parts.slice(2).join(PSEP)||parts[1]||'';
-      return '<div class="row"><div class="r-top">🎫 from '+esc(who)+'</div><div class="r-body">'+esc(msg.slice(0,600))+'</div><div class="r-meta">'+new Date(tk.created_at).toLocaleString()+'</div><div class="acts"><button class="btn green" onclick="ADMIN.resolveTicket('+tk.id+')">Resolve &amp; remove</button></div></div>';
+      var whoSafe=esq(who);
+      return '<div class="row"><div class="r-top">🎫 from '+esc(who)+'</div><div class="r-body">'+esc(msg.slice(0,600))+'</div><div class="r-meta">'+new Date(tk.created_at).toLocaleString()+'</div>'+
+        '<input class="inp" id="tkr_'+tk.id+'" placeholder="Reply to '+esc(who)+' (they get an in-app notification)…" style="margin:8px 0 6px;">'+
+        '<div class="acts"><button class="btn blue" onclick="ADMIN.replyTicket('+tk.id+',\''+whoSafe+'\')">📨 Send reply</button><button class="btn green" onclick="ADMIN.resolveTicket('+tk.id+')">Resolve &amp; remove</button></div></div>';
     }).join(''):'<div class="empty">No open tickets. 🎉</div>';
     h+='<div class="subhead">⚑ Open reports</div>';
     h+= d.reports.length?'<div class="muted">'+d.reports.length+' open — see the <b>Moderation</b> tab to act on them.</div>':'<div class="empty">No open reports.</div>';
@@ -569,14 +593,39 @@
     },
     resetVotes:async function(){if(!confirm('Reset all votes on the current poll?'))return;try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){}toast('↺ Votes reset.');},
     saveVerified:async function(){await setSen('::verified::',($('cVerified').value||'').trim());toast('Verified list saved.');loadAll();},
+    toggleDropFields:function(){ var f=$('nbDropFields'); if(f)f.style.display=$('nbDrop').checked?'block':'none'; },
     createBadge:async function(){
       var name=($('nbName').value||'').trim(); if(!name){toast('Give the badge a name.');return;}
       var ic=($('nbEmoji').value||'').trim()||'🏷';
       var desc=($('nbDesc').value||'').trim()||'A special badge from the TheFlap team.';
-      var defs=(DATA.badgeDefs||[]).slice();
-      defs.push({id:'b'+Date.now(), ic:ic, name:name, desc:desc});
+      var def={id:'b'+Date.now(), ic:ic, name:name, desc:desc};
+      if($('nbDrop')&&$('nbDrop').checked){
+        def.drop=true;
+        var lim=parseInt($('nbLimit').value,10); if(lim>0)def.limit=lim;
+        var hrs=parseInt($('nbHours').value,10); if(hrs>0)def.endsAt=new Date(Date.now()+hrs*3600000).toISOString();
+      }
+      var defs=(DATA.badgeDefs||[]).slice(); defs.push(def);
       await setSen('::badgedefs::', JSON.stringify(defs));
-      toast('Badge created 🏅'); loadAll();
+      toast(def.drop?('🚀 Drop launched: '+name):('Badge created 🏅')); loadAll();
+    },
+    resetPassword:async function(name){
+      if(!confirm('Reset password for '+name+'? They\'ll need the temporary password below to log in.'))return;
+      var temp='flap'+Math.floor(1000+Math.random()*9000);   /* simple readable temp e.g. flap4827 */
+      try{
+        var hash=await sha256('flapsalt:'+name.toLowerCase()+':'+temp);
+        var up=await sb.from('flap_users').update({pass_hash:hash}).ilike('name',name);
+        if(up&&up.error)throw up.error;
+        try{ await sb.from('flap_notifs').insert({recipient:name, actor:'TheFlap', kind:'support', excerpt:'Your password was reset by an admin. Use the temporary password you were given, then you can keep using it.'}); }catch(e){}
+        window.prompt('✅ Temporary password for '+name+' — copy this and send it to them:', temp);
+        toast('Password reset for '+name+'.');
+      }catch(e){ toast('Could not reset password — try again.'); }
+    },
+    replyTicket:async function(id,who){
+      var el=$('tkr_'+id); var txt=((el&&el.value)||'').trim(); if(!txt){toast('Type a reply first.');return;}
+      try{ await sb.from('flap_notifs').insert({recipient:who, actor:'TheFlap', kind:'support', excerpt:txt.slice(0,200)}); }
+      catch(e){ toast('Could not send reply.'); return; }
+      try{ fetch(SUPABASE_URL+'/functions/v1/send-push',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_ANON_KEY,'apikey':SUPABASE_ANON_KEY},body:JSON.stringify({recipient:who,title:'TheFlap 🎫',body:'Support replied to your ticket'})}); }catch(e){}
+      if(el)el.value=''; toast('📨 Reply sent to '+who+' (in-app notification).');
     },
     deleteBadge:async function(id){
       if(!confirm('Delete this badge for everyone?'))return;

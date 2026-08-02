@@ -558,6 +558,23 @@
   .binfo-l{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--side-blue);font-weight:bold;margin-bottom:4px;}
   .binfo-b p{font-size:13px;line-height:1.5;color:#22324f;}
   .binfo-x{width:100%;margin-top:14px;padding:9px;border:none;border-radius:9px;background:var(--orange);color:#fff;font-weight:bold;font-size:13px;cursor:pointer;}
+  /* ===== badge drop cards (standard font) ===== */
+  .dropzone{margin:0 0 4px;}
+  .dropcard{border:2px solid var(--orange-dark);border-radius:12px;overflow:hidden;margin:0 0 12px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.3);}
+  .dropcard-top{background:linear-gradient(135deg,#7a1050,#e8125e 55%,#f5820a);color:#fff;padding:10px 12px;display:flex;align-items:center;gap:10px;}
+  .dropcard-ic{font-size:28px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));flex:none;}
+  .dropcard-kicker{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:bold;opacity:.95;}
+  .dropcard-name{font-size:16px;font-weight:bold;line-height:1.15;}
+  .dropcard-body{padding:9px 12px 12px;}
+  .dropcard-desc{font-size:12.5px;color:#33455f;line-height:1.4;margin-bottom:8px;}
+  .dropcard-meta{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:bold;margin-bottom:5px;}
+  .dc-count{color:#a3164e;}.dc-timer{color:#a35200;}
+  .dropbar{height:9px;background:#eef2fb;border:1.5px solid var(--card-border);border-radius:8px;overflow:hidden;}
+  .dropbar > i{display:block;height:100%;background:linear-gradient(90deg,#e8125e,#f5820a);}
+  .drop-btn{display:block;width:100%;margin-top:10px;font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:14px;padding:10px;border:2px solid var(--orange-dark);border-radius:10px;background:linear-gradient(#ffb44d,#f5820a);color:#fff;cursor:pointer;}
+  .drop-btn.claimed{background:linear-gradient(#8fdfc8,#46c795);border-color:#1a8a1a;cursor:default;}
+  .drop-btn.gone{background:#d7dbe6;border-color:#9aa3b8;color:#5a6480;cursor:not-allowed;}
+  .dropcard.isgone{filter:grayscale(.4);opacity:.9;}
   .bd-founder{background:#fff6d6;border-color:#e0a500;color:#8a6100;}
   .bd-verified{background:#e3f0ff;border-color:#2f7ac9;color:#12467a;}
   .bd-early{background:#e5ffe9;border-color:#1a8a1a;color:#116611;}
@@ -2985,6 +3002,67 @@
     try{ var g=await sb.from('flaps').select('body').eq('name','::badgegrants::').order('id',{ascending:false}).limit(1);
       CUSTOM_GRANTS={}; if(!g.error&&g.data&&g.data[0]&&g.data[0].body){ try{ CUSTOM_GRANTS=JSON.parse(g.data[0].body)||{}; }catch(e){} } }catch(e){}
   }
+  /* ===== badge drops (limited/claimable badges) ===== */
+  function dropClaimCount(id){ var n=0; Object.keys(CUSTOM_GRANTS||{}).forEach(function(u){ if((CUSTOM_GRANTS[u]||[]).indexOf(id)>-1)n++; }); return n; }
+  function myClaimed(id){ if(!ME.name)return false; return (CUSTOM_GRANTS[ME.name.toLowerCase()]||[]).indexOf(id)>-1; }
+  function dropExpired(d){ return !!(d.endsAt && Date.now()>Date.parse(d.endsAt)); }
+  function dropFull(d){ return !!(d.limit && dropClaimCount(d.id)>=d.limit); }
+  function dropTimeLeft(endsAt){
+    if(!endsAt) return '';
+    var s=Math.floor((Date.parse(endsAt)-Date.now())/1000);
+    if(s<=0) return 'Ended';
+    var d=Math.floor(s/86400), h=Math.floor((s%86400)/3600), m=Math.floor((s%3600)/60);
+    if(d>0) return '⏳ '+d+'d '+h+'h left';
+    if(h>0) return '⏳ '+h+'h '+m+'m left';
+    return '⏳ '+m+'m left';
+  }
+  function activeDropBadges(){ return (CUSTOM_BADGES||[]).filter(function(b){ return b && b.drop && !dropExpired(b); }); }
+  function dropCardsInner(){
+    var ds=activeDropBadges(); if(!ds.length) return '';
+    return ds.map(function(d){
+      var cnt=dropClaimCount(d.id), lim=d.limit||0, mine=myClaimed(d.id), full=dropFull(d);
+      var pct=lim?Math.min(100,Math.round(cnt/lim*100)):0;
+      var countTxt=lim?(cnt+' / '+lim+' claimed'):(cnt+' claimed');
+      var timer=d.endsAt?dropTimeLeft(d.endsAt):'';
+      var btn = mine?'<button class="drop-btn claimed" disabled>✓ Claimed — it’s yours</button>'
+        : full?'<button class="drop-btn gone" disabled>Sold out — all claimed</button>'
+        : '<button class="drop-btn" onclick="claimDrop(\''+String(d.id).replace(/[^a-z0-9]/gi,'')+'\')">Claim yours 🎁</button>';
+      return '<div class="dropcard'+((full&&!mine)?' isgone':'')+'">'+
+        '<div class="dropcard-top"><span class="dropcard-ic">'+esc(d.ic||'🏷')+'</span><div><div class="dropcard-kicker">🎁 Limited badge drop</div><div class="dropcard-name">'+esc(d.name)+'</div></div></div>'+
+        '<div class="dropcard-body">'+
+          (d.desc?'<div class="dropcard-desc">'+esc(d.desc)+'</div>':'')+
+          '<div class="dropcard-meta"><span class="dc-count">'+countTxt+'</span>'+(timer?'<span class="dc-timer">'+timer+'</span>':'')+'</div>'+
+          (lim?'<div class="dropbar"><i style="width:'+pct+'%"></i></div>':'')+
+          btn+
+        '</div></div>';
+    }).join('');
+  }
+  function dropCardsHTML(){ var inner=dropCardsInner(); return inner?('<div class="dropzone">'+inner+'</div>'):''; }
+  function renderDrops(){ document.querySelectorAll('.dropzone').forEach(function(z){ z.innerHTML=dropCardsInner(); }); }
+  async function claimDrop(id){
+    if(!ONLINE){ toast('Claiming needs the server.'); return; }
+    if(!ME.name){ try{requireAuth();}catch(e){} return; }
+    var d=(CUSTOM_BADGES||[]).filter(function(b){return String(b.id).replace(/[^a-z0-9]/gi,'')===String(id);})[0];
+    if(!d||!d.drop) return;
+    try{
+      var g=await sb.from('flaps').select('id,body').eq('name','::badgegrants::').order('id',{ascending:false}).limit(1);
+      var grants={}, rowId=null;
+      if(g.data&&g.data[0]){ rowId=g.data[0].id; try{ grants=JSON.parse(g.data[0].body)||{}; }catch(e){} }
+      CUSTOM_GRANTS=grants;
+      var lc=ME.name.toLowerCase();
+      if((grants[lc]||[]).indexOf(d.id)>-1){ renderDrops(); toast('You already have this badge! 🏅'); return; }
+      if(dropExpired(d)){ renderDrops(); toast('This drop has ended.'); return; }
+      if(d.startsAt && Date.now()<Date.parse(d.startsAt)){ toast('This drop hasn’t started yet.'); return; }
+      if(d.limit){ var count=0; Object.keys(grants).forEach(function(u){ if((grants[u]||[]).indexOf(d.id)>-1)count++; }); if(count>=d.limit){ renderDrops(); toast('Sold out — all '+d.limit+' claimed!'); return; } }
+      grants[lc]=grants[lc]||[]; grants[lc].push(d.id);
+      if(rowId) await sb.from('flaps').update({body:JSON.stringify(grants)}).eq('id',rowId);
+      else await sb.from('flaps').insert({name:'::badgegrants::',body:JSON.stringify(grants),mood:'flappy',likes:0});
+      CUSTOM_GRANTS=grants;
+      renderDrops();
+      toast('🎉 Claimed "'+d.name+'"! It’s on your profile now.');
+      try{ if(document.getElementById('profModal')&&document.getElementById('profModal').classList.contains('open')) showUserProfile(ME.name); }catch(e){}
+    }catch(e){ toast('Could not claim — try again.'); }
+  }
   function bannerClass(u){ var k=(u&&u.banner)||'cosmic'; if(!/^(cosmic|sunset|aqua|slime|graffiti|midnight)$/.test(k))k='cosmic'; return 'bn-'+k; }
   function computeStreak(posts){
     if(!posts||!posts.length) return 0;
@@ -3074,6 +3152,7 @@
       h+='<div class="pc-meta" style="margin-top:3px;color:#5a6a8a;font-weight:normal;">'+(u&&u.created_at?'Joined '+new Date(u.created_at).toLocaleDateString(undefined,{month:'short',year:'numeric'}):'')+'</div>';
       if(lc===(ME.name||'').toLowerCase()){
         h+='<div class="pc-actions"><button type="button" onclick="openSettings()">⚙ Edit profile</button></div>';
+        var _dz=dropCardsHTML(); if(_dz) h+='<div style="margin:6px 0 2px;">'+_dz+'</div>';   /* claim active drops from your own profile too */
       } else {
         var pn2=esc(name).replace(/'/g,'');
         h+='<div class="pc-actions">'+
@@ -3557,7 +3636,8 @@
     rows.forEach(function(r){ r.__pinned=(!FEED_FILTER && String(r.id)===String(PINNED_ID)); });
     /* official announcement renders ABOVE everything (including the pinned flap), but not while a filter is active */
     var annHTML=(!FEED_FILTER)?announceCardHTML():'';
-    box.innerHTML=head+annHTML+(rows.length
+    var dropsHTML=(!FEED_FILTER)?dropCardsHTML():'';   /* active badge drops render under the announcement */
+    box.innerHTML=head+annHTML+dropsHTML+(rows.length
       ? rows.map(liveCard).join('')
       : '<div class="card"><div class="card-body" style="text-align:center;font-size:11px;">'+
         (FEED_FILTER?'no flaps for @'+esc(FEED_FILTER)+' yet!':(FOLLOW_FILTER?'You\'re not following anyone who\'s flapped yet — tap 🔍 Search or a name to find people to follow! 👤':(ONLINE?'no flaps yet — be the first!':'demo mode — configure the backend (see setup file) and your friends\' flaps will appear here!')))+
@@ -3639,6 +3719,7 @@
     if(n.kind==='friend')return who+' '+esc(n.excerpt||'sent you a friend request')+' 👯';
     if(n.kind==='follow')return who+' followed you 👤';
     if(n.kind==='dm')    return who+' messaged you:'+ex;
+    if(n.kind==='support')return '<b>TheFlap Support</b> 🎫 replied to your ticket:'+ex;
     return who+' interacted with you';
   }
   function renderBell(){
@@ -3690,6 +3771,7 @@
     var p=document.getElementById('notifPanel'); if(p)p.classList.remove('open');
     try{toggleDrawer(false);}catch(e){}
     if(!n)return;
+    if(n.kind==='support'){ try{ openSupport&&openSupport(); }catch(e){} return; }   /* support reply: message text is in the notif; open Support if they want to follow up */
     if(n.kind==='follow' || n.kind==='friend'){ try{ showUserProfile(n.actor); }catch(e){} return; }
     if(n.kind==='dm'){ try{ openDM(n.actor); }catch(e){} return; }
     if(n.flap_id){ try{ openFlap(n.flap_id); }catch(e){ try{ location.hash='flap/'+n.flap_id; }catch(_){} } return; }
