@@ -54,6 +54,7 @@
   .status{display:inline-block;font-size:10px;font-weight:bold;padding:2px 8px;border-radius:9px;margin-left:6px;}
   .st-active{background:#123d1a;color:#7dffa0;border:1px solid #1a8a1a;}
   .st-ended{background:#3a1830;color:#ff9db4;border:1px solid #a3164e;}
+  .st-hidden{background:#26324a;color:#a9c2e8;border:1px solid #46608e;}
   /* section container */
   .wrap{padding:16px;}
   .sec{background:#132747;border:1px solid #22406e;border-radius:14px;padding:16px;margin-bottom:16px;}
@@ -355,19 +356,24 @@
       defs.forEach(function(b){
         var members=Object.keys(grants).filter(function(m){return (grants[m]||[]).indexOf(b.id)>-1;});
         var cnt=members.length;
-        var dropInfo='';
+        var dropInfo='', dropToggle='';
         if(b.drop){
           var expired=b.endsAt&&Date.now()>Date.parse(b.endsAt);
           var full=b.limit&&cnt>=b.limit;
-          var st = expired?'<span class="status st-ended">ENDED</span>':full?'<span class="status st-ended">FULL</span>':'<span class="status st-active">ACTIVE</span>';
+          var st = b.hidden?'<span class="status st-hidden">HIDDEN</span>':expired?'<span class="status st-ended">ENDED</span>':full?'<span class="status st-ended">FULL</span>':'<span class="status st-active">ACTIVE</span>';
           var cntTxt=b.limit?(cnt+' / '+b.limit+' claimed'):(cnt+' claimed');
           var tl=b.endsAt?(' · '+(expired?'ended':'ends '+new Date(b.endsAt).toLocaleString())):'';
           dropInfo='<div class="bc-desc" style="color:#ffd97a;">🎁 DROP '+st+' — '+cntTxt+tl+'</div>';
+          dropInfo+='<div class="bc-desc" style="color:#8fa8cf;font-size:11.5px;">'+(b.hidden?'Card is hidden from the feed. Claimed badges still show on profiles.':((full||expired)?'Auto-hides from the feed a few hours after selling out / ending. You can pull it now.':'Live in the feed. Auto-hides once it sells out or ends.'))+'</div>';
+          dropToggle=b.hidden
+            ? '<button class="btn green" onclick="ADMIN.toggleDropHidden(\''+b.id+'\')">👁 Show in feed</button>'
+            : '<button class="btn" style="background:linear-gradient(180deg,#5a6a86,#3c4a63)" onclick="ADMIN.toggleDropHidden(\''+b.id+'\')">🙈 Hide from feed</button>';
         }
         h+='<div class="badgecard">';
         h+='<div class="bc-h"><span class="bc-ic">'+esc(b.ic||'🏷')+'</span><b>'+esc(b.name)+(b.drop?' 🎁':'')+'</b><button class="btn del bc-del" onclick="ADMIN.deleteBadge(\''+b.id+'\')">Delete</button></div>';
         h+='<div class="bc-desc">'+esc(b.desc||'')+'</div>';
         h+=dropInfo;
+        if(dropToggle) h+='<div style="margin:8px 0 2px;">'+dropToggle+'</div>';
         h+='<div class="bc-grant"><input class="inp bc-inp" id="gr_'+b.id+'" placeholder="member name to grant (manual)"><button class="btn green" onclick="ADMIN.grantBadge(\''+b.id+'\')">Grant</button></div>';
         h+='<div class="bc-chips">'+(members.length?members.map(function(m){var me=esc(m).replace(/'/g,'');return '<span class="gchip">'+esc(m)+'<span onclick="ADMIN.revokeBadge(\''+b.id+'\',\''+me+'\')">✕</span></span>';}).join(''):'<span class="muted">'+(b.drop?'No claims yet.':'Not granted to anyone yet.')+'</span>')+'</div>';
         h+='</div>';
@@ -662,7 +668,22 @@
       var el=$('gr_'+id); var m=((el&&el.value)||'').trim().toLowerCase().replace(/^@/,''); if(!m){toast('Type a member name.');return;}
       var grants=DATA.badgeGrants||{}; grants[m]=grants[m]||[]; if(grants[m].indexOf(id)<0)grants[m].push(id);
       await setSen('::badgegrants::', JSON.stringify(grants));
+      /* if this grant fills a limited drop, stamp soldAt so the feed card can auto-hide after its grace window */
+      try{
+        var def=(DATA.badgeDefs||[]).filter(function(b){return b.id===id;})[0];
+        if(def&&def.drop&&def.limit&&!def.soldAt){
+          var c=Object.keys(grants).filter(function(u){return (grants[u]||[]).indexOf(id)>-1;}).length;
+          if(c>=def.limit){ var defs=(DATA.badgeDefs||[]).map(function(b){ if(b.id===id)b.soldAt=new Date().toISOString(); return b; }); await setSen('::badgedefs::', JSON.stringify(defs)); }
+        }
+      }catch(e){}
       toast('Granted to '+m+' ✅'); loadAll();
+    },
+    toggleDropHidden:async function(id){
+      var defs=(DATA.badgeDefs||[]).map(function(b){ if(b.id===id)b.hidden=!b.hidden; return b; });
+      await setSen('::badgedefs::', JSON.stringify(defs));
+      var now=defs.filter(function(b){return b.id===id;})[0];
+      await adminLog('(drop)', (now&&now.hidden?'Hid drop from feed: ':'Restored drop to feed: ')+((now&&now.name)||id));
+      toast(now&&now.hidden?'🙈 Drop hidden from the feed (badges kept).':'👁 Drop back in the feed.'); loadAll();
     },
     revokeBadge:async function(id,m){
       var grants=DATA.badgeGrants||{}; if(grants[m]){ grants[m]=grants[m].filter(function(x){return x!==id;}); if(!grants[m].length)delete grants[m]; }
