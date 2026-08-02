@@ -2987,6 +2987,11 @@
   var BANNER_THEMES=[['cosmic','Cosmic'],['sunset','Sunset'],['aqua','Aqua'],['slime','Slime'],['graffiti','Graffiti'],['midnight','Midnight']];
   var EARLY_CUTOFF=new Date('2026-07-22T00:00:00Z').getTime();  /* joined before this = Early Supporter (launch wave) */
   var PROFILE_MORE=null;
+  /* real-member count helpers: exclude house personas, the official/admin account, review + bot accounts */
+  var NON_MEMBER_ACCOUNTS=['moonchild','the plug','sunny','lowkey','dramaqueen','bestie','lock','theflap','flapbot'];
+  function isRealMember(name){ return NON_MEMBER_ACCOUNTS.indexOf(String(name||'').toLowerCase().trim())<0; }
+  function realMemberCount(list){ return (list||[]).filter(function(u){return isRealMember(u&&u.name);}).length; }
+  function fmtMembers(n){ try{ return Number(n||0).toLocaleString('en-US'); }catch(e){ return ''+(n||0); } }
   var CUSTOM_BADGES=[], CUSTOM_GRANTS={};
   var BADGE_INFO={
     verified:{ic:'blue',name:'Verified',desc:'A blue check granted by the TheFlap team to confirm a real, notable account. Admin-granted only — it can’t be earned automatically.'},
@@ -3255,8 +3260,8 @@
       us.forEach(function(u){if(u.last_seen&&now-new Date(u.last_seen).getTime()<2*60*1000)online++;});
       var h='<div class="pc-strip"><span>👑 Admin Panel</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">';
       h+='<div class="admin-stats">'+
-        '<div><b>'+us.length+'</b><span>Members</span></div>'+
-        '<div><b>'+online+'</b><span>Online Now</span></div>'+
+        '<div><b>'+fmtMembers(realMemberCount(us))+'</b><span>Members</span></div>'+
+        '<div><b>'+fmtMembers(online)+'</b><span>Online Now</span></div>'+
         '<div><b>'+fl.length+'</b><span>Flaps</span></div>'+
         '<div><b>'+(rc.count||0)+'</b><span>Replies</span></div></div>';
       h+='<div class="pc-flaps-h">🎫 Support Tickets ('+tickets.length+')</div>';
@@ -3311,7 +3316,7 @@
             '<button style="background:#ffe4e0;border-color:#c22a1a;color:#a3160b;" onclick="adminDeleteFlap('+r.id+')">Delete flap</button>'+
           '</div></div>';
       }).join(''):'<div style="font-size:11px;color:#777;margin-bottom:8px;">No flaps yet.</div>';
-      h+='<div class="pc-flaps-h">Members ('+us.length+') — click one to see their posts</div>';
+      h+='<div class="pc-flaps-h">Members ('+fmtMembers(realMemberCount(us))+') — click one to see their posts</div>';
       h+=us.map(function(u){
         var on=u.last_seen&&now-new Date(u.last_seen).getTime()<2*60*1000;
         var av=u.avatar_url?'<img src="'+esc(u.avatar_url)+'">':userPortrait(u.name);

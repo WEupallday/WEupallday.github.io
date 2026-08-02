@@ -288,12 +288,17 @@
     }
   }
 
+  /* ---------- member count (excludes house personas, the official/admin account, review + bot accounts) ---------- */
+  var NON_MEMBER_ACCOUNTS=['moonchild','the plug','sunny','lowkey','dramaqueen','bestie','lock','theflap','flapbot'];
+  function isRealMember(name){ return NON_MEMBER_ACCOUNTS.indexOf(String(name||'').toLowerCase().trim())<0; }
+  function realMemberCount(list){ return (list||[]).filter(function(u){return isRealMember(u&&u.name);}).length; }
+  function fmtN(n){ return (typeof n==='number')?n.toLocaleString('en-US'):n; }
   /* ---------- stats ---------- */
   function stats(){
     var d=DATA, now=d.now, dayAgo=now-864e5, weekAgo=now-7*864e5;
     var real=d.flAll.filter(function(r){return !isSentinel(r.name);});
     return {
-      members:d.us.length,
+      members:realMemberCount(d.us),
       online:d.us.filter(function(u){return u.last_seen&&now-T(u.last_seen)<12e4;}).length,
       joinsToday:d.us.filter(function(u){return T(u.created_at)>dayAgo;}).length,
       joinsWeek:d.us.filter(function(u){return T(u.created_at)>weekAgo;}).length,
@@ -313,7 +318,7 @@
       strip(s.flapsToday,'flaps today')+strip(s.repliesToday,'replies today')+
       strip(s.deleted,'deleted','danger')+strip(s.openIssues,'open issues',s.openIssues?'danger':'');
   }
-  function strip(n,label,cls){return '<span class="s'+(cls?' '+cls:'')+'"><b>'+n+'</b> '+label+'</span>';}
+  function strip(n,label,cls){return '<span class="s'+(cls?' '+cls:'')+'"><b>'+fmtN(n)+'</b> '+label+'</span>';}
 
   /* ---------- tab nav ---------- */
   var TABS=[['controls','⚙️ Controls'],['members','👥 Members'],['badges','🏅 Badges'],['moderation','🛡️ Moderation'],['messages','💬 Messages'],['support','🎫 Support'],['stats','📊 Stats']];
@@ -438,7 +443,7 @@
     var d=DATA, counts={};
     d.flAll.forEach(function(f){ if(!isSentinel(f.name)) counts[f.name]=(counts[f.name]||0)+1; });
     var verList=(d.verCur||'').split(/[,\s]+/).filter(Boolean).map(function(x){return x.toLowerCase();});
-    var h='<div class="sec"><h2>👥 Member management ('+d.us.length+') <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
+    var h='<div class="sec"><h2>👥 Member management ('+fmtN(realMemberCount(d.us))+' members · '+fmtN(d.us.length)+' accounts) <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
     h+='<div class="hint">Verify, time out, ban, or remove members. Removing deletes their flaps &amp; replies too.</div>';
     h+= d.us.map(function(u){
       var lc=(u.name||'').toLowerCase();
@@ -567,7 +572,7 @@
       card(s.deleted,'deleted accounts','danger')+card(s.banned,'banned','danger')+card(s.muted,'timed out','')+card(s.openIssues,'open issues','')+
     '</div></div>';
   }
-  function card(n,label,cls){return '<div class="stat'+(cls?' '+cls:'')+'"><b>'+n+'</b><span>'+label+'</span></div>';}
+  function card(n,label,cls){return '<div class="stat'+(cls?' '+cls:'')+'"><b>'+fmtN(n)+'</b><span>'+label+'</span></div>';}
 
   /* ---------- actions ---------- */
   var ADMIN={
