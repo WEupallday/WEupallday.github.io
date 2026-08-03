@@ -203,7 +203,9 @@
   /* ---------- helpers ---------- */
   function $(id){return document.getElementById(id);}
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-  function esq(s){return String(s==null?'':s).replace(/'/g,'');}
+  /* escape a value so it is SAFE and PRESERVED inside onclick="fn('...')" (JS single-quoted string in an HTML double-quoted attr).
+     NOTE: the old version stripped apostrophes, which corrupted names like "O'Brien" and broke admin actions (incl. password reset). */
+  function esq(s){return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/[\r\n]/g,'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show');},2600);}
   function openModal(html){var b=$('mdlBack');$('mdlBox').innerHTML=html;b.classList.add('show');}
   function closeModal(){$('mdlBack').classList.remove('show');$('mdlBox').innerHTML='';}
@@ -445,6 +447,8 @@
     var verList=(d.verCur||'').split(/[,\s]+/).filter(Boolean).map(function(x){return x.toLowerCase();});
     var h='<div class="sec"><h2>👥 Member management ('+fmtN(realMemberCount(d.us))+' members · '+fmtN(d.us.length)+' accounts) <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
     h+='<div class="hint">Verify, time out, ban, or remove members. Removing deletes their flaps &amp; replies too.</div>';
+    h+='<input class="inp" id="memSearch" placeholder="🔎 Search members by name or @handle…" oninput="ADMIN.filterMembers()" autocomplete="off" autocapitalize="off" spellcheck="false" style="margin-bottom:8px;">';
+    h+='<div id="memList">';
     h+= d.us.map(function(u){
       var lc=(u.name||'').toLowerCase();
       var on=u.last_seen&&d.now-T(u.last_seen)<12e4;
@@ -465,10 +469,12 @@
         acts+='<button class="btn" style="background:linear-gradient(180deg,#b06a2a,#7d4413)" onclick="ADMIN.resetAccount(\''+nm+'\')">♻ Reset account</button>';
         acts+='<button class="btn del" onclick="ADMIN.removeUser(\''+nm+'\')">🗑 Remove</button>';
       }
-      return '<div class="mem"><span class="ava">'+av+'</span>'+
+      return '<div class="mem" data-search="'+esc(((u.name||'')+' '+(u.handle||'')).toLowerCase())+'"><span class="ava">'+av+'</span>'+
         '<div class="m-name"><b>'+esc(u.name)+'</b>'+pills+'<div class="m-sub">'+sub+'</div></div>'+
         '<div class="acts" style="margin-top:0;">'+acts+'</div></div>';
     }).join('');
+    h+='</div>';   /* /memList */
+    h+='<div id="memNone" class="empty" style="display:none;">No members match your search.</div>';
     h+='</div>';
     return h;
   }
@@ -642,15 +648,26 @@
       await setSen('::badgedefs::', JSON.stringify(defs));
       toast(def.drop?('🚀 Drop launched: '+name):('Badge created 🏅')); loadAll();
     },
+    filterMembers:function(){
+      var q=(($('memSearch')&&$('memSearch').value)||'').trim().toLowerCase();
+      var list=$('memList'); if(!list)return;
+      var rows=list.querySelectorAll('.mem'); var shown=0;
+      for(var i=0;i<rows.length;i++){ var hay=rows[i].getAttribute('data-search')||''; var vis=!q||hay.indexOf(q)>-1; rows[i].style.display=vis?'':'none'; if(vis)shown++; }
+      var none=$('memNone'); if(none)none.style.display=(q&&shown===0)?'block':'none';
+    },
     resetPassword:async function(name){
       if(!confirm('Reset password for '+name+'? They\'ll need the temporary password below to log in.'))return;
       var temp='flap'+Math.floor(1000+Math.random()*9000);   /* simple readable temp e.g. flap4827 */
       try{
+        /* salt with the EXACT stored name (matches the app's login hash) and target the EXACT row.
+           name now arrives intact (esq no longer strips apostrophes), so eq() matches the real account. */
         var hash=await sha256('flapsalt:'+name.toLowerCase()+':'+temp);
-        var up=await sb.from('flap_users').update({pass_hash:hash}).ilike('name',name);
+        var up=await sb.from('flap_users').update({pass_hash:hash}).eq('name',name).select('name');
         if(up&&up.error)throw up.error;
-        try{ await sb.from('flap_notifs').insert({recipient:name, actor:'TheFlap', kind:'support', excerpt:'Your password was reset by an admin. Use the temporary password you were given, then you can keep using it.'}); }catch(e){}
-        window.prompt('✅ Temporary password for '+name+' — copy this and send it to them:', temp);
+        if(!up||!up.data||!up.data.length){ toast('Reset FAILED — no member exactly named "'+name+'". Password unchanged.'); return; }
+        try{ await sb.from('flap_notifs').insert({recipient:name, actor:'TheFlap', kind:'support', excerpt:'Your password was reset by an admin. Use the temporary password you were given (type it with no spaces), then you can keep using it.'}); }catch(e){}
+        try{ adminLog(name,'Password reset (admin) — temporary password issued'); }catch(e){}
+        window.prompt('✅ Temporary password for '+name+' — copy this and send it to them (no spaces):', temp);
         toast('Password reset for '+name+'.');
       }catch(e){ toast('Could not reset password — try again.'); }
     },
