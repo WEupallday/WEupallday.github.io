@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TheFlap · Security Features Preview</title>
+<style>
+  :root{--orange:#f5821f;--orange-dark:#c65f0a;--navy:#22398f;--card:#ffffff;--ink:#22314f;}
+  *{box-sizing:border-box;font-family:Verdana,Arial,sans-serif;}
+  body{margin:0;background:#0d1a4a;color:var(--ink);padding:0 0 60px;}
+  .top{background:linear-gradient(180deg,var(--orange),var(--orange-dark));color:#fff;padding:16px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.4);}
+  .top h1{margin:0;font-size:20px;}
+  .top p{margin:6px 0 0;font-size:12px;opacity:.95;}
+  .banner{max-width:820px;margin:14px auto 0;background:#12235a;border:1px solid #2f4a9c;border-radius:10px;color:#cfe0ff;font-size:12.5px;padding:10px 14px;line-height:1.5;}
+  .tabs{max-width:820px;margin:14px auto 0;display:flex;flex-wrap:wrap;gap:6px;padding:0 10px;}
+  .tab{flex:1;min-width:150px;background:#12235a;color:#bcd0ee;border:1px solid #2f4a9c;border-radius:9px 9px 0 0;padding:11px 8px;font-weight:bold;font-size:13px;cursor:pointer;text-align:center;}
+  .tab.on{background:var(--card);color:var(--navy);border-bottom-color:var(--card);}
+  .panel{max-width:820px;margin:0 auto;background:var(--card);border-radius:0 0 14px 14px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.5);}
+  .card{border:2px solid #e2e8f5;border-radius:12px;padding:16px;margin:0 0 16px;background:#fbfcff;}
+  .card h3{margin:0 0 4px;color:var(--navy);font-size:16px;}
+  .card .desc{font-size:12.5px;color:#5a6a86;margin-bottom:12px;line-height:1.5;}
+  label{display:block;font-size:12px;font-weight:bold;color:var(--navy);margin:10px 0 4px;}
+  input{width:100%;padding:11px;border:2px solid #cfd8ea;border-radius:9px;font-size:14px;}
+  input:focus{outline:none;border-color:var(--orange);}
+  .btn{display:inline-block;margin-top:12px;background:linear-gradient(180deg,var(--orange),var(--orange-dark));color:#fff;border:none;border-radius:10px;padding:12px 18px;font-size:14px;font-weight:bold;cursor:pointer;}
+  .btn.sec{background:linear-gradient(180deg,#5a6a86,#3c4a63);}
+  .btn:active{transform:translateY(1px);}
+  .hint{font-size:11.5px;color:#8a97b5;margin-top:6px;}
+  .ok{color:#1c7a37;font-weight:bold;font-size:13px;margin-top:10px;}
+  .err{color:#c0362a;font-weight:bold;font-size:13px;margin-top:10px;}
+  .code-note{background:#fff6e9;border:1px dashed var(--orange);border-radius:8px;padding:8px 10px;font-size:12px;color:#8a5a10;margin-top:10px;}
+  .step{display:none;} .step.on{display:block;}
+  .pill{display:inline-block;font-size:10px;font-weight:bold;padding:2px 8px;border-radius:9px;margin-left:6px;}
+  .pill.linked{background:#123d1a;color:#7dffa0;} .pill.none{background:#3a1830;color:#ff9db4;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid #e8edf7;}
+  th{color:var(--navy);font-size:11px;text-transform:uppercase;letter-spacing:.3px;}
+  .method{display:inline-block;font-size:10.5px;font-weight:bold;padding:2px 8px;border-radius:9px;}
+  .m-self{background:#eaf4fc;color:#1a6fd4;} .m-reset{background:#eafaf0;color:#1c7a37;} .m-admin{background:#fff3e0;color:#b8690b;}
+  .foot{max-width:820px;margin:16px auto 0;color:#9fb0d6;font-size:11.5px;text-align:center;line-height:1.6;padding:0 12px;}
+</style>
+</head>
+<body>
+  <div class="top">
+    <h1>🔐 TheFlap · Security Features</h1>
+    <p>PREVIEW / MOCKUP for approval — nothing here is live. Interactive so you can feel the flows.</p>
+  </div>
+  <div class="banner">
+    This prototype demonstrates three things: <b>(1)</b> logged-in password change, <b>(2)</b> forgot-password reset via an emailed code (with admin-assisted fallback), and <b>(3)</b> linking an email to your account for recovery — plus <b>(4)</b> the admin security log. Verification "emails" are simulated: the code is shown in an orange box so you can complete the flow here.
+  </div>
+
+  <div class="tabs">
+    <div class="tab on" data-t="change">🔑 Change password</div>
+    <div class="tab" data-t="forgot">❓ Forgot password</div>
+    <div class="tab" data-t="email">✉️ Link email</div>
+    <div class="tab" data-t="log">🛡️ Admin security log</div>
+  </div>
+  <div class="panel">
+
+    <!-- 1. CHANGE PASSWORD (logged in) -->
+    <div id="p-change" class="tp">
+      <div class="card">
+        <h3>Change your password</h3>
+        <div class="desc">Shown in <b>Settings</b> when a member is logged in. Confirms the current password before allowing a change.</div>
+        <label>Current password</label>
+        <input id="cp_cur" type="password" placeholder="your current password">
+        <label>New password</label>
+        <input id="cp_new" type="password" placeholder="at least 4 characters">
+        <label>Confirm new password</label>
+        <input id="cp_conf" type="password" placeholder="type it again">
+        <button class="btn" onclick="doChange()">Update password</button>
+        <div id="cp_msg"></div>
+        <div class="hint">Demo: the "current password" that works here is <b>flap1234</b>.</div>
+      </div>
+    </div>
+
+    <!-- 2. FORGOT PASSWORD -->
+    <div id="p-forgot" class="tp" style="display:none">
+      <div class="card">
+        <h3>Forgot your password?</h3>
+        <div class="desc">Shown on the login screen. If the account has a linked email, we send a reset code. If not, it points them to admin.</div>
+        <div id="fg1" class="step on">
+          <label>Your name or @handle</label>
+          <input id="fg_name" placeholder="e.g. Sha'davia">
+          <button class="btn" onclick="fgStart()">Send reset code</button>
+          <div id="fg_msg1"></div>
+          <div class="hint">Demo: try <b>Sha'davia</b> (has email linked) or <b>nolink</b> (no email → admin fallback).</div>
+        </div>
+        <div id="fg2" class="step">
+          <div class="code-note">📧 (Simulated) We emailed a 6-digit code to s•••@gmail.com. Your code is: <b id="fg_code"></b></div>
+          <label>Enter the 6-digit code</label>
+          <input id="fg_codein" inputmode="numeric" placeholder="000000" maxlength="6">
+          <label>New password</label>
+          <input id="fg_new" type="password" placeholder="at least 4 characters">
+          <button class="btn" onclick="fgFinish()">Reset password</button>
+          <div id="fg_msg2"></div>
+        </div>
+        <div id="fg3" class="step">
+          <div class="err">No email is linked to this account.</div>
+          <div class="desc" style="margin-top:8px">Ask an admin to reset it for you (they'll send a temporary password), or link an email now so you can self-recover next time.</div>
+          <button class="btn sec" onclick="show('email')">Link an email instead</button>
+        </div>
+        <div id="fg4" class="step">
+          <div class="ok">✅ Password reset! You can log in with your new password.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. LINK EMAIL -->
+    <div id="p-email" class="tp" style="display:none">
+      <div class="card">
+        <h3>Link an email <span id="em_pill" class="pill none">not linked</span></h3>
+        <div class="desc">Shown in <b>Settings</b>. Connect an email so you can recover your password yourself. We verify it with a code before linking.</div>
+        <div id="em1" class="step on">
+          <label>Email address</label>
+          <input id="em_addr" type="email" placeholder="you@example.com">
+          <button class="btn" onclick="emSend()">Send verification code</button>
+          <div id="em_msg1"></div>
+        </div>
+        <div id="em2" class="step">
+          <div class="code-note">📧 (Simulated) Code sent to <span id="em_to"></span>. Your code is: <b id="em_code"></b></div>
+          <label>Enter the 6-digit code</label>
+          <input id="em_codein" inputmode="numeric" placeholder="000000" maxlength="6">
+          <button class="btn" onclick="emVerify()">Verify &amp; link</button>
+          <button class="btn sec" onclick="emReset()">Use a different email</button>
+          <div id="em_msg2"></div>
+        </div>
+        <div id="em3" class="step">
+          <div class="ok">✅ Email linked! You can now reset your own password if you get locked out.</div>
+          <button class="btn sec" onclick="emReset()">Change linked email</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. ADMIN SECURITY LOG -->
+    <div id="p-log" class="tp" style="display:none">
+      <div class="card">
+        <h3>Security log (admin only)</h3>
+        <div class="desc">A new section in the Admin HQ showing every password-change / reset event: who, when, and the method. Any action you complete in the other tabs is added here live.</div>
+        <table id="logTable">
+          <thead><tr><th>Member</th><th>When</th><th>Method</th><th>Detail</th></tr></thead>
+          <tbody id="logBody"></tbody>
+        </table>
+        <div class="hint" style="margin-top:10px">Methods: <span class="method m-self">self-change</span> (member changed their own) · <span class="method m-reset">self-reset</span> (via emailed code) · <span class="method m-admin">admin reset</span> (staff issued a temp).</div>
+      </div>
+    </div>
+
+  </div>
+  <div class="foot">
+    This is a non-functional preview for sign-off. On approval I'll wire the real flows into the app + admin: password change &amp; email-code recovery in Settings/login (emails sent via the existing Gmail/Resend sender), and the security log into Admin HQ (backed by an events table). Reply with any changes to copy, fields, or flow.
+  </div>
+
+<script>
+(function(){
+  var LOG=[
+    {who:'Andre’s Grandma', when:'Today, 9:02 AM', method:'admin', detail:'Temp password issued by admin'},
+    {who:'kennfused', when:'Today, 8:40 AM', method:'admin', detail:'Temp password re-issued'},
+    {who:'Brae’ly', when:'Yesterday, 6:15 PM', method:'self', detail:'Changed own password in Settings'},
+    {who:'Zaylen', when:'Yesterday, 5:50 PM', method:'reset', detail:'Reset via emailed code'}
+  ];
+  var emailLinked=false, emailAddr='';
+  function $(id){return document.getElementById(id);}
+  window.show=function(t){ document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on',x.getAttribute('data-t')===t);});
+    ['change','forgot','email','log'].forEach(function(k){ $('p-'+k).style.display=(k===t)?'':'none'; });
+    if(t==='log') renderLog();
+  };
+  document.querySelectorAll('.tab').forEach(function(x){ x.onclick=function(){ show(x.getAttribute('data-t')); }; });
+  function stamp(){ return 'Just now'; }
+  function addLog(who,method,detail){ LOG.unshift({who:who,when:stamp(),method:method,detail:detail}); }
+  function renderLog(){
+    var map={self:['self-change','m-self'],reset:['self-reset','m-reset'],admin:['admin reset','m-admin']};
+    $('logBody').innerHTML=LOG.map(function(e){var m=map[e.method]||['?','']; return '<tr><td><b>'+esc(e.who)+'</b></td><td>'+esc(e.when)+'</td><td><span class="method '+m[1]+'">'+m[0]+'</span></td><td>'+esc(e.detail)+'</td></tr>';}).join('');
+  }
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function rand6(){return String(Math.floor(100000+Math.random()*900000));}
+
+  // 1. change password
+  window.doChange=function(){
+    var cur=$('cp_cur').value, nw=$('cp_new').value, cf=$('cp_conf').value, msg=$('cp_msg');
+    if(cur!=='flap1234'){ msg.className='err'; msg.textContent='Current password is incorrect.'; return; }
+    if((nw||'').length<4){ msg.className='err'; msg.textContent='New password needs at least 4 characters.'; return; }
+    if(nw!==cf){ msg.className='err'; msg.textContent='New passwords don’t match.'; return; }
+    if(nw===cur){ msg.className='err'; msg.textContent='New password must be different from the current one.'; return; }
+    msg.className='ok'; msg.textContent='✅ Password updated. (In the real app this re-hashes and saves.)';
+    addLog('you (demo)','self','Changed own password in Settings');
+    $('cp_cur').value=$('cp_new').value=$('cp_conf').value='';
+  };
+
+  // 2. forgot password
+  var fgCode='';
+  window.fgStart=function(){
+    var name=($('fg_name').value||'').trim(), m=$('fg_msg1');
+    if(!name){ m.className='err'; m.textContent='Enter your name first.'; return; }
+    m.textContent='';
+    if(name.toLowerCase()==='nolink'){ step('fg',3); return; }
+    fgCode=rand6(); $('fg_code').textContent=fgCode; step('fg',2);
+  };
+  window.fgFinish=function(){
+    var c=($('fg_codein').value||'').trim(), nw=$('fg_new').value, m=$('fg_msg2');
+    if(c!==fgCode){ m.className='err'; m.textContent='That code doesn’t match. Check the code above.'; return; }
+    if((nw||'').length<4){ m.className='err'; m.textContent='New password needs at least 4 characters.'; return; }
+    m.textContent=''; addLog(($('fg_name').value||'member'),'reset','Reset via emailed code'); step('fg',4);
+  };
+  function step(pre,n){ [1,2,3,4].forEach(function(i){ var el=$(pre+i); if(el)el.classList.toggle('on',i===n); }); }
+
+  // 3. link email
+  var emCode='';
+  window.emSend=function(){
+    var a=($('em_addr').value||'').trim(), m=$('em_msg1');
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(a)){ m.className='err'; m.textContent='Enter a valid email address.'; return; }
+    m.textContent=''; emailAddr=a; emCode=rand6(); $('em_code').textContent=emCode; $('em_to').textContent=a; estep(2);
+  };
+  window.emVerify=function(){
+    var c=($('em_codein').value||'').trim(), m=$('em_msg2');
+    if(c!==emCode){ m.className='err'; m.textContent='Code doesn’t match — try again.'; return; }
+    m.textContent=''; emailLinked=true; $('em_pill').className='pill linked'; $('em_pill').textContent='linked: '+emailAddr; estep(3);
+  };
+  window.emReset=function(){ $('em_addr').value=''; $('em_codein').value=''; estep(1); };
+  function estep(n){ [1,2,3].forEach(function(i){ $('em'+i).classList.toggle('on',i===n); }); }
+
+  renderLog();
+})();
+</script>
+</body>
+</html>
