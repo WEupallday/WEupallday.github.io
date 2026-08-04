@@ -3984,8 +3984,12 @@
   }
   /* the device token can arrive BEFORE the user logs in — re-save it once we know who they are */
   function flushPushToken(){ try{ if(window.__pushToken && ME.name) savePushToken(window.__pushToken, window.__pushPlat||'ios'); }catch(e){} }
+  function flapNativePush(){   /* iOS native bridge: hand the logged-in name to Swift so it can save the FCM token */
+    try{ if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.flapPush&&ME&&ME.name){ window.webkit.messageHandlers.flapPush.postMessage(ME.name); } }catch(e){}
+  }
   async function subscribePush(){
     try{ flushPushToken(); }catch(e){}   /* native token (if any) */
+    try{ flapNativePush(); }catch(e){}   /* iOS native FCM token path */
     if(!ONLINE||!ME.name||!swReg||!('PushManager' in window))return;
     if(!('Notification' in window)||Notification.permission!=='granted')return;
     try{
