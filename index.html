@@ -4325,10 +4325,12 @@
       var r=await sb.from('flaps').select('body').eq('name','::poll::').order('id',{ascending:false}).limit(1);
       if(!r.error && r.data && r.data[0] && r.data[0].body){
         var p=String(r.data[0].body).split('␟');
-        if(p.length>=4 && p[0] && p[1] && p[2] && p[3]) POLL={q:p[0],opts:[p[1],p[2],p[3]]};
-        var sm=(p.length>=6)?parseInt(p[5],10):NaN;
-        POLL_START_MS=(!isNaN(sm)&&sm>0)?sm:startOfTodayMs();   /* legacy/admin polls with no stamp → treat as starting today, so the first auto-rotation lands at the NEXT midnight */
-        var ci=(p.length>=7)?parseInt(p[6],10):NaN;
+        var _mi=-1; for(var _k=1;_k<p.length;_k++){ if(p[_k]==='AUTO'||p[_k]==='MANUAL'){ _mi=_k; break; } }   /* options run from p[1] up to the AUTO/MANUAL marker → supports any option count */
+        var _opts=(_mi>1?p.slice(1,_mi):p.slice(1,4)).filter(function(x){return x&&x.length;});
+        if(p[0] && _opts.length>=2) POLL={q:p[0],opts:_opts};
+        var sm=(_mi>=0)?parseInt(p[_mi+1],10):NaN;
+        POLL_START_MS=(!isNaN(sm)&&sm>0)?sm:startOfTodayMs();   /* legacy/admin polls with no stamp → treat as starting today */
+        var ci=(_mi>=0)?parseInt(p[_mi+2],10):NaN;
         POLL_CUR_INDEX=(!isNaN(ci))?ci:-1;
       }else{
         POLL_START_MS=startOfTodayMs(); POLL_CUR_INDEX=-1;
@@ -4384,25 +4386,28 @@
     try{
       var res=await sb.from('flap_poll').select('*');
       if(res.error)throw res.error;
-      pollVotes=[0,0,0];myVote=null;
+      pollVotes=(POLL.opts||[]).map(function(){return 0;}); if(!pollVotes.length)pollVotes=[0,0,0]; myVote=null;
       res.data.forEach(function(v){
-        if(v.choice>=0&&v.choice<3)pollVotes[v.choice]++;
-        if(ME.name&&v.name===ME.name&&v.choice>=0&&v.choice<3)myVote=v.choice;
+        if(v.choice>=0&&v.choice<pollVotes.length)pollVotes[v.choice]++;
+        if(ME.name&&v.name===ME.name&&v.choice>=0&&v.choice<pollVotes.length)myVote=v.choice;
       });
       renderPoll();
     }catch(e){renderPoll();}
   }
   function renderPoll(){
     var box=document.getElementById('pollBox');if(!box)return;
-    var total=pollVotes[0]+pollVotes[1]+pollVotes[2];
+    var total=0; for(var _pv=0;_pv<pollVotes.length;_pv++)total+=(pollVotes[_pv]||0);
     var voted=myVote!==null;
     var h='<div class="poll-q">'+esc(POLL.q)+'</div>';
     h+='<div class="'+(voted?'voted':'')+'" id="pollOpts">';
     POLL.opts.forEach(function(o,i){
       var pct=total?Math.round(pollVotes[i]/total*100):0;
+      var _sk=(o||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+      var _clip=(window.SOUND_CLIPS||{})[_sk];
       h+='<button class="poll-opt" '+(voted?'':'onclick="votePoll('+i+')"')+'>'+
          (voted?'<span class="fill" style="width:'+pct+'%"></span>':'')+
          '<span class="lbl">'+esc(o)+'</span>'+
+         (_clip?'<span class="poll-play" onclick="event.stopPropagation();window.playPollSound(\''+_sk+'\',this)" style="margin-left:8px;background:#2a7d52;color:#fff;border-radius:8px;padding:2px 9px;font-size:12px;position:relative;z-index:3;cursor:pointer;flex:none;">▶</span>':'')+
          (voted?'<span class="pct">'+pct+'%'+(myVote===i?' ✓':'')+'</span>':'')+
          '</button>';
     });
