@@ -3055,6 +3055,10 @@
     try{ if(window.Capacitor && typeof Capacitor.getPlatform==='function'){ return Capacitor.getPlatform()==='android'; } }catch(e){}
     return /Android/i.test((navigator&&navigator.userAgent)||'');
   }
+  function isIOS(){
+    try{ if(window.Capacitor && typeof Capacitor.getPlatform==='function'){ return Capacitor.getPlatform()==='ios'; } }catch(e){}
+    var ua=(navigator&&navigator.userAgent)||''; return /iPhone|iPad|iPod/i.test(ua);
+  }
   /* ===== "Get the app" nudge — ONLY on an Android phone's WEB browser (never inside the app, never iPhone/desktop) ===== */
   function isNativeApp(){ try{ return !!(window.Capacitor && typeof Capacitor.isNativePlatform==='function' && Capacitor.isNativePlatform()); }catch(e){ return false; } }
   function isAndroidWeb(){ if(isNativeApp()) return false; return /Android/i.test((navigator&&navigator.userAgent)||''); }
@@ -3089,6 +3093,7 @@
     if(!d||!d.drop) return false;
     if(d.hidden) return false;                                                   /* admin pulled it manually */
     if(d.androidOnly && !isAndroid()) return false;                              /* Android-only drop: hide on web/iPhone */
+    if(d.iosOnly && !isIOS()) return false;                                      /* iPhone-only drop: hide on web/Android */
     var now=Date.now();
     if(d.endsAt && now>Date.parse(d.endsAt)+DROP_GRACE_MS) return false;         /* ended a while ago */
     if(d.soldAt && now>Date.parse(d.soldAt)+DROP_GRACE_MS) return false;         /* sold out a while ago */
@@ -3136,6 +3141,7 @@
     var d=(CUSTOM_BADGES||[]).filter(function(b){return String(b.id).replace(/[^a-z0-9]/gi,'')===String(id);})[0];
     if(!d||!d.drop) return;
     if(d.androidOnly && !isAndroid()){ toast('This drop is Android-only 🤖'); return; }   /* safety net: block claim off-Android */
+    if(d.iosOnly && !isIOS()){ toast('This drop is iPhone-only 🍎'); return; }   /* safety net: block claim off-iPhone */
     try{
       var g=await sb.from('flaps').select('id,body').eq('name','::badgegrants::').order('id',{ascending:false}).limit(1);
       var grants={}, rowId=null;
