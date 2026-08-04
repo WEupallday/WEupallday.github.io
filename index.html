@@ -2519,7 +2519,7 @@
           if(ins.error)throw ins.error;
           var newRow=(ins&&ins.data)?ins.data:{name:newName,avatar_url:null,handle:newHandle};
           try{ discordPing('join',newRow.name); }catch(e5){}   /* ping the admin's Discord on a real new signup */
-          try{ sendPush('lock','TheFlap 🐦',newRow.name+' just joined TheFlap! 🎉'); }catch(e5){}
+          try{ notifyFlap('lock',newRow.name+' just joined TheFlap! 🎉'); }catch(e5){}
           try{ if((newRow.name||'').toLowerCase()!=='lock') await sb.from('flap_follows').insert({follower:newRow.name,following:'lock'}); }catch(e5){}   /* new members auto-follow the official account */
           err.textContent='';
           startOnboarding(newRow);   /* pick handle + display name + profile pic, then enter */
@@ -2739,7 +2739,7 @@
         var ins=await sb.from('flap_users').insert({name:tryName,pass_hash:randPass,avatar_url:gpic||null,handle:handle,email:email,device:detectDevice()}).select('*').maybeSingle();
         row=(ins&&ins.data)?ins.data:{name:tryName,avatar_url:gpic,handle:handle,email:email};
         try{ discordPing('join',row.name); }catch(e){}
-        try{ sendPush('lock','TheFlap 🐦',row.name+' just joined TheFlap with Google! 🎉'); }catch(e){}
+        try{ notifyFlap('lock',row.name+' just joined TheFlap with Google! 🎉'); }catch(e){}
         try{ if((row.name||'').toLowerCase()!=='lock') await sb.from('flap_follows').insert({follower:row.name,following:'lock'}); }catch(e){}   /* new members auto-follow the official account */
         row.email=email; row.avatar_url=(row.avatar_url||gpic||null);
         startOnboarding(row);   /* new Google user: pick handle + display name + profile pic */
@@ -3799,8 +3799,8 @@
     try{await sb.from('flap_notifs').insert({recipient:recipient,actor:actor,kind:kind,flap_id:flap_id||null,excerpt:(excerpt||'').slice(0,120)});}catch(e){}
     /* also fire a phone push to the recipient */
     var ex=excerpt?(' "'+String(excerpt).slice(0,60)+'"'):'';
-    var body=kind==='reply'?(actor+' replied to your flap:'+ex):kind==='like'?(actor+' flapped your post 👍'):kind==='tag'?(actor+' tagged you in a flap:'+ex):kind==='grouptag'?(actor+' tagged all '+(excerpt||'members')+' in a flap 🏅'):kind==='reflap'?(actor+' reflapped your flap 🔁'):kind==='follow'?(actor+' followed you 👤'):(actor+' interacted with you');
-    if(kind!=='reflap')sendPush(recipient,'TheFlap 🐦',body); /* reflaps: quiet — bell only, no phone push */
+    var body=kind==='reply'?(actor+' replied to your flap:'+ex):kind==='like'?(actor+' flapped your post 👍'):kind==='tag'?(actor+' tagged you in a flap:'+ex):kind==='grouptag'?(actor+' tagged all '+(excerpt||'members')+' in a flap 🏅'):kind==='reflap'?(actor+' reflapped your flap 🔁'):kind==='follow'?(actor+' followed you 👤'):kind==='dm'?(actor+' messaged you:'+ex):kind==='friend'?(actor+' '+(excerpt||'sent you a friend request')+' 👯'):kind==='support'?('TheFlap Support 🎫 replied to your ticket:'+ex):(actor+' interacted with you');
+    if(kind!=='reflap')notifyFlap(recipient,body); /* every bell notif mirrors to phone push here; reflaps stay bell-only */
   }
   function notifText(n){
     var who='<b>'+esc(n.actor)+'</b>'+vbadge(n.actor);
@@ -4003,14 +4003,17 @@
       }
     }catch(e){}
   }
-  function sendPush(recipient,title,body){
-    if(!ONLINE||!recipient)return;
+  /* universal phone-push helper — every bell notification mirrors to push through this one function */
+  function notifyFlap(recipient,body,title){
     try{
+      if(!recipient)return;                                   /* no target */
+      if(ME&&ME.name&&recipient===ME.name)return;             /* never push yourself */
+      if(!ONLINE)return;
       fetch(CONFIG.SUPABASE_URL+'/functions/v1/send-push',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+CONFIG.SUPABASE_ANON_KEY,'apikey':CONFIG.SUPABASE_ANON_KEY},
         body:JSON.stringify({recipient:recipient,title:title||'TheFlap 🐦',body:body||'',url:'/'})
-      }).catch(function(){});
+      }).catch(function(){});                                  /* push failure must never break the app */
     }catch(e){}
   }
 
