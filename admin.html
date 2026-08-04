@@ -263,7 +263,7 @@
   async function loadAll(){
     $('panel').innerHTML='<div class="loading">Loading your HQ…</div>';
     try{
-      var us=(await sb.from('flap_users').select('*').order('created_at',{ascending:false})).data||[];
+      var us=[];{var _uf=0,_upg=1000;while(true){var _ur=await sb.from('flap_users').select('*').order('created_at',{ascending:false}).range(_uf,_uf+_upg-1);var _ud=(_ur&&_ur.data)||[];us=us.concat(_ud);if(_ud.length<_upg)break;_uf+=_upg;if(_uf>20000)break;}}
       var flAll=(await sb.from('flaps').select('id,name,body,pic_url,mood,created_at').order('id',{ascending:false}).limit(500)).data||[];
       var rcRes=await sb.from('flap_replies').select('*',{count:'exact',head:true});
       var repliesRecent=[];try{repliesRecent=(await sb.from('flap_replies').select('*').order('id',{ascending:false}).limit(80)).data||[];}catch(e){}

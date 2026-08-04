@@ -3281,7 +3281,7 @@
     box.innerHTML='<div class="pc-strip"><span>👑 Admin Panel</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">loading…</div>';
     document.getElementById('profModal').classList.add('open');
     try{
-      var us=(await sb.from('flap_users').select('*').order('created_at',{ascending:true})).data||[];
+      var us=[];{var _uf=0,_upg=1000;while(true){var _ur=await sb.from('flap_users').select('*').order('created_at',{ascending:false}).range(_uf,_uf+_upg-1);var _ud=(_ur&&_ur.data)||[];us=us.concat(_ud);if(_ud.length<_upg)break;_uf+=_upg;if(_uf>20000)break;}}
       var fl=(await sb.from('flaps').select('id,name').limit(1000)).data||[];
       var rc=await sb.from('flap_replies').select('*',{count:'exact',head:true});
       var reports=[];try{reports=(await sb.from('flap_reports').select('*').eq('resolved',false).order('id',{ascending:false})).data||[];}catch(e){}
@@ -4438,8 +4438,8 @@
       document.getElementById('youCount').textContent=myFlapCount;
       /* members list — powers real photos everywhere + the banner */
       try{
-        var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at,handle,device,banned,muted_until,violations');
-        if(!um.error&&um.data){USERS={};um.data.forEach(function(u){USERS[u.name.toLowerCase()]=u;});}
+        var _uall=[],_uf=0,_upg=1000,_uerr=null;while(true){var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at,handle,device,banned,muted_until,violations').order('created_at',{ascending:false}).range(_uf,_uf+_upg-1);if(um.error){_uerr=um.error;break;}var _ud=um.data||[];_uall=_uall.concat(_ud);if(_ud.length<_upg)break;_uf+=_upg;if(_uf>20000)break;}
+        if(!_uerr){USERS={};_uall.forEach(function(u){USERS[u.name.toLowerCase()]=u;});}
       }catch(eu){}
       try{ if(ME.name&&USERS[ME.name.toLowerCase()]){ ME.handle=USERS[ME.name.toLowerCase()].handle||ME.handle||''; } }catch(eh){}
       try{ if(ME.name && !FOLLOWS_LOADED){ FOLLOWS_LOADED=true; await loadFollows(); } }catch(efl){}
