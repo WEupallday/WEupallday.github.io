@@ -3809,6 +3809,7 @@
     if(kind!=='reflap')notifyFlap(recipient,body); /* every bell notif mirrors to phone push here; reflaps stay bell-only */
   }
   function notifText(n){
+    if(n.kind==='announce')return '<b>'+esc(n.actor||'📣 TheFlap')+'</b>'+(n.excerpt?('<br>'+esc(n.excerpt)):'');   /* admin broadcast */
     var who='<b>'+esc(n.actor)+'</b>'+vbadge(n.actor);
     var ex=n.excerpt?(' "'+esc(String(n.excerpt).slice(0,70))+'"'):'';
     if(n.kind==='reply')return who+' replied to your flap:'+ex;

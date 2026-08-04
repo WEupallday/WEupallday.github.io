@@ -323,13 +323,14 @@
   function strip(n,label,cls){return '<span class="s'+(cls?' '+cls:'')+'"><b>'+fmtN(n)+'</b> '+label+'</span>';}
 
   /* ---------- tab nav ---------- */
-  var TABS=[['controls','⚙️ Controls'],['members','👥 Members'],['badges','🏅 Badges'],['moderation','🛡️ Moderation'],['messages','💬 Messages'],['support','🎫 Support'],['stats','📊 Stats']];
+  var TABS=[['controls','⚙️ Controls'],['broadcast','📣 Broadcast'],['members','👥 Members'],['badges','🏅 Badges'],['moderation','🛡️ Moderation'],['messages','💬 Messages'],['support','🎫 Support'],['stats','📊 Stats']];
   function renderTabs(){
     $('tabNav').innerHTML=TABS.map(function(t){return '<button class="'+(TAB===t[0]?'on':'')+'" onclick="ADMIN.tab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');
   }
   function renderTab(){
     var h='';
     if(TAB==='controls')h=secControls();
+    else if(TAB==='broadcast')h=secBroadcast();
     else if(TAB==='members')h=secMembers();
     else if(TAB==='badges')h=secBadges();
     else if(TAB==='moderation')h=secModeration();
@@ -337,7 +338,28 @@
     else if(TAB==='support')h=secSupport();
     else h=secStats();
     $('panel').innerHTML=h;
+    if(TAB==='broadcast'){ try{ ADMIN.loadBroadcastLog(); }catch(e){} }
     window.scrollTo(0,0);
+  }
+
+  /* ---------- BROADCAST ---------- */
+  function secBroadcast(){
+    var h='<div class="sec"><h2>📣 Send an update to members</h2>';
+    h+='<div class="hint">Composes an announcement that goes out as a 🔔 bell notification <b>and</b> a 📱 phone push to everyone who has the app installed. You\'ll see the exact recipient count and confirm before anything sends.</div>';
+    h+='<input class="inp" id="bcTitle" placeholder="Title (e.g. New drop tonight! 🔥)" maxlength="60">';
+    h+='<textarea class="inp" id="bcBody" placeholder="Your message to the group…" style="min-height:92px" maxlength="240"></textarea>';
+    h+='<div class="subhead">Who gets it</div>';
+    h+='<select class="inp" id="bcTarget">';
+    h+='<option value="all">Everyone (all members)</option>';
+    h+='<option value="ios">iPhone users only</option>';
+    h+='<option value="android">Android users only</option>';
+    h+='<option value="test">🧪 Test — just me (lock)</option>';
+    h+='</select>';
+    h+='<button class="btn" style="background:#1f8f4d" onclick="ADMIN.broadcastPreview()">Preview send →</button>';
+    h+='<div class="subhead" style="margin-top:20px">📜 Recent broadcasts</div>';
+    h+='<div id="bcLog" class="hint">loading…</div>';
+    h+='</div>';
+    return h;
   }
 
   /* ---------- BADGES ---------- */
@@ -584,6 +606,61 @@
   var ADMIN={
     tab:function(t){ TAB=t; if(t!=='messages')MSG_OPEN=null; renderTabs(); renderTab(); },
     reload:function(){ loadAll(); },
+    _broadcastTargets:async function(target){
+      var out={bell:[],pushNames:[]};
+      var subs=[]; try{ subs=(await sb.from('push_subs').select('name,p256dh').limit(5000)).data||[]; }catch(e){}
+      function uniq(a){var s={},r=[];a.forEach(function(n){var k=(n||'').toLowerCase();if(n&&!s[k]){s[k]=1;r.push(n);}});return r;}
+      if(target==='test'){ out.bell=['lock']; out.pushNames=uniq(subs.filter(function(s){return (s.name||'').toLowerCase()==='lock';}).map(function(s){return s.name;})); if(!out.pushNames.length)out.pushNames=['lock']; return out; }
+      if(target==='ios'){ var ni=uniq(subs.filter(function(s){return s.p256dh==='ios';}).map(function(s){return s.name;})); out.bell=ni; out.pushNames=ni; return out; }
+      if(target==='android'){ var na=uniq(subs.filter(function(s){return s.p256dh==='android';}).map(function(s){return s.name;})); out.bell=na; out.pushNames=na; return out; }
+      out.bell=(DATA.us||[]).filter(function(u){return isRealMember(u&&u.name);}).map(function(u){return u.name;});
+      out.pushNames=uniq(subs.map(function(s){return s.name;}));
+      return out;
+    },
+    broadcastPreview:async function(){
+      var title=(($('bcTitle')&&$('bcTitle').value)||'').trim();
+      var body=(($('bcBody')&&$('bcBody').value)||'').trim();
+      var target=(($('bcTarget')&&$('bcTarget').value))||'all';
+      if(!body){ toast('Write a message first.'); return; }
+      toast('Counting recipients…');
+      var info=await ADMIN._broadcastTargets(target);
+      window.__bc={title:title,body:body,target:target,info:info};
+      var tl={all:'Everyone (all members)',ios:'iPhone users',android:'Android users',test:'Just you (lock) — test'}[target];
+      var h='<h3 style="margin:0 0 8px">📣 Confirm broadcast</h3>';
+      h+='<div class="note"><b>'+esc(title||'(no title)')+'</b><br>'+esc(body)+'</div>';
+      h+='<div class="hint">Target: <b>'+esc(tl)+'</b><br>🔔 Bell notification → <b>'+fmtN(info.bell.length)+'</b> member'+(info.bell.length===1?'':'s')+'<br>📱 Phone push → <b>'+fmtN(info.pushNames.length)+'</b> device-registered member'+(info.pushNames.length===1?'':'s')+'</div>';
+      h+='<div style="display:flex;gap:8px;margin-top:14px"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn" style="background:#1f8f4d" onclick="ADMIN.broadcastSend()">Send now →</button></div>';
+      openModal(h);
+    },
+    broadcastSend:async function(){
+      closeModal();
+      var bc=window.__bc||{}; var title=bc.title||'', body=bc.body||'', target=bc.target||'all', info=bc.info;
+      if(!info){ info=await ADMIN._broadcastTargets(target); }
+      if(!body){ toast('No message.'); return; }
+      toast('📣 Sending…');
+      var rows=info.bell.map(function(nm){ return {recipient:nm, actor:'📣 '+(title||'TheFlap'), kind:'announce', flap_id:null, excerpt:body.slice(0,200)}; });
+      var bellOk=0;
+      try{ for(var i=0;i<rows.length;i+=500){ var chunk=rows.slice(i,i+500); var r=await sb.from('flap_notifs').insert(chunk); if(!r||!r.error)bellOk+=chunk.length; } }catch(e){}
+      var pushOk=0;
+      for(var j=0;j<info.pushNames.length;j++){
+        try{ await fetch(SUPABASE_URL+'/functions/v1/send-push',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_ANON_KEY,'apikey':SUPABASE_ANON_KEY},body:JSON.stringify({recipient:info.pushNames[j],title:title||'TheFlap 🐦',body:body})}); pushOk++; }catch(e){}
+        if(j%10===9) await new Promise(function(rs){setTimeout(rs,120);});
+      }
+      try{ await sb.from('flaps').insert({name:'::broadcast::', body:JSON.stringify({title:title,body:body,target:target,bell:bellOk,push:pushOk,ts:new Date().toISOString(),by:(ADMIN_ACCOUNT||'admin')})}); }catch(e){}
+      try{ adminLog('(broadcast)','Broadcast "'+(title||body.slice(0,40))+'" → '+target+' (bell '+bellOk+', push '+pushOk+')'); }catch(e){}
+      toast('📣 Sent — 🔔 '+bellOk+' · 📱 '+pushOk+'.');
+      window.__bc=null;
+      try{ ADMIN.loadBroadcastLog(); }catch(e){}
+    },
+    loadBroadcastLog:async function(){
+      var el=$('bcLog'); if(!el)return;
+      try{
+        var r=await sb.from('flaps').select('body,id').eq('name','::broadcast::').order('id',{ascending:false}).limit(8);
+        var rows=(r.data||[]);
+        if(!rows.length){ el.innerHTML='No broadcasts sent yet.'; return; }
+        el.innerHTML=rows.map(function(x){ var b={}; try{b=JSON.parse(x.body)||{};}catch(e){} var t=b.ts?new Date(b.ts).toLocaleString():''; return '<div class="row"><b>'+esc(b.title||'(no title)')+'</b> — '+esc((b.body||'').slice(0,90))+'<br><span style="font-size:11px;color:#8fa8cf">'+esc(b.target||'')+' · 🔔 '+(b.bell||0)+' · 📱 '+(b.push||0)+' · '+esc(t)+'</span></div>'; }).join('');
+      }catch(e){ el.innerHTML='(could not load log)'; }
+    },
     msgSearch:function(v){ MSG_SEARCH=v; renderTab(); var i=$('cMsgSearch'); if(i){i.focus();try{i.setSelectionRange(i.value.length,i.value.length);}catch(e){}} },
     msgOpen:function(k){ MSG_OPEN=unb64(k); renderTab(); },
     msgBack:function(){ MSG_OPEN=null; renderTab(); },
