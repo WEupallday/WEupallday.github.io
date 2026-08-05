@@ -9,10 +9,15 @@
    (desktop or mobile browser) always get the original, unchanged site. Set ASAP to avoid flicker. */
 (function(){try{
   var isApp = !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent);
+  /* Home-screen / bookmark PWA (iOS `navigator.standalone`, or `display-mode: standalone` on
+     Android/desktop PWAs) is an APP context too — force the compact app layout + auto-hide top
+     bar there even if the width check somehow doesn't (e.g. iPad standalone > 760px). This does
+     NOT flip native-app (below), so the PWA keeps its Google sign-in. */
+  var isStandalone=false; try{ isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone===true; }catch(_e){}
   /* the compact, island-safe layout now applies in the app AND on phone-width browsers.
      Desktop browsers (wider than 760px) keep the original site look. */
   var mq = window.matchMedia('(max-width:760px)');
-  function apply(){ document.documentElement.classList.toggle('is-app', isApp || mq.matches); }
+  function apply(){ document.documentElement.classList.toggle('is-app', isApp || mq.matches || isStandalone); }
   apply();
   /* .native-app = the actual iOS/Android app (or ?app=1 preview), NOT phone-width browsers.
      v1.0 ships name+password only inside the app so Apple's Sign-in-with-Apple rule (Guideline 4.8,
@@ -3893,7 +3898,12 @@
   var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
   var isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
   if('serviceWorker' in navigator && !window.Capacitor){   /* native app runs a LOCAL bundle — no service worker needed there */
-    navigator.serviceWorker.register('/sw.js').then(function(r){swReg=r;}).catch(function(){});
+    var _hadCtrl=!!navigator.serviceWorker.controller;   /* was a SW already controlling this page? */
+    navigator.serviceWorker.register('/sw.js').then(function(r){ swReg=r; try{r.update();}catch(e){} }).catch(function(){});
+    /* when a NEW service worker takes control (after a cache-version bump), reload once so the
+       standalone PWA immediately runs the fresh build instead of a stale cached page. Guarded so
+       the very first install (no prior controller) doesn't trigger a reload loop. */
+    navigator.serviceWorker.addEventListener('controllerchange',function(){ if(!_hadCtrl||window.__swReloaded)return; window.__swReloaded=true; location.reload(); });
   }
   /* ===== Native app enhancements (Capacitor). Every line is a NO-OP on the website — guarded by window.Capacitor —
      so the site stays identical; these only light up inside the built iOS/Android app once the plugins are installed. ===== */
