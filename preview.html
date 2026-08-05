@@ -9,10 +9,11 @@
    (desktop or mobile browser) always get the original, unchanged site. Set ASAP to avoid flicker. */
 (function(){try{
   var isApp = !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent);
+  var isStandalone=false; try{ isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone===true; }catch(_e){}
   /* the compact, island-safe layout now applies in the app AND on phone-width browsers.
      Desktop browsers (wider than 760px) keep the original site look. */
   var mq = window.matchMedia('(max-width:760px)');
-  function apply(){ document.documentElement.classList.toggle('is-app', isApp || mq.matches); }
+  function apply(){ document.documentElement.classList.toggle('is-app', isApp || mq.matches || isStandalone); }
   apply();
   /* .native-app = the actual iOS/Android app (or ?app=1 preview), NOT phone-width browsers.
      v1.0 ships name+password only inside the app so Apple's Sign-in-with-Apple rule (Guideline 4.8,
@@ -3893,7 +3894,9 @@
   var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
   var isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
   if('serviceWorker' in navigator && !window.Capacitor){   /* native app runs a LOCAL bundle — no service worker needed there */
-    navigator.serviceWorker.register('/sw.js').then(function(r){swReg=r;}).catch(function(){});
+    var _hadCtrl=!!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('/sw.js').then(function(r){ swReg=r; try{r.update();}catch(e){} }).catch(function(){});
+    navigator.serviceWorker.addEventListener('controllerchange',function(){ if(!_hadCtrl||window.__swReloaded)return; window.__swReloaded=true; location.reload(); });
   }
   /* ===== Native app enhancements (Capacitor). Every line is a NO-OP on the website — guarded by window.Capacitor —
      so the site stays identical; these only light up inside the built iOS/Android app once the plugins are installed. ===== */
@@ -5490,62 +5493,72 @@ document.addEventListener('touchmove',function(e){
      'scroll' events (that's what fooled us before). Reading the position every frame
      works no matter which element is actually scrolling. */
   (function(){
-    /* ROBUST APP-CONTEXT SCROLL-REVEAL (v3 — real-WKWebView hardened).
-       Why past versions failed on the actual iPhone (they passed emulation):
-         (a) they trusted a raw per-touchmove finger delta with NO accumulation, so a small
-             up-flick flickered on/off and settled hidden;
-         (b) the rAF scroll reader was DISABLED while a finger was down (`if(touching)return`),
-             i.e. switched off exactly when we needed a reading;
-         (c) WKWebView does NOT emit `scroll` EVENTS during inertial/momentum scrolling; and
-         (d) the bundled app may scroll an inner element, not the window.
-       Fix: ONE directional accumulator fed by BOTH signals, with hysteresis:
-         • signal 1 — a rAF loop that ALWAYS runs and reads the REAL scroll offset (window OR
-           whichever inner container actually moved) → catches momentum + inner scrollers;
-         • signal 2 — touchmove finger direction → catches the live drag before momentum.
-       A small cumulative UP movement (~14px) reveals the WHOLE top section; a larger DOWN
-       movement (~28px) hides it. Reveal is biased to win so jitter can't leave it hidden. */
+    /* APP-CONTEXT SCROLL-REVEAL (v4 — drawer-cloned, standalone-hardened).
+       Clue that cracked it: in his home-screen PWA the horizontal side-swipe (which binds touch on
+       `document` with {passive:true}) WORKS, but the old vertical reveal (bound on `window`) did
+       nothing. So the PRIMARY path below mirrors the side-swipe EXACTLY — same target (document),
+       same options — but measures VERTICAL movement. Cumulative finger-down >=10px reveals the
+       whole top; finger-up >=15px hides it. rAF/scroll-position is kept only as a BACKUP
+       (momentum + trackpad), and the near-top guard is disabled until a real scroll read is seen,
+       so a dead scrollTop in standalone can never freeze the bar shown. Tap the logo 7x for an
+       on-device debug overlay (engine status + last gesture delta) so we never fly blind again. */
+    var DBG=(function(){
+      var box=null,on=false,s={};
+      function ensure(){ if(box)return box; box=document.createElement('div'); box.id='scrollDbg';
+        box.style.cssText='position:fixed;left:6px;bottom:6px;z-index:99999;background:rgba(0,0,0,.82);color:#0f0;font:11px/1.35 monospace;padding:7px 9px;border-radius:8px;max-width:82vw;white-space:pre;pointer-events:none;display:none;';
+        (document.body||document.documentElement).appendChild(box); return box; }
+      function render(){ if(!on)return; var sa=false; try{ sa=(window.navigator&&window.navigator.standalone===true)||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches);}catch(e){}
+        ensure().textContent='TheFlap scroll-debug  (v4)\nengine: ACTIVE\nis-app: '+document.documentElement.classList.contains('is-app')+'   standalone: '+sa+'\ntop: '+(document.body.classList.contains('bar-hidden')?'HIDDEN':'shown')+'\nreadY: '+(s.readY==null?'-':s.readY)+'   alive: '+(s.alive==null?'-':s.alive)+'\nstart: '+(s.start==null?'-':s.start)+'   last dy: '+(s.dy==null?'-':s.dy)+'\nacc: '+(s.acc==null?'-':s.acc)+'   netdy: '+(s.netdy==null?'-':s.netdy)+'\nlast: '+(s.last||'-'); }
+      return { set:function(){ for(var i=0;i<arguments.length;i+=2)s[arguments[i]]=arguments[i+1]; render(); },
+               toggle:function(){ on=!on; ensure().style.display=on?'block':'none'; render(); } };
+    })();
+    document.addEventListener('click',function(e){
+      var t=e.target&&e.target.closest?e.target.closest('.topbrand'):null; if(!t)return;
+      var now=Date.now(); if(now-(DBG._t||0)>1200)DBG._n=0; DBG._t=now; DBG._n=(DBG._n||0)+1;
+      if(DBG._n>=7){ DBG._n=0; try{DBG.toggle();}catch(_){} }
+    },true);
+
     var INNER=null;
-    document.addEventListener('scroll',function(e){
-      var t=e.target;
-      if(t && t.nodeType===1 && t!==document && t!==document.documentElement && t!==document.body
-         && t.scrollHeight > t.clientHeight+4){ INNER=t; }
-    },true);   /* capture phase → also catches inner -webkit-overflow-scrolling containers */
-    function readY(){
-      var y=window.pageYOffset||0;
-      if(y) return y;
-      var se=document.scrollingElement;
-      if(se && se.scrollTop) return se.scrollTop;
-      if(document.documentElement.scrollTop) return document.documentElement.scrollTop;
-      if(document.body && document.body.scrollTop) return document.body.scrollTop;
-      if(INNER && INNER.scrollTop) return INNER.scrollTop;
-      return 0;
-    }
-    var MIN=56, SHOW_AT=14, HIDE_AT=28;
+    document.addEventListener('scroll',function(e){ var t=e.target;
+      if(t&&t.nodeType===1&&t!==document&&t!==document.documentElement&&t!==document.body&&t.scrollHeight>t.clientHeight+4){ INNER=t; }
+    },true);
+    var readYalive=false;
+    function readY(){ var y=window.pageYOffset||0;
+      if(!y){ var se=document.scrollingElement; y=(se&&se.scrollTop)||document.documentElement.scrollTop||(document.body&&document.body.scrollTop)||(INNER&&INNER.scrollTop)||0; }
+      if(y>0)readYalive=true; return y; }
+    var MIN=56, SHOW_AT=10, HIDE_AT=15;
     var hidden=false, lastY=readY(), upAcc=0, downAcc=0;
-    function setHidden(h){ if(h===hidden)return; hidden=h; document.body.classList.toggle('bar-hidden',h); }
-    /* d>0 = content scrolled DOWN (finger up), d<0 = scrolled UP (finger down) */
-    function onDelta(d){
-      if(!d) return;
-      if(readY()<=MIN){ upAcc=downAcc=0; setHidden(false); return; }   /* near top → always show whole panel */
-      if(d<0){ upAcc+=-d; downAcc=0; if(upAcc>=SHOW_AT) setHidden(false); }   /* moved up → REVEAL */
-      else   { downAcc+=d; upAcc=0; if(downAcc>=HIDE_AT) setHidden(true); }   /* moved down → hide */
-    }
-    /* signal 1 — scroll position every frame, ALWAYS on (momentum + inner scrollers) */
-    function frame(){ var y=readY(), d=y-lastY; if(d){ onDelta(d); lastY=y; } requestAnimationFrame(frame); }
-    requestAnimationFrame(frame);
-    /* signal 2 — finger direction, instant (finger DOWN cy↑ = scrolling up = reveal) */
-    var fLast=null;
-    window.addEventListener('touchstart',function(e){ fLast=(e.touches&&e.touches[0])?e.touches[0].clientY:null; },{passive:true});
-    window.addEventListener('touchmove',function(e){
-      if(!e.touches||!e.touches[0])return;
-      var cy=e.touches[0].clientY;
-      if(fLast!=null) onDelta(fLast-cy);
-      fLast=cy;
+    function setHidden(h){ if(h===hidden)return; hidden=h; document.body.classList.toggle('bar-hidden',h); DBG.set('last',(h?'HIDE':'SHOW'),'readY',Math.round(readY()),'alive',readYalive); }
+    function nearTop(){ return readYalive && readY()<=MIN; }   /* only trust "near top" once scroll reads proven alive */
+
+    /* ===== PRIMARY: exact clone of the working side-swipe (document + {passive:true}), vertical ===== */
+    var tStart=null, tPrev=null, tAcc=0;
+    document.addEventListener('touchstart',function(e){ if(!e.touches||!e.touches[0])return;
+      tStart=tPrev=e.touches[0].clientY; tAcc=0; DBG.set('start',Math.round(tStart),'readY',Math.round(readY()),'alive',readYalive);
     },{passive:true});
-    window.addEventListener('touchend',function(){ fLast=null; lastY=readY(); },{passive:true});
-    /* signal 3 — wheel/scroll events (desktop trackpad + webviews that do emit them) */
+    document.addEventListener('touchmove',function(e){ if(tPrev==null||!e.touches||!e.touches[0])return;
+      var y=e.touches[0].clientY, d=y-tPrev; tPrev=y;
+      if((d>0)!==(tAcc>0))tAcc=0; tAcc+=d; DBG.set('dy',Math.round(d),'acc',Math.round(tAcc),'readY',Math.round(readY()),'alive',readYalive);
+      if(nearTop()){ setHidden(false); return; }
+      if(tAcc>=SHOW_AT){ setHidden(false); tAcc=0; }            /* finger DOWN (scroll up) -> reveal */
+      else if(tAcc<=-HIDE_AT){ setHidden(true); tAcc=0; }        /* finger UP (scroll down) -> hide */
+    },{passive:true});
+    document.addEventListener('touchend',function(e){
+      if(tStart!=null&&e.changedTouches&&e.changedTouches[0]){ var dy=e.changedTouches[0].clientY-tStart; DBG.set('netdy',Math.round(dy));
+        if(nearTop()) setHidden(false); else if(dy>=SHOW_AT) setHidden(false); else if(dy<=-HIDE_AT) setHidden(true); }
+      tStart=tPrev=null; tAcc=0; lastY=readY();
+    },{passive:true});
+
+    /* ===== BACKUP: rAF scroll-position reader (momentum + inner scrollers + trackpad/wheel) ===== */
+    function onDelta(d){ if(!d)return;
+      if(nearTop()){ upAcc=downAcc=0; setHidden(false); return; }
+      if(d<0){ upAcc+=-d; downAcc=0; if(upAcc>=SHOW_AT) setHidden(false); }
+      else   { downAcc+=d; upAcc=0; if(downAcc>=HIDE_AT+8) setHidden(true); } }
+    function frame(){ var y=readY(), d=y-lastY; if(d){ onDelta(d); lastY=y; DBG.set('readY',Math.round(y),'alive',readYalive); } requestAnimationFrame(frame); }
+    requestAnimationFrame(frame);
     ['scroll','wheel'].forEach(function(ev){
       window.addEventListener(ev,function(){ var y=readY(), d=y-lastY; if(d){ onDelta(d); lastY=y; } },{passive:true});
+      document.addEventListener(ev,function(){ var y=readY(), d=y-lastY; if(d){ onDelta(d); lastY=y; } },{passive:true});
     });
   })();
   /* hard block pinch-zoom in the app so it can never get stuck zoomed (viewport lock + this) */
