@@ -4275,6 +4275,7 @@
     if(!ONLINE)return;
     try{ var r=await sb.from('flaps').select('body').eq('name','::announce::').order('id',{ascending:false}).limit(1);
       ANNOUNCE_TXT=(r.data && r.data[0] && String(r.data[0].body||'').trim())?String(r.data[0].body):'';
+      try{renderPoll();}catch(e){}
     }catch(e){}
   }
   var ANN_CONFIRM=null;
