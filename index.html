@@ -5490,49 +5490,63 @@ document.addEventListener('touchmove',function(e){
      'scroll' events (that's what fooled us before). Reading the position every frame
      works no matter which element is actually scrolling. */
   (function(){
-    function sy(){
-      return window.pageYOffset
-        || (document.scrollingElement && document.scrollingElement.scrollTop)
-        || document.documentElement.scrollTop
-        || (document.body && document.body.scrollTop) || 0;
+    /* ROBUST APP-CONTEXT SCROLL-REVEAL (v3 — real-WKWebView hardened).
+       Why past versions failed on the actual iPhone (they passed emulation):
+         (a) they trusted a raw per-touchmove finger delta with NO accumulation, so a small
+             up-flick flickered on/off and settled hidden;
+         (b) the rAF scroll reader was DISABLED while a finger was down (`if(touching)return`),
+             i.e. switched off exactly when we needed a reading;
+         (c) WKWebView does NOT emit `scroll` EVENTS during inertial/momentum scrolling; and
+         (d) the bundled app may scroll an inner element, not the window.
+       Fix: ONE directional accumulator fed by BOTH signals, with hysteresis:
+         • signal 1 — a rAF loop that ALWAYS runs and reads the REAL scroll offset (window OR
+           whichever inner container actually moved) → catches momentum + inner scrollers;
+         • signal 2 — touchmove finger direction → catches the live drag before momentum.
+       A small cumulative UP movement (~14px) reveals the WHOLE top section; a larger DOWN
+       movement (~28px) hides it. Reveal is biased to win so jitter can't leave it hidden. */
+    var INNER=null;
+    document.addEventListener('scroll',function(e){
+      var t=e.target;
+      if(t && t.nodeType===1 && t!==document && t!==document.documentElement && t!==document.body
+         && t.scrollHeight > t.clientHeight+4){ INNER=t; }
+    },true);   /* capture phase → also catches inner -webkit-overflow-scrolling containers */
+    function readY(){
+      var y=window.pageYOffset||0;
+      if(y) return y;
+      var se=document.scrollingElement;
+      if(se && se.scrollTop) return se.scrollTop;
+      if(document.documentElement.scrollTop) return document.documentElement.scrollTop;
+      if(document.body && document.body.scrollTop) return document.body.scrollTop;
+      if(INNER && INNER.scrollTop) return INNER.scrollTop;
+      return 0;
     }
-    var hidden=false, MIN=64, lastY=sy(), downAcc=0;
+    var MIN=56, SHOW_AT=14, HIDE_AT=28;
+    var hidden=false, lastY=readY(), upAcc=0, downAcc=0;
     function setHidden(h){ if(h===hidden)return; hidden=h; document.body.classList.toggle('bar-hidden',h); }
-
-    /* ---- MOBILE: drive off the FINGER, not the scroll position ----
-       On phones, reading scrollY during a touch scroll is unreliable (iOS/Android
-       webviews freeze layout reads and don't emit scroll/rAF until the gesture
-       settles — that's why reveal-on-scroll-up kept failing). But touchmove ALWAYS
-       fires while the finger is down, and the finger's own direction tells us exactly
-       what the user wants: drag DOWN = pull content down = show the header;
-       drag UP = push content up = hide it. */
-    var touching=false, tLastY=null;
-    window.addEventListener('touchstart',function(e){ touching=true; tLastY=(e.touches&&e.touches[0])?e.touches[0].clientY:null; },{passive:true});
+    /* d>0 = content scrolled DOWN (finger up), d<0 = scrolled UP (finger down) */
+    function onDelta(d){
+      if(!d) return;
+      if(readY()<=MIN){ upAcc=downAcc=0; setHidden(false); return; }   /* near top → always show whole panel */
+      if(d<0){ upAcc+=-d; downAcc=0; if(upAcc>=SHOW_AT) setHidden(false); }   /* moved up → REVEAL */
+      else   { downAcc+=d; upAcc=0; if(downAcc>=HIDE_AT) setHidden(true); }   /* moved down → hide */
+    }
+    /* signal 1 — scroll position every frame, ALWAYS on (momentum + inner scrollers) */
+    function frame(){ var y=readY(), d=y-lastY; if(d){ onDelta(d); lastY=y; } requestAnimationFrame(frame); }
+    requestAnimationFrame(frame);
+    /* signal 2 — finger direction, instant (finger DOWN cy↑ = scrolling up = reveal) */
+    var fLast=null;
+    window.addEventListener('touchstart',function(e){ fLast=(e.touches&&e.touches[0])?e.touches[0].clientY:null; },{passive:true});
     window.addEventListener('touchmove',function(e){
       if(!e.touches||!e.touches[0])return;
       var cy=e.touches[0].clientY;
-      if(tLastY!=null){
-        var fd=cy-tLastY;                         /* finger delta: + = dragging downward */
-        if(sy()<=MIN)      setHidden(false);       /* at the very top → always show */
-        else if(fd>1.5)    setHidden(false);       /* finger drags down → reveal the whole top */
-        else if(fd<-1.5)   setHidden(true);        /* finger drags up → tuck it away */
-      }
-      tLastY=cy;
+      if(fLast!=null) onDelta(fLast-cy);
+      fLast=cy;
     },{passive:true});
-    window.addEventListener('touchend',function(){ touching=false; tLastY=null; lastY=sy(); },{passive:true});
-
-    /* ---- DESKTOP / trackpad / wheel: drive off scroll position ---- */
-    function check(){
-      if(touching) return;                         /* the finger handler owns it mid-drag */
-      var y=sy(), d=y-lastY;
-      if(y<=MIN){ downAcc=0; setHidden(false); }
-      else if(d>0){ downAcc+=d; if(downAcc>10) setHidden(true); }
-      else if(d<0){ downAcc=0; setHidden(false); }
-      lastY=y;
-    }
-    function loop(){ check(); requestAnimationFrame(loop); }
-    requestAnimationFrame(loop);
-    ['scroll','wheel'].forEach(function(ev){ window.addEventListener(ev,check,{passive:true}); document.addEventListener(ev,check,{passive:true}); });
+    window.addEventListener('touchend',function(){ fLast=null; lastY=readY(); },{passive:true});
+    /* signal 3 — wheel/scroll events (desktop trackpad + webviews that do emit them) */
+    ['scroll','wheel'].forEach(function(ev){
+      window.addEventListener(ev,function(){ var y=readY(), d=y-lastY; if(d){ onDelta(d); lastY=y; } },{passive:true});
+    });
   })();
   /* hard block pinch-zoom in the app so it can never get stuck zoomed (viewport lock + this) */
   if(compact()){
