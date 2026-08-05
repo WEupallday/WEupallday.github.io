@@ -4277,18 +4277,46 @@
       ANNOUNCE_TXT=(r.data && r.data[0] && String(r.data[0].body||'').trim())?String(r.data[0].body):'';
     }catch(e){}
   }
+  var ANN_CONFIRM=null;
   function announceCardHTML(){
     var txt=String(ANNOUNCE_TXT||'').trim(); if(!txt)return '';
-    /* first line becomes a bold title if it looks like a heading (e.g. "📢 The Flap Update") */
+    if(/^\[\[SOUNDVOTE/.test(txt)){
+      var ml=txt.split(/\n/); var closed=/CLOSED/i.test(ml[0]||'');
+      var vtitle=(ml[1]||'').trim(), vline=(ml[2]||'').trim();
+      var opts=(POLL&&POLL.opts)||[]; var total=0; for(var _t=0;_t<pollVotes.length;_t++)total+=(pollVotes[_t]||0);
+      var voted=(myVote!==null)||closed; var rows='';
+      opts.forEach(function(o,i){
+        var em=esc(o); var pct=total?Math.round((pollVotes[i]||0)/total*100):0;
+        var fill=voted?'<span style="position:absolute;left:0;top:0;bottom:0;width:'+pct+'%;background:#cfe8ff;z-index:1;transition:width .4s"></span>':'';
+        var listen='<button onclick="window.playPollSound(\''+String(o).replace(/\x27/g,"")+'\',this)" style="flex:none;border:none;border-radius:10px;padding:9px 13px;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(180deg,#2aa35a,#1c7a45);box-shadow:0 2px 0 #145733;cursor:pointer;position:relative;z-index:2">\u25b6 Listen</button>';
+        var emoji='<span style="font-size:26px;flex:1;text-align:center;position:relative;z-index:2">'+em+'</span>';
+        var right;
+        if(voted){ right='<span style="flex:none;font-size:14px;font-weight:800;color:#1a5fa8;z-index:2;position:relative">'+pct+'%'+(myVote===i?' \u2713':'')+'</span>'; }
+        else if(ANN_CONFIRM===i){ right='<span style="flex:none;display:inline-flex;gap:6px;z-index:2;position:relative"><button onclick="window.annVote('+i+')" style="border:none;border-radius:10px;padding:9px 11px;font-size:12px;font-weight:800;color:#fff;background:linear-gradient(180deg,#2aa35a,#1c7a45);cursor:pointer;white-space:nowrap">Vote '+em+'? \u2713</button><button onclick="window.annCancel()" style="border:none;border-radius:10px;padding:9px 10px;font-size:12px;font-weight:800;color:#7a2b22;background:#f2d2cc;cursor:pointer">\u2715</button></span>'; }
+        else { right='<button onclick="window.annAsk('+i+')" style="flex:none;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(180deg,#e07d0a,#b4630a);box-shadow:0 2px 0 #7a4400;cursor:pointer;position:relative;z-index:2">Vote</button>'; }
+        rows+='<div style="position:relative;display:flex;align-items:center;gap:10px;background:#fff;border:2px solid #b7d6f2;border-radius:12px;padding:9px 11px;margin-bottom:9px;overflow:hidden;min-height:52px">'+fill+listen+emoji+right+'</div>';
+      });
+      var foot='<div style="font-size:11.5px;color:#3a6ea5;margin-top:4px">'+total+' vote'+(total===1?'':'s')+' \ud83d\uddf3\ufe0f'+(closed?' \u00b7 <b>Voting closed</b>':'')+'</div>';
+      var adminbar='';
+      if(ME.admin){ var counts=opts.map(function(o,i){return esc(o)+' '+(pollVotes[i]||0);}).join(' \u00b7 ');
+        adminbar='<div style="margin-top:9px;font-size:11.5px;color:#134a86">'+(closed?'<button onclick="window.annReopen()" style="border:none;border-radius:8px;padding:6px 11px;font-weight:800;color:#fff;background:#2aa35a;cursor:pointer">\ud83d\udd13 Re-open vote</button>':'<button onclick="window.annClose()" style="border:none;border-radius:8px;padding:6px 11px;font-weight:800;color:#fff;background:#c0392b;cursor:pointer">\ud83d\udd12 Close vote</button>')+'<div style="margin-top:6px;color:#3a6ea5"><b>Results (admin):</b> '+counts+'</div></div>'; }
+      return '<div class="announce-card"><div class="announce-head"><span class="ann-seal">\ud83d\udee1</span><span class="ann-name">TheFlap<small>Official</small></span><span class="ann-official">\ud83d\udce2 Announcement</span></div><div class="announce-body"><span class="ann-title">'+esc(vtitle)+'</span><div style="font-size:13px;margin-bottom:11px">'+esc(vline)+'</div>'+rows+foot+adminbar+'</div></div>';
+    }
     var lines=txt.split(/\n/), title='', rest=txt;
     if(lines.length>1 && lines[0].trim().length<=60){ title=lines[0].trim(); rest=lines.slice(1).join('\n').replace(/^\n+/,''); }
     return '<div class="announce-card">'+
-      '<div class="announce-head"><span class="ann-seal">🛡</span>'+
+      '<div class="announce-head"><span class="ann-seal">\ud83d\udee1</span>'+
         '<span class="ann-name">TheFlap<small>Official</small></span>'+
-        '<span class="ann-official">📢 Announcement</span></div>'+
+        '<span class="ann-official">\ud83d\udce2 Announcement</span></div>'+
       '<div class="announce-body">'+(title?'<span class="ann-title">'+esc(title)+'</span>':'')+esc(rest)+'</div>'+
     '</div>';
   }
+  window.annAsk=function(i){ if(!ME.name){try{requireAuth();}catch(e){}return;} if(myVote!==null)return; ANN_CONFIRM=i; try{renderLive();}catch(e){} };
+  window.annCancel=function(){ ANN_CONFIRM=null; try{renderLive();}catch(e){} };
+  window.annVote=function(i){ if(!ME.name){try{requireAuth();}catch(e){}return;} if(myVote!==null)return; ANN_CONFIRM=null; myVote=i; pollVotes[i]=(pollVotes[i]||0)+1; try{renderLive();}catch(e){} if(ONLINE&&ME.name){ try{ sb.from('flap_poll').upsert({name:ME.name,choice:i}).then(function(){ try{loadPoll().then(function(){try{renderLive();}catch(e){}});}catch(e){} }); }catch(e){} } try{toast('Vote counted! \ud83d\uddf3\ufe0f');}catch(e){} };
+  async function annSetState(state){ if(!ME.admin)return; try{ var lines=String(ANNOUNCE_TXT||'').split(/\n/); lines[0]='[[SOUNDVOTE:'+state+']]'; var body=lines.join('\n'); var ex=await sb.from('flaps').select('id').eq('name','::announce::').order('id',{ascending:false}).limit(1); if(ex.data&&ex.data[0]) await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id); ANNOUNCE_TXT=body; try{renderLive();}catch(e){} toast(state==='CLOSED'?'\ud83d\udd12 Voting closed.':'\ud83d\udd13 Voting re-opened.'); }catch(e){toast('Could not update — retry.');} }
+  window.annClose=function(){ annSetState('CLOSED'); };
+  window.annReopen=function(){ annSetState('OPEN'); };
   async function saveAnnounce(){
     if(!ME.admin){toast('Admins only.');return;}
     var ta=document.getElementById('adminAnnounce'); var body=ta?String(ta.value||'').trim():'';
@@ -4396,6 +4424,7 @@
   }
   function renderPoll(){
     var box=document.getElementById('pollBox');if(!box)return;
+    if(/^\[\[SOUNDVOTE/.test(String(ANNOUNCE_TXT||''))){ box.innerHTML=''; return; }
     var total=0; for(var _pv=0;_pv<pollVotes.length;_pv++)total+=(pollVotes[_pv]||0);
     var voted=myVote!==null;
     var h='<div class="poll-q">'+esc(POLL.q)+'</div>';
