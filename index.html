@@ -1094,6 +1094,11 @@
   html.is-standalone body.bar-hidden .topbar{ transform:translateY(-135%) !important; }
   html.is-standalone body{ padding-top:var(--topbar-h, 104px); }
   html.is-standalone #gate{ padding-top:0; }   /* the sign-in overlay must still cover full screen */
+  /* While composing (pear composer) or a full-screen modal (DM / Friends / profile) is open, the
+     fixed top panel must NOT overlay the compose card. Hide it entirely in those states (app
+     contexts only); the reveal engine is paused too (setHidden is guarded). */
+  html.is-app body.composing .topbar, html.is-app body.modal-on .topbar,
+  html.is-standalone body.composing .topbar, html.is-standalone body.modal-on .topbar{ display:none !important; }
   .social-btn{display:none!important;}
   body.social-on .social-btn{display:block!important;}
   /* ===== lock the scale so a stray pinch / double-tap can't get stuck zoomed ===== */
@@ -4741,6 +4746,7 @@
     if(!requireAuth())return;
     var ov=document.getElementById('pearOverlay');
     ov.classList.add('open');
+    document.body.classList.add('composing');   /* hide the fixed top panel so it can't cover the compose card */
     try{ var gb=document.getElementById('grpTagBtn'); if(gb)gb.style.display=(ME&&ME.admin)?'inline-block':'none'; }catch(e){}
     fitComposer();
     setTimeout(function(){
@@ -4753,6 +4759,7 @@
   function closePear(){
     var ov=document.getElementById('pearOverlay');
     ov.classList.remove('open');
+    document.body.classList.remove('composing');
     ov.style.height='';ov.style.top='';
   }
   document.addEventListener('keydown',function(e){if(e.key==='Escape'){closePear();closeProfile();}});
@@ -5624,7 +5631,8 @@ document.addEventListener('touchmove',function(e){
       if(y>0)readYalive=true; return y; }
     var MIN=56, SHOW_AT=10, HIDE_AT=15;
     var hidden=false, lastY=readY(), upAcc=0, downAcc=0;
-    function setHidden(h){ if(h===hidden)return; hidden=h; document.body.classList.toggle('bar-hidden',h); DBG.set('last',(h?'HIDE':'SHOW'),'readY',Math.round(readY()),'alive',readYalive); }
+    function setHidden(h){ if(document.body.classList.contains('composing')||document.body.classList.contains('modal-on'))return;   /* paused while composing / modal open */
+      if(h===hidden)return; hidden=h; document.body.classList.toggle('bar-hidden',h); DBG.set('last',(h?'HIDE':'SHOW'),'readY',Math.round(readY()),'alive',readYalive); }
     function nearTop(){ return readYalive && readY()<=MIN; }   /* only trust "near top" once scroll reads proven alive */
 
     /* ===== PRIMARY: exact clone of the working side-swipe (document + {passive:true}), vertical ===== */
