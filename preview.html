@@ -452,6 +452,12 @@
   .gate-alt.hidden{display:none;}
   .gate-toggle{display:inline-block;margin-top:4px;font-size:11.5px;color:var(--navy,#22398f);font-weight:bold;cursor:pointer;text-decoration:underline;}
   .gate-browse{display:block;margin-top:12px;font-size:10.5px;color:#8a93c0;cursor:pointer;text-decoration:underline;}
+  .gate-switch{margin-top:14px;padding-top:12px;border-top:1px solid #d7e3f4;}
+  .gate-switch-lead{display:block;font-size:11.5px;color:#5b6aa0;margin-bottom:7px;}
+  .gate-create-link{display:block;width:100%;box-sizing:border-box;padding:11px;border:2px dashed var(--orange);border-radius:11px;background:#fff7ee;color:var(--orange-dark);font-weight:bold;font-size:13.5px;cursor:pointer;text-align:center;}
+  .gate-create-link:active{background:#ffefda;}
+  .gate-back{display:inline-block;align-self:flex-start;background:none;border:none;color:var(--name-navy,#123a8f);font-weight:bold;font-size:12.5px;cursor:pointer;margin:-4px 0 4px;float:left;}
+  #gateCreate{clear:both;}
   /* v1.0 iOS/Android app: name+password only (no Google/Apple buttons → no Sign-in-with-Apple requirement).
      Website is unaffected. Coming back in 1.1. */
   html.native-app .gate-google,html.native-app .gate-or,html.native-app #gateAltToggle{display:none!important;}
@@ -1161,44 +1167,38 @@
   </defs>
 </svg>
 
-<!-- INVITE GATE -->
+<!-- INVITE GATE (two screens: strict Sign in  +  dedicated Create account) -->
 <div id="gate">
-  <div class="gatecard">
-    <svg class="gate-logo" viewBox="0 0 130 110" xmlns="http://www.w3.org/2000/svg"><g stroke="#fff" stroke-width="4" stroke-linejoin="round">
-      <path transform="rotate(-56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/>
-      <path transform="rotate(-28 65 96)" d="M65 96 C 53 60 51 26 65 12 C 79 26 77 60 65 96 Z" fill="#ff8a1e"/>
-      <path d="M65 96 C 52 58 50 22 65 8 C 80 22 78 58 65 96 Z" fill="#ff8a1e"/>
-      <path transform="rotate(28 65 96)" d="M65 96 C 53 60 51 26 65 12 C 79 26 77 60 65 96 Z" fill="#ff8a1e"/>
-      <path transform="rotate(56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/>
-      <circle cx="65" cy="96" r="9" fill="#e05e00"/></g></svg>
+  <!-- ===== SIGN IN (returning members only — strict validation) ===== -->
+  <div class="gatecard" id="gateSignin">
+    <svg class="gate-logo" viewBox="0 0 130 110" xmlns="http://www.w3.org/2000/svg"><g stroke="#fff" stroke-width="4" stroke-linejoin="round"><path transform="rotate(-56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/><path transform="rotate(-28 65 96)" d="M65 96 C 53 60 51 26 65 12 C 79 26 77 60 65 96 Z" fill="#ff8a1e"/><path d="M65 96 C 52 58 50 22 65 8 C 80 22 78 58 65 96 Z" fill="#ff8a1e"/><path transform="rotate(28 65 96)" d="M65 96 C 53 60 51 26 65 12 C 79 26 77 60 65 96 Z" fill="#ff8a1e"/><path transform="rotate(56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/><circle cx="65" cy="96" r="9" fill="#e05e00"/></g></svg>
     <h2>The<span style="color:var(--orange)">Flap</span></h2>
-    <p class="gate-tag">where everybody flaps 🐦 · friends edition</p>
-
-    <button class="gate-google gate-apple hidden" id="gateAppleBtn" type="button" onclick="appleSignIn()" style="background:#000;color:#fff;border-color:#000;">
-      <svg width="15" height="17" viewBox="0 0 384 512" aria-hidden="true"><path fill="#fff" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
-      Continue with Apple
-    </button>
-    <button class="gate-google" type="button" onclick="googleSignIn()">
-      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-      Continue with Google
-    </button>
-
-    <div class="gate-or">or</div>
-
-    <div id="gateAlt" class="gate-alt hidden">
-      <p style="font-size:10.5px;color:#2a4a6e;margin:0 0 8px;line-height:1.4;">First time? Pick a name + a password to make your account. Coming back? Same name + password logs you in.</p>
-      <input type="text" id="gateName" name="username" autocomplete="username" maxlength="20" placeholder="Your name (what everyone sees)">
-      <input type="password" id="gatePass" name="password" autocomplete="current-password" maxlength="40" placeholder="Your password">
-      <button class="comp-btn go" type="button" onclick="enterGate()">Let Me In!</button>
-    </div>
+    <p class="gate-tag">welcome back 🐦</p>
+    <button class="gate-google" type="button" onclick="googleSignIn()"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Continue with Google</button>
+    <div class="gate-or">or sign in with your name</div>
+    <input type="text" id="gateName" name="username" autocomplete="username" maxlength="20" placeholder="Your name" onkeydown="if(event.key==='Enter')doLogin()">
+    <input type="password" id="gatePass" name="password" autocomplete="current-password" maxlength="40" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="comp-btn go" type="button" onclick="doLogin()">Log In</button>
     <div class="gate-err" id="gateErr"></div>
-    <a class="gate-toggle" id="gateAltToggle" onclick="toggleGateAlt()">Use a name &amp; password instead</a>
-
-    <a onclick="browseGuest()" class="gate-browse">👀 just browse for now</a>
-    <div class="offline-note" id="offlineNote" style="display:none;">
-      ⚠ Backend not configured yet — you can look around in demo mode, but posts won't be shared.
-      (See TheFlap_online_SETUP.md)
+    <div class="gate-switch">
+      <span class="gate-switch-lead">New to TheFlap?</span>
+      <a class="gate-create-link" onclick="showCreate()">✨ Create account →</a>
     </div>
+    <a onclick="browseGuest()" class="gate-browse">👀 just browse for now</a>
+    <div class="offline-note" id="offlineNote" style="display:none;">⚠ Backend not configured yet — you can look around in demo mode, but posts won't be shared.</div>
+  </div>
+  <!-- ===== CREATE ACCOUNT (dedicated) ===== -->
+  <div class="gatecard hidden" id="gateCreate">
+    <a class="gate-back" onclick="showSignin()">‹ Back to sign in</a>
+    <svg class="gate-logo" viewBox="0 0 130 110" xmlns="http://www.w3.org/2000/svg"><g stroke="#fff" stroke-width="4" stroke-linejoin="round"><path transform="rotate(-56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/><path transform="rotate(-28 65 96)" d="M65 96 C 53 60 51 26 65 12 C 79 26 77 60 65 96 Z" fill="#ff8a1e"/><path d="M65 96 C 52 58 50 22 65 8 C 80 22 78 58 65 96 Z" fill="#ff8a1e"/><path transform="rotate(28 65 96)" d="M65 96 C 53 60 51 26 65 12 C 79 26 77 60 65 96 Z" fill="#ff8a1e"/><path transform="rotate(56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/><circle cx="65" cy="96" r="9" fill="#e05e00"/></g></svg>
+    <h2>Create account</h2>
+    <p class="gate-tag">join TheFlap in a few taps 🐦</p>
+    <button class="gate-google" type="button" onclick="googleSignIn()"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Sign up with Google</button>
+    <div class="gate-or">or pick a name &amp; password</div>
+    <input type="text" id="cName" maxlength="20" placeholder="Your name" autocomplete="off" onkeydown="if(event.key==='Enter')doCreate()">
+    <input type="password" id="cPass" maxlength="40" placeholder="Choose a password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doCreate()">
+    <button class="comp-btn go" type="button" onclick="doCreate()">Create account</button>
+    <div class="gate-err" id="createErr"></div>
   </div>
 </div>
 
@@ -2569,6 +2569,73 @@
     try{ if('Notification' in window && Notification.permission==='default'){ Notification.requestPermission().then(function(){subscribePush();}); }else{subscribePush();} }catch(e){}
     try{ ensureHandle(); }catch(e){}
   }
+  /* ===== STRICT LOGIN (returning accounts only) — never creates, never phantom-logins ===== */
+  async function doLogin(){
+    var name=(document.getElementById('gateName').value||'').trim();
+    var pass=document.getElementById('gatePass').value;
+    var err=document.getElementById('gateErr'); err.textContent='';
+    if(!name){ err.textContent='Enter your name.'; return; }
+    if(!ONLINE){ ME.name=name.slice(0,20); ME.admin=(ME.name.toLowerCase()==='lock'); enterAppAfterLogin(); return; }
+    if(!pass){ err.textContent='Enter your password.'; return; }
+    err.textContent='checking…';
+    try{
+      var res=await sb.from('flap_users').select('*').ilike('name',name).maybeSingle();
+      if(res.error)throw res.error;
+      if(!res.data){
+        /* NO account with that name — do NOT create anything. Offer the create screen. */
+        err.innerHTML='No account found for “'+esc(name)+'”. <a class="gate-create-link" style="display:inline;padding:0;border:none;background:none;text-decoration:underline;" onclick="showCreate(\''+esc(name).replace(/\x27/g,'')+'\')">Create one? →</a>';
+        return;
+      }
+      var hash=await sha256('flapsalt:'+res.data.name.toLowerCase()+':'+pass);
+      if(res.data.pass_hash!==hash){ err.textContent='Wrong password for '+res.data.name+'. Try again.'; return; }
+      if(res.data.banned){ err.textContent='This account has been banned. Email theflapsupport@gmail.com if this is a mistake.'; return; }
+      ME.name=res.data.name; ME.pic=res.data.avatar_url||null; ME.handle=res.data.handle||'';
+      err.textContent=''; toast('Welcome back, '+ME.name+'!');
+      try{await ensureHandle();}catch(eh){}
+      enterAppAfterLogin();
+    }catch(e){ err.textContent='Could not reach the flap server — try again.'; }
+  }
+  /* ===== DEDICATED CREATE ACCOUNT (name + password path) — the ONLY name/pass account maker ===== */
+  async function doCreate(){
+    var name=(document.getElementById('cName').value||'').trim();
+    var pass=document.getElementById('cPass').value;
+    var err=document.getElementById('createErr'); err.textContent='';
+    if(!name){ err.textContent='Pick a name.'; return; }
+    if(!ONLINE){ ME.name=name.slice(0,20); ME.admin=(ME.name.toLowerCase()==='lock'); enterAppAfterLogin(); return; }
+    if(!pass||pass.length<4){ err.textContent='Password needs at least 4 characters.'; return; }
+    if(isReservedName(name)){ err.textContent='That name’s reserved — pick your own! ✨'; return; }
+    err.textContent='setting things up…';
+    try{
+      var ex=await sb.from('flap_users').select('name').ilike('name',name).maybeSingle();
+      if(ex.error)throw ex.error;
+      if(ex.data){
+        err.innerHTML='“'+esc(ex.data.name)+'” is already taken. <a class="gate-create-link" style="display:inline;padding:0;border:none;background:none;text-decoration:underline;" onclick="showSignin()">Sign in instead? →</a>';
+        return;
+      }
+      var newName=name.slice(0,20);
+      var hash=await sha256('flapsalt:'+newName.toLowerCase()+':'+pass);
+      var newHandle=await genUniqueHandle(newName);
+      var ins=await sb.from('flap_users').insert({name:newName,pass_hash:hash,avatar_url:null,handle:newHandle,device:detectDevice()}).select('*').maybeSingle();
+      if(ins.error)throw ins.error;
+      var newRow=(ins&&ins.data)?ins.data:{name:newName,avatar_url:null,handle:newHandle};
+      try{ discordPing('join',newRow.name); }catch(e5){}
+      try{ notifyFlap('lock',newRow.name+' just joined TheFlap! 🎉'); }catch(e5){}
+      try{ if((newRow.name||'').toLowerCase()!=='lock') await sb.from('flap_follows').insert({follower:newRow.name,following:'lock'}); }catch(e5){}
+      err.textContent='';
+      startOnboarding(newRow);   /* handle + display name + profile pic, then enter */
+    }catch(e){ err.textContent='Could not create your account — try again.'; }
+  }
+  function showCreate(prefill){
+    var s=document.getElementById('gateSignin'), c=document.getElementById('gateCreate');
+    if(s)s.classList.add('hidden'); if(c)c.classList.remove('hidden');
+    try{ document.getElementById('createErr').textContent=''; }catch(e){}
+    try{ if(prefill){ document.getElementById('cName').value=prefill; document.getElementById('cPass').focus(); } else { document.getElementById('cName').focus(); } }catch(e){}
+  }
+  function showSignin(){
+    var s=document.getElementById('gateSignin'), c=document.getElementById('gateCreate');
+    if(c)c.classList.add('hidden'); if(s)s.classList.remove('hidden');
+    try{ document.getElementById('gateErr').textContent=''; }catch(e){}
+  }
   /* ---- gate: show/hide the name & password panel ---- */
   function toggleGateAlt(){
     var a=document.getElementById('gateAlt'), t=document.getElementById('gateAltToggle');
@@ -3713,6 +3780,10 @@
   }
   function renderLive(){
     var box=document.getElementById('liveFeed'); if(!box)return;
+    /* preserve which reply boxes are OPEN (and any in-progress draft) so the 20s feed auto-refresh
+       never collapses a thread mid-conversation — that made 2nd+ replies look like they failed. */
+    var __openC={}, __drafts={};
+    try{ box.querySelectorAll('.card.show-compose[id^="flap-"]').forEach(function(c){ __openC[c.id]=1; var ri=c.querySelector('.reply-compose input'); if(ri&&ri.value) __drafts[c.id]=ri.value; }); }catch(e){}
     var __sy=window.pageYOffset||document.documentElement.scrollTop||0;
     /* scroll anchor: remember the topmost visible flap + where it sits on screen, so newer posts
        loading in ABOVE the viewport can't shove the reader to a different spot (fixes the feed "jumping") */
@@ -3765,6 +3836,8 @@
       if(__el){ var __delta=__el.getBoundingClientRect().top-__anchorTop; if(Math.abs(__delta)>0.5){ try{window.scrollBy(0,__delta);}catch(e){} } }
       else if(__sy>0){ try{window.scrollTo(0,__sy);}catch(e){} }
     } else if(__sy>0){ try{window.scrollTo(0,__sy);}catch(e){} }
+    /* re-open any reply boxes that were open before this re-render (fixes 2nd+ replies) */
+    try{ Object.keys(__openC).forEach(function(cid){ var c=document.getElementById(cid); if(!c)return; c.classList.add('show-compose'); var tb=c.querySelector('.replybtn'); if(tb)tb.textContent='✕ Close'; if(__drafts[cid]){ var ri=c.querySelector('.reply-compose input'); if(ri)ri.value=__drafts[cid]; } }); }catch(e){}
     try{fitPosterNames();}catch(e){}   /* auto-shrink long poster names so they fit on one line instead of stacking */
     try{refreshOpenFlap();}catch(e){}   /* keep an open single-post view in sync too */
   }
