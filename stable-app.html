@@ -5695,7 +5695,8 @@ document.addEventListener('touchmove',function(e){
       if(!compactR()){ clearBar(); return; }        /* desktop: never touch the bar */
       if(overlayOpen()){ return; }                    /* scope isolation: only the feed */
       var y=readY(), d=y-lastY; lastY=y;
-      if(y<=6){ if(off!==0){ off=0; setBar(0, true); } scheduleSnap(); return; }   /* at the very top: fully shown */
+      if(y<=6){ if(off!==0){ off=0; setBar(0, true); } return; }   /* at the very top: fully shown (settled) */
+      if(d===0) return;   /* stationary: don’t reschedule -> let the snap settle */
       off -= d;                                        /* 1:1 tracking: scroll DOWN hides, scroll UP reveals */
       if(off>0) off=0; if(off < -H) off=-H;
       setBar(off, false);                              /* follow the finger, no transition -> gradual */
