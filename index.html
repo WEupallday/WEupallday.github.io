@@ -77,7 +77,7 @@
 
   .topbar{background:linear-gradient(180deg,#ff9a2e 0%,var(--orange) 55%,#d96f00 100%);border-bottom:3px solid #a85400;padding:5px 0;box-shadow:0 3px 10px rgba(0,0,0,.4);}
   /* hide-on-scroll: APP ONLY — the desktop website keeps its original static top bar unchanged */
-  html.is-app .topbar{position:sticky;top:0;z-index:95;transition:transform .34s cubic-bezier(.22,.61,.36,1);will-change:transform;}
+  html.is-app .topbar{position:sticky;top:0;z-index:95;transition:transform .28s ease;will-change:transform;}
   html.is-app body.bar-hidden .topbar{transform:translateY(-105%);}
   .topbar-inner{width:1010px;margin:0 auto;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
   .navbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:9px;letter-spacing:.5px;color:#fff;text-transform:uppercase;cursor:pointer;background:linear-gradient(180deg,#c22a1a 0%,#8f1408 100%);border:1px solid #6b0e04;border-radius:4px;padding:4px 9px;text-shadow:0 1px 1px rgba(0,0,0,.5);}
@@ -465,7 +465,7 @@
   #gateCreate{clear:both;}
   /* v1.0 iOS/Android app: name+password only (no Google/Apple buttons → no Sign-in-with-Apple requirement).
      Website is unaffected. Coming back in 1.1. */
-  html.native-app #gateAltToggle{display:none!important;}
+  html.native-app .gate-google,html.native-app .gate-or,html.native-app #gateAltToggle{display:none!important;}
   html.native-app #gateAlt{display:block!important;margin-top:2px;}
   /* ---- onboarding wizard (new accounts) ---- */
   #onboard{position:fixed;inset:0;z-index:210;background:rgba(15,8,32,.75);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 14px;}
@@ -497,7 +497,7 @@
   .ob-policy{background:#fff6ee;border:2px solid #ffd8ad;border-radius:11px;padding:11px 13px;margin:14px 0 2px;font-size:11.5px;color:#7a5a30;line-height:1.5;}
   .ob-policy b{color:#a35a00;} .ob-policy a{color:var(--navy,#22398f);font-weight:bold;}
   /* ---- people search ---- */
-  #searchModal{position:fixed;inset:0;z-index:180;background:rgba(15,8,32,.6);display:none;align-items:center;justify-content:center;padding:20px 14px;}
+  #searchModal{position:fixed;inset:0;z-index:180;background:rgba(15,8,32,.6);display:none;align-items:flex-start;justify-content:center;padding:60px 14px 20px;}
   #searchModal.open{display:flex;}
   .srch-card{width:420px;max-width:96vw;background:#fff;border:3px solid var(--orange);border-radius:14px;box-shadow:0 18px 46px rgba(0,0,0,.6);overflow:hidden;}
   .srch-head{background:linear-gradient(#f5920f,#e07d0a);color:#fff;padding:11px 14px;display:flex;align-items:center;gap:8px;}
@@ -898,7 +898,7 @@
     .menu-btn{display:inline-block;flex:none;font-size:20px;line-height:1;padding:6px 12px;background:linear-gradient(180deg,#f5a623,#e07d0a);border-color:#b45c00;}
     #drawerScrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:190;opacity:0;pointer-events:none;transition:opacity .2s ease;}
     body.drawer-open #drawerScrim{opacity:1;pointer-events:auto;}
-    #sideDrawer{display:block;position:fixed;top:0;left:0;height:100%;width:84%;max-width:340px;z-index:200;background:linear-gradient(160deg,#1636a6 0%,#0f2570 100%);box-shadow:6px 0 26px rgba(0,0,0,.55);transform:translateX(-104%);transition:transform .34s cubic-bezier(.22,.61,.36,1);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px 24px;}
+    #sideDrawer{display:block;position:fixed;top:0;left:0;height:100%;width:84%;max-width:340px;z-index:200;background:linear-gradient(160deg,#1636a6 0%,#0f2570 100%);box-shadow:6px 0 26px rgba(0,0,0,.55);transform:translateX(-104%);transition:transform .26s ease;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px 24px;}
     body.drawer-open #sideDrawer{transform:translateX(0);}
     .drawer-head{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:calc(max(env(safe-area-inset-top,0px),50px) + 8px) 4px 11px;margin-bottom:6px;background:linear-gradient(160deg,#1636a6,#0f2570);border-bottom:2px solid #ffd23f;z-index:2;}   /* push "theFLAP menu" below the island */
     .fd-bar{padding-top:calc(max(env(safe-area-inset-top,0px),44px) + 10px);}   /* single-post back bar clears the island too (app only) */
@@ -973,7 +973,7 @@
     .reply{padding:4px 2px;}
     .post-pic{margin-top:5px;}
     /* auto-hiding top bar: slides up when scrolling down, back when scrolling up */
-    .topbar{transition:transform .34s cubic-bezier(.22,.61,.36,1);}
+    .topbar{transition:transform .26s ease;}
     body.bar-hidden .topbar{transform:translateY(-100%);}
   }
   /* ===== TheFlap HQ — dedicated tabbed admin ===== */
@@ -1079,7 +1079,7 @@
   .dm-seen{text-align:right;font-size:10px;color:#8aa0c8;margin:-2px 4px 6px 0;letter-spacing:.3px;}
   /* auto-hide the top bar on scroll-down, reveal on scroll-up. Uses `top` (transform is blocked on this
      sticky bar in-app), slid far enough up to fully clear even tall safe-area bars. */
-  html.is-app .topbar{transition:top .34s cubic-bezier(.22,.61,.36,1);}
+  html.is-app .topbar{transition:top .26s ease;}
   html.is-app body.bar-hidden .topbar{top:-320px;}
   /* ===== PWA STANDALONE render fix (home-screen bookmark) =====
      iOS standalone was letting position:sticky degrade to STATIC, so the top bar scrolled off
@@ -1090,7 +1090,7 @@
   html.is-standalone .topbar{
     position:fixed !important; top:0 !important; left:0; right:0; z-index:1000 !important;
     padding-top:calc(env(safe-area-inset-top, 0px) + 10px) !important;
-    transform:translateY(0); transition:transform .34s cubic-bezier(.22,.61,.36,1); will-change:transform;
+    transform:translateY(0); transition:transform .26s ease; will-change:transform;
   }
   html.is-standalone body.bar-hidden .topbar{ transform:translateY(-135%) !important; }
   html.is-standalone body{ padding-top:var(--topbar-h, 104px); }
@@ -1141,24 +1141,6 @@
     .navbtn{ font-size:8.5px !important; padding:4px 8px !important; }
     .reply{ padding:6px 6px 6px 3px !important; } .reply .rava{ width:34px !important; height:38px !important; } .reply .rtx{ font-size:12px !important; }
   }
-
-  /* ===== POLISH BATCH — app/phone only; desktop untouched ===== */
-  html.is-app body.detail-open .topbar, html.is-app body.drawer-open .topbar, html.is-app body.search-on .topbar, html.is-app body.settings-on .topbar,
-  html.is-standalone body.detail-open .topbar, html.is-standalone body.drawer-open .topbar, html.is-standalone body.search-on .topbar, html.is-standalone body.settings-on .topbar{ display:none !important; }
-  html.is-app .menu-btn.as-avatar{ width:36px !important; height:36px !important; border-radius:50% !important; overflow:hidden !important; padding:0 !important; flex:0 0 auto !important; }
-  html.is-app .menu-btn.as-avatar img{ width:100% !important; height:100% !important; object-fit:cover !important; border-radius:50% !important; display:block !important; }
-  .gate-google{ display:none; } .gate-or{ display:none; }
-  html.is-app .gate-google{ display:flex !important; } html.is-app .gate-or{ display:flex !important; }
-  html.is-app .dm-bub{ font-size:16px !important; padding:12px 16px !important; border-radius:20px !important; box-shadow:0 2px 5px rgba(0,0,0,.22); max-width:80% !important; }
-  html.is-app .dm-line{ align-items:flex-end; gap:7px; margin-bottom:10px; }
-  html.is-app .dm-line.mine{ flex-direction:row-reverse; justify-content:flex-start; }
-  html.is-app .dm-ava{ width:26px; height:26px; border-radius:50%; overflow:hidden; flex:0 0 auto; background:#cfe0ff; align-self:flex-end; }
-  html.is-app .dm-ava img{ width:100%; height:100%; object-fit:cover; display:block; }
-  html.is-app .dm-ava svg{ width:100%; height:100%; }
-  #socPanels{ padding:0 !important; overflow:hidden !important; display:flex; flex-direction:column; }
-  #socPanels .soc-panel{ display:none; padding:12px; overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1 1 auto; }
-  #socPanels .soc-panel.on{ display:block; animation:flapFade .16s ease; }
-  @keyframes flapFade{ from{ opacity:.35; } to{ opacity:1; } }
 </style>
 </head>
 <body>
@@ -2956,11 +2938,11 @@
   var SRCH_T=null, SRCH_ROWS=[];
   function openSearch(){
     var m=document.getElementById('searchModal'); if(!m)return;
-    m.classList.add('open'); document.body.classList.add('search-on');
+    m.classList.add('open');
     var i=document.getElementById('srchInput'); if(i){i.value='';setTimeout(function(){try{i.focus();}catch(e){}},60);}
     document.getElementById('srchResults').innerHTML='<div class="srch-empty">Type a name to find your friends on TheFlap.</div>';
   }
-  function closeSearch(){ var m=document.getElementById('searchModal'); if(m)m.classList.remove('open'); document.body.classList.remove('search-on'); }
+  function closeSearch(){ var m=document.getElementById('searchModal'); if(m)m.classList.remove('open'); }
   function runSearch(){
     var q=(((document.getElementById('srchInput')||{}).value)||'').trim().replace(/^@/,'');
     if(SRCH_T)clearTimeout(SRCH_T);
@@ -2993,7 +2975,7 @@
   async function openSettings(){
     if(!ONLINE||!sb||!ME.name){ toast('Settings need the server.'); return; }
     try{ closeProfile(); }catch(e){}
-    document.getElementById('settingsModal').classList.add('open'); document.body.classList.add('settings-on');
+    document.getElementById('settingsModal').classList.add('open');
     try{
       var r=await sb.from('flap_users').select('name,handle,avatar_url,name_changes,handle_changes,bio,banner,links').ilike('name',ME.name).maybeSingle();
       SET.row=(r&&r.data)?r.data:{name:ME.name,handle:ME.handle||'',avatar_url:ME.pic||null,name_changes:0,handle_changes:0};
@@ -3042,7 +3024,7 @@
     catch(e){ hint.className='set-hint bad'; hint.textContent='Could not save.'; }
     btn.classList.remove('disabled');
   }
-  function closeSettings(){ var m=document.getElementById('settingsModal'); if(m)m.classList.remove('open'); document.body.classList.remove('settings-on'); }
+  function closeSettings(){ var m=document.getElementById('settingsModal'); if(m)m.classList.remove('open'); }
   function settingsUpdateCounts(){
     var nc=(SET.row&&SET.row.name_changes)||0, hc=(SET.row&&SET.row.handle_changes)||0;
     var nleft=Math.max(0, SET_LIMITS.name-nc), hleft=Math.max(0, SET_LIMITS.handle-hc);
@@ -5340,7 +5322,7 @@
     if(st==='incoming'){return acceptFriend(name);}
     try{ await sb.from('flaps').insert({name:'::friend::',body:ME.name+PSEP+name+PSEP+'pending',mood:'flappy',likes:0}); }catch(e){}
     try{addNotif(name,ME.name,'friend',null,'sent you a friend request');}catch(e){}
-    await loadFriends(); toast('Friend request sent to '+name+'!'); openSocial(SOCIAL_TAB, true);
+    await loadFriends(); toast('Friend request sent to '+name+'!'); if(document.getElementById('friendAdd'))openSocial(SOCIAL_TAB);
   }
   async function acceptFriend(name){
     if(!requireAuth())return; var me=(ME.name||'').toLowerCase(),o=(name||'').toLowerCase();
@@ -5348,14 +5330,14 @@
     if(!row){toast('No pending request from '+name+'.');return;}
     try{ await sb.from('flaps').update({body:row.a+PSEP+row.b+PSEP+'accepted'}).eq('id',row.id); }catch(e){}
     try{addNotif(name,ME.name,'friend',null,'accepted your friend request');}catch(e){}
-    await loadFriends(); toast("You're now friends with "+name+"!"); openSocial('friends', true);
+    await loadFriends(); toast("You're now friends with "+name+"!"); openSocial('friends');
   }
   async function removeFriend(name){
     var me=(ME.name||'').toLowerCase(),o=(name||'').toLowerCase();
     var row=FRIENDS_ROWS.find(function(f){var a=f.a.toLowerCase(),b=f.b.toLowerCase();return (a===me&&b===o)||(a===o&&b===me);});
     if(!row)return; if(!confirm('Remove '+name+' as a friend?'))return;
     try{ await sb.from('flaps').delete().eq('id',row.id); }catch(e){}
-    await loadFriends(); openSocial(SOCIAL_TAB, true);
+    await loadFriends(); openSocial(SOCIAL_TAB);
   }
   async function loadDM(name){
     if(!ONLINE)return [];
@@ -5392,7 +5374,7 @@
     return msgs.map(function(m,idx){
       var mine=m.from.toLowerCase()===me;
       var seen=(mine && idx===lastMine && lastReadMs && new Date(m.at).getTime()<=lastReadMs) ? '<div class="dm-seen">Seen ✓</div>' : '';
-      return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-ava">'+(mine?myAva():avatarFor(m.from))+'</span><span class="dm-bub">'+dmText(m.text)+'</span></div>'+seen;
+      return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+dmText(m.text)+'</span></div>'+seen;
     }).join('');
   }
   async function sendDM(name){
@@ -5403,7 +5385,7 @@
     /* show my message instantly, like a real text — before the server round-trip */
     var th=document.getElementById('dmThread');
     if(th){ var ph=th.querySelector('.dm-empty'); if(ph)ph.remove();
-      th.insertAdjacentHTML('beforeend','<div class="dm-line mine"><span class="dm-ava">'+myAva()+'</span><span class="dm-bub">'+dmText(text)+'</span></div>');
+      th.insertAdjacentHTML('beforeend','<div class="dm-line mine"><span class="dm-bub">'+dmText(text)+'</span></div>');
       th.scrollTop=th.scrollHeight; }
     if(inp)inp.focus();
     try{ await sb.from('flaps').insert({name:'::dm::',body:ME.name+PSEP+name+PSEP+text,mood:'flappy',likes:0}); }catch(e){}
@@ -5422,39 +5404,29 @@
     if(nearBottom)th.scrollTop=th.scrollHeight;
     markDMRead(name);                                /* keep my read-marker current as new messages arrive */
   }
-  function socialShell(){
-    return '<div class="pc-strip"><span>👯 Friends & Messages</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>'
-      +'<div class="hq-tabs" id="socTabs">'
-        +'<button class="hq-tab" data-tab="friends" style="flex-direction:row;gap:5px;font-size:12px;padding:9px 4px;" onclick="switchSocialTab(\'friends\')">👯 Friends</button>'
-        +'<button class="hq-tab" data-tab="requests" style="flex-direction:row;gap:5px;font-size:12px;padding:9px 4px;" onclick="switchSocialTab(\'requests\')">📨 Requests<span id="reqCountPill"></span></button>'
-        +'<button class="hq-tab" data-tab="messages" style="flex-direction:row;gap:5px;font-size:12px;padding:9px 4px;" onclick="switchSocialTab(\'messages\')">💬 Messages</button>'
-      +'</div>'
-      +'<div class="pc-body hq-body" id="socPanels"><div class="soc-panel" data-tab="friends" id="soc-friends"></div><div class="soc-panel" data-tab="requests" id="soc-requests"></div><div class="soc-panel" data-tab="messages" id="soc-messages"></div></div>';
-  }
-  function renderSocialPanels(){
-    var inc=incomingReqs(); var pill=document.getElementById('reqCountPill'); if(pill)pill.textContent=inc.length?(' ('+inc.length+')'):'';
-    var fp=document.getElementById('soc-friends'); if(fp){ var fr=myFriends();
-      fp.innerHTML='<div style="display:flex;gap:6px;margin-bottom:10px;"><input id="friendAdd" class="hq-input" style="margin:0;" placeholder="add a friend by username…" onkeydown="if(event.key===\'Enter\')sendFriendReq(this.value)"><button class="hq-btn hq-go" style="padding:9px 14px;" onclick="sendFriendReq((document.getElementById(\'friendAdd\').value||\'\'))">Add</button></div>'
-        +(fr.length?fr.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><button class="hq-blue" style="border:none;border-radius:7px;padding:7px 12px;font-weight:bold;cursor:pointer;" onclick="openDM(\''+nm+'\')">💬</button><button style="background:#e6e8ef;border:none;border-radius:7px;padding:7px 10px;cursor:pointer;" onclick="removeFriend(\''+nm+'\')">✕</button></div>;}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">No friends yet — add someone above!</div>'); }
-    var rp=document.getElementById('soc-requests'); if(rp){ rp.innerHTML=(inc.length?inc.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><button class="hq-go" style="border:none;border-radius:7px;padding:7px 13px;font-weight:bold;color:#fff;cursor:pointer;" onclick="acceptFriend(\''+nm+'\')">Accept</button></div>';}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">No friend requests right now.</div>'); }
-    var mp=document.getElementById('soc-messages'); if(mp){ var fr2=myFriends(); mp.innerHTML=(fr2.length?'<div style="font-size:11px;color:#556;margin-bottom:6px;">Tap a friend to open your chat.</div>'+fr2.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem" style="cursor:pointer;" onclick="openDM(\''+nm+'\')"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><span style="color:#2a6fb0;font-size:16px;">💬</span></div>;}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">Add friends first, then you can DM them.</div>'); }
-  }
-  function switchSocialTab(tab){
-    SOCIAL_TAB=tab;
-    var ts=document.querySelectorAll('#socTabs .hq-tab'); for(var i=0;i<ts.length;i++){ ts[i].classList.toggle('on', ts[i].getAttribute('data-tab')===tab); }
-    var ps=document.querySelectorAll('#socPanels .soc-panel'); for(var j=0;j<ps.length;j++){ ps[j].classList.toggle('on', ps[j].getAttribute('data-tab')===tab); }
-  }
-  async function openSocial(tab, forceRebuild){
+  async function openSocial(tab){
     if(!FEATURES.social){toast('Coming soon 👀');return;}
     if(!requireAuth())return;
-    SOCIAL_TAB=tab||SOCIAL_TAB||'friends';
-    var pm=document.getElementById('profModal'); pm.classList.add('open'); pm.classList.add('mob-full'); document.body.classList.add('modal-on');
+    SOCIAL_TAB=tab||SOCIAL_TAB;
     var box=document.getElementById('profCardBox');
-    if(!forceRebuild && document.getElementById('socPanels')){ switchSocialTab(SOCIAL_TAB); return; }
-    if(!document.getElementById('socPanels')){ box.innerHTML=socialShell(); }
+    var _pm=document.getElementById('profModal'); _pm.classList.add('open'); _pm.classList.add('mob-full'); document.body.classList.add('modal-on');
+    box.innerHTML='<div class="pc-strip"><span>👯 Friends & Messages</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body" style="padding:22px;text-align:center;">loading…</div>';
     await loadFriends();
-    renderSocialPanels();
-    switchSocialTab(SOCIAL_TAB);
+    var tabs=[['friends','👯 Friends'],['requests','📨 Requests'],['messages','💬 Messages']];
+    var inc=incomingReqs();
+    var bar='<div class="hq-tabs">'+tabs.map(function(t){return '<button class="hq-tab'+(SOCIAL_TAB===t[0]?' on':'')+'" style="flex-direction:row;gap:5px;font-size:12px;padding:9px 4px;" onclick="openSocial(\''+t[0]+'\')">'+t[1]+(t[0]==='requests'&&inc.length?' ('+inc.length+')':'')+'</button>';}).join('')+'</div>';
+    var body='';
+    if(SOCIAL_TAB==='friends'){
+      body+='<div style="display:flex;gap:6px;margin-bottom:10px;"><input id="friendAdd" class="hq-input" style="margin:0;" placeholder="add a friend by username…" onkeydown="if(event.key===\'Enter\')sendFriendReq(this.value)"><button class="hq-btn hq-go" style="padding:9px 14px;" onclick="sendFriendReq((document.getElementById(\'friendAdd\').value||\'\'))">Add</button></div>';
+      var fr=myFriends();
+      body+=fr.length?fr.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><button class="hq-blue" style="border:none;border-radius:7px;padding:7px 12px;font-weight:bold;cursor:pointer;" onclick="openDM(\''+nm+'\')">💬</button><button style="background:#e6e8ef;border:none;border-radius:7px;padding:7px 10px;cursor:pointer;" onclick="removeFriend(\''+nm+'\')">✕</button></div>';}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">No friends yet — add someone above!</div>';
+    } else if(SOCIAL_TAB==='requests'){
+      body+=inc.length?inc.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><button class="hq-go" style="border:none;border-radius:7px;padding:7px 13px;font-weight:bold;color:#fff;cursor:pointer;" onclick="acceptFriend(\''+nm+'\')">Accept</button></div>';}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">No friend requests right now.</div>';
+    } else {
+      var fr2=myFriends();
+      body+=fr2.length?'<div style="font-size:11px;color:#556;margin-bottom:6px;">Tap a friend to open your chat.</div>'+fr2.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem" style="cursor:pointer;" onclick="openDM(\''+nm+'\')"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><span style="color:#2a6fb0;font-size:16px;">💬</span></div>';}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">Add friends first, then you can DM them.</div>';
+    }
+    box.innerHTML='<div class="pc-strip"><span>👯 Friends & Messages</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>'+bar+'<div class="pc-body hq-body">'+body+'</div>';
   }
   async function openDM(name){
     if(!FEATURES.social)return;
@@ -5682,9 +5654,9 @@ document.addEventListener('touchmove',function(e){
     function readY(){ var y=window.pageYOffset||0;
       if(!y){ var se=document.scrollingElement; y=(se&&se.scrollTop)||document.documentElement.scrollTop||(document.body&&document.body.scrollTop)||(INNER&&INNER.scrollTop)||0; }
       if(y>0)readYalive=true; return y; }
-    var MIN=56, SHOW_AT=16, HIDE_AT=24;
+    var MIN=56, SHOW_AT=10, HIDE_AT=15;
     var hidden=false, lastY=readY(), upAcc=0, downAcc=0;
-    function setHidden(h){ var _b=document.body.classList; if(_b.contains('composing')||_b.contains('modal-on')||_b.contains('detail-open')||_b.contains('drawer-open')||_b.contains('search-on')||_b.contains('settings-on'))return;   /* paused while composing / modal open */
+    function setHidden(h){ if(document.body.classList.contains('composing')||document.body.classList.contains('modal-on'))return;   /* paused while composing / modal open */
       if(h===hidden)return; hidden=h; document.body.classList.toggle('bar-hidden',h); DBG.set('last',(h?'HIDE':'SHOW'),'readY',Math.round(readY()),'alive',readYalive); }
     function nearTop(){ return readYalive && readY()<=MIN; }   /* only trust "near top" once scroll reads proven alive */
 
