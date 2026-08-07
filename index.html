@@ -1149,7 +1149,12 @@
   html.is-app .menu-btn.as-avatar img{ width:100% !important; height:100% !important; object-fit:cover !important; border-radius:50% !important; display:block !important; }
   .gate-google{ display:none; } .gate-or{ display:none; }
   html.is-app .gate-google{ display:flex !important; } html.is-app .gate-or{ display:flex !important; }
-  html.is-app .dm-bub{ font-size:14.5px !important; padding:10px 13px !important; border-radius:16px !important; }
+  html.is-app .dm-bub{ font-size:16px !important; padding:12px 16px !important; border-radius:20px !important; box-shadow:0 2px 5px rgba(0,0,0,.22); max-width:80% !important; }
+  html.is-app .dm-line{ align-items:flex-end; gap:7px; margin-bottom:10px; }
+  html.is-app .dm-line.mine{ flex-direction:row-reverse; justify-content:flex-start; }
+  html.is-app .dm-ava{ width:26px; height:26px; border-radius:50%; overflow:hidden; flex:0 0 auto; background:#cfe0ff; align-self:flex-end; }
+  html.is-app .dm-ava img{ width:100%; height:100%; object-fit:cover; display:block; }
+  html.is-app .dm-ava svg{ width:100%; height:100%; }
   #socPanels{ padding:0 !important; overflow:hidden !important; display:flex; flex-direction:column; }
   #socPanels .soc-panel{ display:none; padding:12px; overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1 1 auto; }
   #socPanels .soc-panel.on{ display:block; animation:flapFade .16s ease; }
@@ -5387,7 +5392,7 @@
     return msgs.map(function(m,idx){
       var mine=m.from.toLowerCase()===me;
       var seen=(mine && idx===lastMine && lastReadMs && new Date(m.at).getTime()<=lastReadMs) ? '<div class="dm-seen">Seen ✓</div>' : '';
-      return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-bub">'+dmText(m.text)+'</span></div>'+seen;
+      return '<div class="dm-line '+(mine?'mine':'')+'"><span class="dm-ava">'+(mine?myAva():avatarFor(m.from))+'</span><span class="dm-bub">'+dmText(m.text)+'</span></div>'+seen;
     }).join('');
   }
   async function sendDM(name){
@@ -5398,7 +5403,7 @@
     /* show my message instantly, like a real text — before the server round-trip */
     var th=document.getElementById('dmThread');
     if(th){ var ph=th.querySelector('.dm-empty'); if(ph)ph.remove();
-      th.insertAdjacentHTML('beforeend','<div class="dm-line mine"><span class="dm-bub">'+dmText(text)+'</span></div>');
+      th.insertAdjacentHTML('beforeend','<div class="dm-line mine"><span class="dm-ava">'+myAva()+'</span><span class="dm-bub">'+dmText(text)+'</span></div>');
       th.scrollTop=th.scrollHeight; }
     if(inp)inp.focus();
     try{ await sb.from('flaps').insert({name:'::dm::',body:ME.name+PSEP+name+PSEP+text,mood:'flappy',likes:0}); }catch(e){}
