@@ -5659,55 +5659,55 @@ document.addEventListener('touchmove',function(e){
     }
     x0=y0=null;
   },{passive:true});
-  /* ---- App-context scroll-reveal (X-style, rebuilt clean for Build 10) ----
-     Feed page ONLY. Scroll DOWN -> the top panel (bar + tabs) slides away and STAYS away.
-     Slightest scroll UP -> it returns. Never runs while any section is open
-     (search / composer / messages / menu / post detail / settings) so it can
-     never overlap those views. */
+  /* ---- App-context scroll-reveal (X-style INTERACTIVE, Build 10) ----
+     Feed page ONLY. The top panel (bar + tabs) TRACKS your scroll: scroll down and it slides
+     away; scroll up and it eases back in GRADUALLY (proportional to how far you scroll up — no
+     instant pop). When you pause it settles cleanly to fully-shown or fully-hidden. The engine
+     drives the bar's transform inline (with !important) so nothing in the CSS can fight it, and it
+     never runs while any section is open (search / composer / messages / menu / detail / settings). */
   (function(){
     var mqR = window.matchMedia('(max-width:760px)');
     function compactR(){ return !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent) || mqR.matches; }
     function overlayOpen(){ var b=document.body.classList; return b.contains('composing')||b.contains('modal-on')||b.contains('detail-open')||b.contains('drawer-open')||b.contains('search-on')||b.contains('settings-on'); }
-    var hidden=false;
-    function apply(h){ if(h===hidden)return; hidden=h; document.body.classList.toggle('bar-hidden', h); }
-    function show(){ apply(false); }
-    function hide(){ apply(true); }
-    /* robust scroll-position read: window scroll events are unreliable in the iOS/Android webview,
-       so we also track the active inner scroller and poll the position every animation frame. */
-    var INNER=null;
-    document.addEventListener('scroll', function(e){ var t=e.target;
-      if(t&&t.nodeType===1&&t!==document&&t!==document.documentElement&&t!==document.body&&t.scrollHeight>t.clientHeight+4){ INNER=t; }
-    }, true);
-    function readY(){ var y=window.pageYOffset||0;
-      if(!y){ var se=document.scrollingElement; y=(se&&se.scrollTop)||document.documentElement.scrollTop||(document.body&&document.body.scrollTop)||(INNER&&INNER.scrollTop)||0; }
-      return y; }
-    var TOP=56, UP_SHOW=6, DOWN_HIDE=10;
-    var lastY=readY(), accUp=0, accDown=0;
-    function evaluate(){
-      if(!compactR()){ if(hidden) show(); return; }   /* desktop: never touch the bar */
-      if(overlayOpen()){ return; }                     /* scope isolation: only the feed */
-      var y=readY(), d=y-lastY; lastY=y;
-      if(y<=TOP){ accUp=accDown=0; show(); return; }    /* at the very top -> always visible */
-      if(d>0){ accDown+=d; accUp=0; if(accDown>=DOWN_HIDE){ hide(); } }        /* scrolling DOWN -> hide, stays hidden */
-      else if(d<0){ accUp+=-d; accDown=0; if(accUp>=UP_SHOW){ show(); } }      /* slightest UP -> reveal */
+    var bar=null;
+    function getBar(){ if(!bar||!bar.isConnected) bar=document.querySelector('.topbar'); return bar; }
+    var H=64;
+    function measure(){ var b=getBar(); if(b){ var h=Math.round(b.getBoundingClientRect().height); if(h>0) H=h+2; } }
+    var off=0, cleared=true, snapT=null;
+    function setBar(px, ease){
+      var b=getBar(); if(!b) return;
+      b.style.setProperty('transition', ease ? 'transform .2s cubic-bezier(.22,.61,.36,1)' : 'none', 'important');
+      b.style.setProperty('transform', 'translateY('+px+'px)', 'important');
+      cleared=false;
     }
-    (function loop(){ evaluate(); requestAnimationFrame(loop); })();
-    /* touch is the primary signal on mobile (mirrors the working side-swipe binding: document + passive) */
-    var tY=null;
-    document.addEventListener('touchstart', function(e){ if(e.touches&&e.touches[0]) tY=e.touches[0].clientY; }, {passive:true});
-    document.addEventListener('touchmove', function(e){
-      if(tY==null||!e.touches||!e.touches[0]) return;
-      if(!compactR()||overlayOpen()) return;
-      var y=e.touches[0].clientY, d=tY-y; tY=y;         /* d>0 => content moves up => scrolling DOWN */
-      if(readY()<=TOP){ show(); return; }
-      if(d>=DOWN_HIDE){ hide(); } else if(d<=-UP_SHOW){ show(); }
-    }, {passive:true});
-    document.addEventListener('touchend', function(){ tY=null; }, {passive:true});
-    ['scroll','wheel'].forEach(function(ev){
-      window.addEventListener(ev, evaluate, {passive:true});
-      document.addEventListener(ev, evaluate, {passive:true});
+    function clearBar(){ var b=getBar(); if(b && !cleared){ b.style.removeProperty('transform'); b.style.removeProperty('transition'); cleared=true; } if(document.body.classList.contains('bar-hidden')) document.body.classList.remove('bar-hidden'); }
+    function readY(){ var y=window.pageYOffset||0; if(!y){ var se=document.scrollingElement; y=(se&&se.scrollTop)||document.documentElement.scrollTop||(document.body&&document.body.scrollTop)||0; } return y; }
+    var lastY=readY();
+    function scheduleSnap(){
+      if(snapT) clearTimeout(snapT);
+      snapT=setTimeout(function(){
+        if(!compactR()||overlayOpen()) return;
+        var target=(off > -H/2) ? 0 : -H;   /* settle to the nearer state, gently eased */
+        off=target; setBar(off, true);
+      }, 110);
+    }
+    function update(){
+      if(!compactR()){ clearBar(); return; }        /* desktop: never touch the bar */
+      if(overlayOpen()){ return; }                    /* scope isolation: only the feed */
+      var y=readY(), d=y-lastY; lastY=y;
+      if(y<=6){ if(off!==0){ off=0; setBar(0, true); } scheduleSnap(); return; }   /* at the very top: fully shown */
+      off -= d;                                        /* 1:1 tracking: scroll DOWN hides, scroll UP reveals */
+      if(off>0) off=0; if(off < -H) off=-H;
+      setBar(off, false);                              /* follow the finger, no transition -> gradual */
+      scheduleSnap();
+    }
+    (function loop(){ update(); requestAnimationFrame(loop); })();
+    ['scroll','wheel','touchmove'].forEach(function(ev){
+      window.addEventListener(ev, update, {passive:true});
+      document.addEventListener(ev, update, {passive:true});
     });
-    window.addEventListener('resize', function(){ if(!compactR()&&hidden) show(); });
+    setTimeout(measure, 300); setTimeout(measure, 1500);
+    window.addEventListener('resize', function(){ measure(); if(!compactR()) clearBar(); });
   })();
 
   /* hard block pinch-zoom in the app so it can never get stuck zoomed (viewport lock + this) */
