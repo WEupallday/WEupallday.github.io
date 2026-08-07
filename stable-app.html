@@ -1159,6 +1159,23 @@
   #socPanels .soc-panel{ display:none; padding:12px; overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1 1 auto; }
   #socPanels .soc-panel.on{ display:block; animation:flapFade .16s ease; }
   @keyframes flapFade{ from{ opacity:.35; } to{ opacity:1; } }
+
+  /* ===== BUILD 10 PUNCH-LIST (app/phone only; desktop untouched) ===== */
+  /* (1) bigger messaging + notification (bell) icons in the top bar */
+  html.is-app .topbar .navbtn.msg-nav, html.is-app .topbar .navbtn.bell,
+  html.is-standalone .topbar .navbtn.msg-nav, html.is-standalone .topbar .navbtn.bell{ font-size:19px !important; padding:2px 9px !important; line-height:1 !important; }
+  html.is-app .topbar .navbtn.msg-nav .bell-count, html.is-app .topbar .navbtn.bell .bell-count,
+  html.is-standalone .topbar .navbtn.msg-nav .bell-count, html.is-standalone .topbar .navbtn.bell .bell-count{ font-size:10px !important; }
+  /* (2) clean X-style reveal: ONE consistent hidden state (kills the -105%/-100%/-135%/top:-320px conflict) */
+  html.is-app body.bar-hidden .topbar, html.is-standalone body.bar-hidden .topbar{ transform:translateY(-110%) !important; top:0 !important; }
+  html.is-app .topbar, html.is-standalone .topbar{ transition:transform .28s cubic-bezier(.22,.61,.36,1) !important; will-change:transform; }
+  /* (4) screen-lock: while any section is open, the feed behind cannot scroll */
+  html.is-app body.composing, html.is-app body.modal-on, html.is-app body.search-on, html.is-app body.settings-on, html.is-app body.drawer-open,
+  html.is-standalone body.composing, html.is-standalone body.modal-on, html.is-standalone body.search-on, html.is-standalone body.settings-on, html.is-standalone body.drawer-open{ overflow:hidden !important; }
+  html.is-app, html.is-standalone{ overscroll-behavior-y:none; }
+  /* (5) messages / profile TRULY full-screen — no feed or nav bleed at the bottom */
+  html.is-app #profModal.mob-full, html.is-standalone #profModal.mob-full{ z-index:2000 !important; inset:0 !important; height:100vh !important; height:100dvh !important; }
+  html.is-app #profModal.mob-full .profcard, html.is-standalone #profModal.mob-full .profcard{ height:100vh !important; height:100dvh !important; min-height:100dvh !important; }
 </style>
 </head>
 <body>
@@ -5642,82 +5659,57 @@ document.addEventListener('touchmove',function(e){
     }
     x0=y0=null;
   },{passive:true});
-  /* ---- robust hide-on-scroll (whole sticky top: bar + tabs + search) ----
-     Hides on scroll-down, snaps back on the SLIGHTEST scroll-up. We poll the scroll
-     position every animation frame instead of trusting scroll events, because real
-     touch scrolling inside the iOS/Android webview does not always emit window
-     'scroll' events (that's what fooled us before). Reading the position every frame
-     works no matter which element is actually scrolling. */
+  /* ---- App-context scroll-reveal (X-style, rebuilt clean for Build 10) ----
+     Feed page ONLY. Scroll DOWN -> the top panel (bar + tabs) slides away and STAYS away.
+     Slightest scroll UP -> it returns. Never runs while any section is open
+     (search / composer / messages / menu / post detail / settings) so it can
+     never overlap those views. */
   (function(){
-    /* APP-CONTEXT SCROLL-REVEAL (v4 — drawer-cloned, standalone-hardened).
-       Clue that cracked it: in his home-screen PWA the horizontal side-swipe (which binds touch on
-       `document` with {passive:true}) WORKS, but the old vertical reveal (bound on `window`) did
-       nothing. So the PRIMARY path below mirrors the side-swipe EXACTLY — same target (document),
-       same options — but measures VERTICAL movement. Cumulative finger-down >=10px reveals the
-       whole top; finger-up >=15px hides it. rAF/scroll-position is kept only as a BACKUP
-       (momentum + trackpad), and the near-top guard is disabled until a real scroll read is seen,
-       so a dead scrollTop in standalone can never freeze the bar shown. Tap the logo 7x for an
-       on-device debug overlay (engine status + last gesture delta) so we never fly blind again. */
-    var DBG=(function(){
-      var box=null,on=false,s={};
-      function ensure(){ if(box)return box; box=document.createElement('div'); box.id='scrollDbg';
-        box.style.cssText='position:fixed;left:6px;bottom:6px;z-index:99999;background:rgba(0,0,0,.82);color:#0f0;font:11px/1.35 monospace;padding:7px 9px;border-radius:8px;max-width:82vw;white-space:pre;pointer-events:none;display:none;';
-        (document.body||document.documentElement).appendChild(box); return box; }
-      function render(){ if(!on)return; var sa=false; try{ sa=(window.navigator&&window.navigator.standalone===true)||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches);}catch(e){}
-        ensure().textContent='TheFlap scroll-debug  (v4)\nengine: ACTIVE\nis-app: '+document.documentElement.classList.contains('is-app')+'   standalone: '+sa+'\ntop: '+(document.body.classList.contains('bar-hidden')?'HIDDEN':'shown')+'\nreadY: '+(s.readY==null?'-':s.readY)+'   alive: '+(s.alive==null?'-':s.alive)+'\nstart: '+(s.start==null?'-':s.start)+'   last dy: '+(s.dy==null?'-':s.dy)+'\nacc: '+(s.acc==null?'-':s.acc)+'   netdy: '+(s.netdy==null?'-':s.netdy)+'\nlast: '+(s.last||'-'); }
-      return { set:function(){ for(var i=0;i<arguments.length;i+=2)s[arguments[i]]=arguments[i+1]; render(); },
-               toggle:function(){ on=!on; ensure().style.display=on?'block':'none'; render(); } };
-    })();
-    document.addEventListener('click',function(e){
-      var t=e.target&&e.target.closest?e.target.closest('.topbrand'):null; if(!t)return;
-      var now=Date.now(); if(now-(DBG._t||0)>1200)DBG._n=0; DBG._t=now; DBG._n=(DBG._n||0)+1;
-      if(DBG._n>=7){ DBG._n=0; try{DBG.toggle();}catch(_){} }
-    },true);
-
+    var mqR = window.matchMedia('(max-width:760px)');
+    function compactR(){ return !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent) || mqR.matches; }
+    function overlayOpen(){ var b=document.body.classList; return b.contains('composing')||b.contains('modal-on')||b.contains('detail-open')||b.contains('drawer-open')||b.contains('search-on')||b.contains('settings-on'); }
+    var hidden=false;
+    function apply(h){ if(h===hidden)return; hidden=h; document.body.classList.toggle('bar-hidden', h); }
+    function show(){ apply(false); }
+    function hide(){ apply(true); }
+    /* robust scroll-position read: window scroll events are unreliable in the iOS/Android webview,
+       so we also track the active inner scroller and poll the position every animation frame. */
     var INNER=null;
-    document.addEventListener('scroll',function(e){ var t=e.target;
+    document.addEventListener('scroll', function(e){ var t=e.target;
       if(t&&t.nodeType===1&&t!==document&&t!==document.documentElement&&t!==document.body&&t.scrollHeight>t.clientHeight+4){ INNER=t; }
-    },true);
-    var readYalive=false;
+    }, true);
     function readY(){ var y=window.pageYOffset||0;
       if(!y){ var se=document.scrollingElement; y=(se&&se.scrollTop)||document.documentElement.scrollTop||(document.body&&document.body.scrollTop)||(INNER&&INNER.scrollTop)||0; }
-      if(y>0)readYalive=true; return y; }
-    var MIN=56, SHOW_AT=16, HIDE_AT=24;
-    var hidden=false, lastY=readY(), upAcc=0, downAcc=0;
-    function setHidden(h){ var _b=document.body.classList; if(_b.contains('composing')||_b.contains('modal-on')||_b.contains('detail-open')||_b.contains('drawer-open')||_b.contains('search-on')||_b.contains('settings-on'))return;   /* paused while composing / modal open */
-      if(h===hidden)return; hidden=h; document.body.classList.toggle('bar-hidden',h); DBG.set('last',(h?'HIDE':'SHOW'),'readY',Math.round(readY()),'alive',readYalive); }
-    function nearTop(){ return readYalive && readY()<=MIN; }   /* only trust "near top" once scroll reads proven alive */
-
-    /* ===== PRIMARY: exact clone of the working side-swipe (document + {passive:true}), vertical ===== */
-    var tStart=null, tPrev=null, tAcc=0;
-    document.addEventListener('touchstart',function(e){ if(!e.touches||!e.touches[0])return;
-      tStart=tPrev=e.touches[0].clientY; tAcc=0; DBG.set('start',Math.round(tStart),'readY',Math.round(readY()),'alive',readYalive);
-    },{passive:true});
-    document.addEventListener('touchmove',function(e){ if(tPrev==null||!e.touches||!e.touches[0])return;
-      var y=e.touches[0].clientY, d=y-tPrev; tPrev=y;
-      if((d>0)!==(tAcc>0))tAcc=0; tAcc+=d; DBG.set('dy',Math.round(d),'acc',Math.round(tAcc),'readY',Math.round(readY()),'alive',readYalive);
-      if(nearTop()){ setHidden(false); return; }
-      if(tAcc>=SHOW_AT){ setHidden(false); tAcc=0; }            /* finger DOWN (scroll up) -> reveal */
-      else if(tAcc<=-HIDE_AT){ setHidden(true); tAcc=0; }        /* finger UP (scroll down) -> hide */
-    },{passive:true});
-    document.addEventListener('touchend',function(e){
-      if(tStart!=null&&e.changedTouches&&e.changedTouches[0]){ var dy=e.changedTouches[0].clientY-tStart; DBG.set('netdy',Math.round(dy));
-        if(nearTop()) setHidden(false); else if(dy>=SHOW_AT) setHidden(false); else if(dy<=-HIDE_AT) setHidden(true); }
-      tStart=tPrev=null; tAcc=0; lastY=readY();
-    },{passive:true});
-
-    /* ===== BACKUP: rAF scroll-position reader (momentum + inner scrollers + trackpad/wheel) ===== */
-    function onDelta(d){ if(!d)return;
-      if(nearTop()){ upAcc=downAcc=0; setHidden(false); return; }
-      if(d<0){ upAcc+=-d; downAcc=0; if(upAcc>=SHOW_AT) setHidden(false); }
-      else   { downAcc+=d; upAcc=0; if(downAcc>=HIDE_AT+8) setHidden(true); } }
-    function frame(){ var y=readY(), d=y-lastY; if(d){ onDelta(d); lastY=y; DBG.set('readY',Math.round(y),'alive',readYalive); } requestAnimationFrame(frame); }
-    requestAnimationFrame(frame);
+      return y; }
+    var TOP=56, UP_SHOW=6, DOWN_HIDE=10;
+    var lastY=readY(), accUp=0, accDown=0;
+    function evaluate(){
+      if(!compactR()){ if(hidden) show(); return; }   /* desktop: never touch the bar */
+      if(overlayOpen()){ return; }                     /* scope isolation: only the feed */
+      var y=readY(), d=y-lastY; lastY=y;
+      if(y<=TOP){ accUp=accDown=0; show(); return; }    /* at the very top -> always visible */
+      if(d>0){ accDown+=d; accUp=0; if(accDown>=DOWN_HIDE){ hide(); } }        /* scrolling DOWN -> hide, stays hidden */
+      else if(d<0){ accUp+=-d; accDown=0; if(accUp>=UP_SHOW){ show(); } }      /* slightest UP -> reveal */
+    }
+    (function loop(){ evaluate(); requestAnimationFrame(loop); })();
+    /* touch is the primary signal on mobile (mirrors the working side-swipe binding: document + passive) */
+    var tY=null;
+    document.addEventListener('touchstart', function(e){ if(e.touches&&e.touches[0]) tY=e.touches[0].clientY; }, {passive:true});
+    document.addEventListener('touchmove', function(e){
+      if(tY==null||!e.touches||!e.touches[0]) return;
+      if(!compactR()||overlayOpen()) return;
+      var y=e.touches[0].clientY, d=tY-y; tY=y;         /* d>0 => content moves up => scrolling DOWN */
+      if(readY()<=TOP){ show(); return; }
+      if(d>=DOWN_HIDE){ hide(); } else if(d<=-UP_SHOW){ show(); }
+    }, {passive:true});
+    document.addEventListener('touchend', function(){ tY=null; }, {passive:true});
     ['scroll','wheel'].forEach(function(ev){
-      window.addEventListener(ev,function(){ var y=readY(), d=y-lastY; if(d){ onDelta(d); lastY=y; } },{passive:true});
-      document.addEventListener(ev,function(){ var y=readY(), d=y-lastY; if(d){ onDelta(d); lastY=y; } },{passive:true});
+      window.addEventListener(ev, evaluate, {passive:true});
+      document.addEventListener(ev, evaluate, {passive:true});
     });
+    window.addEventListener('resize', function(){ if(!compactR()&&hidden) show(); });
   })();
+
   /* hard block pinch-zoom in the app so it can never get stuck zoomed (viewport lock + this) */
   if(compact()){
     document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});
