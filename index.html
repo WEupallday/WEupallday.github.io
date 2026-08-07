@@ -1176,6 +1176,30 @@
   /* (5) messages / profile TRULY full-screen — no feed or nav bleed at the bottom */
   html.is-app #profModal.mob-full, html.is-standalone #profModal.mob-full{ z-index:2000 !important; inset:0 !important; height:100vh !important; height:100dvh !important; }
   html.is-app #profModal.mob-full .profcard, html.is-standalone #profModal.mob-full .profcard{ height:100vh !important; height:100dvh !important; min-height:100dvh !important; }
+
+  /* ===== Account Recovery UI ===== */
+  .rec-modal{ position:fixed; inset:0; z-index:3000; display:none; align-items:center; justify-content:center; background:rgba(10,6,24,.62); padding:16px; }
+  .rec-modal.open{ display:flex; }
+  .rec-card{ width:100%; max-width:400px; background:#12193a; color:#eaf2ff; border:1px solid #2b3a6e; border-radius:16px; box-shadow:0 18px 50px rgba(0,0,0,.55); overflow:hidden; font-family:Verdana,Arial,sans-serif; }
+  .rec-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; background:linear-gradient(180deg,#20306b,#16224e); font-weight:bold; font-size:15px; }
+  .rec-x{ cursor:pointer; opacity:.85; font-size:15px; }
+  .rec-body{ padding:16px; }
+  .rec-lb{ display:block; font-size:12px; color:#9fb2d8; margin:10px 0 4px; }
+  .rec-in{ width:100%; box-sizing:border-box; border:1px solid #38477e; background:#0e1734; color:#fff; border-radius:9px; padding:11px 12px; font-size:15px; }
+  .rec-btn{ width:100%; margin-top:14px; border:none; border-radius:10px; padding:12px; font-weight:bold; font-size:15px; cursor:pointer; color:#fff; background:linear-gradient(180deg,#3f8bff,#2f6ad0); }
+  .rec-btn:active{ filter:brightness(.94); }
+  .rec-msg{ font-size:12.5px; color:#9fb2d8; margin-top:10px; min-height:16px; }
+  .rec-msg.good{ color:#7ee29a; } .rec-msg.bad{ color:#ff9a9a; }
+  .rec-alt{ font-size:12px; color:#8ea3cc; margin-top:14px; line-height:1.5; }
+  .rec-forgot{ text-align:center; margin-top:10px; }
+  .rec-forgot a{ color:#8fb4ff; font-size:13px; text-decoration:underline; cursor:pointer; }
+  .rec-sec{ margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,.12); }
+  .rec-sec-t{ font-weight:bold; font-size:14px; margin-bottom:10px; }
+  .rec-row-btn{ display:block; width:100%; text-align:left; background:#eef2fb; color:#1a2440; border:1px solid #d3ddf0; border-radius:10px; padding:12px 14px; font-weight:bold; font-size:14px; cursor:pointer; margin-bottom:10px; }
+  .rec-row-btn.ghost{ background:transparent; color:#c9d6f5; border:1px solid #48588e; }
+  .rec-conn{ margin-top:6px; }
+  .rec-conn-on{ font-size:13px; color:#2e7d46; background:#e7f7ec; border-radius:9px; padding:10px 12px; margin-bottom:10px; }
+  .rec-conn-off{ font-size:12.5px; color:#5b6b93; margin-bottom:10px; line-height:1.5; }
 </style>
 </head>
 <body>
@@ -5639,6 +5663,226 @@ document.addEventListener('touchmove',function(e){
     if(!(e.target && e.target.closest && e.target.closest('#sideDrawer'))){ e.preventDefault(); }
   }
 },{passive:false});
+
+  /* ================= ACCOUNT RECOVERY SUITE (Build 11) =================
+     Change password + Connect Google + Google recovery + email-code reset + admin fallback.
+     Self-contained: builds its own modals, hooks the gate + settings, reuses sb/ME/sha256/toast. */
+  (function(){
+    function el(id){ return document.getElementById(id); }
+    function recToast(m){ try{ toast(m); }catch(e){ alert(m); } }
+    async function pwHash(name, pass){ return await sha256('flapsalt:'+String(name).toLowerCase()+':'+pass); }
+    function code6(){ return String(Math.floor(100000+Math.random()*900000)); }
+
+    /* ---- inject modal shells once ---- */
+    function ensureModals(){
+      if(el('recModal')) return;
+      var d=document.createElement('div'); d.id='recWrap';
+      d.innerHTML=
+        '<div id="recModal" class="rec-modal"><div class="rec-card">'
+        +'<div class="rec-head"><span id="recTitle">Password &amp; Recovery</span><span class="rec-x" onclick="recClose()">\u2715</span></div>'
+        +'<div id="recBody" class="rec-body"></div>'
+        +'</div></div>';
+      document.body.appendChild(d);
+    }
+    window.recClose=function(){ var m=el('recModal'); if(m)m.classList.remove('open'); };
+    function recOpen(title, html){ ensureModals(); el('recTitle').innerHTML=title; el('recBody').innerHTML=html; el('recModal').classList.add('open'); }
+
+    /* =========== CHANGE PASSWORD =========== */
+    window.recOpenChangePw=function(){
+      if(!(window.ME&&ME.name)){ recToast('Log in first.'); return; }
+      recOpen('Change password',
+        '<label class="rec-lb">Current password</label><input id="rcCur" type="password" class="rec-in" autocomplete="current-password">'
+        +'<label class="rec-lb">New password</label><input id="rcNew" type="password" class="rec-in" autocomplete="new-password">'
+        +'<label class="rec-lb">Confirm new password</label><input id="rcCon" type="password" class="rec-in" autocomplete="new-password">'
+        +'<div id="rcMsg" class="rec-msg"></div>'
+        +'<button class="rec-btn" onclick="recDoChangePw()">Update password</button>');
+    };
+    window.recDoChangePw=async function(){
+      var cur=el('rcCur').value, nw=el('rcNew').value, cn=el('rcCon').value, msg=el('rcMsg');
+      msg.className='rec-msg';
+      if(!cur||!nw){ msg.textContent='Fill in both fields.'; return; }
+      if(nw.length<4){ msg.textContent='New password must be at least 4 characters.'; return; }
+      if(nw!==cn){ msg.textContent='New passwords do not match.'; return; }
+      if(!(window.sb)){ msg.textContent='Server not reachable.'; return; }
+      msg.textContent='Checking\u2026';
+      try{
+        var r=await sb.from('flap_users').select('name,pass_hash').ilike('name',ME.name).maybeSingle();
+        if(!r||!r.data){ msg.textContent='Account not found.'; return; }
+        var curHash=await pwHash(r.data.name, cur);
+        if(r.data.pass_hash!==curHash){ msg.className='rec-msg bad'; msg.textContent='Current password is wrong.'; return; }
+        var newHash=await pwHash(r.data.name, nw);
+        var up=await sb.from('flap_users').update({pass_hash:newHash}).ilike('name',ME.name);
+        if(up&&up.error) throw up.error;
+        msg.className='rec-msg good'; msg.textContent='\u2705 Password updated!';
+        setTimeout(recClose, 1200);
+      }catch(e){ msg.className='rec-msg bad'; msg.textContent='Could not update \u2014 try again.'; }
+    };
+
+    /* =========== CONNECT / DISCONNECT GOOGLE =========== */
+    window.recConnectGoogle=function(){
+      if(!(window.ME&&ME.name)){ recToast('Log in first.'); return; }
+      if(!(window.sb&&sb.auth)){ recToast('Google needs the server.'); return; }
+      try{ sessionStorage.setItem('flap_link', ME.name); sessionStorage.setItem('flap_link_ts', String(Date.now())); }catch(e){}
+      recToast('Opening Google\u2026');
+      try{ googleSignIn(); }catch(e){ recToast('Could not start Google.'); }
+    };
+    window.recDisconnectGoogle=async function(){
+      if(!(window.ME&&ME.name&&window.sb)) return;
+      try{
+        await sb.from('flap_users').update({email:null}).ilike('name',ME.name);
+        if(window.SET&&SET.row) SET.row.email='';
+        if(window.ME) ME.email='';
+        recToast('Google disconnected.');
+        recRenderSecurity();
+      }catch(e){ recToast('Could not disconnect.'); }
+    };
+    /* handle the OAuth return when we asked to LINK (user already logged in) */
+    async function recCheckLinkReturn(){
+      var link; try{ link=sessionStorage.getItem('flap_link'); }catch(e){ link=null; }
+      if(!link||!(window.sb&&sb.auth)) return;
+      try{
+        if(/access_token=/.test(location.hash||'')){ var hp=new URLSearchParams((location.hash||'').replace(/^#/,'')); var at=hp.get('access_token'),rt=hp.get('refresh_token'); if(at) await sb.auth.setSession({access_token:at,refresh_token:rt||''}); }
+        else if(/[?&]code=/.test(location.search||'')){ try{ await sb.auth.exchangeCodeForSession(location.href); }catch(_e){} }
+      }catch(_e){}
+      var ss=await sb.auth.getSession(); var sess=ss&&ss.data&&ss.data.session;
+      if(!sess||!sess.user||!sess.user.email) return;   /* not ready yet; onAuthStateChange will retry */
+      var email=String(sess.user.email).toLowerCase();
+      try{ sessionStorage.removeItem('flap_link'); }catch(e){}
+      try{ history.replaceState({}, document.title, location.pathname); }catch(e){}
+      try{
+        var ex=await sb.from('flap_users').select('name').ilike('email',email).maybeSingle();
+        if(ex&&ex.data && String(ex.data.name).toLowerCase()!==String(link).toLowerCase()){
+          try{ sb.auth.signOut(); }catch(e){}
+          recToast('That Google account is already linked to another user.'); return;
+        }
+        await sb.from('flap_users').update({email:email}).ilike('name',link);
+        if(window.ME&&ME.name&&ME.name.toLowerCase()===String(link).toLowerCase()) ME.email=email;
+        if(window.SET&&SET.row) SET.row.email=email;
+        try{ sb.auth.signOut(); }catch(e){}   /* keep app on name/pass session; the email link lives in flap_users */
+        recToast('\u2705 Google connected \u2014 you can now recover this account with Google.');
+      }catch(e){ recToast('Could not finish connecting Google.'); }
+    }
+
+    /* =========== SECURITY SECTION inside Settings =========== */
+    window.recRenderSecurity=async function(){
+      var host=el('recSecBox'); if(!host) return;
+      var email=''; try{ if(window.SET&&SET.row&&SET.row.email) email=SET.row.email; }catch(e){}
+      if(!email && window.sb && window.ME && ME.name){ try{ var r=await sb.from('flap_users').select('email').ilike('name',ME.name).maybeSingle(); if(r&&r.data&&r.data.email){ email=r.data.email; if(window.SET&&SET.row)SET.row.email=email; } }catch(e){} }
+      var linked = !!email;
+      host.innerHTML=
+        '<div class="rec-sec-t">\ud83d\udd12 Password &amp; Recovery</div>'
+        +'<button class="rec-row-btn" onclick="recOpenChangePw()">Change password</button>'
+        +'<div class="rec-conn">'
+          +(linked
+            ? '<div class="rec-conn-on">\u2705 Google connected<br><small>'+String(email).replace(/</g,'')+'</small></div><button class="rec-row-btn ghost" onclick="recDisconnectGoogle()">Disconnect Google</button>'
+            : '<div class="rec-conn-off">Connect Google so you can recover your account if you forget your password.</div><button class="rec-row-btn" onclick="recConnectGoogle()">Connect Google</button>')
+        +'</div>';
+    };
+    /* when Settings opens, make sure our section is present */
+    function watchSettings(){
+      var m=el('settingsModal'); if(!m) return;
+      var mo=new MutationObserver(function(){
+        if(m.classList.contains('open') && !el('recSecBox')){
+          var body=m.querySelector('.pc-body, .set-body, .profcard, .pc-card') || m.firstElementChild || m;
+          var box=document.createElement('div'); box.id='recSecBox'; box.className='rec-sec';
+          body.appendChild(box);
+          recRenderSecurity();
+        }
+      });
+      try{ mo.observe(m,{attributes:true,attributeFilter:['class']}); }catch(e){}
+    }
+
+    /* =========== FORGOT PASSWORD (gate) =========== */
+    window.recOpenForgot=function(){
+      recOpen('Reset your password',
+        '<label class="rec-lb">Your username</label><input id="rfName" class="rec-in" autocomplete="username">'
+        +'<div id="rfMsg" class="rec-msg"></div>'
+        +'<button class="rec-btn" onclick="recForgotLookup()">Continue</button>'
+        +'<div class="rec-alt">Prefer a person? Email <b>theflapsupport@gmail.com</b> and an admin will reset it.</div>');
+    };
+    window.recForgotLookup=async function(){
+      var name=(el('rfName').value||'').trim(), msg=el('rfMsg'); msg.className='rec-msg';
+      if(!name){ msg.textContent='Enter your username.'; return; }
+      if(!(window.sb)){ msg.textContent='Server not reachable.'; return; }
+      msg.textContent='Looking\u2026';
+      try{
+        var r=await sb.from('flap_users').select('name,email').ilike('name',name).maybeSingle();
+        if(!r||!r.data){ msg.className='rec-msg bad'; msg.textContent='No account found with that username.'; return; }
+        window._recName=r.data.name; var email=r.data.email||'';
+        var opts='<div class="rec-msg good">Account found: <b>'+String(r.data.name).replace(/</g,'')+'</b></div>';
+        opts+='<button class="rec-btn" onclick="recForgotGoogle()">\ud83d\udd11 Recover with Google</button>';
+        if(email){ opts+='<button class="rec-btn" onclick="recForgotEmail(\''+String(email).replace(/[^a-zA-Z0-9@._-]/g,'')+'\')">\ud83d\udce7 Email me a 6-digit code</button>'; }
+        else { opts+='<div class="rec-alt">No recovery email on file. Use Google (if you linked it) or email <b>theflapsupport@gmail.com</b>.</div>'; }
+        recOpen('Reset your password', opts);
+      }catch(e){ msg.className='rec-msg bad'; msg.textContent='Could not reach the server.'; }
+    };
+    window.recForgotGoogle=function(){ try{ googleSignIn(); }catch(e){ recToast('Could not start Google.'); } };
+    window.recForgotEmail=async function(email){
+      var name=window._recName; if(!name){ return; }
+      var code=code6(); var codeHash=await sha256('reset:'+name.toLowerCase()+':'+code);
+      var exp=new Date(Date.now()+15*60*1000).toISOString();
+      recOpen('Enter your code','<div class="rec-msg">Sending a code to <b>'+String(email).replace(/</g,'')+'</b>\u2026</div>');
+      var sent=false;
+      try{ await sb.from('flap_users').update({reset_code:codeHash, reset_exp:exp}).ilike('name',name); }catch(e){}
+      try{
+        var fx=await sb.functions.invoke('send-recovery',{ body:{ to:email, name:name, code:code } });
+        if(fx && !fx.error) sent=true;
+      }catch(e){}
+      if(sent){
+        recOpen('Enter your code',
+          '<div class="rec-msg good">We emailed a 6-digit code to <b>'+String(email).replace(/</g,'')+'</b>. It expires in 15 minutes.</div>'
+          +'<label class="rec-lb">6-digit code</label><input id="rvCode" class="rec-in" inputmode="numeric" maxlength="6">'
+          +'<label class="rec-lb">New password</label><input id="rvNew" type="password" class="rec-in" autocomplete="new-password">'
+          +'<div id="rvMsg" class="rec-msg"></div>'
+          +'<button class="rec-btn" onclick="recForgotVerify()">Set new password</button>');
+      } else {
+        recOpen('Email recovery',
+          '<div class="rec-msg bad">Email recovery isn\u2019t switched on yet.</div>'
+          +'<div class="rec-alt">For now, tap <b>Recover with Google</b> (if you linked it), or email <b>theflapsupport@gmail.com</b> and an admin will reset your password right away.</div>'
+          +'<button class="rec-btn" onclick="recOpenForgot()">Back</button>');
+      }
+    };
+    window.recForgotVerify=async function(){
+      var name=window._recName; var code=(el('rvCode').value||'').trim(), nw=el('rvNew').value, msg=el('rvMsg'); msg.className='rec-msg';
+      if(!/^[0-9]{6}$/.test(code)){ msg.textContent='Enter the 6-digit code.'; return; }
+      if(!nw||nw.length<4){ msg.textContent='New password must be at least 4 characters.'; return; }
+      msg.textContent='Verifying\u2026';
+      try{
+        var r=await sb.from('flap_users').select('name,reset_code,reset_exp').ilike('name',name).maybeSingle();
+        if(!r||!r.data){ msg.className='rec-msg bad'; msg.textContent='Account not found.'; return; }
+        if(!r.data.reset_code || !r.data.reset_exp || new Date(r.data.reset_exp).getTime()<Date.now()){ msg.className='rec-msg bad'; msg.textContent='Code expired \u2014 request a new one.'; return; }
+        var h=await sha256('reset:'+name.toLowerCase()+':'+code);
+        if(h!==r.data.reset_code){ msg.className='rec-msg bad'; msg.textContent='Wrong code.'; return; }
+        var newHash=await pwHash(r.data.name, nw);
+        await sb.from('flap_users').update({pass_hash:newHash, reset_code:null, reset_exp:null}).ilike('name',name);
+        msg.className='rec-msg good'; msg.textContent='\u2705 Password reset! You can log in now.';
+        setTimeout(recClose, 1400);
+      }catch(e){ msg.className='rec-msg bad'; msg.textContent='Could not verify \u2014 try again.'; }
+    };
+
+    /* ---- inject "Forgot password?" link into the gate ---- */
+    function injectForgotLink(){
+      if(el('recForgotLink')) return;
+      var gate=el('gate'); if(!gate) return;
+      var loginBtn=gate.querySelector('.gate-login, #gateLoginBtn, button[onclick*="doLogin"]');
+      var host=loginBtn?loginBtn.parentNode:gate;
+      var a=document.createElement('div'); a.id='recForgotLink'; a.className='rec-forgot';
+      a.innerHTML='<a onclick="recOpenForgot()">Forgot password?</a>';
+      host.appendChild(a);
+    }
+
+    function init(){
+      try{ ensureModals(); }catch(e){}
+      try{ injectForgotLink(); }catch(e){}
+      try{ watchSettings(); }catch(e){}
+      try{ recCheckLinkReturn(); }catch(e){}
+      try{ if(window.sb&&sb.auth&&sb.auth.onAuthStateChange){ sb.auth.onAuthStateChange(function(evt,session){ if(session&&session.user){ var l=null; try{l=sessionStorage.getItem('flap_link');}catch(e){} if(l) recCheckLinkReturn(); } }); } }catch(e){}
+      /* the gate may render after load; retry the link injection a few times */
+      var tries=0; var iv=setInterval(function(){ tries++; try{injectForgotLink();}catch(e){} if(el('recForgotLink')||tries>20) clearInterval(iv); }, 500);
+    }
+    if(document.readyState==='complete'||document.readyState==='interactive') setTimeout(init,300); else document.addEventListener('DOMContentLoaded', function(){ setTimeout(init,300); });
+  })();
+
 /* App-feel gestures (app + phone-width only): swipe-from-left opens the menu,
    and the top bar auto-hides on scroll-down / reappears on scroll-up. */
 (function(){
