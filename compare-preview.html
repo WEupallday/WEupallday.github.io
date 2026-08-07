@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TheFlap — Before / Now size comparison</title>
+<style>
+  :root{--orange:#f5820a;--orange-dark:#b34a00;--navy:#22398f;--red:#c22a1a;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:Verdana,Arial,sans-serif;background:#0f1830;color:#eaf2ff;padding:16px 10px 40px;}
+  .head{max-width:760px;margin:0 auto 14px;text-align:center;}
+  .head h1{font-size:19px;margin:0 0 4px;color:#fff;}
+  .head p{font-size:12px;color:#9fb2d8;margin:0;line-height:1.5;}
+  .note{max-width:640px;margin:10px auto 0;font-size:11px;color:#8ea3cc;background:#16233f;border:1px solid #26375c;border-radius:8px;padding:8px 10px;}
+  /* narrow-screen toggle */
+  .toggle{display:none;max-width:420px;margin:14px auto 0;gap:6px;}
+  .toggle button{flex:1;padding:9px;border:2px solid #33507f;background:#16233f;color:#cfe0ff;font-weight:bold;font-size:13px;border-radius:9px;cursor:pointer;}
+  .toggle button.on{background:var(--orange);color:#3a1c00;border-color:var(--orange);}
+  .stage{display:flex;gap:20px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:16px;}
+  .col{flex:0 0 auto;}
+  .col .lbl{text-align:center;font-weight:bold;font-size:13px;margin-bottom:8px;letter-spacing:1px;}
+  .col.before .lbl{color:#ff9a9a;} .col.now .lbl{color:#8dff9f;}
+  .col .sub{text-align:center;font-size:10px;color:#8ea3cc;margin:-5px 0 8px;}
+  /* phone frame */
+  .phone{width:300px;height:600px;background:#000;border:8px solid #1a1a1a;border-radius:34px;overflow:hidden;box-shadow:0 14px 34px rgba(0,0,0,.6);position:relative;}
+  .screen{position:absolute;inset:0;background:#f0e9dc;overflow:hidden;display:flex;flex-direction:column;}
+  /* ===== app chrome (BASE = OLD / expanded) ===== */
+  .tbar{background:linear-gradient(180deg,#ff9a2e,var(--orange) 55%,#d96f00);border-bottom:3px solid var(--orange-dark);display:flex;align-items:center;justify-content:center;gap:8px;position:relative;padding:16px 8px 12px;}
+  .tbar .ic{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .tbar .bell{background:linear-gradient(180deg,#c22a1a,#8f1408);color:#fff;}
+  .brand{display:flex;align-items:center;gap:5px;flex:1;justify-content:center;}
+  .brand .word{font-family:'Chewy','Comic Sans MS',cursive;font-size:27px;line-height:1;color:#fff;letter-spacing:.5px;text-shadow:0 2px 0 var(--orange-dark);}
+  .brand .word b{color:#ffe08a;}
+  .brand svg{width:0;height:0;}   /* feather hidden on OLD */
+  .tabs{display:flex;gap:6px;padding:8px;background:linear-gradient(180deg,#ff9a2e,#e97b00);}
+  .tab{flex:1;text-align:center;padding:8px;border-radius:9px;border:2px solid #cfe0f5;background:#fff;color:var(--navy);font-weight:bold;font-size:12.5px;}
+  .tab.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .feed{flex:1;overflow:hidden;padding:8px;background:#e7ecf6;}
+  .card{background:#fff;border:2px solid #b9c6e6;border-radius:8px;margin-bottom:11px;overflow:hidden;}
+  .cstrip{background:linear-gradient(180deg,#22398f,#182a6b);color:#b8c4e8;font-size:9px;font-weight:bold;text-align:right;padding:3px 8px;}
+  .cbody{padding:11px;}
+  .crow{display:flex;gap:9px;align-items:flex-start;}
+  .ava{width:46px;height:52px;border-radius:7px;background:#dfe7f7 center/cover;flex:0 0 auto;font-size:22px;display:flex;align-items:center;justify-content:center;}
+  .mid{flex:1;min-width:0;}
+  .nm{color:var(--navy);font-weight:bold;font-size:15px;}
+  .txt{color:#1a2740;font-size:13.5px;line-height:1.5;margin-top:3px;}
+  .mood{flex:0 0 auto;width:72px;text-align:center;border:2px solid #f0b040;border-radius:9px;padding:4px 2px 6px;background:#fff;}
+  .mood .ml{color:var(--red);font-weight:bold;font-size:12px;font-family:'Comic Sans MS',cursive;}
+  .mood .me{font-size:28px;line-height:1.1;}
+  .mood .mw{color:var(--red);font-weight:bold;font-size:8px;}
+  .tagged{font-size:10px;color:#8f1408;font-weight:bold;margin:8px 0 6px;}
+  .acts{display:flex;flex-wrap:wrap;gap:5px;}
+  .btn{font-weight:bold;font-size:11px;border:none;border-radius:9px;padding:6px 11px;color:#fff;}
+  .b-reply{background:#fff;color:#2f7ac9;border:1.5px solid #2f7ac9;}
+  .b-flap{background:linear-gradient(180deg,#5ec1f5,#1a5fa8);}
+  .b-reflap{background:linear-gradient(180deg,#2f9e5a,#1c7a42);font-size:10px;text-transform:uppercase;}
+  .b-pin{background:linear-gradient(180deg,#ffe08a,#f5c542);color:#7a4a00;font-size:10px;text-transform:uppercase;}
+  .acts2{display:flex;gap:10px;margin-top:6px;}
+  .mini{font-size:10px;font-weight:bold;letter-spacing:.5px;text-transform:uppercase;}
+  .mini.del{color:#c22a1a;} .mini.rep,.mini.blk{color:#9aa;}
+  .reply{display:flex;gap:8px;padding:7px 4px 2px;border-top:1px solid #e4e9f2;margin-top:8px;}
+  .reply .rav{width:34px;height:38px;border-radius:6px;background:#cfe0ff;flex:0 0 auto;font-size:15px;display:flex;align-items:center;justify-content:center;}
+  .reply .rtx{font-size:12px;color:#11202e;line-height:1.4;}
+  .reply .rtx b{color:var(--navy);}
+
+  /* ===== NEW (compact / polished) overrides ===== */
+  .new .tbar{padding:7px 8px 4px;border-bottom-width:2px;}
+  .new .brand .word{font-size:21px;}
+  .new .brand svg{width:22px;height:20px;} /* 5-feather shows on NEW */
+  .new .tabs{padding:5px 6px;}
+  .new .tab{padding:6px;font-size:12px;}
+  .new .feed{padding:6px;}
+  .new .card{margin-bottom:8px;}
+  .new .cstrip{font-size:8px;padding:2px 8px;}
+  .new .cbody{padding:8px 9px;}
+  .new .ava{width:40px;height:44px;}
+  .new .nm{font-size:11px;}
+  .new .txt{font-size:12px;line-height:1.4;margin-top:2px;}
+  .new .mood{width:56px;padding:3px 2px 4px;}
+  .new .mood .ml{font-size:9.5px;} .new .mood .me{font-size:20px;} .new .mood .mw{font-size:7px;}
+  .new .tagged{font-size:8.5px;margin:5px 0 4px;}
+  .new .btn{font-size:10px;padding:4px 9px;}
+  .new .b-reflap,.new .b-pin{font-size:9px;}
+  .new .acts{gap:4px;} .new .acts2{gap:8px;margin-top:4px;}
+  .new .mini{font-size:8.5px;}
+  .new .reply{padding:5px 3px 2px;margin-top:5px;}
+  .new .reply .rav{width:28px;height:32px;font-size:13px;}
+  .new .reply .rtx{font-size:11px;}
+
+  @media(max-width:700px){
+    .stage{gap:0;}
+    body.show-before .col.now{display:none;}
+    body.show-now .col.before{display:none;}
+    .toggle{display:flex;}
+  }
+</style>
+</head>
+<body class="show-before">
+  <div class="head">
+    <h1>TheFlap — “Before / Now” size comparison</h1>
+    <p>Same feed, same content. Left is the <b>current app</b> (expanded top bar + zoomed feed). Right is the <b>polished</b> version (shorter bar, sleeker cards). App/phone only — desktop &amp; website are untouched.</p>
+  </div>
+
+  <div class="toggle">
+    <button id="tb-before" class="on" onclick="document.body.className='show-before';setOn('tb-before')">◀ BEFORE</button>
+    <button id="tb-now" onclick="document.body.className='show-now';setOn('tb-now')">NOW ▶</button>
+  </div>
+
+  <div class="stage" id="stage"></div>
+
+<script>
+  const FEATHER='<svg viewBox="0 0 130 110" xmlns="http://www.w3.org/2000/svg"><g stroke="#fff" stroke-width="4" stroke-linejoin="round"><path transform="rotate(-56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/><path transform="rotate(-28 65 96)" d="M65 96 C 53 60 51 26 65 12 C 79 26 77 60 65 96 Z" fill="#ff8a1e"/><path d="M65 96 C 52 58 50 22 65 8 C 80 22 78 58 65 96 Z" fill="#ff8a1e"/><path transform="rotate(28 65 96)" d="M65 96 C 53 60 51 26 65 12 C 79 26 77 60 65 96 Z" fill="#ff8a1e"/><path transform="rotate(56 65 96)" d="M65 96 C 53 62 51 30 65 16 C 79 30 77 62 65 96 Z" fill="#ffb14d"/><circle cx="65" cy="96" r="9" fill="#e05e00"/></g></svg>';
+
+  function card(o){return `
+    <div class="card">
+      <div class="cstrip">${o.date} · Rating: ${o.flaps} Flaps</div>
+      <div class="cbody">
+        <div class="crow">
+          <div class="ava">${o.emoji}</div>
+          <div class="mid"><div class="nm">${o.name}</div><div class="txt">${o.text}</div></div>
+          <div class="mood"><div class="ml">Mood</div><div class="me">${o.moodEmoji}</div><div class="mw">${o.mood}</div></div>
+        </div>
+        ${o.reply?`<div class="reply"><div class="rav">${o.reply.emoji}</div><div class="rtx"><b>${o.reply.name}</b> ${o.reply.text}</div></div>`:''}
+        <div class="tagged">Tagged: #${o.name.toLowerCase()} #theflap</div>
+        <div class="acts">
+          <button class="btn b-reply">💬 Reply</button>
+          <button class="btn b-flap">👍 Flap This! (${o.flaps})</button>
+          <button class="btn b-reflap">🔁 Reflap</button>
+          <button class="btn b-pin">📌 Pin</button>
+        </div>
+        <div class="acts2"><span class="mini del">🗑 Delete</span><span class="mini rep">⚑ Report</span><span class="mini blk">🚫 Block</span></div>
+      </div>
+    </div>`;}
+
+  const FLAPS=[
+    {name:'Norrii',emoji:'🧑🏽',text:'Honestly I need to lay down',mood:'blah',moodEmoji:'😑',flaps:2,date:'6:58 PM'},
+    {name:'karahh',emoji:'👩🏻',text:'can’t wait to see spider-man.',mood:'excited',moodEmoji:'😊',flaps:5,date:'6:56 PM',
+      reply:{name:'torii <3',emoji:'🐟',text:'i wanna watch spiderman SO BADDD'}}
+  ];
+
+  function frame(){return `
+    <div class="screen">
+      <div class="tbar">
+        <div class="ic">🔵</div><div class="ic">🔍</div>
+        <div class="brand">${FEATHER}<span class="word">the<b>FLAP</b></span></div>
+        <div class="ic">💬</div><div class="ic bell">🔔</div>
+      </div>
+      <div class="tabs"><div class="tab">🌎 All flaps</div><div class="tab on">☆ Following</div></div>
+      <div class="feed">${FLAPS.map(card).join('')}</div>
+    </div>`;}
+
+  document.getElementById('stage').innerHTML = `
+    <div class="col before"><div class="lbl">BEFORE</div><div class="sub">current app</div><div class="phone old">${frame()}</div></div>
+    <div class="col now"><div class="lbl">NOW</div><div class="sub">polished</div><div class="phone new">${frame()}</div></div>`;
+
+  function setOn(id){document.querySelectorAll('.toggle button').forEach(b=>b.classList.toggle('on',b.id===id));}
+</script>
+</body>
+</html>
