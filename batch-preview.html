@@ -1143,19 +1143,18 @@
   }
 
   /* ===== POLISH BATCH (preview) — app/phone only; desktop untouched ===== */
-  /* (5) reveal bar is FEED-ONLY: hide the top panel on every non-feed view */
   html.is-app body.detail-open .topbar, html.is-app body.drawer-open .topbar, html.is-app body.search-on .topbar, html.is-app body.settings-on .topbar,
   html.is-standalone body.detail-open .topbar, html.is-standalone body.drawer-open .topbar, html.is-standalone body.search-on .topbar, html.is-standalone body.settings-on .topbar{ display:none !important; }
-  /* (2) top-bar profile picture: force a clean circle (was distorting to an egg) */
   html.is-app .menu-btn.as-avatar{ width:36px !important; height:36px !important; border-radius:50% !important; overflow:hidden !important; padding:0 !important; flex:0 0 auto !important; }
   html.is-app .menu-btn.as-avatar img{ width:100% !important; height:100% !important; object-fit:cover !important; border-radius:50% !important; display:block !important; }
-  /* (1) OAuth buttons: app/phone contexts only — hidden on the desktop website gate */
   .gate-google{ display:none; } .gate-or{ display:none; }
   html.is-app .gate-google{ display:flex !important; } html.is-app .gate-or{ display:flex !important; }
-  /* (3) messages: bigger, more noticeable bubbles + gentle fade between tabs (no hard flash) */
   html.is-app .dm-bub{ font-size:14.5px !important; padding:10px 13px !important; border-radius:16px !important; }
-  #profModal .pc-body{ animation:flapFade .24s ease; }
-  @keyframes flapFade{ from{ opacity:0; transform:translateY(5px);} to{ opacity:1; transform:none;} }
+  /* messages: panels stay mounted; switch by visibility (no rebuild flash, scroll kept per tab) */
+  #socPanels{ padding:0 !important; overflow:hidden !important; display:flex; flex-direction:column; }
+  #socPanels .soc-panel{ display:none; padding:12px; overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1 1 auto; }
+  #socPanels .soc-panel.on{ display:block; animation:flapFade .16s ease; }
+  @keyframes flapFade{ from{ opacity:.35; } to{ opacity:1; } }
 </style>
 </head>
 <body>
@@ -5337,7 +5336,7 @@
     if(st==='incoming'){return acceptFriend(name);}
     try{ await sb.from('flaps').insert({name:'::friend::',body:ME.name+PSEP+name+PSEP+'pending',mood:'flappy',likes:0}); }catch(e){}
     try{addNotif(name,ME.name,'friend',null,'sent you a friend request');}catch(e){}
-    await loadFriends(); toast('Friend request sent to '+name+'!'); if(document.getElementById('friendAdd'))openSocial(SOCIAL_TAB);
+    await loadFriends(); toast('Friend request sent to '+name+'!'); openSocial(SOCIAL_TAB, true);
   }
   async function acceptFriend(name){
     if(!requireAuth())return; var me=(ME.name||'').toLowerCase(),o=(name||'').toLowerCase();
@@ -5345,14 +5344,14 @@
     if(!row){toast('No pending request from '+name+'.');return;}
     try{ await sb.from('flaps').update({body:row.a+PSEP+row.b+PSEP+'accepted'}).eq('id',row.id); }catch(e){}
     try{addNotif(name,ME.name,'friend',null,'accepted your friend request');}catch(e){}
-    await loadFriends(); toast("You're now friends with "+name+"!"); openSocial('friends');
+    await loadFriends(); toast("You're now friends with "+name+"!"); openSocial('friends', true);
   }
   async function removeFriend(name){
     var me=(ME.name||'').toLowerCase(),o=(name||'').toLowerCase();
     var row=FRIENDS_ROWS.find(function(f){var a=f.a.toLowerCase(),b=f.b.toLowerCase();return (a===me&&b===o)||(a===o&&b===me);});
     if(!row)return; if(!confirm('Remove '+name+' as a friend?'))return;
     try{ await sb.from('flaps').delete().eq('id',row.id); }catch(e){}
-    await loadFriends(); openSocial(SOCIAL_TAB);
+    await loadFriends(); openSocial(SOCIAL_TAB, true);
   }
   async function loadDM(name){
     if(!ONLINE)return [];
@@ -5419,29 +5418,39 @@
     if(nearBottom)th.scrollTop=th.scrollHeight;
     markDMRead(name);                                /* keep my read-marker current as new messages arrive */
   }
-  async function openSocial(tab){
+  function socialShell(){
+    return '<div class="pc-strip"><span>👯 Friends & Messages</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>'
+      +'<div class="hq-tabs" id="socTabs">'
+        +'<button class="hq-tab" data-tab="friends" style="flex-direction:row;gap:5px;font-size:12px;padding:9px 4px;" onclick="switchSocialTab(\'friends\')">👯 Friends</button>'
+        +'<button class="hq-tab" data-tab="requests" style="flex-direction:row;gap:5px;font-size:12px;padding:9px 4px;" onclick="switchSocialTab(\'requests\')">📨 Requests<span id="reqCountPill"></span></button>'
+        +'<button class="hq-tab" data-tab="messages" style="flex-direction:row;gap:5px;font-size:12px;padding:9px 4px;" onclick="switchSocialTab(\'messages\')">💬 Messages</button>'
+      +'</div>'
+      +'<div class="pc-body hq-body" id="socPanels"><div class="soc-panel" data-tab="friends" id="soc-friends"></div><div class="soc-panel" data-tab="requests" id="soc-requests"></div><div class="soc-panel" data-tab="messages" id="soc-messages"></div></div>';
+  }
+  function renderSocialPanels(){
+    var inc=incomingReqs(); var pill=document.getElementById('reqCountPill'); if(pill)pill.textContent=inc.length?(' ('+inc.length+')'):'';
+    var fp=document.getElementById('soc-friends'); if(fp){ var fr=myFriends();
+      fp.innerHTML='<div style="display:flex;gap:6px;margin-bottom:10px;"><input id="friendAdd" class="hq-input" style="margin:0;" placeholder="add a friend by username…" onkeydown="if(event.key===\'Enter\')sendFriendReq(this.value)"><button class="hq-btn hq-go" style="padding:9px 14px;" onclick="sendFriendReq((document.getElementById(\'friendAdd\').value||\'\'))">Add</button></div>'
+        +(fr.length?fr.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><button class="hq-blue" style="border:none;border-radius:7px;padding:7px 12px;font-weight:bold;cursor:pointer;" onclick="openDM(\''+nm+'\')">💬</button><button style="background:#e6e8ef;border:none;border-radius:7px;padding:7px 10px;cursor:pointer;" onclick="removeFriend(\''+nm+'\')">✕</button></div>;}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">No friends yet — add someone above!</div>'); }
+    var rp=document.getElementById('soc-requests'); if(rp){ rp.innerHTML=(inc.length?inc.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><button class="hq-go" style="border:none;border-radius:7px;padding:7px 13px;font-weight:bold;color:#fff;cursor:pointer;" onclick="acceptFriend(\''+nm+'\')">Accept</button></div>';}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">No friend requests right now.</div>'); }
+    var mp=document.getElementById('soc-messages'); if(mp){ var fr2=myFriends(); mp.innerHTML=(fr2.length?'<div style="font-size:11px;color:#556;margin-bottom:6px;">Tap a friend to open your chat.</div>'+fr2.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem" style="cursor:pointer;" onclick="openDM(\''+nm+'\')"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><span style="color:#2a6fb0;font-size:16px;">💬</span></div>;}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">Add friends first, then you can DM them.</div>'); }
+  }
+  function switchSocialTab(tab){
+    SOCIAL_TAB=tab;
+    var ts=document.querySelectorAll('#socTabs .hq-tab'); for(var i=0;i<ts.length;i++){ ts[i].classList.toggle('on', ts[i].getAttribute('data-tab')===tab); }
+    var ps=document.querySelectorAll('#socPanels .soc-panel'); for(var j=0;j<ps.length;j++){ ps[j].classList.toggle('on', ps[j].getAttribute('data-tab')===tab); }
+  }
+  async function openSocial(tab, forceRebuild){
     if(!FEATURES.social){toast('Coming soon 👀');return;}
     if(!requireAuth())return;
-    SOCIAL_TAB=tab||SOCIAL_TAB;
+    SOCIAL_TAB=tab||SOCIAL_TAB||'friends';
+    var pm=document.getElementById('profModal'); pm.classList.add('open'); pm.classList.add('mob-full'); document.body.classList.add('modal-on');
     var box=document.getElementById('profCardBox');
-    var _pm=document.getElementById('profModal'); _pm.classList.add('open'); _pm.classList.add('mob-full'); document.body.classList.add('modal-on');
-    box.innerHTML='<div class="pc-strip"><span>👯 Friends & Messages</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body" style="padding:22px;text-align:center;">loading…</div>';
+    if(!forceRebuild && document.getElementById('socPanels')){ switchSocialTab(SOCIAL_TAB); return; }
+    if(!document.getElementById('socPanels')){ box.innerHTML=socialShell(); }
     await loadFriends();
-    var tabs=[['friends','👯 Friends'],['requests','📨 Requests'],['messages','💬 Messages']];
-    var inc=incomingReqs();
-    var bar='<div class="hq-tabs">'+tabs.map(function(t){return '<button class="hq-tab'+(SOCIAL_TAB===t[0]?' on':'')+'" style="flex-direction:row;gap:5px;font-size:12px;padding:9px 4px;" onclick="openSocial(\''+t[0]+'\')">'+t[1]+(t[0]==='requests'&&inc.length?' ('+inc.length+')':'')+'</button>';}).join('')+'</div>';
-    var body='';
-    if(SOCIAL_TAB==='friends'){
-      body+='<div style="display:flex;gap:6px;margin-bottom:10px;"><input id="friendAdd" class="hq-input" style="margin:0;" placeholder="add a friend by username…" onkeydown="if(event.key===\'Enter\')sendFriendReq(this.value)"><button class="hq-btn hq-go" style="padding:9px 14px;" onclick="sendFriendReq((document.getElementById(\'friendAdd\').value||\'\'))">Add</button></div>';
-      var fr=myFriends();
-      body+=fr.length?fr.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><button class="hq-blue" style="border:none;border-radius:7px;padding:7px 12px;font-weight:bold;cursor:pointer;" onclick="openDM(\''+nm+'\')">💬</button><button style="background:#e6e8ef;border:none;border-radius:7px;padding:7px 10px;cursor:pointer;" onclick="removeFriend(\''+nm+'\')">✕</button></div>';}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">No friends yet — add someone above!</div>';
-    } else if(SOCIAL_TAB==='requests'){
-      body+=inc.length?inc.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><button class="hq-go" style="border:none;border-radius:7px;padding:7px 13px;font-weight:bold;color:#fff;cursor:pointer;" onclick="acceptFriend(\''+nm+'\')">Accept</button></div>';}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">No friend requests right now.</div>';
-    } else {
-      var fr2=myFriends();
-      body+=fr2.length?'<div style="font-size:11px;color:#556;margin-bottom:6px;">Tap a friend to open your chat.</div>'+fr2.map(function(n){var nm=esc(n).replace(/'/g,'');return '<div class="hq-mem" style="cursor:pointer;" onclick="openDM(\''+nm+'\')"><span class="m-ava">'+avatarFor(n)+'</span><b style="flex:1;">'+esc(n)+'</b><span style="color:#2a6fb0;font-size:16px;">💬</span></div>';}).join(''):'<div style="font-size:12px;color:#777;padding:8px;">Add friends first, then you can DM them.</div>';
-    }
-    box.innerHTML='<div class="pc-strip"><span>👯 Friends & Messages</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>'+bar+'<div class="pc-body hq-body">'+body+'</div>';
+    renderSocialPanels();
+    switchSocialTab(SOCIAL_TAB);
   }
   async function openDM(name){
     if(!FEATURES.social)return;
