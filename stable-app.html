@@ -5711,6 +5711,17 @@ document.addEventListener('touchmove',function(e){
     window.addEventListener('resize', function(){ measure(); if(!compactR()) clearBar(); });
   })();
 
+  /* ---- Tap-vs-scroll guard (Build 10): a "tap" that moved more than ~10px is really a scroll, so we
+     cancel the click it would otherwise fire. This stops the feed / messages from opening a view when
+     you were only scrolling. Genuine taps (little movement) open normally. Touch-only -> desktop/mouse
+     is never affected. */
+  (function(){
+    var sx=0, sy=0, moved=false;
+    document.addEventListener('touchstart', function(e){ var t=e.touches&&e.touches[0]; if(t){ sx=t.clientX; sy=t.clientY; moved=false; } }, {passive:true, capture:true});
+    document.addEventListener('touchmove', function(e){ var t=e.touches&&e.touches[0]; if(t && (Math.abs(t.clientX-sx)>10 || Math.abs(t.clientY-sy)>10)) moved=true; }, {passive:true, capture:true});
+    document.addEventListener('click', function(e){ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } }, true);
+  })();
+
   /* hard block pinch-zoom in the app so it can never get stuck zoomed (viewport lock + this) */
   if(compact()){
     document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});
