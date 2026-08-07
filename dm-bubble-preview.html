@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TheFlap — DM bubble options</title>
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:Verdana,Arial,sans-serif;background:#0f1830;color:#eaf2ff;padding:16px 10px 40px;}
+  .head{max-width:760px;margin:0 auto 12px;text-align:center;}
+  .head h1{font-size:18px;margin:0 0 4px;color:#fff;}
+  .head p{font-size:12px;color:#9fb2d8;margin:0;line-height:1.5;}
+  .stage{display:flex;gap:20px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:16px;}
+  .col .lbl{text-align:center;font-weight:bold;font-size:13px;margin-bottom:2px;color:#8dff9f;letter-spacing:.5px;}
+  .col .sub{text-align:center;font-size:10px;color:#8ea3cc;margin-bottom:8px;}
+  .phone{width:300px;height:600px;background:#000;border:8px solid #1a1a1a;border-radius:34px;overflow:hidden;box-shadow:0 14px 34px rgba(0,0,0,.6);}
+  .screen{height:100%;display:flex;flex-direction:column;background:#0e2350;}
+  .dmhead{background:linear-gradient(180deg,#2a4a8f,#122a5e);color:#fff;padding:12px 14px;font-weight:bold;font-size:15px;display:flex;align-items:center;gap:10px;border-bottom:2px solid #0a1c3e;}
+  .dmhead .bk{font-size:18px;}
+  .dmhead .ava{width:30px;height:30px;border-radius:50%;overflow:hidden;background:#cfe0ff;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .thread{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,#12295e,#0b1c42);}
+  .row{display:flex;align-items:flex-end;gap:7px;max-width:100%;}
+  .row.mine{flex-direction:row-reverse;}
+  .bavatar{width:26px;height:26px;border-radius:50%;overflow:hidden;background:#cfe0ff;flex:0 0 auto;display:none;align-items:center;justify-content:center;font-size:13px;}
+  .bub{color:#11202e;background:#eef2fa;line-height:1.4;word-break:break-word;}
+  .mine .bub{background:linear-gradient(180deg,#5ec1f5,#2f7ac9);color:#fff;}
+  .compose{display:flex;gap:8px;padding:10px;background:#0a1c3e;align-items:center;}
+  .compose .em{width:34px;height:34px;border-radius:8px;background:#1c3566;color:#ffd23f;display:flex;align-items:center;justify-content:center;font-size:16px;}
+  .compose input{flex:1;border:none;border-radius:16px;padding:9px 13px;font-size:14px;background:#dfe7f7;}
+  .compose .snd{background:#2f7ac9;color:#fff;border:none;border-radius:14px;padding:9px 14px;font-weight:bold;font-size:13px;}
+
+  /* ===== Variant A: CURRENT (as shipped) ===== */
+  .A .bub{font-size:14.5px;padding:10px 13px;border-radius:16px;max-width:78%;}
+
+  /* ===== Variant B: BIGGER + avatars beside each bubble (repositioned) ===== */
+  .B .bub{font-size:16px;padding:12px 16px;border-radius:20px;max-width:80%;box-shadow:0 2px 5px rgba(0,0,0,.25);}
+  .B .bavatar{display:flex;}
+  .B .thread{gap:12px;}
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>TheFlap — DM bubble options</h1>
+    <p>Same chat, two treatments. <b>A</b> is what just shipped (bigger than before). <b>B</b> goes bigger still and adds a small avatar beside each bubble (iMessage/WhatsApp-style). Pick one, or tell me to tune sizes.</p>
+  </div>
+  <div class="stage" id="stage"></div>
+<script>
+  const MSGS=[
+    {t:"yooo did you see the new flap update",mine:false},
+    {t:"yeah the app looks way cleaner now 🔥",mine:true},
+    {t:"fr the messages feel smoother too",mine:false},
+    {t:"no more that annoying flash when i tap the tabs",mine:true},
+    {t:"exactly!! okay this is actually so good",mine:false},
+    {t:"we cooking 🧑‍🍳",mine:true}
+  ];
+  const ME='🙂', THEM='👩🏻';
+  function thread(){return MSGS.map(m=>`
+    <div class="row ${m.mine?'mine':''}">
+      <span class="bavatar">${m.mine?ME:THEM}</span>
+      <span class="bub">${m.t}</span>
+    </div>`).join('');}
+  function frame(variant){return `
+    <div class="phone ${variant}">
+      <div class="screen">
+        <div class="dmhead"><span class="bk">←</span><span class="ava">${THEM}</span><span>karahh</span></div>
+        <div class="thread">${thread()}</div>
+        <div class="compose"><span class="em">😊</span><input placeholder="message karahh…" disabled><button class="snd">Send</button></div>
+      </div>
+    </div>`;}
+  document.getElementById('stage').innerHTML=`
+    <div class="col"><div class="lbl">A · CURRENT</div><div class="sub">just shipped</div>${frame('A')}</div>
+    <div class="col"><div class="lbl">B · BIGGER + AVATARS</div><div class="sub">larger bubbles, moved layout</div>${frame('B')}</div>`;
+</script>
+</body>
+</html>
