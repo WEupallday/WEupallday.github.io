@@ -1200,6 +1200,9 @@
   .rec-conn{ margin-top:6px; }
   .rec-conn-on{ font-size:13px; color:#2e7d46; background:#e7f7ec; border-radius:9px; padding:10px 12px; margin-bottom:10px; }
   .rec-conn-off{ font-size:12.5px; color:#5b6b93; margin-bottom:10px; line-height:1.5; }
+
+  .announce-body .ann-link, .announce-body a.ann-link{ color:#1a5fa8; font-weight:bold; text-decoration:underline; word-break:break-word; }
+  .announce-body .ann-link:active{ color:#0d3f78; }
 </style>
 </head>
 <body>
@@ -3992,7 +3995,7 @@
     if(kind!=='reflap')notifyFlap(recipient,body); /* every bell notif mirrors to phone push here; reflaps stay bell-only */
   }
   function notifText(n){
-    if(n.kind==='announce')return '<b>'+esc(n.actor||'📣 TheFlap')+'</b>'+(n.excerpt?('<br>'+esc(n.excerpt)):'');   /* admin broadcast */
+    if(n.kind==='announce')return '<b>'+esc(n.actor||'📣 TheFlap')+'</b>'+(n.excerpt?('<br>'+annLinkify(n.excerpt)):'');   /* admin broadcast */
     var who='<b>'+esc(n.actor)+'</b>'+vbadge(n.actor);
     var ex=n.excerpt?(' "'+esc(String(n.excerpt).slice(0,70))+'"'):'';
     if(n.kind==='reply')return who+' replied to your flap:'+ex;
@@ -4467,6 +4470,15 @@
     }catch(e){}
   }
   var ANN_CONFIRM=null;
+  /* linkify announcement text: [label](url) and bare http(s) links -> clickable, everything else escaped */
+  function annLinkify(s){
+    var t=esc(s), store=[];
+    t=t.replace(/\[([^\]\n]{1,80})\]\((https?:\/\/[^\s)]+)\)/g,function(m,label,url){ store.push('<a href="'+url+'" target="_blank" rel="noopener noreferrer" class="ann-link">'+label+'</a>'); return '\u0001'+(store.length-1)+'\u0001'; });
+    t=t.replace(/(https?:\/\/[^\s<]+)/g,function(m,url){ store.push('<a href="'+url+'" target="_blank" rel="noopener noreferrer" class="ann-link">'+url+'</a>'); return '\u0001'+(store.length-1)+'\u0001'; });
+    t=t.replace(/\u0001(\d+)\u0001/g,function(m,i){ return store[+i]; });
+    return t;
+  }
+  window.annInsertLink=function(){ var ta=document.getElementById('adminAnnounce'); if(!ta)return; var tpl='[link text](https://)'; var a=(ta.selectionStart!=null)?ta.selectionStart:ta.value.length, b=(ta.selectionEnd!=null)?ta.selectionEnd:a; ta.value=ta.value.slice(0,a)+tpl+ta.value.slice(b); ta.focus(); try{ ta.setSelectionRange(a+1, a+10); }catch(_){} };
   function announceCardHTML(){
     var txt=String(ANNOUNCE_TXT||'').trim(); if(!txt)return '';
     if(/^\[\[SOUNDVOTE/.test(txt)){
@@ -4489,7 +4501,7 @@
       var adminbar='';
       if(ME.admin){ var counts=opts.map(function(o,i){return esc(o)+' '+(pollVotes[i]||0);}).join(' \u00b7 ');
         adminbar='<div style="margin-top:9px;font-size:11.5px;color:#134a86">'+(closed?'<button onclick="window.annReopen()" style="border:none;border-radius:8px;padding:6px 11px;font-weight:800;color:#fff;background:#2aa35a;cursor:pointer">\ud83d\udd13 Re-open vote</button>':'<button onclick="window.annClose()" style="border:none;border-radius:8px;padding:6px 11px;font-weight:800;color:#fff;background:#c0392b;cursor:pointer">\ud83d\udd12 Close vote</button>')+'<div style="margin-top:6px;color:#3a6ea5"><b>Results (admin):</b> '+counts+'</div></div>'; }
-      return '<div class="announce-card"><div class="announce-head"><span class="ann-seal">\ud83d\udee1</span><span class="ann-name">TheFlap<small>Official</small></span><span class="ann-official">\ud83d\udce2 Announcement</span></div><div class="announce-body"><span class="ann-title">'+esc(vtitle)+'</span><div style="font-size:13px;margin-bottom:11px">'+esc(vline)+'</div>'+rows+foot+adminbar+'</div></div>';
+      return '<div class="announce-card"><div class="announce-head"><span class="ann-seal">\ud83d\udee1</span><span class="ann-name">TheFlap<small>Official</small></span><span class="ann-official">\ud83d\udce2 Announcement</span></div><div class="announce-body"><span class="ann-title">'+esc(vtitle)+'</span><div style="font-size:13px;margin-bottom:11px">'+annLinkify(vline)+'</div>'+rows+foot+adminbar+'</div></div>';
     }
     var lines=txt.split(/\n/), title='', rest=txt;
     if(lines.length>1 && lines[0].trim().length<=60){ title=lines[0].trim(); rest=lines.slice(1).join('\n').replace(/^\n+/,''); }
@@ -4497,7 +4509,7 @@
       '<div class="announce-head"><span class="ann-seal">\ud83d\udee1</span>'+
         '<span class="ann-name">TheFlap<small>Official</small></span>'+
         '<span class="ann-official">\ud83d\udce2 Announcement</span></div>'+
-      '<div class="announce-body">'+(title?'<span class="ann-title">'+esc(title)+'</span>':'')+esc(rest)+'</div>'+
+      '<div class="announce-body">'+(title?'<span class="ann-title">'+esc(title)+'</span>':'')+annLinkify(rest)+'</div>'+
     '</div>';
   }
   window.annAsk=function(i){ if(!ME.name){try{requireAuth();}catch(e){}return;} if(myVote!==null)return; ANN_CONFIRM=i; try{renderLive();}catch(e){} };
@@ -5280,9 +5292,10 @@
     var pp=d.pollCur?String(d.pollCur).split('␟'):[];
     h+='<div class="hq-sec">📣 Official announcement</div>';
     h+='<textarea id="adminAnnounce" class="hq-input" style="min-height:130px;">'+esc(d.annCur||'')+'</textarea>';
+    h+='<button class="hq-btn" style="width:100%;margin-bottom:4px;background:#eef3fb;color:#1a5fa8;border:1px solid #b7d6f2;" onclick="annInsertLink()">\ud83d\udd17 Add a link</button>';
     h+='<button class="hq-btn hq-go" style="width:100%;margin-bottom:4px;background:linear-gradient(180deg,#2f7ac9,#134a86);color:#fff;" onclick="saveAnnounce()">📢 Post announcement to the top</button>';
     h+='<button class="hq-btn" style="width:100%;background:linear-gradient(180deg,#c0603a,#8f3c1c);color:#fff;margin-bottom:8px;" onclick="clearAnnounce()">Clear announcement</button>';
-    h+='<div style="font-size:10px;color:#889;margin-bottom:12px;">Posts an official TheFlap card <b>above the pinned flap</b> for everyone. First line becomes the bold title. Leave blank &amp; save (or tap Clear) to remove it.</div>';
+    h+='<div style="font-size:10px;color:#889;margin-bottom:12px;">Posts an official TheFlap card <b>above the pinned flap</b> for everyone. First line becomes the bold title. Paste a link (or use [text](https://\u2026)) and it becomes clickable. Leave blank &amp; save (or tap Clear) to remove it.</div>';
     h+='<div class="hq-sec">📢 Scrolling ticker</div>';
     h+='<textarea id="adminTicker" class="hq-input" style="min-height:56px;">'+esc(d.tickerCur||((document.getElementById('tickerText')||{}).textContent||''))+'</textarea>';
     h+='<button class="hq-btn hq-go" style="width:100%;margin-bottom:4px;" onclick="saveTicker()">Save ticker for everyone</button>';
