@@ -3661,7 +3661,7 @@
     try{ if(tType==='post'&&ctx.id){ var f=await sb.from('flaps').select('body').eq('id',ctx.id).limit(1); if(f&&f.data&&f.data[0])content=(f.data[0].body||'').slice(0,500); } }catch(_){}
     var hi=/nudity|sexual|minor|child|groom|exploit|csam|violence|threat|weapon|suicide|self.?harm/i;
     var priority=(hi.test(reason||'')||hi.test(content||''))?'high':'normal';
-    var row={reporter:me,reported_user:tName,target_type:tType,target_name:tName,reported_content:content,reason:reason,priority:priority,status:'new',resolved:false};
+    var row={reporter:me,reported_user:tName,target_id:(ctx.id||null),target_type:tType,target_name:tName,reported_content:content,reason:reason,priority:priority,status:'new',resolved:false};
     var res=await sb.from('flap_reports').insert(row);
     if(res&&res.error){ toast('Could not submit report \u2014 please try again in a moment.'); return; }
     try{ if(typeof closeReport==='function')closeReport(); }catch(_){}
@@ -5546,6 +5546,7 @@
 
   /* ===================== Twitter-style single-post view + image lightbox (hash-routed, shareable) ===================== */
   var FEED_SCROLL=0, LAST_DETAIL_ID=null;
+  window.addEventListener('load',function(){ try{ var _p=new URLSearchParams(location.search); var _f=_p.get('openflap'); var _u=_p.get('profile'); if(_f){ setTimeout(function(){ try{ openFlap(_f); }catch(e){} },1200); } else if(_u){ setTimeout(function(){ try{ showUserProfile(_u); }catch(e){} },1200); } }catch(e){} });
   function openFlap(id){ if(!id)return; FEED_SCROLL=window.pageYOffset||document.documentElement.scrollTop||0; location.hash='flap/'+id; }
   function closeFlap(){
     if((location.hash||'').indexOf('#flap/')===0){ history.back(); setTimeout(function(){ if((location.hash||'').indexOf('#flap/')===0){ try{location.hash='';}catch(e){} } },30); }
