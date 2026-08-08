@@ -2638,7 +2638,7 @@
           startOnboarding(newRow);   /* pick handle + display name + profile pic, then enter */
           return;
         }
-      }catch(e){err.textContent='Could not reach the flap server — try again.';return;}
+      }catch(e){err.textContent=flapErr(e,'Sign up');return;}
     }else{
       ME.name=name.slice(0,20);
       if(GATE_PIC_BLOB){ME.pic=URL.createObjectURL(GATE_PIC_BLOB);}
@@ -2694,7 +2694,7 @@
       err.textContent=''; toast('Welcome back, '+ME.name+'!');
       try{await ensureHandle();}catch(eh){}
       enterAppAfterLogin();
-    }catch(e){ err.textContent='Could not reach the flap server — try again.'; }
+    }catch(e){ err.textContent=flapErr(e,'Sign in'); }
   }
   /* ===== DEDICATED CREATE ACCOUNT (name + password path) — the ONLY name/pass account maker ===== */
   async function doCreate(){
@@ -4694,6 +4694,7 @@
     toast('Vote counted! 🗳️');
   }
 
+  function flapErr(e,where){try{var st=(e&&(e.status||e.code))||'';var msg=(e&&(e.message||e.hint||e.details||e.error_description||''))||'';msg=String(msg).slice(0,100);try{console.error('[TheFlap] '+where+' failed:',e);}catch(_c){}var base=(where||'Request')+' failed';if(st)base+=' ('+st+')';if(msg)base+=': '+msg;if(!st&&!msg)base+=' — check your connection.';return base;}catch(_x){return (where||'Request')+' failed.';}}
   async function loadFeed(manual){
     if(!ONLINE){
       LAST_ROWS=localPosts;
@@ -4713,8 +4714,8 @@
       markPresentToday();
       loadMods();
       loadFeatures();
-      await loadPinned();
-      await loadAnnounce();
+      try{await loadPinned();}catch(_lp){try{console.error('loadPinned',_lp);}catch(e){}}
+      try{await loadAnnounce();}catch(_la){try{console.error('loadAnnounce',_la);}catch(e){}}
       /* a pinned flap can be OLDER than the newest-N window we just loaded — fetch it directly
          so it always appears (pinned at the top), instead of silently vanishing when newer flaps push it out. */
       if(PINNED_ID && !LAST_ROWS.some(function(r){return String(r.id)===String(PINNED_ID);})){
@@ -4748,7 +4749,7 @@
       checkNotifications();
       if(manual)toast('Feed refreshed!');
     }catch(e){
-      document.getElementById('liveFeed').innerHTML='<div class="card"><div class="card-body" style="text-align:center;font-size:11px;color:#8f1408;">could not reach the flap server — check your keys / internet.</div></div>';
+      var _fe=flapErr(e,'Feed load');try{if(typeof LAST_ROWS!=='undefined'&&LAST_ROWS&&LAST_ROWS.length){renderLive();try{toast(_fe);}catch(_t){}}else{document.getElementById('liveFeed').innerHTML='<div class="card"><div class="card-body" style="text-align:center;font-size:11px;color:#8f1408;">'+esc(_fe)+'<br><span style="opacity:.75;">Tap refresh to try again.</span></div></div>';}}catch(_r){document.getElementById('liveFeed').innerHTML='<div class="card"><div class="card-body" style="text-align:center;font-size:11px;color:#8f1408;">'+esc(_fe)+'</div></div>';}
     }
   }
   if(ONLINE)setInterval(function(){if(ME.name){ if(!isTyping())loadFeed(); loadNotifs(); }},20000);   /* don't refresh the feed while you're mid-reply — it'd wipe your open box */
