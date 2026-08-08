@@ -280,7 +280,7 @@
       var flAll=(await sb.from('flaps').select('id,name,body,pic_url,mood,created_at').order('id',{ascending:false}).limit(500)).data||[];
       var rcRes=await sb.from('flap_replies').select('*',{count:'exact',head:true});
       var repliesRecent=[];try{repliesRecent=(await sb.from('flap_replies').select('*').order('id',{ascending:false}).limit(80)).data||[];}catch(e){}
-      var reports=[];try{reports=(await sb.from('flap_reports').select('*').eq('resolved',false).order('id',{ascending:false})).data||[];}catch(e){}
+      var reports=[];window.__modErr='';try{ var _mk=sessionStorage.getItem('flap_modpw'); if(_mk){ var _rr=await fetch(SUPABASE_URL+'/functions/v1/admin-reports',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'list'})}); var _jj=await _rr.json().catch(function(){return{};}); if(_rr.ok&&_jj&&_jj.reports){ reports=_jj.reports.filter(function(r){return !r.resolved;}); } else { window.__modErr=(_jj&&_jj.error)||('http '+_rr.status); if(_rr.status===401||_rr.status===403){ sessionStorage.removeItem('flap_modpw'); } } } }catch(e){ window.__modErr=String(e).slice(0,80); }
       var repIds=reports.filter(function(r){return r.target_type==='post'&&r.target_id;}).map(function(r){return r.target_id;});
       var repPosts={};if(repIds.length){try{((await sb.from('flaps').select('id,body,name').in('id',repIds)).data||[]).forEach(function(p){repPosts[p.id]=p;});}catch(e){}}
       var tickets=[];try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(100)).data||[];}catch(e){}
@@ -530,11 +530,11 @@
     }).join(''):'<div class="empty">No open appeals. 🎉</div>';
 
     h+='<div class="subhead">⚑ Reports</div>';
-    if(!window.__modAuthed){
-      h+='<div class="row" style="border-color:#2b5c7d"><div class="r-top">🔒 Reports are private (admins only)</div><div class="r-body">Report details are locked so the public can never read them. Sign in with your admin Google account to load and review the queue.</div><div class="acts"><button class="btn blue" onclick="ADMIN.modSignIn()">Sign in with Google</button></div></div>';
+    if(!sessionStorage.getItem('flap_modpw')){
+      h+='<div class="row" style="border-color:#2b5c7d"><div class="r-top">🔒 Reports are private (admins only)</div><div class="r-body">Report details are locked server-side. Enter your admin password to load the queue through the secure function. '+(window.__modErr?'<br><span style=\"color:#ff8f8f\">'+esc(window.__modErr)+'</span>':'')+'</div><div class="acts"><button class="btn blue" onclick="ADMIN.modSignIn()">Unlock reports</button></div></div>';
     } else {
       var rl=reports.slice().sort(function(a,b){ var pa=(a.priority==='high')?0:1, pb=(b.priority==='high')?0:1; if(pa!==pb)return pa-pb; return (b.id||0)-(a.id||0); });
-      h+='<div class="muted" style="margin-bottom:6px">Signed in as moderator ('+esc(window.__modEmail||'')+') ✓ <button class="btn" style="padding:2px 8px;font-size:11px" onclick="ADMIN.modSignOut()">sign out</button></div>';
+      h+='<div class="muted" style="margin-bottom:6px">Reports unlocked (secure) ✓ <button class="btn" style="padding:2px 8px;font-size:11px" onclick="ADMIN.modSignOut()">sign out</button></div>';
       h+= rl.length? rl.map(function(r){
         var hi=(r.priority==='high');
         var st=(r.status==='review')?'Under Review':'New';
@@ -711,11 +711,11 @@
     msgSearch:function(v){ MSG_SEARCH=v; renderTab(); var i=$('cMsgSearch'); if(i){i.focus();try{i.setSelectionRange(i.value.length,i.value.length);}catch(e){}} },
     msgOpen:function(k){ MSG_OPEN=unb64(k); renderTab(); },
     msgBack:function(){ MSG_OPEN=null; renderTab(); },
-    modSignIn:function(){ try{ sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.href.split('#')[0].split('?')[0]}}); }catch(e){ toast('Sign-in unavailable.'); } },
-    modSignOut:async function(){ try{ await sb.auth.signOut(); }catch(e){} window.__modAuthed=false; window.__modEmail=''; loadAll(); },
-    setReportStatus:async function(id,st){ try{ var r=await sb.from('flap_reports').update({status:st}).eq('id',id); if(r&&r.error){ toast('Update failed — sign in as admin first.'); return; } }catch(e){ toast('Update failed.'); return; } toast('Updated.'); loadAll(); },
-    resolveReport:async function(id){try{await sb.from('flap_reports').update({resolved:true}).eq('id',id);}catch(e){}toast('Resolved.');loadAll();},
-    modDeletePost:async function(pid,rid){if(!confirm('Delete this flap for everyone?'))return;try{await sb.from('flaps').delete().eq('id',pid);}catch(e){}try{await sb.from('flap_reports').update({resolved:true}).eq('id',rid);}catch(e){}toast('Flap deleted.');loadAll();},
+    modSignIn:function(){ var pw=prompt('Enter your admin password to unlock the report queue:'); if(pw==null||pw==='')return; sessionStorage.setItem('flap_modpw',pw); toast('Unlocking…'); loadAll(); },
+    modSignOut:function(){ sessionStorage.removeItem('flap_modpw'); toast('Locked.'); loadAll(); },
+    setReportStatus:async function(id,st){ var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){toast('Unlock reports first.');return;} try{ var _r=await fetch(SUPABASE_URL+'/functions/v1/admin-reports',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:id,status:st})}); if(!_r.ok){ toast('Update failed.'); return; } }catch(e){ toast('Update failed.'); return; } toast('Updated.'); loadAll(); },
+    resolveReport:async function(id){ var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){toast('Unlock reports first.');return;} try{ await fetch(SUPABASE_URL+'/functions/v1/admin-reports',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:id,resolved:true})}); }catch(e){} toast('Resolved.'); loadAll(); },
+    modDeletePost:async function(pid,rid){if(!confirm('Delete this flap for everyone?'))return;try{await sb.from('flaps').delete().eq('id',pid);}catch(e){} var _mk=sessionStorage.getItem('flap_modpw'); if(_mk){try{ await fetch(SUPABASE_URL+'/functions/v1/admin-reports',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:rid,resolved:true})}); }catch(e){}} toast('Flap deleted.');loadAll();},
     deleteFlap:async function(id){if(!confirm('Delete this flap (and its photo) for everyone?'))return;try{await sb.from('flaps').delete().eq('id',id);}catch(e){}toast('Flap deleted.');loadAll();},
     removePhoto:async function(id){if(!confirm('Remove just the photo? The text stays.'))return;try{await sb.from('flaps').update({pic_url:null}).eq('id',id);}catch(e){}toast('Photo removed.');loadAll();},
     deleteReply:async function(id){if(!confirm('Delete this reply for everyone?'))return;try{await sb.from('flap_replies').delete().eq('id',id);}catch(e){}toast('Reply deleted.');loadAll();},
