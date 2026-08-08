@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>TheFlap · Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--navy:#12357a;--blue:#2f7ac9;--blue-d:#1a5fa8;--gold:#f5c542;--red:#c0392b;--green:#1c7a42;--purple:#5f2ea0;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:#0d1a2e;color:#e8eef7;font-family:-apple-system,Segoe UI,Verdana,Arial,sans-serif;font-size:14px;line-height:1.4;}
+  a{color:#7fd0ff;}
+  /* ---- login gate ---- */
+  #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .gatebox{width:100%;max-width:360px;background:#152a4a;border:1px solid #24406e;border-radius:14px;padding:26px 24px;box-shadow:0 12px 40px rgba(0,0,0,.5);}
+  .gatebox h1{font-size:20px;margin:0 0 4px;color:#fff;}
+  .gatebox .sub{font-size:12px;color:#9db4d6;margin-bottom:18px;}
+  .gatebox label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#9db4d6;margin:12px 0 5px;}
+  .gatebox input{width:100%;padding:11px 12px;border-radius:9px;border:1px solid #2c4a7a;background:#0f2440;color:#fff;font-size:15px;}
+  .gatebox button{width:100%;margin-top:18px;padding:12px;border:none;border-radius:9px;background:linear-gradient(180deg,var(--blue),var(--blue-d));color:#fff;font-weight:bold;font-size:15px;cursor:pointer;}
+  .gatebox button:hover{filter:brightness(1.08);}
+  .gate-err{color:#ff8a7a;font-size:12px;margin-top:12px;min-height:16px;}
+  /* ---- app shell ---- */
+  #app{display:none;max-width:1080px;margin:0 auto;padding:0 0 60px;}
+  header.topbar{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#16305a,#0d1f3d);border-bottom:1px solid #24406e;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  header.topbar .crown{font-size:20px;}
+  header.topbar h1{font-size:16px;margin:0;color:#fff;}
+  header.topbar .who{font-size:11px;color:#9db4d6;margin-left:auto;}
+  header.topbar button.hbtn{background:#24406e;border:none;color:#cfe0f6;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:bold;cursor:pointer;}
+  header.topbar button.hbtn:hover{background:#2e5290;}
+  /* compact stat strip */
+  .statstrip{display:flex;flex-wrap:wrap;gap:8px 16px;background:#0f2340;border-bottom:1px solid #22406e;padding:9px 16px;position:sticky;top:47px;z-index:19;}
+  .statstrip .s{font-size:12px;color:#9db4d6;white-space:nowrap;}
+  .statstrip .s b{color:#fff;font-size:14px;}
+  .statstrip .s.hot b{color:var(--gold);}
+  .statstrip .s.danger b{color:#ff9a86;}
+  /* sticky tab nav */
+  nav.tabs{position:sticky;top:83px;z-index:18;display:flex;gap:6px;flex-wrap:wrap;background:#0d1f3d;border-bottom:1px solid #24406e;padding:8px 12px;}
+  nav.tabs button{background:#152a4a;border:1px solid #24406e;color:#bcd0ee;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:bold;cursor:pointer;}
+  nav.tabs button:hover{background:#1d3career;background:#1d385f;}
+  nav.tabs button.on{background:linear-gradient(180deg,var(--blue),var(--blue-d));color:#fff;border-color:#3b7fd0;}
+  .badgecard{background:#0c1836;border:1.5px solid #2f5aa0;border-radius:10px;padding:12px;margin:10px 0;}
+  .badgecard .bc-h{display:flex;align-items:center;gap:9px;}
+  .badgecard .bc-ic{font-size:22px;}
+  .badgecard .bc-h b{font-size:15px;color:#fff;flex:1;}
+  .badgecard .bc-del{padding:5px 10px;font-size:12px;}
+  .badgecard .bc-desc{font-size:12.5px;color:#a9c2e8;margin:6px 0 8px;}
+  .badgecard .bc-grant{display:flex;gap:8px;align-items:center;}
+  .badgecard .bc-inp{margin:0;flex:1;}
+  .badgecard .bc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .badgecard .gchip{background:#183a6e;border:1px solid #3f7ad0;border-radius:12px;padding:3px 8px;font-size:12px;color:#cfe2ff;display:inline-flex;align-items:center;gap:7px;}
+  .badgecard .gchip span{cursor:pointer;color:#ff9db4;font-weight:bold;}
+  .status{display:inline-block;font-size:10px;font-weight:bold;padding:2px 8px;border-radius:9px;margin-left:6px;}
+  .st-active{background:#123d1a;color:#7dffa0;border:1px solid #1a8a1a;}
+  .st-ended{background:#3a1830;color:#ff9db4;border:1px solid #a3164e;}
+  .st-hidden{background:#26324a;color:#a9c2e8;border:1px solid #46608e;}
+  /* section container */
+  .wrap{padding:16px;}
+  .sec{background:#132747;border:1px solid #22406e;border-radius:14px;padding:16px;margin-bottom:16px;}
+  .sec > h2{margin:0 0 12px;font-size:15px;color:#fff;display:flex;align-items:center;gap:8px;border-bottom:1px solid #22406e;padding-bottom:9px;}
+  .sec .refresh{margin-left:auto;font-size:11px;font-weight:normal;background:#24406e;border:none;color:#cfe0f6;border-radius:7px;padding:5px 10px;cursor:pointer;}
+  .subhead{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#7f9bc4;margin:16px 0 8px;font-weight:bold;}
+  .subhead:first-child{margin-top:0;}
+  /* stat cards (Stats tab) */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;}
+  .stat{background:#0f2340;border:1px solid #23406e;border-radius:11px;padding:14px 12px;text-align:center;}
+  .stat b{display:block;font-size:26px;color:#fff;line-height:1;}
+  .stat span{display:block;font-size:11px;color:#9db4d6;margin-top:6px;}
+  .stat.hot b{color:var(--gold);} .stat.danger b{color:#ff9a86;}
+  /* rows */
+  .row{background:#0f2340;border:1px solid #23406e;border-radius:10px;padding:11px 13px;margin-bottom:9px;}
+  .row .r-top{font-weight:bold;color:#fff;}
+  .row .r-meta{font-size:11px;color:#8ba3c9;margin-top:2px;}
+  .row .r-body{margin:6px 0;color:#d5e2f5;word-break:break-word;}
+  .row.appeal{border-color:#8a5a1a;background:#241c0c;}
+  .row.reportrow{border-color:#7a2a1a;}
+  .acts{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;}
+  .btn{border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:bold;cursor:pointer;color:#fff;background:#24406e;}
+  .btn:hover{filter:brightness(1.1);}
+  .btn.del{background:linear-gradient(180deg,#c0603a,#8f3c1c);}
+  .btn.red{background:linear-gradient(180deg,#d0453a,#9f2a1c);}
+  .btn.green{background:linear-gradient(180deg,#2f9e5a,#1c7a42);}
+  .btn.blue{background:linear-gradient(180deg,var(--blue),var(--blue-d));}
+  .btn.gold{background:linear-gradient(180deg,#e0b23a,#b8860b);color:#3a2a00;}
+  .btn.purple{background:linear-gradient(180deg,#8a4fd8,#5f2ea0);}
+  .empty{color:#7fae7f;font-size:13px;padding:6px 0;}
+  .muted{color:#8ba3c9;font-size:12px;}
+  .note{font-size:11.5px;color:#cbd8ee;background:#0f2340;border:1px solid #2a4a7a;border-radius:9px;padding:9px 11px;margin-bottom:12px;line-height:1.5;}
+  /* members */
+  .mem{display:flex;align-items:center;gap:11px;background:#0f2340;border:1px solid #23406e;border-radius:10px;padding:9px 12px;margin-bottom:8px;flex-wrap:wrap;}
+  .mem .ava{width:38px;height:38px;border-radius:8px;overflow:hidden;background:#24406e;flex:none;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#cfe0f6;}
+  .mem .ava img{width:100%;height:100%;object-fit:cover;}
+  .mem .m-name{flex:1;min-width:150px;}
+  .mem .m-name b{color:#fff;}
+  .mem .m-sub{font-size:11px;color:#8ba3c9;margin-top:1px;}
+  .pill{display:inline-block;font-size:10px;font-weight:bold;border-radius:9px;padding:1px 7px;margin-left:5px;}
+  .pill.ver{background:#3a2f0a;color:var(--gold);}
+  .pill.on{background:#0e3a20;color:#4fe08a;}
+  .pill.ban{background:#3a1010;color:#ff8a7a;}
+  .pill.mute{background:#2a1c3a;color:#c9a0ff;}
+  .inp{width:100%;padding:10px 12px;border-radius:9px;border:1px solid #2c4a7a;background:#0f2340;color:#fff;font-size:13px;font-family:inherit;margin-bottom:8px;}
+  textarea.inp{min-height:56px;resize:vertical;}
+  select.inp{cursor:pointer;}
+  .hint{font-size:11px;color:#8ba3c9;margin:-2px 0 12px;}
+  .wfull{width:100%;}
+  .msrch{width:100%;padding:10px 12px;border-radius:9px;border:1px solid #2c4a7a;background:#0f2340;color:#fff;font-size:14px;margin-bottom:10px;}
+  .conv{cursor:pointer;padding:10px;border:1px solid #23406e;border-radius:9px;margin-bottom:7px;background:#0f2340;}
+  .conv:hover{background:#12294a;}
+  .conv .c-top{font-weight:bold;color:#cfe0f6;font-size:13px;}
+  .conv .c-last{font-size:12px;color:#8ba3c9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;}
+  .dmmsg{margin:5px 0;padding:8px 11px;background:#12294a;border-radius:10px;font-size:12.5px;line-height:1.45;}
+  .dmmsg b{color:#9fd0ff;}
+  .dmmsg .t{color:#7f9bc4;font-size:10px;}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#0f2340;border:1px solid #2e5290;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .2s;z-index:60;max-width:90vw;}
+  .mdl-back{position:fixed;inset:0;background:rgba(4,10,24,.72);z-index:80;display:none;align-items:flex-start;justify-content:center;padding:40px 12px;overflow:auto;}
+  .mdl-back.show{display:flex;}
+  .mdl{background:#0c1836;border:1.5px solid #2f5aa0;border-radius:14px;padding:18px;max-width:460px;width:100%;box-shadow:0 18px 60px rgba(0,0,0,.6);}
+  .mdl h3{margin:0 0 4px;font-size:17px;color:#fff;}
+  .mdl .mdl-sub{font-size:12.5px;color:#a9c2e8;margin-bottom:12px;}
+  .mdl .mdl-opt{display:flex;align-items:flex-start;gap:9px;padding:9px 10px;border:1px solid #24406e;border-radius:9px;margin:7px 0;cursor:pointer;}
+  .mdl .mdl-opt:hover{background:#0f2340;}
+  .mdl .mdl-opt input{width:auto;margin-top:2px;}
+  .mdl .mdl-opt .mo-t{font-size:13px;color:#dbe8ff;font-weight:bold;}
+  .mdl .mdl-opt .mo-d{font-size:11.5px;color:#8fa8cf;}
+  .mdl .mdl-opt.danger{border-color:#7a3020;background:rgba(160,50,30,.12);}
+  .mdl .mdl-badges{display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 12px;}
+  .mdl .mb-chip{background:#183a6e;border:1px solid #3f7ad0;border-radius:12px;padding:4px 9px;font-size:12px;color:#cfe2ff;display:inline-flex;align-items:center;gap:8px;}
+  .mdl .mb-chip button{border:none;background:linear-gradient(180deg,#c0603a,#8f3c1c);color:#fff;border-radius:8px;padding:2px 7px;font-size:11px;font-weight:bold;cursor:pointer;}
+  .mdl .mdl-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
+  .toast.show{opacity:1;}
+  .loading{padding:24px;text-align:center;color:#9db4d6;}
+
+  .tk-presets{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 8px}
+  .tk-plabel{font-size:12px;color:#8fb0c9;margin-right:2px}
+  .btn.tkp{font-size:12px;padding:5px 10px;background:#1a3242;color:#dceaf5;border:1px solid #2b5c7d}
+  .tk-sug{background:#12324a;border:1px solid #235f88;border-radius:9px;padding:8px 11px;margin:6px 0;font-size:13px;color:#d3e8f6}
+  .tk-sug .btn{margin-left:8px}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN GATE ===== -->
+<div id="gate">
+  <div class="gatebox">
+    <h1>👑 TheFlap Admin</h1>
+    <div class="sub">Private moderation console. Sign in with the admin account.</div>
+    <label for="aName">Admin name</label>
+    <input type="text" id="aName" autocomplete="username" placeholder="admin account name" autocapitalize="off" spellcheck="false">
+    <label for="aPass">Password</label>
+    <input type="password" id="aPass" autocomplete="current-password" placeholder="password">
+    <button id="loginBtn" type="button">Sign in</button>
+    <div class="gate-err" id="gateErr"></div>
+  </div>
+</div>
+
+<!-- ===== ADMIN APP ===== -->
+<div id="app">
+  <header class="topbar">
+    <span class="crown">👑</span>
+    <h1>TheFlap HQ</h1>
+    <span class="who" id="whoLabel"></span>
+    <button type="button" class="hbtn" id="reloadAll">↻ Refresh</button>
+    <button type="button" class="hbtn" id="logoutBtn">Sign out</button>
+  </header>
+  <div class="statstrip" id="statStrip"></div>
+  <nav class="tabs" id="tabNav"></nav>
+  <div class="wrap" id="panel"><div class="loading">Loading your HQ…</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="mdl-back" id="mdlBack"><div class="mdl" id="mdlBox"></div></div>
+
+<script>
+(function(){
+  "use strict";
+  var SUPABASE_URL="https://zclappstgkjebltkdzlq.supabase.co";
+  var SUPABASE_ANON_KEY="sb_publishable_fn7Fzyx9B95U8FY_5cSO3Q_Mn43ce1H";
+  var ADMIN_ACCOUNT="lock";
+  var PSEP="␟";
+  var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false}});
+  var ADMIN_NAME="", DATA=null, TAB="controls", MSG_SEARCH="", MSG_OPEN=null;
+
+  /* ---------- house personas (seed the feed / post-as) ---------- */
+  var HOUSE_PERSONAS=[
+    {name:'moonchild',c1:'#ff7ab8',c2:'#c23f8f',mood:'tired',posts:["who else is awake rn or is it just me and my thoughts","3am and i've replanned my whole life again lol","not me watching the sunrise on a school night","brain said no sleep tonight so here i am","if you're reading this you should be asleep. hi"]},
+    {name:'the plug',c1:'#4f8cff',c2:'#2b4fc0',mood:'hyped',posts:["pull up we outside today","who's tryna do something im so bored","link up or lose out i don't make the rules","energy is UP today let's move","someone plan something i'll be there in 20"]},
+    {name:'sunny',c1:'#ffb14d',c2:'#e07d0a',mood:'happy',posts:["reminder: you're doing better than you think","small wins count, i made my bed today lol","proud of everyone just showing up today","drink some water this is your sign","today was actually good and i'll take it"]},
+    {name:'lowkey',c1:'#8a97b5',c2:'#4a5978',mood:'chillin',posts:["been reading everyone's flaps and saying nothing, as one does","lurking is a personality trait and it's mine","i see everything, i say nothing, i log off","no thoughts just vibes today","reflapping in silence like a professional"]},
+    {name:'dramaqueen',c1:'#e0361f',c2:'#8f1408',mood:'freakin',posts:["so much just happened i can't even post about it","why is it always something with these people","not saying names but you know who you are","the drama writes itself i just report it","grab your snacks it's about to be a day"]},
+    {name:'bestie',c1:'#16a34a',c2:'#0e7a34',mood:'pumped',posts:["everyone post something i wanna hype you up","reflap this if you're having a good day i'll reflap back","we're all besties on here whether you like it or not","shoutout to whoever's reading this, you're that girl/guy","let's get everybody flapping today"]}
+  ];
+  var POLL_POOL=[
+    {q:"What's the best pizza topping? 🍕",opts:["Pepperoni, obviously 🐷","Pineapple (fight me) 🍍","Extra cheese, no notes 🧀"]},
+    {q:"Best animal, no contest? 🐾",opts:["Dogs — loyal kings 🐶","Cats — chaotic royalty 🐱","Capybara — unbothered icon 🦫"]},
+    {q:"What do you love most about TheFlap? 🐦",opts:["The unhinged flaps 🍿","My friends are here 💛","No algorithm, no ads 🚫"]},
+    {q:"Your texting-back speed? ⏱️",opts:["Instant, no shame 📲","Read it, forgot 😴","3–5 business days 📅"]},
+    {q:"Best late-night snack? 🌙",opts:["Leftover pizza 🍕","Cereal, obviously 🥣","Whatever's closest 🤷"]},
+    {q:"Your toxic trait, be honest 😈",opts:["Always right (I am) 💅","Leave on read 😶","Start drama, then watch 🍿"]},
+    {q:"Coffee or tea — pick a side ☕",opts:["Coffee or I'm feral ☕","Tea, I'm zen 🍵","Energy drinks 💀"]},
+    {q:"Group chat goes silent. You? 💬",opts:["Send a meme 🤡","Type 'anyway' 😐","Screenshot & scheme 🕵️"]},
+    {q:"Best season, final answer? 🍂",opts:["Fall — cozy supremacy 🍁","Summer — sun's out ☀️","Winter — hoodie szn 🧥"]},
+    {q:"Ideal Friday night? 🌃",opts:["Out, obviously 🕺","Home, blanket, snacks 🛋️","Depends who's asking 👀"]},
+    {q:"Cereal: milk first or last? 🥣",opts:["Cereal first, always 🥣","Milk first, you monster 🥛","I don't do cereal 🚫"]},
+    {q:"Beach or mountains? 🏖️",opts:["Beach — sand everywhere 🏖️","Mountains — cozy views 🏔️","Neither, I'm inside 🏠"]},
+    {q:"Best emoji, be honest 😭",opts:["💀 (I'm deceased)","😭 (crying-laughing)","🐦 (obviously)"]}
+  ];
+
+  /* ---------- helpers ---------- */
+  function $(id){return document.getElementById(id);}
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  /* escape a value so it is SAFE and PRESERVED inside onclick="fn('...')" (JS single-quoted string in an HTML double-quoted attr).
+     NOTE: the old version stripped apostrophes, which corrupted names like "O'Brien" and broke admin actions (incl. password reset). */
+  function esq(s){return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/[\r\n]/g,'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show');},2600);}
+  function openModal(html){var b=$('mdlBack');$('mdlBox').innerHTML=html;b.classList.add('show');}
+  function closeModal(){$('mdlBack').classList.remove('show');$('mdlBox').innerHTML='';}
+  window.closeModal=closeModal; window.openModal=openModal;
+  window.addEventListener('click',function(e){ if(e.target&&e.target.id==='mdlBack')closeModal(); });
+  async function adminLog(name,action){ try{ await sb.from('flap_reports').insert({reason:'[ADMIN] '+action, reporter:(ADMIN_ACCOUNT||'admin'), target_name:name, target_type:'adminlog', resolved:true}); }catch(e){} }
+  function isSentinel(n){return String(n||'').indexOf('::')===0;}
+  function T(v){return v?new Date(v).getTime():0;}
+  async function sha256(s){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}
+  function initials(n){n=String(n||'?').trim();return (n[0]||'?').toUpperCase();}
+  function b64(s){try{return btoa(unescape(encodeURIComponent(s)));}catch(e){return '';}}
+  function unb64(s){try{return decodeURIComponent(escape(atob(s)));}catch(e){return '';}}
+  async function sen(nm){try{var r=await sb.from('flaps').select('body').eq('name',nm).order('id',{ascending:false}).limit(1);return (r.data&&r.data[0])?r.data[0].body:'';}catch(e){return '';}}
+  async function setSen(nm,body){
+    try{ var ex=await sb.from('flaps').select('id').eq('name',nm).order('id',{ascending:false}).limit(1);
+      if(ex.data&&ex.data[0]) await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id);
+      else await sb.from('flaps').insert({name:nm,body:body,mood:'flappy',likes:0});
+    }catch(e){}
+  }
+  function personaAva(p){
+    var s='<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+p.c1+'"/><stop offset="1" stop-color="'+p.c2+'"/></linearGradient></defs><rect width="120" height="120" fill="url(#g)"/><text x="60" y="80" font-family="Verdana,Arial" font-size="58" font-weight="bold" fill="#ffffff" text-anchor="middle">'+(p.name[0]||'?').toUpperCase()+'</text></svg>';
+    return 'data:image/svg+xml,'+encodeURIComponent(s);
+  }
+  async function postAsPersonaBody(p,body){
+    try{ await sb.from('flap_users').upsert({name:p.name,avatar_url:personaAva(p),last_seen:new Date().toISOString()},{onConflict:'name'}); }catch(e){}
+    try{ await sb.from('flaps').insert({name:p.name,avatar_url:personaAva(p),mood:p.mood||'happy',body:body,likes:Math.floor(Math.random()*4)}); }catch(e){}
+  }
+
+  /* ---------- auth ---------- */
+  async function doLogin(){
+    var name=$('aName').value.trim(), pass=$('aPass').value, err=$('gateErr');
+    err.textContent='';
+    if(!name||!pass){err.textContent='Enter the admin name and password.';return;}
+    err.textContent='checking…';
+    try{
+      var hash=await sha256('flapsalt:'+name.toLowerCase()+':'+pass);
+      var res=await sb.from('flap_users').select('name,pass_hash,banned').ilike('name',name).maybeSingle();
+      if(res.error)throw res.error;
+      if(!res.data){err.textContent='No such account.';return;}
+      if(res.data.pass_hash!==hash){err.textContent='Wrong password.';return;}
+      if((res.data.name||'').toLowerCase()!==ADMIN_ACCOUNT){err.textContent='That account is not an administrator.';return;}
+      ADMIN_NAME=res.data.name;
+      enterApp();
+    }catch(e){err.textContent='Could not reach the server — try again.';}
+  }
+  function enterApp(){
+    $('gate').style.display='none';
+    $('app').style.display='block';
+    $('whoLabel').textContent='signed in as '+ADMIN_NAME;
+    loadAll();
+  }
+  function logout(){ ADMIN_NAME=""; DATA=null; $('app').style.display='none'; $('gate').style.display='flex'; $('aPass').value=''; $('gateErr').textContent=''; }
+
+  /* ---------- data load ---------- */
+  async function loadAll(){
+    $('panel').innerHTML='<div class="loading">Loading your HQ…</div>';
+    try{
+      var us=[];{var _uf=0,_upg=1000;while(true){var _ur=await sb.from('flap_users').select('*').order('created_at',{ascending:false}).range(_uf,_uf+_upg-1);var _ud=(_ur&&_ur.data)||[];us=us.concat(_ud);if(_ud.length<_upg)break;_uf+=_upg;if(_uf>20000)break;}}
+      var flAll=(await sb.from('flaps').select('id,name,body,pic_url,mood,created_at').order('id',{ascending:false}).limit(500)).data||[];
+      var rcRes=await sb.from('flap_replies').select('*',{count:'exact',head:true});
+      var repliesRecent=[];try{repliesRecent=(await sb.from('flap_replies').select('*').order('id',{ascending:false}).limit(80)).data||[];}catch(e){}
+      var reports=[];try{reports=(await sb.from('flap_reports').select('*').eq('resolved',false).order('id',{ascending:false})).data||[];}catch(e){}
+      var repIds=reports.filter(function(r){return r.target_type==='post'&&r.target_id;}).map(function(r){return r.target_id;});
+      var repPosts={};if(repIds.length){try{((await sb.from('flaps').select('id,body,name').in('id',repIds)).data||[]).forEach(function(p){repPosts[p.id]=p;});}catch(e){}}
+      var tickets=[];try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(100)).data||[];}catch(e){}
+      var dms=[];try{dms=(await sb.from('flaps').select('id,body,created_at').eq('name','::dm::').order('id',{ascending:false}).limit(600)).data||[];}catch(e){}
+      DATA={
+        us:us, flAll:flAll, replyCount:(rcRes.count||0), repliesRecent:repliesRecent,
+        reports:reports, repPosts:repPosts, tickets:tickets, dms:dms,
+        tickerCur:await sen('::ticker::'), verCur:await sen('::verified::'),
+        pollCur:await sen('::poll::'), annCur:await sen('::announce::'),
+        featuresOn:/on/i.test(await sen('::features::')||''),
+        delCount:(parseInt(await sen('::delcount::'),10)||0),
+        badgeDefs:[], badgeGrants:{},
+        now:Date.now()
+      };
+      try{ var _bd=await sen('::badgedefs::'); DATA.badgeDefs=_bd?(JSON.parse(_bd)||[]):[]; }catch(e){ DATA.badgeDefs=[]; }
+      try{ var _bg=await sen('::badgegrants::'); DATA.badgeGrants=_bg?(JSON.parse(_bg)||{}):{}; }catch(e){ DATA.badgeGrants={}; }
+      renderStrip(); renderTabs(); renderTab();
+    }catch(e){
+      $('panel').innerHTML='<div class="sec"><h2>⚠ Could not load</h2><div class="muted">Check your connection and tap Refresh.</div></div>';
+    }
+  }
+
+  /* ---------- member count (excludes house personas, the official/admin account, review + bot accounts) ---------- */
+  var NON_MEMBER_ACCOUNTS=['moonchild','the plug','sunny','lowkey','dramaqueen','bestie','lock','theflap','flapbot'];
+  function isRealMember(name){ return NON_MEMBER_ACCOUNTS.indexOf(String(name||'').toLowerCase().trim())<0; }
+  function realMemberCount(list){ return (list||[]).filter(function(u){return isRealMember(u&&u.name);}).length; }
+  function fmtN(n){ return (typeof n==='number')?n.toLocaleString('en-US'):n; }
+  /* ---------- stats ---------- */
+  function stats(){
+    var d=DATA, now=d.now, dayAgo=now-864e5, weekAgo=now-7*864e5;
+    var real=d.flAll.filter(function(r){return !isSentinel(r.name);});
+    return {
+      members:realMemberCount(d.us),
+      online:d.us.filter(function(u){return u.last_seen&&now-T(u.last_seen)<12e4;}).length,
+      joinsToday:d.us.filter(function(u){return T(u.created_at)>dayAgo;}).length,
+      joinsWeek:d.us.filter(function(u){return T(u.created_at)>weekAgo;}).length,
+      flapsToday:real.filter(function(r){return T(r.created_at)>dayAgo;}).length,
+      repliesToday:d.repliesRecent.filter(function(r){return r.created_at&&T(r.created_at)>dayAgo;}).length,
+      totalFlaps:real.length, totalReplies:d.replyCount,
+      banned:d.us.filter(function(u){return u.banned;}).length,
+      muted:d.us.filter(function(u){return u.muted_until&&new Date(u.muted_until)>new Date();}).length,
+      deleted:d.delCount,
+      openIssues:d.reports.length+d.tickets.length
+    };
+  }
+  function renderStrip(){
+    var s=stats();
+    $('statStrip').innerHTML=
+      strip(s.joinsWeek,'joined this week','hot')+strip(s.online,'online')+strip(s.members,'members')+
+      strip(s.flapsToday,'flaps today')+strip(s.repliesToday,'replies today')+
+      strip(s.deleted,'deleted','danger')+strip(s.openIssues,'open issues',s.openIssues?'danger':'');
+  }
+  function strip(n,label,cls){return '<span class="s'+(cls?' '+cls:'')+'"><b>'+fmtN(n)+'</b> '+label+'</span>';}
+
+  /* ---------- tab nav ---------- */
+  var TABS=[['controls','⚙️ Controls'],['broadcast','📣 Broadcast'],['members','👥 Members'],['badges','🏅 Badges'],['moderation','🛡️ Moderation'],['messages','💬 Messages'],['support','🎫 Support'],['stats','📊 Stats']];
+  function renderTabs(){
+    $('tabNav').innerHTML=TABS.map(function(t){return '<button class="'+(TAB===t[0]?'on':'')+'" onclick="ADMIN.tab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');
+  }
+  function renderTab(){
+    var h='';
+    if(TAB==='controls')h=secControls();
+    else if(TAB==='broadcast')h=secBroadcast();
+    else if(TAB==='members')h=secMembers();
+    else if(TAB==='badges')h=secBadges();
+    else if(TAB==='moderation')h=secModeration();
+    else if(TAB==='messages')h=secMessages();
+    else if(TAB==='support')h=secSupport();
+    else h=secStats();
+    $('panel').innerHTML=h;
+    if(TAB==='broadcast'){ try{ ADMIN.loadBroadcastLog(); }catch(e){} }
+    window.scrollTo(0,0);
+  }
+
+  /* ---------- BROADCAST ---------- */
+  function secBroadcast(){
+    var h='<div class="sec"><h2>📣 Send an update to members</h2>';
+    h+='<div class="hint">Composes an announcement that goes out as a 🔔 bell notification <b>and</b> a 📱 phone push to everyone who has the app installed. You\'ll see the exact recipient count and confirm before anything sends.</div>';
+    h+='<input class="inp" id="bcTitle" placeholder="Title (e.g. New drop tonight! 🔥)" maxlength="60">';
+    h+='<textarea class="inp" id="bcBody" placeholder="Your message to the group…" style="min-height:92px" maxlength="240"></textarea>';
+    h+='<div class="subhead">Who gets it</div>';
+    h+='<select class="inp" id="bcTarget">';
+    h+='<option value="all">Everyone (all members)</option>';
+    h+='<option value="ios">iPhone users only</option>';
+    h+='<option value="android">Android users only</option>';
+    h+='<option value="test">🧪 Test — just me (lock)</option>';
+    h+='</select>';
+    h+='<button class="btn" style="background:#1f8f4d" onclick="ADMIN.broadcastPreview()">Preview send →</button>';
+    h+='<div class="subhead" style="margin-top:20px">📜 Recent broadcasts</div>';
+    h+='<div id="bcLog" class="hint">loading…</div>';
+    h+='</div>';
+    return h;
+  }
+
+  /* ---------- BADGES ---------- */
+  function secBadges(){
+    var d=DATA, defs=d.badgeDefs||[], grants=d.badgeGrants||{};
+    var h='<div class="sec"><h2>🏅 Custom badges <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
+    h+='<div class="hint">Invent a badge, then grant it to specific members. Granted badges appear on their profile (tap shows the info). The built-in badges — Founder, Verified, Early Supporter, Top Contributor, Streaks — are automatic and already live.</div>';
+    h+='<div class="subhead">➕ Create a badge</div>';
+    h+='<input class="inp" id="nbName" placeholder="Badge name (e.g. Prom Court 2026)">';
+    h+='<input class="inp" id="nbEmoji" placeholder="Emoji / icon (e.g. 👑)" maxlength="6">';
+    h+='<input class="inp" id="nbDesc" placeholder="Description — how it&#39;s earned">';
+    h+='<label style="display:flex;align-items:center;gap:8px;margin:10px 0 4px;font-size:13px;color:#bcd0ee;font-weight:bold;"><input type="checkbox" id="nbDrop" onchange="ADMIN.toggleDropFields()" style="width:auto;"> 🎁 Make it a claimable DROP (members claim it themselves)</label>';
+    h+='<div id="nbDropFields" style="display:none;">';
+    h+='<input class="inp" id="nbLimit" type="number" min="1" placeholder="Claim limit (e.g. 20) — blank = unlimited">';
+    h+='<input class="inp" id="nbHours" type="number" min="1" placeholder="Ends in N hours — blank = no time limit">';
+    h+='<div class="hint">A drop shows as a claim card in the feed + on profiles. When the limit or time is up, it closes.</div>';
+    h+='</div>';
+    h+='<button class="btn purple wfull" onclick="ADMIN.createBadge()">🚀 Create / launch badge</button>';
+    h+='</div>';
+    h+='<div class="sec"><h2>Your badges</h2>';
+    if(!defs.length){ h+='<div class="empty">No custom badges yet. Create one above.</div>'; }
+    else{
+      defs.forEach(function(b){
+        var members=Object.keys(grants).filter(function(m){return (grants[m]||[]).indexOf(b.id)>-1;});
+        var cnt=members.length;
+        var dropInfo='', dropToggle='';
+        if(b.drop){
+          var expired=b.endsAt&&Date.now()>Date.parse(b.endsAt);
+          var full=b.limit&&cnt>=b.limit;
+          var st = b.hidden?'<span class="status st-hidden">HIDDEN</span>':expired?'<span class="status st-ended">ENDED</span>':full?'<span class="status st-ended">FULL</span>':'<span class="status st-active">ACTIVE</span>';
+          var cntTxt=b.limit?(cnt+' / '+b.limit+' claimed'):(cnt+' claimed');
+          var tl=b.endsAt?(' · '+(expired?'ended':'ends '+new Date(b.endsAt).toLocaleString())):'';
+          dropInfo='<div class="bc-desc" style="color:#ffd97a;">🎁 DROP '+st+' — '+cntTxt+tl+'</div>';
+          dropInfo+='<div class="bc-desc" style="color:#8fa8cf;font-size:11.5px;">'+(b.hidden?'Card is hidden from the feed. Claimed badges still show on profiles.':((full||expired)?'Auto-hides from the feed a few hours after selling out / ending. You can pull it now.':'Live in the feed. Auto-hides once it sells out or ends.'))+'</div>';
+          dropToggle=b.hidden
+            ? '<button class="btn green" onclick="ADMIN.toggleDropHidden(\''+b.id+'\')">👁 Show in feed</button>'
+            : '<button class="btn" style="background:linear-gradient(180deg,#5a6a86,#3c4a63)" onclick="ADMIN.toggleDropHidden(\''+b.id+'\')">🙈 Hide from feed</button>';
+        }
+        h+='<div class="badgecard">';
+        h+='<div class="bc-h"><span class="bc-ic">'+esc(b.ic||'🏷')+'</span><b>'+esc(b.name)+(b.drop?' 🎁':'')+'</b><button class="btn del bc-del" onclick="ADMIN.deleteBadge(\''+b.id+'\')">Delete</button></div>';
+        h+='<div class="bc-desc">'+esc(b.desc||'')+'</div>';
+        h+=dropInfo;
+        if(dropToggle) h+='<div style="margin:8px 0 2px;">'+dropToggle+'</div>';
+        h+='<div class="bc-grant"><input class="inp bc-inp" id="gr_'+b.id+'" placeholder="member name to grant (manual)"><button class="btn green" onclick="ADMIN.grantBadge(\''+b.id+'\')">Grant</button></div>';
+        h+='<div class="bc-chips">'+(members.length?members.map(function(m){var me=esc(m).replace(/'/g,'');return '<span class="gchip">'+esc(m)+'<span onclick="ADMIN.revokeBadge(\''+b.id+'\',\''+me+'\')">✕</span></span>';}).join(''):'<span class="muted">'+(b.drop?'No claims yet.':'Not granted to anyone yet.')+'</span>')+'</div>';
+        h+='</div>';
+      });
+    }
+    h+='</div>';
+    return h;
+  }
+
+  /* ---------- CONTROLS (front & center) ---------- */
+  function secControls(){
+    var d=DATA, pp=d.pollCur?String(d.pollCur).split(PSEP):[];
+    var h='<div class="sec"><h2>⚙️ Site controls <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
+    h+='<div class="subhead">📣 Official announcement</div>';
+    h+='<textarea class="inp" id="cAnnounce" style="min-height:120px;">'+esc(d.annCur||'')+'</textarea>';
+    h+='<button class="btn blue wfull" style="margin-bottom:6px;" onclick="ADMIN.saveAnnounce()">📢 Post announcement to the top</button>';
+    h+='<button class="btn del wfull" onclick="ADMIN.clearAnnounce()">Clear announcement</button>';
+    h+='<div class="hint">Shows an official card above the pinned flap for everyone. First line = bold title.</div>';
+
+    h+='<div class="subhead">📢 Scrolling ticker</div>';
+    h+='<textarea class="inp" id="cTicker">'+esc(d.tickerCur||'')+'</textarea>';
+    h+='<button class="btn green wfull" onclick="ADMIN.saveTicker()">Save ticker for everyone</button>';
+    h+='<div class="hint">The scrolling message at the top. Separate phrases with ★.</div>';
+
+    h+='<div class="subhead">🗳️ Flap poll of the day</div>';
+    h+='<input class="inp" id="cPollQ" value="'+esc(pp[0]||'')+'" placeholder="Poll question">';
+    h+='<input class="inp" id="cPollO1" value="'+esc(pp[1]||'')+'" placeholder="Option 1">';
+    h+='<input class="inp" id="cPollO2" value="'+esc(pp[2]||'')+'" placeholder="Option 2">';
+    h+='<input class="inp" id="cPollO3" value="'+esc(pp[3]||'')+'" placeholder="Option 3">';
+    h+='<button class="btn green wfull" style="margin-bottom:6px;" onclick="ADMIN.randomPoll()">🎲 Generate random poll</button>';
+    h+='<button class="btn purple wfull" style="margin-bottom:6px;" onclick="ADMIN.savePoll()">Save custom poll (starts votes fresh)</button>';
+    h+='<button class="btn del wfull" onclick="ADMIN.resetVotes()">↺ Reset votes only</button>';
+    h+='</div>';
+
+    /* verified + toggles */
+    h+='<div class="sec"><h2>🎛️ Members &amp; features</h2>';
+    h+='<div class="subhead">✔ Verified members list</div>';
+    h+='<textarea class="inp" id="cVerified">'+esc(d.verCur||'')+'</textarea>';
+    h+='<button class="btn gold wfull" onclick="ADMIN.saveVerified()">Save verified list</button>';
+    h+='<div class="hint">Names (comma/space separated) get the ✔ badge. Or use Verify buttons in the Members tab.</div>';
+    h+='<div class="subhead">🚀 Friends &amp; Messaging (Go Live)</div>';
+    h+='<div class="hint">Currently <b>'+(d.featuresOn?'LIVE ✅ for everyone':'OFF (hidden)')+'</b>.</div>';
+    h+='<button class="btn wfull '+(d.featuresOn?'del':'green')+'" onclick="ADMIN.toggleSocial('+(d.featuresOn?'false':'true')+')">'+(d.featuresOn?'⏸ Turn OFF Friends & Messaging':'🚀 Turn ON Friends & Messaging')+'</button>';
+    h+='<div class="subhead">🖼️ Member banner</div>';
+    h+='<div class="note">The desktop top banner auto-shows members who have a profile pic — no setup needed. Grant verified or seed house accounts and they appear automatically.</div>';
+    h+='</div>';
+
+    /* seed the feed / post as house account */
+    h+='<div class="sec"><h2>🌱 Seed the feed</h2>';
+    h+='<div class="hint">When it\'s quiet, drop a flap from a house account. You control every post — nothing auto-posts.</div>';
+    h+='<button class="btn green wfull" style="margin-bottom:12px;" onclick="ADMIN.seedRandom()">🌱 Seed a random flap now</button>';
+    h+='<div class="subhead">✍️ Post as a house account</div>';
+    h+='<select class="inp" id="cPersona">'+HOUSE_PERSONAS.map(function(p,i){return '<option value="'+i+'">'+esc(p.name)+'</option>';}).join('')+'</select>';
+    h+='<textarea class="inp" id="cSeedText" placeholder="Type a flap to post as the selected house account…"></textarea>';
+    h+='<button class="btn purple wfull" onclick="ADMIN.postAs()">Post as this account</button>';
+    h+='</div>';
+    return h;
+  }
+
+  /* ---------- MEMBERS ---------- */
+  function secMembers(){
+    var d=DATA, counts={};
+    d.flAll.forEach(function(f){ if(!isSentinel(f.name)) counts[f.name]=(counts[f.name]||0)+1; });
+    var verList=(d.verCur||'').split(/[,\s]+/).filter(Boolean).map(function(x){return x.toLowerCase();});
+    var h='<div class="sec"><h2>👥 Member management ('+fmtN(realMemberCount(d.us))+' members · '+fmtN(d.us.length)+' accounts) <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
+    h+='<div class="hint">Verify, time out, ban, or remove members. Removing deletes their flaps &amp; replies too.</div>';
+    h+='<input class="inp" id="memSearch" placeholder="🔎 Search members by name or @handle…" oninput="ADMIN.filterMembers()" autocomplete="off" autocapitalize="off" spellcheck="false" style="margin-bottom:8px;">';
+    h+='<div id="memList">';
+    h+= d.us.map(function(u){
+      var lc=(u.name||'').toLowerCase();
+      var on=u.last_seen&&d.now-T(u.last_seen)<12e4;
+      var isVer=verList.indexOf(lc)>-1||lc===ADMIN_ACCOUNT;
+      var muted=u.muted_until&&new Date(u.muted_until)>new Date();
+      var av=u.avatar_url?'<img src="'+esc(u.avatar_url)+'" alt="">':initials(u.name);
+      var nm=esq(u.name);
+      var pills=(isVer?'<span class="pill ver">✔ verified</span>':'')+(on?'<span class="pill on">● online</span>':'')+(u.banned?'<span class="pill ban">banned</span>':'')+(muted?'<span class="pill mute">timed out</span>':'');
+      var sub=(counts[u.name]||0)+' flaps · joined '+(u.created_at?new Date(u.created_at).toLocaleDateString():'?')+' · 📱 '+esc(u.device||'unknown')+((u.violations||0)>0?' · ⚠ '+u.violations+' auto-mod removal(s)':'')+(muted?' · until '+new Date(u.muted_until).toLocaleString():'');
+      var acts='<button class="btn gold" onclick="ADMIN.toggleVerified(\''+nm+'\')">'+(isVer?'Unverify':'Verify')+'</button>';
+      if(lc!==ADMIN_ACCOUNT){
+        acts+= muted?'<button class="btn blue" onclick="ADMIN.liftMute(\''+nm+'\')">Lift time-out</button>'
+                    :'<button class="btn" onclick="ADMIN.mute(\''+nm+'\',1)">1h</button><button class="btn" onclick="ADMIN.mute(\''+nm+'\',24)">24h</button><button class="btn" onclick="ADMIN.mute(\''+nm+'\',168)">7d</button><button class="btn" onclick="ADMIN.muteCustom(\''+nm+'\')">Custom</button>';
+        acts+= u.banned?'<button class="btn green" onclick="ADMIN.unban(\''+nm+'\')">Un-ban</button>'
+                      :'<button class="btn red" onclick="ADMIN.ban(\''+nm+'\')">Ban</button>';
+        acts+='<button class="btn blue" onclick="ADMIN.resetPassword(\''+nm+'\')">🔑 Reset password</button>';
+        acts+='<button class="btn purple" onclick="ADMIN.manageBadges(\''+nm+'\')">🏅 Badges</button>';
+        acts+='<button class="btn" style="background:linear-gradient(180deg,#b06a2a,#7d4413)" onclick="ADMIN.resetAccount(\''+nm+'\')">♻ Reset account</button>';
+        acts+='<button class="btn del" onclick="ADMIN.removeUser(\''+nm+'\')">🗑 Remove</button>';
+      }
+      return '<div class="mem" data-search="'+esc(((u.name||'')+' '+(u.handle||'')).toLowerCase())+'"><span class="ava">'+av+'</span>'+
+        '<div class="m-name"><b>'+esc(u.name)+'</b>'+pills+'<div class="m-sub">'+sub+'</div></div>'+
+        '<div class="acts" style="margin-top:0;">'+acts+'</div></div>';
+    }).join('');
+    h+='</div>';   /* /memList */
+    h+='<div id="memNone" class="empty" style="display:none;">No members match your search.</div>';
+    h+='</div>';
+    return h;
+  }
+
+  /* ---------- MODERATION ---------- */
+  function secModeration(){
+    var d=DATA;
+    var appeals=d.reports.filter(function(r){return r.target_type==='appeal'||/^\[APPEAL/i.test(r.reason||'');});
+    var reports=d.reports.filter(function(r){return !(r.target_type==='appeal'||/^\[APPEAL/i.test(r.reason||''));});
+    var h='<div class="sec"><h2>🛡️ Moderation queue <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
+    h+='<div class="subhead">📩 Appeals ('+appeals.length+')</div>';
+    h+= appeals.length? appeals.map(function(r){
+      return '<div class="row appeal"><div class="r-top">📩 '+esc(r.target_name||r.reporter||'?')+' is appealing</div>'+
+        '<div class="r-body">'+esc((r.reason||'').replace(/^\[APPEAL[^\]]*\]\s*/i,''))+'</div>'+
+        '<div class="r-meta">'+new Date(r.created_at).toLocaleString()+'</div>'+
+        '<div class="acts"><button class="btn green" onclick="ADMIN.resolveReport('+r.id+')">Resolve appeal</button>'+
+        (r.target_name?'<button class="btn blue" onclick="ADMIN.liftMute(\''+esq(r.target_name)+'\')">Lift time-out</button>':'')+'</div></div>';
+    }).join(''):'<div class="empty">No open appeals. 🎉</div>';
+
+    h+='<div class="subhead">⚑ Reports ('+reports.length+')</div>';
+    h+= reports.length? reports.map(function(r){
+      var isPost=r.target_type==='post'&&r.target_id;
+      var tgt=isPost?('flap by <b>'+esc((d.repPosts[r.target_id]||{}).name||r.target_name||'?')+'</b>: “'+esc(((d.repPosts[r.target_id]||{}).body||'(deleted)').replace(/<[^>]+>/g,'').slice(0,140))+'”'):('user <b>'+esc(r.target_name||'?')+'</b>');
+      var act=isPost?'<button class="btn del" onclick="ADMIN.modDeletePost('+r.target_id+','+r.id+')">Delete flap</button>':'';
+      return '<div class="row reportrow"><div class="r-top" style="color:#ff9a86;">'+esc(r.reason||'reported')+'</div><div class="r-body">'+tgt+'</div>'+
+        '<div class="r-meta">by '+esc(r.reporter||'?')+' · '+new Date(r.created_at).toLocaleString()+'</div>'+
+        '<div class="acts">'+act+'<button class="btn" onclick="ADMIN.resolveReport('+r.id+')">Dismiss</button></div></div>';
+    }).join(''):'<div class="empty">No open reports. 🎉</div>';
+    h+='</div>';
+
+    var real=d.flAll.filter(function(r){return !isSentinel(r.name);}).slice(0,40);
+    h+='<div class="sec"><h2>🗂 Recent flaps</h2>';
+    h+= real.length? real.map(function(r){
+      var txt=esc((r.body||'').replace(/<[^>]+>/g,'').slice(0,120))||'(photo)';
+      return '<div class="row"><div class="r-top">'+esc(r.name)+' <span class="r-meta">· '+new Date(r.created_at).toLocaleString()+'</span></div><div class="r-body">'+txt+(r.pic_url?' <span style="color:#7fd0ff;">📷</span>':'')+'</div><div class="acts">'+(r.pic_url?'<button class="btn" onclick="ADMIN.removePhoto('+r.id+')">Remove photo</button>':'')+'<button class="btn del" onclick="ADMIN.deleteFlap('+r.id+')">Delete flap</button></div></div>';
+    }).join(''):'<div class="empty">No flaps.</div>';
+    h+='</div>';
+
+    var reps=(d.repliesRecent||[]).filter(function(r){return !isSentinel(r.name);}).slice(0,30);
+    h+='<div class="sec"><h2>💬 Recent replies</h2>';
+    h+= reps.length? reps.map(function(r){
+      return '<div class="row"><div class="r-top">'+esc(r.name)+'</div><div class="r-body">'+esc(String(r.body||'').replace(/[␞␟]/g,' ').slice(0,140))+'</div><div class="acts"><button class="btn del" onclick="ADMIN.deleteReply('+r.id+')">Delete reply</button></div></div>';
+    }).join(''):'<div class="empty">No replies.</div>';
+    h+='</div>';
+    return h;
+  }
+
+  /* ---------- MESSAGES (grouped + search + drill-in) ---------- */
+  function secMessages(){
+    var d=DATA;
+    var msgs=(d.dms||[]).map(function(x){var p=String(x.body||'').split(PSEP);return {from:p[0]||'',to:p[1]||'',text:p.slice(2).join(PSEP),at:x.created_at};}).filter(function(m){return m.from&&m.to;});
+    var convs={};
+    msgs.forEach(function(m){var lo=m.from.toLowerCase(),hi=m.to.toLowerCase(),key=(lo<hi?lo+'|'+hi:hi+'|'+lo);if(!convs[key])convs[key]={key:key,a:m.from,b:m.to,list:[]};convs[key].list.push(m);});
+    Object.keys(convs).forEach(function(k){convs[k].list.reverse();});
+    var h='<div class="sec"><h2>💬 Messages oversight</h2>';
+    h+='<div class="note">🔒 <b>Admin oversight.</b> Review any member\'s DMs for safety. Members are told messages aren\'t private from moderation (House Rules + Privacy Policy).</div>';
+    if(MSG_OPEN && convs[MSG_OPEN]){
+      var cc=convs[MSG_OPEN];
+      h+='<div style="margin-bottom:8px;"><a onclick="ADMIN.msgBack()" style="cursor:pointer;font-weight:bold;">← all conversations</a></div>';
+      h+='<div style="font-weight:bold;color:#cfe0f6;font-size:14px;margin-bottom:8px;">'+esc(cc.a)+' ⇄ '+esc(cc.b)+' <span class="muted">('+cc.list.length+' messages)</span></div>';
+      h+=cc.list.map(function(m){return '<div class="dmmsg"><b>'+esc(m.from)+'</b> <span class="t">→ '+esc(m.to)+' · '+(m.at?new Date(m.at).toLocaleString():'')+'</span><br>'+esc(m.text)+'</div>';}).join('');
+      h+='</div>';
+      return h;
+    }
+    h+='<input class="msrch" id="cMsgSearch" placeholder="🔍 Search conversations by username…" value="'+esc(MSG_SEARCH)+'" oninput="ADMIN.msgSearch(this.value)" autocomplete="off">';
+    var arr=Object.keys(convs).map(function(k){return convs[k];});
+    arr.sort(function(a,b){var la=a.list[a.list.length-1],lb=b.list[b.list.length-1];return (new Date(lb.at||0))-(new Date(la.at||0));});
+    var q=(MSG_SEARCH||'').trim().toLowerCase();
+    if(q)arr=arr.filter(function(c){return c.a.toLowerCase().indexOf(q)>-1||c.b.toLowerCase().indexOf(q)>-1;});
+    if(!arr.length){h+='<div class="empty">'+(q?'No conversations match “'+esc(q)+'”.':'No messages yet.')+'</div></div>';return h;}
+    h+='<div class="muted" style="margin-bottom:8px;">'+arr.length+' conversation'+(arr.length===1?'':'s')+':</div>';
+    h+=arr.map(function(c){var last=c.list[c.list.length-1];
+      return '<div class="conv" onclick="ADMIN.msgOpen(\''+b64(c.key)+'\')"><div class="c-top">'+esc(c.a)+' ⇄ '+esc(c.b)+' <span class="muted">('+c.list.length+')</span></div><div class="c-last"><b>'+esc(last.from)+':</b> '+esc(last.text)+'</div></div>';
+    }).join('');
+    h+='</div>';
+    return h;
+  }
+
+  /* ---------- SUPPORT ---------- */
+  /* ---- Support quick-reply presets + suggestion engine (Build 10) ---- */
+  var PRESETS={
+    forgot:{label:'🔑 Forgot Password', text:"No worries! This happens sometimes. We've got you. Use the password reset option to create a new password and get back into TheFlap. If you're still having trouble, we'll help you out!"},
+    login:{label:'📱 Login Issue', text:"No worries! We're on it. Try logging back in, and if you're still having trouble, let us know and we'll get you taken care of."},
+    bug:{label:'🐛 Bug Report', text:"Thanks for letting us know! We appreciate you catching that. We've sent this over to the team so we can look into it."},
+    resolved:{label:'✅ Issue Resolved', text:"You're all good! We took care of the issue. Thanks for your patience while we got everything sorted out."}
+  };
+  var PRESET_ORDER=['forgot','login','bug','resolved'];
+  function suggestPreset(msg){
+    var t=(msg||'').toLowerCase();
+    if(/forgot|reset|password|pass ?word|can.?t remember|locked out/.test(t))return 'forgot';
+    if(/log ?in|sign ?in|can.?t get in|won.?t let me in|logged out/.test(t))return 'login';
+    if(/bug|crash|error|broken|glitch|not working|does ?n.?t work|freez/.test(t))return 'bug';
+    return '';
+  }
+  function secSupport(){
+    var d=DATA, h='<div class="sec"><h2>🎫 Support tickets ('+d.tickets.length+') <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
+    h+= d.tickets.length? d.tickets.map(function(tk){
+      var parts=String(tk.body||'').split(PSEP); var who=parts[0]||'?'; var msg=parts.slice(2).join(PSEP)||parts[1]||'';
+      var whoSafe=esq(who);
+      return '<div class="row"><div class="r-top">🎫 Support Ticket #'+tk.id+' — from '+esc(who)+'</div>'+
+        '<div class="r-body">'+esc(msg.slice(0,600))+'</div>'+
+        '<div class="r-meta">Opened '+new Date(tk.created_at).toLocaleString()+' · Status: Open</div>'+
+        (suggestPreset(msg)?'<div class="tk-sug">💡 Suggested reply: <b>'+PRESETS[suggestPreset(msg)].label+'</b> <button class="btn green" onclick="ADMIN.preset('+tk.id+',\''+suggestPreset(msg)+'\')">Use suggested response</button></div>':'')+
+        '<textarea class="inp" id="tkr_'+tk.id+'" placeholder="Reply to '+esc(who)+' (they get an in-app notification)…" style="margin:8px 0 6px;min-height:72px;width:100%;"></textarea>'+
+        '<div class="tk-presets"><span class="tk-plabel">Quick replies:</span>'+PRESET_ORDER.map(function(k){return '<button class="btn tkp" onclick="ADMIN.preset('+tk.id+',\''+k+'\')">'+PRESETS[k].label+'</button>';}).join('')+'</div>'+
+        '<div class="acts"><button class="btn blue" onclick="ADMIN.replyTicket('+tk.id+',\''+whoSafe+'\')">📨 Send reply</button><button class="btn" style="background:linear-gradient(180deg,#2a7fb0,#134d7d)" onclick="ADMIN.resetPassword(\''+whoSafe+'\')">🔑 Help reset password</button><button class="btn green" onclick="ADMIN.resolveTicket('+tk.id+')">Resolve &amp; remove</button></div></div>';
+    }).join(''):'<div class="empty">No open tickets. 🎉</div>';
+    h+='<div class="subhead">⚑ Open reports</div>';
+    h+= d.reports.length?'<div class="muted">'+d.reports.length+' open — see the <b>Moderation</b> tab to act on them.</div>':'<div class="empty">No open reports.</div>';
+    h+='</div>';
+    return h;
+  }
+
+  /* ---------- STATS ---------- */
+  function secStats(){
+    var s=stats();
+    return '<div class="sec"><h2>📊 Launch metrics <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2><div class="stats">'+
+      card(s.joinsWeek,'joined this week','hot')+card(s.joinsToday,'joined today','')+card(s.online,'online now','')+card(s.members,'total members','')+
+      card(s.flapsToday,'flaps today','')+card(s.repliesToday,'replies today','')+card(s.totalFlaps,'total flaps','')+card(s.totalReplies,'total replies','')+
+      card(s.deleted,'deleted accounts','danger')+card(s.banned,'banned','danger')+card(s.muted,'timed out','')+card(s.openIssues,'open issues','')+
+    '</div></div>';
+  }
+  function card(n,label,cls){return '<div class="stat'+(cls?' '+cls:'')+'"><b>'+fmtN(n)+'</b><span>'+label+'</span></div>';}
+
+  /* ---------- actions ---------- */
+  var ADMIN={
+    tab:function(t){ TAB=t; if(t!=='messages')MSG_OPEN=null; renderTabs(); renderTab(); },
+    reload:function(){ loadAll(); },
+    _broadcastTargets:async function(target){
+      var out={bell:[],pushNames:[]};
+      var subs=[]; try{ subs=(await sb.from('push_subs').select('name,p256dh').limit(5000)).data||[]; }catch(e){}
+      function uniq(a){var s={},r=[];a.forEach(function(n){var k=(n||'').toLowerCase();if(n&&!s[k]){s[k]=1;r.push(n);}});return r;}
+      if(target==='test'){ out.bell=['lock']; out.pushNames=uniq(subs.filter(function(s){return (s.name||'').toLowerCase()==='lock';}).map(function(s){return s.name;})); if(!out.pushNames.length)out.pushNames=['lock']; return out; }
+      if(target==='ios'){ var ni=uniq(subs.filter(function(s){return s.p256dh==='ios';}).map(function(s){return s.name;})); out.bell=ni; out.pushNames=ni; return out; }
+      if(target==='android'){ var na=uniq(subs.filter(function(s){return s.p256dh==='android';}).map(function(s){return s.name;})); out.bell=na; out.pushNames=na; return out; }
+      out.bell=(DATA.us||[]).filter(function(u){return isRealMember(u&&u.name);}).map(function(u){return u.name;});
+      out.pushNames=uniq(subs.map(function(s){return s.name;}));
+      return out;
+    },
+    broadcastPreview:async function(){
+      var title=(($('bcTitle')&&$('bcTitle').value)||'').trim();
+      var body=(($('bcBody')&&$('bcBody').value)||'').trim();
+      var target=(($('bcTarget')&&$('bcTarget').value))||'all';
+      if(!body){ toast('Write a message first.'); return; }
+      toast('Counting recipients…');
+      var info=await ADMIN._broadcastTargets(target);
+      window.__bc={title:title,body:body,target:target,info:info};
+      var tl={all:'Everyone (all members)',ios:'iPhone users',android:'Android users',test:'Just you (lock) — test'}[target];
+      var h='<h3 style="margin:0 0 8px">📣 Confirm broadcast</h3>';
+      h+='<div class="note"><b>'+esc(title||'(no title)')+'</b><br>'+esc(body)+'</div>';
+      h+='<div class="hint">Target: <b>'+esc(tl)+'</b><br>🔔 Bell notification → <b>'+fmtN(info.bell.length)+'</b> member'+(info.bell.length===1?'':'s')+'<br>📱 Phone push → <b>'+fmtN(info.pushNames.length)+'</b> device-registered member'+(info.pushNames.length===1?'':'s')+'</div>';
+      h+='<div style="display:flex;gap:8px;margin-top:14px"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn" style="background:#1f8f4d" onclick="ADMIN.broadcastSend()">Send now →</button></div>';
+      openModal(h);
+    },
+    broadcastSend:async function(){
+      closeModal();
+      var bc=window.__bc||{}; var title=bc.title||'', body=bc.body||'', target=bc.target||'all', info=bc.info;
+      if(!info){ info=await ADMIN._broadcastTargets(target); }
+      if(!body){ toast('No message.'); return; }
+      toast('📣 Sending…');
+      var rows=info.bell.map(function(nm){ return {recipient:nm, actor:'📣 '+(title||'TheFlap'), kind:'announce', flap_id:null, excerpt:body.slice(0,200)}; });
+      var bellOk=0;
+      try{ for(var i=0;i<rows.length;i+=500){ var chunk=rows.slice(i,i+500); var r=await sb.from('flap_notifs').insert(chunk); if(!r||!r.error)bellOk+=chunk.length; } }catch(e){}
+      var pushOk=0;
+      for(var j=0;j<info.pushNames.length;j++){
+        try{ await fetch(SUPABASE_URL+'/functions/v1/send-push',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_ANON_KEY,'apikey':SUPABASE_ANON_KEY},body:JSON.stringify({recipient:info.pushNames[j],title:title||'TheFlap 🐦',body:body})}); pushOk++; }catch(e){}
+        if(j%10===9) await new Promise(function(rs){setTimeout(rs,120);});
+      }
+      try{ await sb.from('flaps').insert({name:'::broadcast::', body:JSON.stringify({title:title,body:body,target:target,bell:bellOk,push:pushOk,ts:new Date().toISOString(),by:(ADMIN_ACCOUNT||'admin')})}); }catch(e){}
+      try{ adminLog('(broadcast)','Broadcast "'+(title||body.slice(0,40))+'" → '+target+' (bell '+bellOk+', push '+pushOk+')'); }catch(e){}
+      toast('📣 Sent — 🔔 '+bellOk+' · 📱 '+pushOk+'.');
+      window.__bc=null;
+      try{ ADMIN.loadBroadcastLog(); }catch(e){}
+    },
+    loadBroadcastLog:async function(){
+      var el=$('bcLog'); if(!el)return;
+      try{
+        var r=await sb.from('flaps').select('body,id').eq('name','::broadcast::').order('id',{ascending:false}).limit(8);
+        var rows=(r.data||[]);
+        if(!rows.length){ el.innerHTML='No broadcasts sent yet.'; return; }
+        el.innerHTML=rows.map(function(x){ var b={}; try{b=JSON.parse(x.body)||{};}catch(e){} var t=b.ts?new Date(b.ts).toLocaleString():''; return '<div class="row"><b>'+esc(b.title||'(no title)')+'</b> — '+esc((b.body||'').slice(0,90))+'<br><span style="font-size:11px;color:#8fa8cf">'+esc(b.target||'')+' · 🔔 '+(b.bell||0)+' · 📱 '+(b.push||0)+' · '+esc(t)+'</span></div>'; }).join('');
+      }catch(e){ el.innerHTML='(could not load log)'; }
+    },
+    msgSearch:function(v){ MSG_SEARCH=v; renderTab(); var i=$('cMsgSearch'); if(i){i.focus();try{i.setSelectionRange(i.value.length,i.value.length);}catch(e){}} },
+    msgOpen:function(k){ MSG_OPEN=unb64(k); renderTab(); },
+    msgBack:function(){ MSG_OPEN=null; renderTab(); },
+    resolveReport:async function(id){try{await sb.from('flap_reports').update({resolved:true}).eq('id',id);}catch(e){}toast('Resolved.');loadAll();},
+    modDeletePost:async function(pid,rid){if(!confirm('Delete this flap for everyone?'))return;try{await sb.from('flaps').delete().eq('id',pid);}catch(e){}try{await sb.from('flap_reports').update({resolved:true}).eq('id',rid);}catch(e){}toast('Flap deleted.');loadAll();},
+    deleteFlap:async function(id){if(!confirm('Delete this flap (and its photo) for everyone?'))return;try{await sb.from('flaps').delete().eq('id',id);}catch(e){}toast('Flap deleted.');loadAll();},
+    removePhoto:async function(id){if(!confirm('Remove just the photo? The text stays.'))return;try{await sb.from('flaps').update({pic_url:null}).eq('id',id);}catch(e){}toast('Photo removed.');loadAll();},
+    deleteReply:async function(id){if(!confirm('Delete this reply for everyone?'))return;try{await sb.from('flap_replies').delete().eq('id',id);}catch(e){}toast('Reply deleted.');loadAll();},
+    resolveTicket:async function(id){try{await sb.from('flaps').delete().eq('id',id);}catch(e){}toast('Ticket resolved.');loadAll();},
+    toggleVerified:async function(name){
+      name=(name||'').trim();if(!name)return;
+      var cur=(DATA?DATA.verCur:'')||'';var list=cur.split(/[,\s]+/).filter(Boolean);var low=name.toLowerCase();
+      var has=list.some(function(x){return x.toLowerCase()===low;});
+      list=has?list.filter(function(x){return x.toLowerCase()!==low;}):list.concat([name]);
+      await setSen('::verified::',list.join(', '));
+      toast((has?'Removed':'Granted')+' verified: '+name);loadAll();
+    },
+    mute:async function(name,hours){var until=new Date(Date.now()+hours*3600*1000).toISOString();try{await sb.from('flap_users').update({muted_until:until}).ilike('name',name);}catch(e){}toast('⏳ '+name+' timed out for '+(hours>=168?'7 days':(hours>=24?Math.round(hours/24)+'d':hours+'h'))+'.');loadAll();},
+    muteCustom:function(name){var h=prompt('Time out '+name+' for how many HOURS?','12');if(h===null)return;h=parseFloat(h);if(!(h>0)){toast('Enter a number of hours.');return;}ADMIN.mute(name,h);},
+    liftMute:async function(name){try{await sb.from('flap_users').update({muted_until:null}).ilike('name',name);}catch(e){}toast('✓ Time-out lifted for '+name+'.');loadAll();},
+    ban:async function(name){if(!confirm('Ban '+name+'? They will be locked out.'))return;try{await sb.from('flap_users').update({banned:true}).ilike('name',name);}catch(e){}toast('🔨 '+name+' banned.');loadAll();},
+    unban:async function(name){try{await sb.from('flap_users').update({banned:false}).ilike('name',name);}catch(e){}toast('♻ '+name+' un-banned.');loadAll();},
+    removeUser:async function(name){
+      if((name||'').toLowerCase()===ADMIN_ACCOUNT){toast("Can't remove the admin account.");return;}
+      if(!confirm('Remove '+name+' and delete ALL their flaps & replies? This cannot be undone.'))return;
+      try{ await sb.from('flaps').delete().ilike('name',name); await sb.from('flap_replies').delete().ilike('name',name); await sb.from('flap_users').delete().ilike('name',name); }catch(e){}
+      try{ var ex=await sb.from('flaps').select('id,body').eq('name','::delcount::').order('id',{ascending:false}).limit(1);
+        if(ex.data&&ex.data[0]){ await sb.from('flaps').update({body:String((parseInt(ex.data[0].body,10)||0)+1)}).eq('id',ex.data[0].id); }
+        else { await sb.from('flaps').insert({name:'::delcount::',body:'1',mood:'flappy',likes:0}); }
+      }catch(e){}
+      toast('Removed '+name+'.');loadAll();
+    },
+    saveAnnounce:async function(){var v=($('cAnnounce').value||'').trim();await setSen('::announce::',v);toast(v?'📢 Announcement posted.':'Announcement cleared.');loadAll();},
+    clearAnnounce:async function(){await setSen('::announce::','');toast('Announcement cleared.');loadAll();},
+    saveTicker:async function(){await setSen('::ticker::',($('cTicker').value||'').trim());toast('Ticker saved.');loadAll();},
+    randomPoll:function(){
+      var p=POLL_POOL[Math.floor(Math.random()*POLL_POOL.length)];
+      $('cPollQ').value=p.q; $('cPollO1').value=p.opts[0]; $('cPollO2').value=p.opts[1]; $('cPollO3').value=p.opts[2];
+      toast('🎲 Random poll filled in — tap Save to publish.');
+    },
+    savePoll:async function(){
+      var q=($('cPollQ').value||'').trim(),o1=($('cPollO1').value||'').trim(),o2=($('cPollO2').value||'').trim(),o3=($('cPollO3').value||'').trim();
+      if(!q||!o1||!o2||!o3){toast('Fill in the question and all 3 options.');return;}
+      await setSen('::poll::',[q,o1,o2,o3,'MANUAL',String(Date.now())].join(PSEP));
+      try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){}
+      toast('🗳️ Poll saved for everyone (votes reset).');loadAll();
+    },
+    resetVotes:async function(){if(!confirm('Reset all votes on the current poll?'))return;try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){}toast('↺ Votes reset.');},
+    saveVerified:async function(){await setSen('::verified::',($('cVerified').value||'').trim());toast('Verified list saved.');loadAll();},
+    toggleDropFields:function(){ var f=$('nbDropFields'); if(f)f.style.display=$('nbDrop').checked?'block':'none'; },
+    createBadge:async function(){
+      var name=($('nbName').value||'').trim(); if(!name){toast('Give the badge a name.');return;}
+      var ic=($('nbEmoji').value||'').trim()||'🏷';
+      var desc=($('nbDesc').value||'').trim()||'A special badge from the TheFlap team.';
+      var def={id:'b'+Date.now(), ic:ic, name:name, desc:desc};
+      if($('nbDrop')&&$('nbDrop').checked){
+        def.drop=true;
+        var lim=parseInt($('nbLimit').value,10); if(lim>0)def.limit=lim;
+        var hrs=parseInt($('nbHours').value,10); if(hrs>0)def.endsAt=new Date(Date.now()+hrs*3600000).toISOString();
+      }
+      var defs=(DATA.badgeDefs||[]).slice(); defs.push(def);
+      await setSen('::badgedefs::', JSON.stringify(defs));
+      toast(def.drop?('🚀 Drop launched: '+name):('Badge created 🏅')); loadAll();
+    },
+    filterMembers:function(){
+      var q=(($('memSearch')&&$('memSearch').value)||'').trim().toLowerCase();
+      var list=$('memList'); if(!list)return;
+      var rows=list.querySelectorAll('.mem'); var shown=0;
+      for(var i=0;i<rows.length;i++){ var hay=rows[i].getAttribute('data-search')||''; var vis=!q||hay.indexOf(q)>-1; rows[i].style.display=vis?'':'none'; if(vis)shown++; }
+      var none=$('memNone'); if(none)none.style.display=(q&&shown===0)?'block':'none';
+    },
+    resetPassword:async function(name){
+      if(!confirm('Reset password for '+name+'? They\'ll need the temporary password below to log in.'))return;
+      var temp='flap'+Math.floor(1000+Math.random()*9000);   /* simple readable temp e.g. flap4827 */
+      try{
+        /* salt with the EXACT stored name (matches the app's login hash) and target the EXACT row.
+           name now arrives intact (esq no longer strips apostrophes), so eq() matches the real account. */
+        var hash=await sha256('flapsalt:'+name.toLowerCase()+':'+temp);
+        var up=await sb.from('flap_users').update({pass_hash:hash}).eq('name',name).select('name');
+        if(up&&up.error)throw up.error;
+        if(!up||!up.data||!up.data.length){ toast('Reset FAILED — no member exactly named "'+name+'". Password unchanged.'); return; }
+        try{ await sb.from('flap_notifs').insert({recipient:name, actor:'TheFlap', kind:'support', excerpt:'Your password was reset by an admin. Use the temporary password you were given (type it with no spaces), then you can keep using it.'}); }catch(e){}
+        try{ adminLog(name,'Password reset (admin) — temporary password issued'); }catch(e){}
+        window.prompt('✅ Temporary password for '+name+' — copy this and send it to them (no spaces):', temp);
+        toast('Password reset for '+name+'.');
+      }catch(e){ toast('Could not reset password — try again.'); }
+    },
+    preset:function(id,key){ var el=$('tkr_'+id); if(!el)return; var p=PRESETS[key]; if(!p)return; el.value=p.text; el.focus(); try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){} toast('Preset loaded — edit if needed, then Send.'); },
+    replyTicket:async function(id,who){
+      var el=$('tkr_'+id); var txt=((el&&el.value)||'').trim(); if(!txt){toast('Type a reply first.');return;}
+      try{ await sb.from('flap_notifs').insert({recipient:who, actor:'TheFlap', kind:'support', excerpt:('Re: Ticket #'+id+' — '+txt).slice(0,200)}); }
+      catch(e){ toast('Could not send reply.'); return; }
+      try{ fetch(SUPABASE_URL+'/functions/v1/send-push',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_ANON_KEY,'apikey':SUPABASE_ANON_KEY},body:JSON.stringify({recipient:who,title:'TheFlap 🎫',body:'Support replied to your ticket'})}); }catch(e){}
+      if(el)el.value=''; toast('📨 Reply sent to '+who+' (in-app notification).');
+    },
+    deleteBadge:async function(id){
+      if(!confirm('Delete this badge for everyone?'))return;
+      var defs=(DATA.badgeDefs||[]).filter(function(b){return b.id!==id;});
+      var grants=DATA.badgeGrants||{}; Object.keys(grants).forEach(function(m){ grants[m]=(grants[m]||[]).filter(function(x){return x!==id;}); if(!grants[m].length)delete grants[m]; });
+      await setSen('::badgedefs::', JSON.stringify(defs));
+      await setSen('::badgegrants::', JSON.stringify(grants));
+      toast('Badge deleted.'); loadAll();
+    },
+    grantBadge:async function(id){
+      var el=$('gr_'+id); var m=((el&&el.value)||'').trim().toLowerCase().replace(/^@/,''); if(!m){toast('Type a member name.');return;}
+      var grants=DATA.badgeGrants||{}; grants[m]=grants[m]||[]; if(grants[m].indexOf(id)<0)grants[m].push(id);
+      await setSen('::badgegrants::', JSON.stringify(grants));
+      /* if this grant fills a limited drop, stamp soldAt so the feed card can auto-hide after its grace window */
+      try{
+        var def=(DATA.badgeDefs||[]).filter(function(b){return b.id===id;})[0];
+        if(def&&def.drop&&def.limit&&!def.soldAt){
+          var c=Object.keys(grants).filter(function(u){return (grants[u]||[]).indexOf(id)>-1;}).length;
+          if(c>=def.limit){ var defs=(DATA.badgeDefs||[]).map(function(b){ if(b.id===id)b.soldAt=new Date().toISOString(); return b; }); await setSen('::badgedefs::', JSON.stringify(defs)); }
+        }
+      }catch(e){}
+      toast('Granted to '+m+' ✅'); loadAll();
+    },
+    toggleDropHidden:async function(id){
+      var defs=(DATA.badgeDefs||[]).map(function(b){ if(b.id===id)b.hidden=!b.hidden; return b; });
+      await setSen('::badgedefs::', JSON.stringify(defs));
+      var now=defs.filter(function(b){return b.id===id;})[0];
+      await adminLog('(drop)', (now&&now.hidden?'Hid drop from feed: ':'Restored drop to feed: ')+((now&&now.name)||id));
+      toast(now&&now.hidden?'🙈 Drop hidden from the feed (badges kept).':'👁 Drop back in the feed.'); loadAll();
+    },
+    revokeBadge:async function(id,m){
+      var grants=DATA.badgeGrants||{}; if(grants[m]){ grants[m]=grants[m].filter(function(x){return x!==id;}); if(!grants[m].length)delete grants[m]; }
+      await setSen('::badgegrants::', JSON.stringify(grants));
+      toast('Revoked from '+m+'.'); loadAll();
+    },
+    manageBadges:function(name){
+      var lc=(name||'').toLowerCase().replace(/^@/,''); var d=DATA||{};
+      var defs=d.badgeDefs||[], grants=d.badgeGrants||{}, mine=(grants[lc]||[]);
+      var chips=mine.length?mine.map(function(id){
+        var b=defs.filter(function(x){return x.id===id;})[0]||{name:id,ic:'🏷'};
+        return '<span class="mb-chip">'+esc(b.ic||'🏷')+' '+esc(b.name||id)+(b.drop?' 🎁':'')+'<button onclick="ADMIN.doRevoke(\''+esq(name)+'\',\''+id+'\')">Revoke</button></span>';
+      }).join(''):'<span class="muted">No badges or claimed drops.</span>';
+      var h='<h3>🏅 Badges — '+esc(name)+'</h3>';
+      h+='<div class="mdl-sub">Revoke any granted badge or claimed drop. Removing a claimed drop frees its slot back into the pool automatically.</div>';
+      h+='<div class="mdl-badges">'+chips+'</div>';
+      h+='<div class="mdl-foot">'+(mine.length?'<button class="btn del" onclick="ADMIN.doRevoke(\''+esq(name)+'\',\'*\')">Revoke all</button>':'')+'<button class="btn" onclick="closeModal()">Close</button></div>';
+      openModal(h);
+    },
+    doRevoke:async function(name,id){
+      var lc=(name||'').toLowerCase().replace(/^@/,'');
+      var grants=DATA.badgeGrants||{};
+      if(grants[lc]){ grants[lc]= (id==='*')?[] : grants[lc].filter(function(x){return x!==id;}); if(!grants[lc].length)delete grants[lc]; }
+      await setSen('::badgegrants::', JSON.stringify(grants));
+      await adminLog(name, id==='*'?'Revoked all badges/drops':'Revoked badge '+id+' (drop slot reopened if applicable)');
+      toast(id==='*'?('Cleared all badges for '+name+'.'):('Revoked from '+name+' — slot reopened if it was a drop.'));
+      await loadAll(); ADMIN.manageBadges(name);
+    },
+    resetAccount:function(name){
+      var h='<h3>♻ Reset account — '+esc(name)+'</h3>';
+      h+='<div class="mdl-sub">Pick what to reset. Nothing happens until you confirm.</div>';
+      h+='<label class="mdl-opt"><input type="checkbox" id="ra_prof" checked><span><span class="mo-t">Clear profile customization</span><br><span class="mo-d">Banner, bio, and links back to default.</span></span></label>';
+      h+='<label class="mdl-opt"><input type="checkbox" id="ra_badges"><span><span class="mo-t">Wipe badges</span><br><span class="mo-d">Removes all granted badges &amp; claimed drops (drop slots reopen).</span></span></label>';
+      h+='<label class="mdl-opt"><input type="checkbox" id="ra_photo"><span><span class="mo-t">Clear profile photo</span><br><span class="mo-d">Removes their avatar; falls back to initials.</span></span></label>';
+      h+='<label class="mdl-opt danger"><input type="checkbox" id="ra_posts"><span><span class="mo-t">Also delete posts &amp; replies</span><br><span class="mo-d">Permanently removes every flap and reply. Cannot be undone.</span></span></label>';
+      h+='<label class="mdl-opt danger"><input type="checkbox" id="ra_full" onchange="ADMIN.raFull(this.checked)"><span><span class="mo-t">FULL reset</span><br><span class="mo-d">Ticks everything above.</span></span></label>';
+      h+='<div class="mdl-foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn del" onclick="ADMIN.doResetAccount(\''+esq(name)+'\')">Reset account</button></div>';
+      openModal(h);
+    },
+    raFull:function(on){['ra_prof','ra_badges','ra_photo','ra_posts'].forEach(function(id){var el=$(id);if(el)el.checked=on;});},
+    doResetAccount:async function(name){
+      if((name||'').toLowerCase()===ADMIN_ACCOUNT){toast("Can't reset the admin account.");return;}
+      var prof=$('ra_prof')&&$('ra_prof').checked, badges=$('ra_badges')&&$('ra_badges').checked, photo=$('ra_photo')&&$('ra_photo').checked, posts=$('ra_posts')&&$('ra_posts').checked;
+      if(!prof&&!badges&&!photo&&!posts){toast('Pick at least one thing to reset.');return;}
+      var parts=[]; if(prof)parts.push('profile customization (banner/bio/links)'); if(photo)parts.push('profile photo'); if(badges)parts.push('all badges & claimed drops'); if(posts)parts.push('ALL posts & replies (permanent)');
+      if(!confirm('Reset '+name+'?\n\nThis will clear:\n• '+parts.join('\n• ')+'\n\nContinue?'))return;
+      try{
+        var upd={};
+        if(prof){upd.bio=null; upd.links=null; upd.banner='cosmic';}
+        if(photo){upd.avatar_url=null;}
+        if(Object.keys(upd).length){ var u1=await sb.from('flap_users').update(upd).ilike('name',name); if(u1&&u1.error)throw u1.error; }
+        if(badges){ var lc=(name||'').toLowerCase().replace(/^@/,''); var g=DATA.badgeGrants||{}; if(g[lc]){ delete g[lc]; await setSen('::badgegrants::', JSON.stringify(g)); } }
+        if(posts){ await sb.from('flaps').delete().ilike('name',name); await sb.from('flap_replies').delete().ilike('name',name); }
+        await adminLog(name,'Reset account — cleared: '+parts.join(', '));
+        closeModal(); toast('♻ Reset '+name+' — '+parts.length+' item(s) cleared.'); await loadAll();
+      }catch(e){ toast('Reset failed — try again.'); }
+    },
+    toggleSocial:async function(on){await setSen('::features::',on?'on':'off');toast(on?'🚀 Friends & Messaging is LIVE.':'Friends & Messaging turned off.');loadAll();},
+    seedRandom:async function(){var p=HOUSE_PERSONAS[Math.floor(Math.random()*HOUSE_PERSONAS.length)];var body=p.posts[Math.floor(Math.random()*p.posts.length)];await postAsPersonaBody(p,body);toast('🌱 Seeded a flap as '+p.name+'.');loadAll();},
+    postAs:async function(){
+      var sel=$('cPersona'),ta=$('cSeedText'); if(!sel||!ta)return;
+      var p=HOUSE_PERSONAS[parseInt(sel.value,10)||0]; var body=(ta.value||'').trim();
+      if(!body){toast('Type something to post first.');return;}
+      ta.value=''; await postAsPersonaBody(p,body); toast('Posted as '+p.name+'!');loadAll();
+    }
+  };
+  window.ADMIN=ADMIN;
+
+  /* ---------- wire up ---------- */
+  $('loginBtn').addEventListener('click',doLogin);
+  $('aPass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+  $('aName').addEventListener('keydown',function(e){if(e.key==='Enter')$('aPass').focus();});
+  $('logoutBtn').addEventListener('click',logout);
+  $('reloadAll').addEventListener('click',function(){loadAll();});
+  /* no session persistence — the admin password is required on every visit */
+})();
+</script>
+</body>
+</html>
