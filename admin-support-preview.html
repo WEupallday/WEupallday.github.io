@@ -136,6 +136,12 @@
   .btn.tkp{font-size:12px;padding:5px 10px;background:#1a3242;color:#dceaf5;border:1px solid #2b5c7d}
   .tk-sug{background:#12324a;border:1px solid #235f88;border-radius:9px;padding:8px 11px;margin:6px 0;font-size:13px;color:#d3e8f6}
   .tk-sug .btn{margin-left:8px}
+  .tk-status{margin-top:8px;font-size:13px;line-height:1.45}
+  .tk-status:empty{display:none}
+  .tk-ok{color:#57d98a}
+  .tk-fail{color:#ff8f8f}
+  .tk-warn{color:#ffcf6b}
+  .tk-muted{color:#8fb0c9}
 </style>
 </head>
 <body>
@@ -589,12 +595,18 @@
     bug:{label:'🐛 Bug Report', text:"Thanks for letting us know! We appreciate you catching that. We've sent this over to the team so we can look into it."},
     resolved:{label:'✅ Issue Resolved', text:"You're all good! We took care of the issue. Thanks for your patience while we got everything sorted out."}
   };
-  var PRESET_ORDER=['forgot','login','bug','resolved'];
+  var PRESET_ORDER=['login','bug','resolved'];
   function suggestPreset(msg){
     var t=(msg||'').toLowerCase();
     if(/forgot|reset|password|pass ?word|can.?t remember|locked out/.test(t))return 'forgot';
     if(/log ?in|sign ?in|can.?t get in|won.?t let me in|logged out/.test(t))return 'login';
     if(/bug|crash|error|broken|glitch|not working|does ?n.?t work|freez/.test(t))return 'bug';
+    return '';
+  }
+  function tkSug(tk,msg,whoSafe){
+    var sug=suggestPreset(msg);
+    if(sug==='forgot')return '<div class="tk-sug">💡 Looks like a <b>password</b> issue — <button class="btn" style="background:linear-gradient(180deg,#c0632a,#8a3f12)" onclick="ADMIN.forgotPassword('+tk.id+',\''+whoSafe+'\')">🔑 One-click reset &amp; send</button></div>';
+    if(sug)return '<div class="tk-sug">💡 Suggested reply: <b>'+PRESETS[sug].label+'</b> <button class="btn green" onclick="ADMIN.preset('+tk.id+',\''+sug+'\')">Use suggested response</button></div>';
     return '';
   }
   function secSupport(){
@@ -605,10 +617,11 @@
       return '<div class="row"><div class="r-top">🎫 Support Ticket #'+tk.id+' — from '+esc(who)+'</div>'+
         '<div class="r-body">'+esc(msg.slice(0,600))+'</div>'+
         '<div class="r-meta">Opened '+new Date(tk.created_at).toLocaleString()+' · Status: Open</div>'+
-        (suggestPreset(msg)?'<div class="tk-sug">💡 Suggested reply: <b>'+PRESETS[suggestPreset(msg)].label+'</b> <button class="btn green" onclick="ADMIN.preset('+tk.id+',\''+suggestPreset(msg)+'\')">Use suggested response</button></div>':'')+
+        tkSug(tk,msg,whoSafe)+
         '<textarea class="inp" id="tkr_'+tk.id+'" placeholder="Reply to '+esc(who)+' (they get an in-app notification)…" style="margin:8px 0 6px;min-height:72px;width:100%;"></textarea>'+
         '<div class="tk-presets"><span class="tk-plabel">Quick replies:</span>'+PRESET_ORDER.map(function(k){return '<button class="btn tkp" onclick="ADMIN.preset('+tk.id+',\''+k+'\')">'+PRESETS[k].label+'</button>';}).join('')+'</div>'+
-        '<div class="acts"><button class="btn blue" onclick="ADMIN.replyTicket('+tk.id+',\''+whoSafe+'\')">📨 Send reply</button><button class="btn" style="background:linear-gradient(180deg,#2a7fb0,#134d7d)" onclick="ADMIN.resetPassword(\''+whoSafe+'\')">🔑 Help reset password</button><button class="btn green" onclick="ADMIN.resolveTicket('+tk.id+')">Resolve &amp; remove</button></div></div>';
+        '<div class="acts"><button class="btn blue" onclick="ADMIN.replyTicket('+tk.id+',\''+whoSafe+'\')">📨 Send reply</button><button class="btn" style="background:linear-gradient(180deg,#c0632a,#8a3f12)" onclick="ADMIN.forgotPassword('+tk.id+',\''+whoSafe+'\')">🔑 Forgot Password</button><button class="btn green" onclick="ADMIN.resolveTicket('+tk.id+')">Resolve &amp; remove</button></div>'+
+        '<div class="tk-status" id="tkst_'+tk.id+'"></div></div>';
     }).join(''):'<div class="empty">No open tickets. 🎉</div>';
     h+='<div class="subhead">⚑ Open reports</div>';
     h+= d.reports.length?'<div class="muted">'+d.reports.length+' open — see the <b>Moderation</b> tab to act on them.</div>':'<div class="empty">No open reports.</div>';
@@ -774,6 +787,30 @@
       }catch(e){ toast('Could not reset password — try again.'); }
     },
     preset:function(id,key){ var el=$('tkr_'+id); if(!el)return; var p=PRESETS[key]; if(!p)return; el.value=p.text; el.focus(); try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){} toast('Preset loaded — edit if needed, then Send.'); },
+    forgotPassword:async function(id,who){
+      var st=$('tkst_'+id); function show(h){ if(st)st.innerHTML=h; }
+      if(!confirm('Reset the password for @'+who+' and auto-send them a new temporary password?'))return;
+      show('<span class="tk-muted">Resetting…</span>');
+      var temp='';
+      try{
+        var CS='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'; var a=new Uint32Array(10);
+        (window.crypto||window.msCrypto).getRandomValues(a);
+        for(var i=0;i<10;i++){ temp+=CS.charAt(a[i]%CS.length); }
+        var hash=await sha256('flapsalt:'+who.toLowerCase()+':'+temp);
+        var up=await sb.from('flap_users').update({pass_hash:hash}).eq('name',who).select('name');
+        if(up&&up.error)throw up.error;
+        if(!up||!up.data||!up.data.length){ show('<span class="tk-fail">❌ Password reset failed — no account exactly named "'+esc(who)+'". Nothing was changed and no message was sent.</span>'); return; }
+      }catch(e){ show('<span class="tk-fail">❌ Password reset failed — the password was not changed and no message was sent.</span>'); return; }
+      var body="No worries! We got you. Your temporary password is: "+temp+"  Use this to get back into your account, then change your password once you're logged in. Stay Breezy 🐥";
+      try{
+        var ins=await sb.from('flap_notifs').insert({recipient:who, actor:'TheFlap', kind:'support', excerpt:body.slice(0,200)});
+        if(ins&&ins.error)throw ins.error;
+      }catch(e){ show('<span class="tk-warn">⚠️ Password WAS reset, but the auto-message did not send. Copy this and send it to @'+esc(who)+' manually: <b>'+temp+'</b></span>'); return; }
+      try{ fetch(SUPABASE_URL+'/functions/v1/send-push',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_ANON_KEY,'apikey':SUPABASE_ANON_KEY},body:JSON.stringify({recipient:who,title:'TheFlap 🔑',body:'Your temporary password is ready'})}); }catch(e){}
+      try{ adminLog(who,'Forgot-password (one-click) — temp password issued + message sent'); }catch(e){}
+      show('<span class="tk-ok">✅ Password reset complete<br>Temporary password generated + reply sent to @'+esc(who)+'.<br><span class="tk-muted">Backup copy (if they need it read to them): <b>'+temp+'</b></span></span>');
+      toast('✅ Reset + message sent to '+who+'.');
+    },
     replyTicket:async function(id,who){
       var el=$('tkr_'+id); var txt=((el&&el.value)||'').trim(); if(!txt){toast('Type a reply first.');return;}
       try{ await sb.from('flap_notifs').insert({recipient:who, actor:'TheFlap', kind:'support', excerpt:('Re: Ticket #'+id+' — '+txt).slice(0,200)}); }
