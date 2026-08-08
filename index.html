@@ -3668,6 +3668,28 @@
     toast(priority==='high'?'Report submitted \u2014 flagged urgent. Our team reviews these first.':'Report submitted. Our team will review it.');
   }catch(e){ toast('Could not submit report \u2014 please try again.'); }
 };
+  (function(){
+  function hasSensitiveInfo(t){ t=String(t||'');
+    var email=/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/i;
+    var phone=/(?:\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]\d{3}[\s.\-]\d{4}\b/;
+    var phone2=/\b(my (?:number|cell|digits|phone)|call me|text me|reach me|hit me up)\b[\s\S]{0,20}\d{7,}/i;
+    var addr=/\b\d{1,6}\s+([a-z0-9.'\-]+\s+){0,4}(street|st|avenue|ave|road|rd|blvd|boulevard|lane|ln|drive|dr|court|ct|circle|cir|way|place|pl|terrace|ter|parkway|pkwy|highway|hwy)\b\.?/i;
+    var addr2=/\b(my address is|i live at|come to my|meet me at)\b[\s\S]{0,40}\d/i;
+    if(email.test(t))return 'email address';
+    if(phone.test(t)||phone2.test(t))return 'phone number';
+    if(addr.test(t)||addr2.test(t))return 'home address';
+    return '';
+  }
+  function safetyBlock(kind,text){
+    var k=hasSensitiveInfo(text); if(!k) return false;
+    try{ toast('\u26A0\uFE0F For your safety, that was not posted \u2014 it looks like it shares a '+k+'. Please do not share personal contact info publicly.'); }catch(e){}
+    try{ var me=(typeof ME!=='undefined'&&ME&&ME.name)?ME.name:'unknown'; sb.from('flap_reports').insert({reporter:'auto-safety', reported_user:me, target_type:'safety', target_name:me, reported_content:String(text||'').slice(0,300), reason:'[AUTO-SAFETY] possible '+k+' shared in a '+kind, priority:'high', status:'new', resolved:false}); }catch(e){}
+    return true;
+  }
+  window.__hasSensitiveInfo=hasSensitiveInfo;
+  if(typeof checkAutoMod==='function'){ var _c=checkAutoMod; window.checkAutoMod=function(text){ if(hasSensitiveInfo(text))return true; return _c(text); }; }
+  if(typeof autoModBlock==='function'){ var _b=autoModBlock; window.autoModBlock=function(kind,text){ if(safetyBlock(kind,text))return; return _b(kind,text); }; }
+})();
   async function resolveReport(id){if(!ME.admin)return;try{await sb.from('flap_reports').update({resolved:true}).eq('id',id);}catch(e){}showAdmin();}
   async function modDeletePost(postId,reportId){
     if(!ME.admin)return;
