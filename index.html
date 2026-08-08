@@ -4423,7 +4423,7 @@ var SUP_CAT='Bug';
   }
   /* ===== verified badges — admin-granted, persisted as a hidden sentinel row ===== */
   var VERIFIED={};
-  function isVerified(n){n=(n||'').toLowerCase(); return n==='lock' || !!(VERIFIED && VERIFIED[n]);}
+  function isVerified(n){ if(!n) return false; var k=String(n).toLowerCase().trim(); if(k==='lock') return true; try{ if(window.USERS && USERS[k] && USERS[k].verified) return true; }catch(e){} return false; }
   /* TikTok-style scalloped blue verified seal + white check (built once) */
   var VBADGE_SVG=(function(){
     var N=10, R=15, cx=20, cy=20, pts=[];
@@ -4745,7 +4745,7 @@ var SUP_CAT='Bug';
       document.getElementById('youCount').textContent=myFlapCount;
       /* members list — powers real photos everywhere + the banner */
       try{
-        var _uall=[],_uf=0,_upg=1000,_uerr=null;while(true){var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at,handle,device,banned,muted_until,violations').order('created_at',{ascending:false}).range(_uf,_uf+_upg-1);if(um.error){_uerr=um.error;break;}var _ud=um.data||[];_uall=_uall.concat(_ud);if(_ud.length<_upg)break;_uf+=_upg;if(_uf>20000)break;}
+        var _uall=[],_uf=0,_upg=1000,_uerr=null;while(true){var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at,handle,device,banned,muted_until,violations,verified').order('created_at',{ascending:false}).range(_uf,_uf+_upg-1);if(um.error){_uerr=um.error;break;}var _ud=um.data||[];_uall=_uall.concat(_ud);if(_ud.length<_upg)break;_uf+=_upg;if(_uf>20000)break;}
         if(!_uerr){USERS={};_uall.forEach(function(u){USERS[u.name.toLowerCase()]=u;});}
       }catch(eu){}
       try{ if(ME.name&&USERS[ME.name.toLowerCase()]){ ME.handle=USERS[ME.name.toLowerCase()].handle||ME.handle||''; } }catch(eh){}
