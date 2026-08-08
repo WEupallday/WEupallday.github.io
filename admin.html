@@ -538,13 +538,13 @@
       h+= rl.length? rl.map(function(r){
         var hi=(r.priority==='high');
         var st=(r.status==='review')?'Under Review':'New';
-        var content=r.reported_content?(' — “'+esc(String(r.reported_content).replace(/<[^>]+>/g,'').slice(0,180))+'”'):'';
+        var content=r.reported_content?(' — “'+esc(String(r.reported_content).replace(/<[^>]+>/g,'').slice(0,180))+'”'):(r.target_type==='post'?' — <span style="color:#ffcf6b">(content no longer available)</span>':'');
         var who=esc(r.reported_user||r.target_name||'?');
         var tgt=(r.target_type==='user')?('user <b>'+who+'</b>'):('flap by <b>'+who+'</b>'+content);
         return '<div class="row reportrow"'+(hi?' style="border-color:#c62828"':'')+'><div class="r-top" style="color:#ff9a86;">'+(hi?'🚨 HIGH PRIORITY — ':'')+'Report #'+r.id+' · '+esc(r.reason||'reported')+'</div>'+
           '<div class="r-body">'+tgt+'</div>'+
           '<div class="r-meta">by '+esc(r.reporter||'?')+' · '+new Date(r.created_at).toLocaleString()+' · Status: '+st+'</div>'+
-          '<div class="acts">'+(r.status!=='review'?'<button class="btn" onclick="ADMIN.setReportStatus('+r.id+',\'review\')">Mark under review</button>':'')+(r.target_id?'<button class="btn del" onclick="ADMIN.modDeletePost('+r.target_id+','+r.id+')">Delete flap</button>':'')+'<button class="btn green" onclick="ADMIN.resolveReport('+r.id+')">Resolve</button></div></div>';
+          '<div class="acts">'+((r.target_type==='post'&&r.target_id)?'<button class="btn blue" onclick="ADMIN.viewFlap('+r.target_id+')">🔎 View reported post</button>':'')+'<button class="btn blue" onclick="ADMIN.viewProfile(\''+esq(r.reported_user||r.target_name||'')+'\')">👤 View @'+esc(r.reported_user||r.target_name||'?')+'</button>'+(r.status!=='review'?'<button class="btn" onclick="ADMIN.setReportStatus('+r.id+',\'review\')">Mark under review</button>':'')+(r.target_id?'<button class="btn del" onclick="ADMIN.modDeletePost('+r.target_id+','+r.id+')">Delete flap</button>':'')+'<button class="btn green" onclick="ADMIN.resolveReport('+r.id+')">Resolve</button></div></div>';
       }).join(''):'<div class="empty">No open reports. 🎉</div>';
     }
     h+='</div>';
@@ -714,6 +714,8 @@
     modSignIn:function(){ var pw=prompt('Enter your admin password to unlock the report queue:'); if(pw==null||pw==='')return; sessionStorage.setItem('flap_modpw',pw); toast('Unlocking…'); loadAll(); },
     modSignOut:function(){ sessionStorage.removeItem('flap_modpw'); toast('Locked.'); loadAll(); },
     setReportStatus:async function(id,st){ var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){toast('Unlock reports first.');return;} try{ var _r=await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:id,status:st})}); if(!_r.ok){ toast('Update failed.'); return; } }catch(e){ toast('Update failed.'); return; } toast('Updated.'); loadAll(); },
+    viewFlap:function(id){ try{ window.open('/index.html?openflap='+id,'_blank'); }catch(e){} },
+    viewProfile:function(n){ try{ window.open('/index.html?profile='+encodeURIComponent(n),'_blank'); }catch(e){} },
     resolveReport:async function(id){ var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){toast('Unlock reports first.');return;} try{ await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:id,resolved:true})}); }catch(e){} toast('Resolved.'); loadAll(); },
     modDeletePost:async function(pid,rid){if(!confirm('Delete this flap for everyone?'))return;try{await sb.from('flaps').delete().eq('id',pid);}catch(e){} var _mk=sessionStorage.getItem('flap_modpw'); if(_mk){try{ await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:rid,resolved:true})}); }catch(e){}} toast('Flap deleted.');loadAll();},
     deleteFlap:async function(id){if(!confirm('Delete this flap (and its photo) for everyone?'))return;try{await sb.from('flaps').delete().eq('id',id);}catch(e){}toast('Flap deleted.');loadAll();},
