@@ -5903,6 +5903,7 @@ document.addEventListener('touchmove',function(e){
 
     function init(){
       try{ ensureModals(); }catch(e){}
+      try{ if(/[?&]recover=1/.test(location.search||'')){ setTimeout(function(){ try{ if(window.recOpenForgot) window.recOpenForgot(); }catch(e){} }, 700); setTimeout(function(){ try{ if(window.recOpenForgot && !document.querySelector('#recModal.open')) window.recOpenForgot(); }catch(e){} }, 1800); } }catch(e){}
       try{ injectForgotLink(); }catch(e){}
       try{ watchSettings(); }catch(e){}
       try{ recCheckLinkReturn(); }catch(e){}
