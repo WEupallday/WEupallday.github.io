@@ -3652,7 +3652,7 @@
     try{ await sb.from('flaps').delete().eq('id',id); }catch(e){}
     showAdmin();
   }
-  async window.submitReport=async function(reason){
+  window.submitReport=async function(reason){
   try{
     var ctx=(typeof REPORT_CTX!=='undefined'&&REPORT_CTX)?REPORT_CTX:{};
     var me=(typeof ME!=='undefined'&&ME&&ME.name)?ME.name:'unknown';
@@ -3668,7 +3668,7 @@
     toast(priority==='high'?'Report submitted \u2014 flagged urgent. Our team reviews these first.':'Report submitted. Our team will review it.');
   }catch(e){ toast('Could not submit report \u2014 please try again.'); }
 };
-  function resolveReport(id){if(!ME.admin)return;try{await sb.from('flap_reports').update({resolved:true}).eq('id',id);}catch(e){}showAdmin();}
+  async function resolveReport(id){if(!ME.admin)return;try{await sb.from('flap_reports').update({resolved:true}).eq('id',id);}catch(e){}showAdmin();}
   async function modDeletePost(postId,reportId){
     if(!ME.admin)return;
     if(!confirm('Delete this flap for everyone?'))return;
