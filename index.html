@@ -3112,6 +3112,11 @@
       if(up&&up.error) throw up.error;
       try{ await sb.from('flaps').update({name:newName}).ilike('name',oldName); }catch(e){}          /* keep post attribution */
       try{ await sb.from('flap_replies').update({name:newName}).ilike('name',oldName); }catch(e){}
+      try{ await sb.from('flap_follows').update({follower:newName}).ilike('follower',oldName); }catch(e){}
+      try{ await sb.from('flap_follows').update({following:newName}).ilike('following',oldName); }catch(e){}
+      try{ await sb.from('flap_notifs').update({recipient:newName}).ilike('recipient',oldName); }catch(e){}
+      try{ await sb.from('flap_notifs').update({actor:newName}).ilike('actor',oldName); }catch(e){}
+      try{ await sb.from('push_subs').update({name:newName}).ilike('name',oldName); }catch(e){}
       SET.row.name=newName; SET.row.name_changes=(SET.row.name_changes||0)+1;
       ME.name=newName; ME.admin=((newName||'').toLowerCase()==='lock'); try{localStorage.setItem('flap_lastname',newName);}catch(e){} saveSession(ME);
       hint.className='set-hint good'; hint.textContent='✓ Saved!';
@@ -4030,7 +4035,7 @@
     /* also fire a phone push to the recipient */
     var ex=excerpt?(' "'+String(excerpt).slice(0,60)+'"'):'';
     var body=kind==='reply'?(actor+' replied to your flap:'+ex):kind==='like'?(actor+' flapped your post 👍'):kind==='tag'?(actor+' tagged you in a flap:'+ex):kind==='grouptag'?(actor+' tagged all '+(excerpt||'members')+' in a flap 🏅'):kind==='reflap'?(actor+' reflapped your flap 🔁'):kind==='follow'?(actor+' followed you 👤'):kind==='dm'?(actor+' messaged you:'+ex):kind==='friend'?(actor+' '+(excerpt||'sent you a friend request')+' 👯'):kind==='support'?('TheFlap Support 🎫 replied to your ticket:'+ex):(actor+' interacted with you');
-    if(kind!=='reflap')notifyFlap(recipient,body); /* every bell notif mirrors to phone push here; reflaps stay bell-only */
+    var _durl=flap_id?('/index.html?openflap='+flap_id):((kind==='follow'||kind==='friend')?('/index.html?profile='+encodeURIComponent(actor||'')):'/');if(kind!=='reflap')notifyFlap(recipient,body,null,_durl); /* every bell notif mirrors to phone push here; reflaps stay bell-only */
   }
   function notifText(n){
     if(n.kind==='announce')return '<b>'+esc(n.actor||'📣 TheFlap')+'</b>'+(n.excerpt?('<br>'+annLinkify(n.excerpt)):'');   /* admin broadcast */
@@ -4240,7 +4245,7 @@
     }catch(e){}
   }
   /* universal phone-push helper — every bell notification mirrors to push through this one function */
-  function notifyFlap(recipient,body,title){
+  function notifyFlap(recipient,body,title,url){
     try{
       if(!recipient)return;                                   /* no target */
       if(ME&&ME.name&&recipient===ME.name)return;             /* never push yourself */
@@ -4248,7 +4253,7 @@
       fetch(CONFIG.SUPABASE_URL+'/functions/v1/send-push',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+CONFIG.SUPABASE_ANON_KEY,'apikey':CONFIG.SUPABASE_ANON_KEY},
-        body:JSON.stringify({recipient:recipient,title:title||'TheFlap 🐦',body:body||'',url:'/'})
+        body:JSON.stringify({recipient:recipient,title:title||'TheFlap 🐦',body:body||'',url:url||'/'})
       }).catch(function(){});                                  /* push failure must never break the app */
     }catch(e){}
   }
