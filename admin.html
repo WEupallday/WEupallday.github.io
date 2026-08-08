@@ -184,7 +184,7 @@
   var SUPABASE_ANON_KEY="sb_publishable_fn7Fzyx9B95U8FY_5cSO3Q_Mn43ce1H";
   var ADMIN_ACCOUNT="lock";
   var PSEP="␟";
-  var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false}});
+  var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,detectSessionInUrl:true,autoRefreshToken:true,storageKey:'flap-admin-auth'}});
   var ADMIN_NAME="", DATA=null, TAB="controls", MSG_SEARCH="", MSG_OPEN=null;
 
   /* ---------- house personas (seed the feed / post-as) ---------- */
@@ -274,6 +274,7 @@
   /* ---------- data load ---------- */
   async function loadAll(){
     $('panel').innerHTML='<div class="loading">Loading your HQ…</div>';
+    try{ var _s=await sb.auth.getSession(); window.__modAuthed=!!(_s&&_s.data&&_s.data.session); window.__modEmail=(window.__modAuthed&&_s.data.session.user&&_s.data.session.user.email)||''; }catch(e){ window.__modAuthed=false; }
     try{
       var us=[];{var _uf=0,_upg=1000;while(true){var _ur=await sb.from('flap_users').select('*').order('created_at',{ascending:false}).range(_uf,_uf+_upg-1);var _ud=(_ur&&_ur.data)||[];us=us.concat(_ud);if(_ud.length<_upg)break;_uf+=_upg;if(_uf>20000)break;}}
       var flAll=(await sb.from('flaps').select('id,name,body,pic_url,mood,created_at').order('id',{ascending:false}).limit(500)).data||[];
@@ -528,15 +529,24 @@
         (r.target_name?'<button class="btn blue" onclick="ADMIN.liftMute(\''+esq(r.target_name)+'\')">Lift time-out</button>':'')+'</div></div>';
     }).join(''):'<div class="empty">No open appeals. 🎉</div>';
 
-    h+='<div class="subhead">⚑ Reports ('+reports.length+')</div>';
-    h+= reports.length? reports.map(function(r){
-      var isPost=r.target_type==='post'&&r.target_id;
-      var tgt=isPost?('flap by <b>'+esc((d.repPosts[r.target_id]||{}).name||r.target_name||'?')+'</b>: “'+esc(((d.repPosts[r.target_id]||{}).body||'(deleted)').replace(/<[^>]+>/g,'').slice(0,140))+'”'):('user <b>'+esc(r.target_name||'?')+'</b>');
-      var act=isPost?'<button class="btn del" onclick="ADMIN.modDeletePost('+r.target_id+','+r.id+')">Delete flap</button>':'';
-      return '<div class="row reportrow"><div class="r-top" style="color:#ff9a86;">'+esc(r.reason||'reported')+'</div><div class="r-body">'+tgt+'</div>'+
-        '<div class="r-meta">by '+esc(r.reporter||'?')+' · '+new Date(r.created_at).toLocaleString()+'</div>'+
-        '<div class="acts">'+act+'<button class="btn" onclick="ADMIN.resolveReport('+r.id+')">Dismiss</button></div></div>';
-    }).join(''):'<div class="empty">No open reports. 🎉</div>';
+    h+='<div class="subhead">⚑ Reports</div>';
+    if(!window.__modAuthed){
+      h+='<div class="row" style="border-color:#2b5c7d"><div class="r-top">🔒 Reports are private (admins only)</div><div class="r-body">Report details are locked so the public can never read them. Sign in with your admin Google account to load and review the queue.</div><div class="acts"><button class="btn blue" onclick="ADMIN.modSignIn()">Sign in with Google</button></div></div>';
+    } else {
+      var rl=reports.slice().sort(function(a,b){ var pa=(a.priority==='high')?0:1, pb=(b.priority==='high')?0:1; if(pa!==pb)return pa-pb; return (b.id||0)-(a.id||0); });
+      h+='<div class="muted" style="margin-bottom:6px">Signed in as moderator ('+esc(window.__modEmail||'')+') ✓ <button class="btn" style="padding:2px 8px;font-size:11px" onclick="ADMIN.modSignOut()">sign out</button></div>';
+      h+= rl.length? rl.map(function(r){
+        var hi=(r.priority==='high');
+        var st=(r.status==='review')?'Under Review':'New';
+        var content=r.reported_content?(' — “'+esc(String(r.reported_content).replace(/<[^>]+>/g,'').slice(0,180))+'”'):'';
+        var who=esc(r.reported_user||r.target_name||'?');
+        var tgt=(r.target_type==='user')?('user <b>'+who+'</b>'):('flap by <b>'+who+'</b>'+content);
+        return '<div class="row reportrow"'+(hi?' style="border-color:#c62828"':'')+'><div class="r-top" style="color:#ff9a86;">'+(hi?'🚨 HIGH PRIORITY — ':'')+'Report #'+r.id+' · '+esc(r.reason||'reported')+'</div>'+
+          '<div class="r-body">'+tgt+'</div>'+
+          '<div class="r-meta">by '+esc(r.reporter||'?')+' · '+new Date(r.created_at).toLocaleString()+' · Status: '+st+'</div>'+
+          '<div class="acts">'+(r.status!=='review'?'<button class="btn" onclick="ADMIN.setReportStatus('+r.id+',\'review\')">Mark under review</button>':'')+(r.target_id?'<button class="btn del" onclick="ADMIN.modDeletePost('+r.target_id+','+r.id+')">Delete flap</button>':'')+'<button class="btn green" onclick="ADMIN.resolveReport('+r.id+')">Resolve</button></div></div>';
+      }).join(''):'<div class="empty">No open reports. 🎉</div>';
+    }
     h+='</div>';
 
     var real=d.flAll.filter(function(r){return !isSentinel(r.name);}).slice(0,40);
@@ -701,6 +711,9 @@
     msgSearch:function(v){ MSG_SEARCH=v; renderTab(); var i=$('cMsgSearch'); if(i){i.focus();try{i.setSelectionRange(i.value.length,i.value.length);}catch(e){}} },
     msgOpen:function(k){ MSG_OPEN=unb64(k); renderTab(); },
     msgBack:function(){ MSG_OPEN=null; renderTab(); },
+    modSignIn:function(){ try{ sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.href.split('#')[0].split('?')[0]}}); }catch(e){ toast('Sign-in unavailable.'); } },
+    modSignOut:async function(){ try{ await sb.auth.signOut(); }catch(e){} window.__modAuthed=false; window.__modEmail=''; loadAll(); },
+    setReportStatus:async function(id,st){ try{ var r=await sb.from('flap_reports').update({status:st}).eq('id',id); if(r&&r.error){ toast('Update failed — sign in as admin first.'); return; } }catch(e){ toast('Update failed.'); return; } toast('Updated.'); loadAll(); },
     resolveReport:async function(id){try{await sb.from('flap_reports').update({resolved:true}).eq('id',id);}catch(e){}toast('Resolved.');loadAll();},
     modDeletePost:async function(pid,rid){if(!confirm('Delete this flap for everyone?'))return;try{await sb.from('flaps').delete().eq('id',pid);}catch(e){}try{await sb.from('flap_reports').update({resolved:true}).eq('id',rid);}catch(e){}toast('Flap deleted.');loadAll();},
     deleteFlap:async function(id){if(!confirm('Delete this flap (and its photo) for everyone?'))return;try{await sb.from('flaps').delete().eq('id',id);}catch(e){}toast('Flap deleted.');loadAll();},
