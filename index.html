@@ -3272,8 +3272,8 @@
   function dropFeedVisible(d){
     if(!d||!d.drop) return false;
     if(d.hidden) return false;                                                   /* admin pulled it manually */
-    if(d.androidOnly && !isAndroid()) return false;                              /* Android-only drop: hide on web/iPhone */
-    if(d.iosOnly && !isIOS()) return false;                                      /* iPhone-only drop: hide on web/Android */
+    if(d.androidOnly && !flapIsAndroid()) return false;                              /* Android-only drop: hide on web/iPhone */
+    if(d.iosOnly && !flapIsIOS()) return false;                                      /* iPhone-only drop: hide on web/Android */
     var now=Date.now();
     if(d.endsAt && now>Date.parse(d.endsAt)+DROP_GRACE_MS) return false;         /* ended a while ago */
     if(d.soldAt && now>Date.parse(d.soldAt)+DROP_GRACE_MS) return false;         /* sold out a while ago */
@@ -3320,8 +3320,8 @@
     if(!ME.name){ try{requireAuth();}catch(e){} return; }
     var d=(CUSTOM_BADGES||[]).filter(function(b){return String(b.id).replace(/[^a-z0-9]/gi,'')===String(id);})[0];
     if(!d||!d.drop) return;
-    if(d.androidOnly && !isAndroid()){ toast('This drop is Android-only 🤖'); return; }   /* safety net: block claim off-Android */
-    if(d.iosOnly && !isIOS()){ toast('This drop is iPhone-only 🍎'); return; }   /* safety net: block claim off-iPhone */
+    if(d.androidOnly && !flapIsAndroid()){ toast('This drop is Android-only 🤖'); return; }   /* safety net: block claim off-Android */
+    if(d.iosOnly && !flapIsIOS()){ toast('This drop is iPhone-only 🍎'); return; }   /* safety net: block claim off-iPhone */
     try{
       var g=await sb.from('flaps').select('id,body').eq('name','::badgegrants::').order('id',{ascending:false}).limit(1);
       var grants={}, rowId=null;
@@ -4695,6 +4695,8 @@
   }
 
   function flapErr(e,where){try{var st=(e&&(e.status||e.code))||'';var msg=(e&&(e.message||e.hint||e.details||e.error_description||''))||'';msg=String(msg).slice(0,100);try{console.error('[TheFlap] '+where+' failed:',e);}catch(_c){}var base=(where||'Request')+' failed';if(st)base+=' ('+st+')';if(msg)base+=': '+msg;if(!st&&!msg)base+=' — check your connection.';return base;}catch(_x){return (where||'Request')+' failed.';}}
+  function flapIsIOS(){try{if(window.Capacitor&&typeof Capacitor.getPlatform==='function')return Capacitor.getPlatform()==='ios';}catch(_e){}return /iPhone|iPad|iPod/i.test((navigator&&navigator.userAgent)||'');}
+  function flapIsAndroid(){try{if(window.Capacitor&&typeof Capacitor.getPlatform==='function')return Capacitor.getPlatform()==='android';}catch(_e){}return /Android/i.test((navigator&&navigator.userAgent)||'');}
   async function loadFeed(manual){
     if(!ONLINE){
       LAST_ROWS=localPosts;
