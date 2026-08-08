@@ -1719,7 +1719,7 @@
     <div class="report-h">🎫 Support &amp; Help</div>
     <p class="report-sub">Having a problem, a bug, or an idea? Send us a ticket and we'll get on it. Tell us what happened.</p>
     <p class="report-sub" style="font-size:12px;margin-top:2px;">Have any questions or concerns? Email us at <a href="mailto:theflapsupport@gmail.com" style="color:var(--link,#1a6fd4);">theflapsupport@gmail.com</a>.</p>
-    <textarea id="supportMsg" maxlength="600" placeholder="Describe the problem or suggestion…" style="width:100%;box-sizing:border-box;min-height:96px;font-family:Verdana,Arial,sans-serif;font-size:13px;padding:9px;border:2px solid var(--card-border);border-radius:8px;"></textarea>
+    <div id="supCats" style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px;"><button type="button" class="supcat sel" data-cat="Bug" onclick="pickSupCat(this)" style="flex:1;min-width:68px;padding:7px 6px;border:none;border-radius:9px;background:#2a6fb0;color:#fff;font-weight:bold;font-size:12px;cursor:pointer;">🐛 Bug</button><button type="button" class="supcat" data-cat="Idea" onclick="pickSupCat(this)" style="flex:1;min-width:68px;padding:7px 6px;border:none;border-radius:9px;background:#eef1f7;color:#334;font-weight:bold;font-size:12px;cursor:pointer;">💡 Idea</button><button type="button" class="supcat" data-cat="Account" onclick="pickSupCat(this)" style="flex:1;min-width:68px;padding:7px 6px;border:none;border-radius:9px;background:#eef1f7;color:#334;font-weight:bold;font-size:12px;cursor:pointer;">🔑 Account</button><button type="button" class="supcat" data-cat="Other" onclick="pickSupCat(this)" style="flex:1;min-width:68px;padding:7px 6px;border:none;border-radius:9px;background:#eef1f7;color:#334;font-weight:bold;font-size:12px;cursor:pointer;">💬 Other</button></div><textarea id="supportMsg" maxlength="600" placeholder="Describe the problem or suggestion…" style="width:100%;box-sizing:border-box;min-height:96px;font-family:Verdana,Arial,sans-serif;font-size:13px;padding:9px;border:2px solid var(--card-border);border-radius:8px;"></textarea>
     <button class="comp-btn go" type="button" style="width:100%;margin-top:8px;text-align:center;" onclick="submitTicket()">Send Ticket</button>
     <button class="report-cancel" type="button" onclick="closeSupport()">Cancel</button>
   </div>
@@ -3343,7 +3343,7 @@
       CUSTOM_GRANTS=grants;
       if(d.limit){ var fc=0; Object.keys(grants).forEach(function(u){ if((grants[u]||[]).indexOf(d.id)>-1)fc++; }); if(fc>=d.limit && !d.soldAt){ stampSoldAt(d.id); } }
       renderDrops();
-      toast('🎉 Claimed "'+d.name+'"! It’s on your profile now.');
+      flapCelebrate('🏅','Badge Unlocked!','You claimed "'+d.name+'" — it’s on your profile now.');
       try{ if(document.getElementById('profModal')&&document.getElementById('profModal').classList.contains('open')) showUserProfile(ME.name); }catch(e){}
     }catch(e){ toast('Could not claim — try again.'); }
   }
@@ -3640,6 +3640,12 @@
   }
   function openPrivacy(){window.open('privacy.html','_blank');}
   /* ===== support tickets (stored as hidden ::ticket:: rows) ===== */
+var SUP_CAT='Bug';
+  function pickSupCat(b){ try{ SUP_CAT=b.getAttribute('data-cat')||'Other'; var ps=document.querySelectorAll('#supCats .supcat'); for(var i=0;i<ps.length;i++){ var on=(ps[i]===b); ps[i].style.background=on?'#2a6fb0':'#eef1f7'; ps[i].style.color=on?'#fff':'#334'; ps[i].classList.toggle('sel',on);} }catch(e){} }
+  function flapCelebrate(icon,title,sub){ try{ var w=document.getElementById('celebWrap'); if(!w){ w=document.createElement('div'); w.id='celebWrap'; w.style.cssText='display:none;position:fixed;inset:0;z-index:600;background:rgba(10,16,40,.72);align-items:center;justify-content:center;padding:20px;cursor:pointer;'; w.onclick=function(){ w.style.display='none'; }; document.body.appendChild(w);} w.innerHTML='<div style="background:linear-gradient(180deg,#fff,#f3f7ff);border:3px solid #ffd34d;border-radius:20px;max-width:340px;width:100%;padding:26px 22px;text-align:center;box-shadow:0 18px 60px rgba(0,0,0,.4);"><div style="font-size:60px;line-height:1;margin-bottom:6px;">'+(icon||'🎉')+'</div><div style="font-size:20px;font-weight:800;color:#173a6b;margin-bottom:6px;">'+esc(title||'Nice!')+'</div><div style="font-size:13.5px;color:#4a5a76;margin-bottom:16px;">'+esc(sub||'')+'</div><div style="width:100%;padding:11px;box-sizing:border-box;border-radius:11px;background:linear-gradient(180deg,#ffb43a,#ff8f0a);color:#fff;font-weight:800;font-size:15px;">Yay! 🎊</div></div>'; w.style.display='flex'; try{haptic('Heavy');}catch(e){} }catch(e){} }
+  function showCommunityNotice(n){ try{ if(!n)return; var w=document.getElementById('noticeWrap'); if(!w){ w=document.createElement('div'); w.id='noticeWrap'; w.style.cssText='display:none;position:fixed;inset:0;z-index:610;background:rgba(10,16,40,.78);align-items:center;justify-content:center;padding:20px;'; document.body.appendChild(w);} var msg=esc(String(n.excerpt||'A moderator reviewed some of your recent activity.')); w.innerHTML='<div style="background:#fff;border-top:6px solid #d9534f;border-radius:16px;max-width:360px;width:100%;padding:22px;box-shadow:0 18px 60px rgba(0,0,0,.4);"><div style="font-size:17px;font-weight:800;color:#b02a24;margin-bottom:8px;">⚠️ Community Notice</div><div style="font-size:13.5px;color:#333;line-height:1.5;margin-bottom:8px;">'+msg+'</div><div style="font-size:12px;color:#777;margin-bottom:16px;">Please review the House Rules. Repeated issues can lead to limits on your account.</div><button type="button" onclick="ackNotice('+n.id+')" style="width:100%;padding:11px;border:none;border-radius:11px;background:#2a6fb0;color:#fff;font-weight:800;font-size:15px;cursor:pointer;">I understand</button></div>'; w.style.display='flex'; }catch(e){} }
+  async function ackNotice(id){ try{ var w=document.getElementById('noticeWrap'); if(w)w.style.display='none'; NOTIFS.forEach(function(n){ if(n.id===id)n.seen=true; }); renderBell(); if(ONLINE)await sb.from('flap_notifs').update({seen:true}).eq('id',id); }catch(e){} }
+  function checkVerifyCeleb(){ try{ if(!ME.name||!isVerified(ME.name))return; if(localStorage.getItem('flap_verceleb'))return; localStorage.setItem('flap_verceleb','1'); flapCelebrate('✅','You\'re Verified!','Your blue check is now live across TheFlap. 💙'); }catch(e){} }
   function openSupport(){document.getElementById('supportModal').classList.add('open');}
   function closeSupport(){document.getElementById('supportModal').classList.remove('open');}
   async function submitTicket(){
@@ -3648,7 +3654,7 @@
     var who=ME.name||'guest';
     closeSupport(); ta.value='';
     if(ONLINE){
-      try{ await sb.from('flaps').insert({name:'::ticket::', body: who+'␟OPEN␟'+msg, mood:'flappy', likes:0}); }catch(e){}
+      try{ await sb.from('flaps').insert({name:'::ticket::', body: who+'␟OPEN␟['+SUP_CAT+'] '+msg, mood:'flappy', likes:0}); }catch(e){}
     }
     toast('🎫 Ticket sent! We\'ll take a look — thanks!');
   }
@@ -4050,6 +4056,7 @@
     if(n.kind==='follow')return who+' followed you 👤';
     if(n.kind==='dm')    return who+' messaged you:'+ex;
     if(n.kind==='support')return '<b>TheFlap Support</b> 🎫 replied to your ticket:'+ex;
+    if(n.kind==='notice')return '<b>⚠️ Community Notice</b>'+ex;
     return who+' interacted with you';
   }
   function renderBell(){
@@ -4073,6 +4080,7 @@
       var prevUnseen=NOTIFS.filter(function(n){return !n.seen;}).length;
       NOTIFS=res.data||[];
       renderBell();
+      try{ var _nt=NOTIFS.filter(function(n){return n.kind==='notice'&&!n.seen;})[0]; if(_nt) showCommunityNotice(_nt); }catch(e){}
       var unseen=NOTIFS.filter(function(n){return !n.seen;});
       if(unseen.length>prevUnseen && 'Notification' in window && Notification.permission==='granted'){
         var t=unseen[0];
@@ -4717,7 +4725,7 @@
       FEED_HAS_MORE=((res.data||[]).length>=FEED_LIMIT);   /* a full page came back → there are probably older flaps */
       LAST_ROWS=(res.data||[]).filter(function(r){return String(r.name||'').indexOf('::')!==0;}); /* keep ALL hidden ::sentinel:: rows (ticker, poll, friend, dm, features…) out of the feed */
       loadTicker();
-      loadVerified().then(applyMsgLimits);
+      loadVerified().then(function(){try{applyMsgLimits();}catch(e){} try{checkVerifyCeleb();}catch(e){}});
       loadCustomBadges();
       markPresentToday();
       loadMods();
