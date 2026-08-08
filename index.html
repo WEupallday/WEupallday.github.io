@@ -3117,6 +3117,8 @@
       try{ await sb.from('flap_notifs').update({recipient:newName}).ilike('recipient',oldName); }catch(e){}
       try{ await sb.from('flap_notifs').update({actor:newName}).ilike('actor',oldName); }catch(e){}
       try{ await sb.from('push_subs').update({name:newName}).ilike('name',oldName); }catch(e){}
+      try{ var _bg=await sb.from('flaps').select('id,body').eq('name','::badgegrants::').order('id',{ascending:false}).limit(1); if(_bg.data&&_bg.data[0]){ var _gr={}; try{_gr=JSON.parse(_bg.data[0].body)||{};}catch(e){} var _oL=oldName.toLowerCase(), _nL=newName.toLowerCase(); if(_gr[_oL]){ var _mg=(_gr[_nL]||[]).concat(_gr[_oL]); var _sn={},_o=[]; _mg.forEach(function(x){ if(!_sn[x]){_sn[x]=1;_o.push(x);} }); _gr[_nL]=_o; delete _gr[_oL]; await sb.from('flaps').update({body:JSON.stringify(_gr)}).eq('id',_bg.data[0].id); if(window.CUSTOM_GRANTS){CUSTOM_GRANTS=_gr;} } } }catch(e){}
+      try{ await sb.from('flap_poll').update({name:newName}).ilike('name',oldName); }catch(e){}
       SET.row.name=newName; SET.row.name_changes=(SET.row.name_changes||0)+1;
       ME.name=newName; ME.admin=((newName||'').toLowerCase()==='lock'); try{localStorage.setItem('flap_lastname',newName);}catch(e){} saveSession(ME);
       hint.className='set-hint good'; hint.textContent='✓ Saved!';
