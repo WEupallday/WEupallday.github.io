@@ -3652,7 +3652,23 @@
     try{ await sb.from('flaps').delete().eq('id',id); }catch(e){}
     showAdmin();
   }
-  async function resolveReport(id){if(!ME.admin)return;try{await sb.from('flap_reports').update({resolved:true}).eq('id',id);}catch(e){}showAdmin();}
+  async window.submitReport=async function(reason){
+  try{
+    var ctx=(typeof REPORT_CTX!=='undefined'&&REPORT_CTX)?REPORT_CTX:{};
+    var me=(typeof ME!=='undefined'&&ME&&ME.name)?ME.name:'unknown';
+    var tType=ctx.type||'post', tName=ctx.name||'';
+    var content=null;
+    try{ if(tType==='post'&&ctx.id){ var f=await sb.from('flaps').select('body').eq('id',ctx.id).limit(1); if(f&&f.data&&f.data[0])content=(f.data[0].body||'').slice(0,500); } }catch(_){}
+    var hi=/nudity|sexual|minor|child|groom|exploit|csam|violence|threat|weapon|suicide|self.?harm/i;
+    var priority=(hi.test(reason||'')||hi.test(content||''))?'high':'normal';
+    var row={reporter:me,reported_user:tName,target_type:tType,target_name:tName,reported_content:content,reason:reason,priority:priority,status:'new',resolved:false};
+    var res=await sb.from('flap_reports').insert(row);
+    if(res&&res.error){ toast('Could not submit report \u2014 please try again in a moment.'); return; }
+    try{ if(typeof closeReport==='function')closeReport(); }catch(_){}
+    toast(priority==='high'?'Report submitted \u2014 flagged urgent. Our team reviews these first.':'Report submitted. Our team will review it.');
+  }catch(e){ toast('Could not submit report \u2014 please try again.'); }
+};
+  function resolveReport(id){if(!ME.admin)return;try{await sb.from('flap_reports').update({resolved:true}).eq('id',id);}catch(e){}showAdmin();}
   async function modDeletePost(postId,reportId){
     if(!ME.admin)return;
     if(!confirm('Delete this flap for everyone?'))return;
