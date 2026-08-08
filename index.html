@@ -4145,6 +4145,7 @@
         PN.addListener('registration',function(t){ try{ window.__pushToken=t.value; window.__pushPlat=PLAT; savePushToken(t.value,PLAT); }catch(e){} });
         /* permission denied / no entitlement → just log, never crash the app */
         PN.addListener('registrationError',function(e){ try{ console.warn('push registration error',e); }catch(_){} });
+        PN.addListener('pushNotificationActionPerformed',function(ev){ try{ var d=(ev&&ev.notification&&ev.notification.data)||{}; if(d.openflap){ openFlap(d.openflap); return; } var u=d.url||''; var m=/[?&]openflap=(\d+)/.exec(u); var p=/[?&]profile=([^&]+)/.exec(u); if(m){ openFlap(m[1]); } else if(p){ try{ showUserProfile(decodeURIComponent(p[1])); }catch(_e){} } }catch(e){} });
         /* graceful permission prompt: ask once; if the user declines, we simply don't register (bell still works in-app) */
         PN.requestPermissions().then(function(r){ if(r&&r.receive==='granted') PN.register(); }).catch(function(){});
       }
