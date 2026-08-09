@@ -4047,8 +4047,9 @@ function flapCelebrate(icon,title,sub){ try{ var w=document.getElementById('cele
     var body=kind==='reply'?(actor+' replied to your flap:'+ex):kind==='like'?(actor+' flapped your post 👍'):kind==='tag'?(actor+' tagged you in a flap:'+ex):kind==='grouptag'?(actor+' tagged all '+(excerpt||'members')+' in a flap 🏅'):kind==='reflap'?(actor+' reflapped your flap 🔁'):kind==='follow'?(actor+' followed you 👤'):kind==='dm'?(actor+' messaged you:'+ex):kind==='friend'?(actor+' '+(excerpt||'sent you a friend request')+' 👯'):kind==='support'?('TheFlap Support 🎫 replied to your ticket:'+ex):(actor+' interacted with you');
     var _durl=flap_id?('/index.html?openflap='+flap_id):((kind==='follow'||kind==='friend')?('/index.html?profile='+encodeURIComponent(actor||'')):'/');if(kind!=='reflap')notifyFlap(recipient,body,null,_durl); /* every bell notif mirrors to phone push here; reflaps stay bell-only */
   }
-  function notifText(n){
-    if(n.kind==='announce')return '<b>'+esc(n.actor||'📣 TheFlap')+'</b>'+(n.excerpt?('<br>'+annLinkify(n.excerpt)):'');   /* admin broadcast */
+  function recLink(h){try{return String(h||'').replace(/Tap here to recover your account/i,'<a href="#recover" onclick="try{if(window.recOpenForgot)recOpenForgot();}catch(e){}return false;" style="color:#2f7ac9;font-weight:800;text-decoration:underline;cursor:pointer;">Tap here to recover your account</a>');}catch(e){return h;}}
+function notifText(n){
+    if(n.kind==='announce')return '<b>'+esc(n.actor||'📣 TheFlap')+'</b>'+(n.excerpt?('<br>'+recLink(annLinkify(n.excerpt))):'');   /* admin broadcast */
     var who='<b>'+esc(n.actor)+'</b>'+vbadge(n.actor);
     var ex=n.excerpt?(' "'+esc(String(n.excerpt).slice(0,70))+'"'):'';
     if(n.kind==='reply')return who+' replied to your flap:'+ex;
@@ -5905,7 +5906,7 @@ document.addEventListener('touchmove',function(e){
 
     function init(){
       try{ ensureModals(); }catch(e){}
-      try{ if(/[?&]recover=1/.test(location.search||'')){ setTimeout(function(){ try{ if(window.recOpenForgot) window.recOpenForgot(); }catch(e){} }, 700); setTimeout(function(){ try{ if(window.recOpenForgot && !document.querySelector('#recModal.open')) window.recOpenForgot(); }catch(e){} }, 1800); } }catch(e){}
+      try{ if((/[?&]recover=1/.test(location.search||'')||/recover/i.test(location.hash||'')||/\/recover(\/|$)/i.test(location.pathname||''))){ setTimeout(function(){ try{ if(window.recOpenForgot) window.recOpenForgot(); }catch(e){} }, 700); setTimeout(function(){ try{ if(window.recOpenForgot && !document.querySelector('#recModal.open')) window.recOpenForgot(); }catch(e){} }, 1800); } }catch(e){}
       try{ injectForgotLink(); }catch(e){}
       try{ watchSettings(); }catch(e){}
       try{ recCheckLinkReturn(); }catch(e){}
