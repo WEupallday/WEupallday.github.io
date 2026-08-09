@@ -789,22 +789,7 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
       for(var i=0;i<rows.length;i++){ var hay=rows[i].getAttribute('data-search')||''; var vis=!q||hay.indexOf(q)>-1; rows[i].style.display=vis?'':'none'; if(vis)shown++; }
       var none=$('memNone'); if(none)none.style.display=(q&&shown===0)?'block':'none';
     },
-    resetPassword:async function(name){
-      if(!confirm('Reset password for '+name+'? They\'ll need the temporary password below to log in.'))return;
-      var temp='flap'+Math.floor(1000+Math.random()*9000);   /* simple readable temp e.g. flap4827 */
-      try{
-        /* salt with the EXACT stored name (matches the app's login hash) and target the EXACT row.
-           name now arrives intact (esq no longer strips apostrophes), so eq() matches the real account. */
-        var hash=await sha256('flapsalt:'+name.toLowerCase()+':'+temp);
-        var up=await sb.from('flap_users').update({pass_hash:hash}).eq('name',name).select('name');
-        if(up&&up.error)throw up.error;
-        if(!up||!up.data||!up.data.length){ toast('Reset FAILED — no member exactly named "'+name+'". Password unchanged.'); return; }
-        try{ await sb.from('flap_notifs').insert({recipient:name, actor:'TheFlap', kind:'support', excerpt:'Your password was reset by an admin. Use the temporary password you were given (type it with no spaces), then you can keep using it.'}); }catch(e){}
-        try{ adminLog(name,'Password reset (admin) — temporary password issued'); }catch(e){}
-        window.prompt('✅ Temporary password for '+name+' — copy this and send it to them (no spaces):', temp);
-        toast('Password reset for '+name+'.');
-      }catch(e){ toast('Could not reset password — try again.'); }
-    },
+    resetPassword:async function(name){if(!name){toast('No user selected.');return;}if(!confirm('Send a temporary password to '+name+'? Only do this for a genuine forgotten-password request.'))return;try{var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';var temp='';var rnd=crypto.getRandomValues(new Uint32Array(8));for(var i=0;i<8;i++){temp+=chars[rnd[i]%chars.length];}var hash=await sha256('flapsalt:'+String(name).toLowerCase()+':'+temp);var up=await sb.from('flap_users').update({pass_hash:hash}).eq('name',name).select('name');if(up.error){toast('⚠ Reset failed: '+up.error.message);return;}if(!up.data||!up.data.length){toast('⚠ No member exactly named '+name);return;}var msg='No worries! Your temporary password is: '+temp+' — use it to log back in, then change your password once you are in. 🐥';var ni=await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'support',excerpt:msg,seen:false});if(ni.error){toast('⚠ Password reset, but message failed to send: '+ni.error.message);return;}try{if(window.adminLog)adminLog('reset-pw',name);}catch(e){}toast('🔑 Temp password for '+name+': '+temp);try{if(window.loadAll)loadAll();}catch(e){}}catch(e){toast('⚠ Reset error: '+String(e).slice(0,80));}}
     preset:function(id,key){ var el=$('tkr_'+id); if(!el)return; var p=PRESETS[key]; if(!p)return; el.value=p.text; el.focus(); try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){} toast('Preset loaded — edit if needed, then Send.'); },
     forgotPassword:function(id,who){
       var el=$('tkr_'+id), st=$('tkst_'+id);
