@@ -512,7 +512,7 @@
       acts+='<button class="btn blue" onclick="ADMIN.resetPassword(\'' + nm + '\')">🔑 Reset password</button>';
       acts+='<button class="btn purple" onclick="ADMIN.manageBadges(\'' + nm + '\')">🏅 Badges</button>';
       acts+='<button class="btn" style="background:linear-gradient(180deg,#b06a2a,#7d4413)" onclick="ADMIN.resetAccount(\'' + nm + '\')">♻ Reset account</button>';
-      acts+='<button class="btn del" onclick="ADMIN.removeUser(\'' + nm + '\')">🗑 Remove</button>';
+      acts+='<button class="btn del" onclick="ADMIN.removeUser(\'' + nm + '\')">🗑 Remove</button>';acts+='<button class="btn" style="background:linear-gradient(180deg,#8f1d1d,#5a0f0f);border:1px solid #ff6b6b" onclick="ADMIN.deleteAccount(\'' + nm + '\')">🗑️ Delete Account</button>';
     }
     return '<div class="mem" data-search="'+esc(((u.name||'')+' '+(u.handle||'')).toLowerCase())+'"><span class="ava">'+av+'</span><div class="m-name"><b>'+esc(u.name)+'</b>'+pills+'<div class="m-sub">'+sub+'</div></div><div class="acts" style="margin-top:0;">'+acts+'</div></div>';
   }
@@ -871,6 +871,30 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
     memPrev:function(){ if(MEM_LOADING)return; if(MEM_PAGE>0)MEM_PAGE--; ADMIN._memFetch(); },
     memSort:function(v){ MEM_SORT=v; MEM_PAGE=0; ADMIN._memFetch(); },
     memSearchInput:function(v){ MEM_SEARCH=(v||'').trim(); MEM_PAGE=0; clearTimeout(window.__memT); window.__memT=setTimeout(function(){ try{ ADMIN._memFetch(); }catch(e){} }, 300); },
+    deleteAccount:async function(name){
+      if((name||'').toLowerCase()===ADMIN_ACCOUNT){toast("Can't delete the admin account.");return;}
+      if(!confirm('Are you sure you want to permanently delete @'+name+'? This cannot be undone.'))return;
+      if(!confirm('Second confirmation — permanently DELETE @'+name+' and ALL their data (posts, replies, follows, messages, notifications, badges)? There is no undo.'))return;
+      var del; try{ del=await sb.from('flap_users').delete().eq('name',name).select('name'); }catch(e){ del={error:e}; }
+      if(!del||del.error){ toast('❌ Delete failed — '+((del&&del.error&&del.error.message)||'server error')+'. Account was NOT deleted.'); return; }
+      if(!del.data||!del.data.length){ toast('❌ Delete failed — no account exactly named @'+name+'. Nothing was deleted.'); return; }
+      try{ await sb.from('flaps').delete().eq('name',name); }catch(e){}
+      try{ await sb.from('flap_replies').delete().eq('name',name); }catch(e){}
+      try{ await sb.from('flap_follows').delete().eq('follower',name); }catch(e){}
+      try{ await sb.from('flap_follows').delete().eq('following',name); }catch(e){}
+      try{ await sb.from('flap_notifs').delete().eq('recipient',name); }catch(e){}
+      try{ await sb.from('flap_notifs').delete().eq('actor',name); }catch(e){}
+      try{ await sb.from('push_subs').delete().eq('name',name); }catch(e){}
+      try{ await sb.from('flap_poll').delete().eq('name',name); }catch(e){}
+      try{ await sb.from('flap_recovery').delete().eq('name',name); }catch(e){}
+      try{ await sb.from('flaps').delete().eq('name','::dm::').like('body',name+'␟%'); }catch(e){}
+      try{ await sb.from('flaps').delete().eq('name','::dm::').like('body','%␟'+name+'␟%'); }catch(e){}
+      try{ var bg=await sb.from('flaps').select('id,body').eq('name','::badgegrants::').order('id',{ascending:false}).limit(1); if(bg.data&&bg.data[0]){ var g={}; try{ g=JSON.parse(bg.data[0].body||'{}')||{}; }catch(e){} if(g[name]){ delete g[name]; await sb.from('flaps').update({body:JSON.stringify(g)}).eq('id',bg.data[0].id); } } }catch(e){}
+      try{ var ex=await sb.from('flaps').select('id,body').eq('name','::delcount::').order('id',{ascending:false}).limit(1); if(ex.data&&ex.data[0]){ await sb.from('flaps').update({body:String((parseInt(ex.data[0].body,10)||0)+1)}).eq('id',ex.data[0].id); } else { await sb.from('flaps').insert({name:'::delcount::',body:'1',mood:'flappy',likes:0}); } }catch(e){}
+      try{ if(window.adminLog)adminLog(name,'Permanently deleted account + all related data'); }catch(e){}
+      toast('🗑️ Permanently deleted @'+name+'.');
+      loadAll();
+    },
     preset:function(id,key){ var el=$('tkr_'+id); if(!el)return; var p=PRESETS[key]; if(!p)return; el.value=p.text; el.focus(); try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){} toast('Preset loaded — edit if needed, then Send.'); },
     forgotPassword:function(id,who){
       var el=$('tkr_'+id), st=$('tkst_'+id);
