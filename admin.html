@@ -874,26 +874,22 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
     deleteAccount:async function(name){
       if((name||'').toLowerCase()===ADMIN_ACCOUNT){toast("Can't delete the admin account.");return;}
       if(!confirm('Are you sure you want to permanently delete @'+name+'? This cannot be undone.'))return;
-      if(!confirm('Second confirmation — permanently DELETE @'+name+' and ALL their data (posts, replies, follows, messages, notifications, badges)? There is no undo.'))return;
-      var del; try{ del=await sb.from('flap_users').delete().eq('name',name).select('name'); }catch(e){ del={error:e}; }
-      if(!del||del.error){ toast('❌ Delete failed — '+((del&&del.error&&del.error.message)||'server error')+'. Account was NOT deleted.'); return; }
-      if(!del.data||!del.data.length){ toast('❌ Delete failed — no account exactly named @'+name+'. Nothing was deleted.'); return; }
-      try{ await sb.from('flaps').delete().eq('name',name); }catch(e){}
-      try{ await sb.from('flap_replies').delete().eq('name',name); }catch(e){}
-      try{ await sb.from('flap_follows').delete().eq('follower',name); }catch(e){}
-      try{ await sb.from('flap_follows').delete().eq('following',name); }catch(e){}
-      try{ await sb.from('flap_notifs').delete().eq('recipient',name); }catch(e){}
-      try{ await sb.from('flap_notifs').delete().eq('actor',name); }catch(e){}
-      try{ await sb.from('push_subs').delete().eq('name',name); }catch(e){}
-      try{ await sb.from('flap_poll').delete().eq('name',name); }catch(e){}
-      try{ await sb.from('flap_recovery').delete().eq('name',name); }catch(e){}
-      try{ await sb.from('flaps').delete().eq('name','::dm::').like('body',name+'␟%'); }catch(e){}
-      try{ await sb.from('flaps').delete().eq('name','::dm::').like('body','%␟'+name+'␟%'); }catch(e){}
-      try{ var bg=await sb.from('flaps').select('id,body').eq('name','::badgegrants::').order('id',{ascending:false}).limit(1); if(bg.data&&bg.data[0]){ var g={}; try{ g=JSON.parse(bg.data[0].body||'{}')||{}; }catch(e){} if(g[name]){ delete g[name]; await sb.from('flaps').update({body:JSON.stringify(g)}).eq('id',bg.data[0].id); } } }catch(e){}
-      try{ var ex=await sb.from('flaps').select('id,body').eq('name','::delcount::').order('id',{ascending:false}).limit(1); if(ex.data&&ex.data[0]){ await sb.from('flaps').update({body:String((parseInt(ex.data[0].body,10)||0)+1)}).eq('id',ex.data[0].id); } else { await sb.from('flaps').insert({name:'::delcount::',body:'1',mood:'flappy',likes:0}); } }catch(e){}
-      try{ if(window.adminLog)adminLog(name,'Permanently deleted account + all related data'); }catch(e){}
+      var pw=prompt('SECOND CONFIRMATION — permanently DELETE @'+name+' and ALL their data (posts, replies, follows, messages, notifications, badges)? There is no undo.\n\nEnter the admin password to confirm:');
+      if(pw===null)return;
+      if(!pw){ toast('❌ Cancelled — no password entered. Account was NOT deleted.'); return; }
+      toast('⏳ Deleting @'+name+'…');
+      var r; try{ r=await sb.functions.invoke('admin-delete-account',{body:{target:name,adminName:ADMIN_ACCOUNT,adminPass:pw}}); }catch(e){ r={error:e}; }
+      if(!r||r.error||!r.data){ toast('❌ Delete failed — '+((r&&r.error&&(r.error.message||r.error))||'server error')+'. Account was NOT deleted.'); return; }
+      var d=r.data;
+      if(!d.ok){
+        var reason=d.reason||'error';
+        var msg=reason==='auth'?'wrong admin password':(reason==='not-found'?'no account exactly named @'+name:(reason==='cannot-delete-admin'?"the admin account can't be deleted":(reason==='no-target'?'no username given':(d.detail||reason))));
+        toast('❌ Delete failed — '+msg+'. Account was NOT deleted.');
+        return;
+      }
+      try{ if(window.adminLog)adminLog(name,'Permanently deleted account + all related data (server-side)'); }catch(e){}
       toast('🗑️ Permanently deleted @'+name+'.');
-      loadAll();
+      try{ if(typeof loadAll==='function'){ loadAll(); } else if(ADMIN._memFetch){ ADMIN._memFetch(); } }catch(e){}
     },
     preset:function(id,key){ var el=$('tkr_'+id); if(!el)return; var p=PRESETS[key]; if(!p)return; el.value=p.text; el.focus(); try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){} toast('Preset loaded — edit if needed, then Send.'); },
     forgotPassword:function(id,who){
