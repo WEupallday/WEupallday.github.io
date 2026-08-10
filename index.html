@@ -1367,10 +1367,12 @@
 <!-- install-to-home-screen prompt -->
 <div id="installBar">
   <svg viewBox="0 0 512 512" class="ib-icon"><rect width="512" height="512" rx="112" fill="#186fd6"/><path d="M120 300 A160 160 0 0 1 392 300 Z" fill="#f5820a" stroke="#fff" stroke-width="10"/><circle cx="256" cy="300" r="28" fill="#c05e00" stroke="#fff" stroke-width="7"/></svg>
-  <div class="ib-txt"><b>📲 Add TheFlap to your home screen</b><span id="ibHint">Get it as a real app with notifications!</span></div>
-  <button class="ib-go" id="ibGo" type="button" onclick="doInstall()">Add</button>
-  <button class="ib-x" type="button" onclick="dismissInstall()">✕</button>
+  <div class="ib-txt"><b>🧡 TheFlap is officially on the App Store &amp; Google Play!</b><span id="ibHint">Download the official app for the best experience.</span></div>
+  <a class="ib-go" href="https://apps.apple.com/us/app/theflap/id6792978573" target="_blank" rel="noopener">App&nbsp;Store</a>
+  <a class="ib-go" href="https://play.google.com/store/apps/details?id=com.leoneatelier.theflap" target="_blank" rel="noopener">Google&nbsp;Play</a>
+  <button class="ib-x" type="button" onclick="dismissInstallForever()">✕</button>
 </div>
+<script>(function(){try{var app=document.documentElement.classList.contains('is-app')||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone;var dm=false;try{dm=localStorage.getItem('flap_install_x')==='1';}catch(e){}if(!app&&!dm){setTimeout(function(){var el=document.getElementById('installBar');if(el)el.classList.add('show');},1500);}}catch(e){}})();</script>
 <div id="iosSheet" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="ios-card">
     <b>Add TheFlap to your Home Screen</b>
