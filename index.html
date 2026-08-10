@@ -2065,8 +2065,8 @@
     /* build the match list from REAL members only — both display name and @handle map to the canonical name.
        A tag ONLY renders as a link if it matches a real account; unknown @text stays plain (no chip, no notify). */
     try{ Object.keys(USERS||{}).forEach(function(k){ var u=USERS[k]; if(!u||!u.name)return;
-        known.push({t:u.name, name:u.name});
-        if(u.handle) known.push({t:String(u.handle), name:u.name}); }); }catch(e){}
+        var uh=u.handle?String(u.handle):String(u.name||'').normalize('NFKD').replace(/[^A-Za-z0-9_]/g,'');
+        if(uh) known.push({t:uh, name:u.name}); }); }catch(e){}
     known.sort(function(a,b){return b.t.length-a.t.length;});   /* longest first: "@John Smith" beats "@John" */
     var WORD=/[\p{L}\p{N}\p{M}_]/u, RUN=/^[\p{L}\p{N}\p{M}_]+/u;
     function argSafe(s){return String(s).replace(/['"\\<>]/g,'');}       /* safe inside the onclick attribute */
@@ -4303,6 +4303,10 @@ function notifText(n){
     rows.forEach(function(r){
       var t=r.created_at?Date.parse(r.created_at):0, n=(r.name||'');
       if(!n || n.toLowerCase()==='lock') return;                 /* owner (lock) is excluded */
+      if(n.indexOf('::')===0) return;                                /* skip system rows (DMs, tickets, announcements) */
+      var _u=(typeof USERS!=='undefined'&&USERS)?USERS[n]:null; if(!_u) return; /* only real, existing accounts */
+      if(_u.banned) return;                                        /* exclude banned */
+      if(_u.muted_until && new Date(_u.muted_until)>new Date()) return; /* exclude currently muted */
       if(t>=weekStart) by[n]=(by[n]||0)+1;                       /* flaps since Monday = this week's race */
       if(t>=weekAgo) byRoll[n]=(byRoll[n]||0)+1;                 /* rolling 7d fallback for early in the week */
     });
