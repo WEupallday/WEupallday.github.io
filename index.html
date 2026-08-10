@@ -3481,7 +3481,7 @@
       var repIds=reports.filter(function(r){return r.target_type==='post'&&r.target_id;}).map(function(r){return r.target_id;});
       var repPosts={};if(repIds.length){try{((await sb.from('flaps').select('id,body,name').in('id',repIds)).data||[]).forEach(function(p){repPosts[p.id]=p;});}catch(e){}}
       var recent=[];try{recent=(await sb.from('flaps').select('id,name,body,pic_url,created_at').order('id',{ascending:false}).limit(30)).data||[];}catch(e){}
-      recent=recent.filter(function(r){var n=(r.name||'');return !parseReflap(r.body) && n!=='::ticker::' && n!=='::verified::' && n!=='::pinned::' && n!=='::ticket::';}); /* hide reflap + sentinel rows */
+      recent=recent.filter(function(r){var n=(r.name||'');return !parseReflap(r.body) && String(n).indexOf('::')!==0;}); /* hide reflap + sentinel rows */
       var tickerCur='';try{var tk=await sb.from('flaps').select('body').eq('name','::ticker::').order('id',{ascending:false}).limit(1);if(tk.data&&tk.data[0])tickerCur=tk.data[0].body;}catch(e){}
       var verCur='';try{var vk=await sb.from('flaps').select('body').eq('name','::verified::').order('id',{ascending:false}).limit(1);if(vk.data&&vk.data[0])verCur=vk.data[0].body;}catch(e){}
       var pollCur='';try{var pk=await sb.from('flaps').select('body').eq('name','::poll::').order('id',{ascending:false}).limit(1);if(pk.data&&pk.data[0])pollCur=pk.data[0].body;}catch(e){}
@@ -4281,7 +4281,7 @@ function notifText(n){
     }
     if(!rows.length) rows=LAST_ROWS||[];
     /* count only REAL original flaps — drop reflap copies and hidden sentinel rows */
-    rows=rows.filter(function(r){var n=(r.name||'');return !parseReflap(r.body) && n!=='::ticker::' && n!=='::verified::' && n!=='::pinned::' && n!=='::ticket::';});
+    rows=rows.filter(function(r){var n=(r.name||'');return !parseReflap(r.body) && String(n).indexOf('::')!==0;});
 
     /* ---- trending hashtags: accumulated across ALL flaps (one count per flap that uses the tag) ---- */
     var counts={};
