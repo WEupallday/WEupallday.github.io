@@ -337,7 +337,7 @@
       banned:d.us.filter(function(u){return u.banned;}).length,
       muted:d.us.filter(function(u){return u.muted_until&&new Date(u.muted_until)>new Date();}).length,
       deleted:d.delCount,
-      openIssues:d.reports.length+d.tickets.length
+      openIssues:d.reports.length+d.tickets.filter(function(t){return tkParse(t).meta.st!=='resolved';}).length
     };
   }
   function renderStrip(){
