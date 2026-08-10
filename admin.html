@@ -204,7 +204,7 @@
   var PSEP="␟";
   var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,detectSessionInUrl:true,autoRefreshToken:true,storageKey:'flap-admin-auth'}});
   var ADMIN_NAME="", DATA=null, TAB="controls", MSG_SEARCH="", MSG_OPEN=null;
-  var SUP_CAT=null, SUP_SORT='new', SUP_SEL={};
+  var SUP_CAT=null, SUP_SORT='new', SUP_SEL={}, MOD_SEL={};
   var MEM_PAGE=0, MEM_SORT='new', MEM_SEARCH='', MEM_LOADING=false;
 
   /* ---------- house personas (seed the feed / post-as) ---------- */
@@ -514,7 +514,7 @@
       acts+='<button class="btn" style="background:linear-gradient(180deg,#b06a2a,#7d4413)" onclick="ADMIN.resetAccount(\'' + nm + '\')">♻ Reset account</button>';
       acts+='<button class="btn del" onclick="ADMIN.removeUser(\'' + nm + '\')">🗑 Remove</button>';acts+='<button class="btn" style="background:linear-gradient(180deg,#8f1d1d,#5a0f0f);border:1px solid #ff6b6b" onclick="ADMIN.deleteAccount(\'' + nm + '\')">🗑️ Delete Account</button>';
     }
-    return '<div class="mem" data-search="'+esc(((u.name||'')+' '+(u.handle||'')).toLowerCase())+'"><span class="ava">'+av+'</span><div class="m-name"><b>'+esc(u.name)+'</b>'+pills+'<div class="m-sub">'+sub+'</div></div><div class="acts" style="margin-top:0;">'+acts+'</div></div>';
+    return '<div class="mem" data-search="'+esc(((u.name||'')+' '+(u.handle||'')).toLowerCase())+'"><span class="ava">'+av+'</span><div class="m-name"><b>'+esc(u.name)+'</b>'+(u.handle?' <span class="m-handle" style="color:#7fb0ee;font-weight:600;font-size:12px">@'+esc(u.handle)+'</span>':'')+pills+'<div class="m-sub">'+sub+'</div></div><div class="acts" style="margin-top:0;">'+acts+'</div></div>';
   }
   function secMembers(){
     var d=DATA;
@@ -548,13 +548,14 @@
     } else {
       var rl=reports.slice().sort(function(a,b){ var pa=(a.priority==='high')?0:1, pb=(b.priority==='high')?0:1; if(pa!==pb)return pa-pb; return (b.id||0)-(a.id||0); });
       h+='<div class="muted" style="margin-bottom:6px">Reports unlocked (secure) ✓ <button class="btn" style="padding:2px 8px;font-size:11px" onclick="ADMIN.modSignOut()">sign out</button></div>';
+      h+='<div id="modBatch" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:6px 10px;background:#1a2438;border-radius:8px;flex-wrap:wrap"><span id="modSelN" style="color:#cbd8ee;font-weight:700">0 selected</span><button class="btn" onclick="ADMIN.modSelectAll(true)">Select all</button><button class="btn" onclick="ADMIN.modSelectAll(false)">Clear</button><button class="btn del" onclick="ADMIN.modBatchDelete()">🗑 Delete selected</button></div>';
       h+= rl.length? rl.map(function(r){
         var hi=(r.priority==='high');
         var st=(r.status==='review')?'Under Review':'New';
         var content=r.reported_content?(' — “'+esc(String(r.reported_content).replace(/<[^>]+>/g,'').slice(0,180))+'”'):(r.target_type==='post'?' — <span style="color:#ffcf6b">(content no longer available)</span>':'');
         var who=esc(r.reported_user||r.target_name||'?');
         var tgt=(r.target_type==='user')?('user <b>'+who+'</b>'):('flap by <b>'+who+'</b>'+content);
-        return '<div class="row reportrow"'+(hi?' style="border-color:#c62828"':'')+'><div class="r-top" style="color:#ff9a86;">'+(hi?'🚨 HIGH PRIORITY — ':'')+'Report #'+r.id+' · '+esc(r.reason||'reported')+'</div>'+
+        return '<div class="row reportrow"'+(hi?' style="border-color:#c62828"':'')+'><label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#9db4d6;margin-bottom:4px;cursor:pointer"><input type="checkbox" class="mod-ck" data-id="'+r.id+'" onchange="ADMIN.modToggleSel('+r.id+',this.checked)"'+(MOD_SEL[r.id]?' checked':'')+'> select</label><div class="r-top" style="color:#ff9a86;">'+(hi?'🚨 HIGH PRIORITY — ':'')+'Report #'+r.id+' · '+esc(r.reason||'reported')+'</div>'+
           '<div class="r-body">'+tgt+'</div>'+
           '<div class="r-meta">by '+esc(r.reporter||'?')+' · '+new Date(r.created_at).toLocaleString()+' · Status: '+st+'</div>'+
           '<div class="acts">'+((r.target_type==='post'&&r.target_id)?'<button class="btn blue" onclick="ADMIN.viewFlap('+r.target_id+')">🔎 View reported post</button>':'')+'<button class="btn blue" onclick="ADMIN.viewProfile(\''+esq(r.reported_user||r.target_name||'')+'\')">👤 View @'+esc(r.reported_user||r.target_name||'?')+'</button>'+(r.status!=='review'?'<button class="btn" onclick="ADMIN.setReportStatus('+r.id+',\'review\')">Mark under review</button>':'')+(r.target_id?'<button class="btn del" onclick="ADMIN.modDeletePost('+r.target_id+','+r.id+')">Delete flap</button>':'')+'<button class="btn" style="background:#c9a100;color:#fff" onclick="ADMIN.warnUser(\''+esq(r.reported_user||r.target_name||'')+'\')">⚠️ Warn</button><button class="btn" style="background:#8a5a00;color:#fff" onclick="ADMIN.muteUser24(\''+esq(r.reported_user||r.target_name||'')+'\')">🔇 Mute 24h</button><button class="btn del" onclick="ADMIN.banUser(\''+esq(r.reported_user||r.target_name||'')+'\')">🚫 Ban</button><button class="btn green" onclick="ADMIN.resolveReport('+r.id+')">Resolve</button></div></div>';
@@ -763,6 +764,10 @@
     muteUser24:async function(name){ name=(name||'').trim(); if(!name)return; if(!confirm('Mute '+name+' for 24 hours? They can read but not post.'))return; var until=new Date(Date.now()+86400000).toISOString(); try{ var r=await sb.from('flap_users').update({muted_until:until}).ilike('name',name); if(r&&r.error)throw r.error; }catch(e){ toast('Mute failed.'); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'You have been muted for 24 hours for breaking a House Rule. You can still read TheFlap.'}); }catch(e){} try{ adminLog(name,'Muted 24h'); }catch(e){} toast('🔇 '+name+' muted 24h.'); loadAll(); },
     banUser:async function(name){ name=(name||'').trim(); if(!name)return; if(!confirm('BAN '+name+'? They will be blocked from the app.'))return; try{ var r=await sb.from('flap_users').update({banned:true}).ilike('name',name); if(r&&r.error)throw r.error; }catch(e){ toast('Ban failed.'); return; } try{ adminLog(name,'Banned'); }catch(e){} toast('🚫 '+name+' banned.'); loadAll(); },
     resolveReport:async function(id){ var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){toast('Unlock reports first.');return;} try{ await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:id,resolved:true})}); }catch(e){} toast('Resolved.'); loadAll(); },
+    modToggleSel:function(id,on){ if(on)MOD_SEL[id]=1; else delete MOD_SEL[id]; ADMIN._modBar(); },
+    modSelectAll:function(on){ var cks=document.querySelectorAll('.mod-ck'); Array.prototype.forEach.call(cks,function(c){ c.checked=on; var id=c.getAttribute('data-id'); if(on)MOD_SEL[id]=1; else delete MOD_SEL[id]; }); ADMIN._modBar(); },
+    _modBar:function(){ var n=Object.keys(MOD_SEL).length; var s=document.getElementById('modSelN'); if(s)s.textContent=n+' selected'; },
+    modBatchDelete:async function(){ var ids=Object.keys(MOD_SEL); if(!ids.length){ toast('Select reports first.'); return; } var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){ toast('Unlock reports first.'); return; } if(!confirm('Delete '+ids.length+' selected report'+(ids.length>1?'s':'')+'?\nThis removes the report records only — no accounts or flaps are affected.'))return; for(var i=0;i<ids.length;i++){ try{ await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'delete',id:parseInt(ids[i],10)})}); }catch(e){} } MOD_SEL={}; toast('🗑 Deleted '+ids.length+' report(s).'); loadAll(); },
     modDeletePost:async function(pid,rid){if(!confirm('Delete this flap for everyone?'))return;try{await sb.from('flaps').delete().eq('id',pid);}catch(e){} var _mk=sessionStorage.getItem('flap_modpw'); if(_mk){try{ await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:rid,resolved:true})}); }catch(e){}} toast('Flap deleted.');loadAll();},
     deleteFlap:async function(id){if(!confirm('Delete this flap (and its photo) for everyone?'))return;try{await sb.from('flaps').delete().eq('id',id);}catch(e){}toast('Flap deleted.');loadAll();},
     removePhoto:async function(id){if(!confirm('Remove just the photo? The text stays.'))return;try{await sb.from('flaps').update({pic_url:null}).eq('id',id);}catch(e){}toast('Photo removed.');loadAll();},
@@ -852,7 +857,7 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
       list.innerHTML='<div class="mem-loading">⏳ Loading members…</div>'; var pgEl=$('memPager'); if(pgEl)pgEl.innerHTML='';
       var PAGE=50, from=MEM_PAGE*PAGE, to=from+PAGE-1;
       var q=sb.from('flap_users').select('*',{count:'exact'}).order('created_at',{ascending:MEM_SORT==='old'});
-      if(MEM_SEARCH){ q=q.ilike('name','%'+MEM_SEARCH.replace(/[%_,]/g,'')+'%'); }
+      if(MEM_SEARCH){ var _ms=MEM_SEARCH.replace(/[%_,()]/g,''); q=q.or('name.ilike.%'+_ms+'%,handle.ilike.%'+_ms+'%'); }
       q=q.range(from,to);
       var res; try{ res=await q; }catch(e){ res={error:e}; }
       MEM_LOADING=false;
