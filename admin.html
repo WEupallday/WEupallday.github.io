@@ -139,6 +139,18 @@
   .tk-sug .btn{margin-left:8px}
   .tk-status{margin-top:8px;font-size:13px;line-height:1.45}
   .tk-status:empty{display:none}
+  .sup-pri{display:flex;gap:12px;margin:2px 0 12px;font-weight:800}.sup-p0{color:#ff6b6b}.sup-p1{color:#ffb14d}
+  .sup-catgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+  .sup-card{background:#152a4a;border:1px solid #24406e;border-radius:14px;padding:16px 10px;cursor:pointer;text-align:center}
+  .sup-card:active{filter:brightness(1.18)}.sc-ic{font-size:26px}.sc-lb{font-weight:800;margin:4px 0 2px}.sc-n{color:#9db4d6;font-size:13px}
+  .sup-listhdr{display:flex;align-items:center;gap:10px;margin:4px 0 10px;flex-wrap:wrap}.sup-back{color:#7fd0ff;cursor:pointer;font-weight:700}
+  .sup-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .sup-tools select,.sup-set select{background:#0f1f38;color:#e8eef7;border:1px solid #2c4a72;border-radius:8px;padding:4px 6px}
+  .sup-batch{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#122540;border:1px solid #2c4a72;border-radius:10px;padding:8px;margin-bottom:10px}
+  .sup-rowtop{display:flex;align-items:center;gap:8px;margin-bottom:4px}.sup-ck{width:18px;height:18px}
+  .sup-pill{font-size:11px;font-weight:800;padding:2px 8px;border-radius:9px;background:#1b3556;color:#cfe0f4}
+  .sup-pri-P0{background:#5a1b1b;color:#ffb4b4}.sup-pri-P1{background:#5a3a1b;color:#ffd9a8}.sup-pri-P2{background:#4a441b;color:#f0e6a8}.sup-pri-P3{background:#1b4a2e;color:#a8f0c4}
+  .sup-set{font-size:12px;color:#9db4d6;margin:6px 0}.sup-set select{margin:0 4px}
   .tk-ok{color:#57d98a}
   .tk-fail{color:#ff8f8f}
   .tk-warn{color:#ffcf6b}
@@ -187,6 +199,7 @@
   var PSEP="␟";
   var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,detectSessionInUrl:true,autoRefreshToken:true,storageKey:'flap-admin-auth'}});
   var ADMIN_NAME="", DATA=null, TAB="controls", MSG_SEARCH="", MSG_OPEN=null;
+  var SUP_CAT=null, SUP_SORT='new', SUP_SEL={};
 
   /* ---------- house personas (seed the feed / post-as) ---------- */
   var HOUSE_PERSONAS=[
@@ -284,7 +297,7 @@
       var reports=[];window.__modErr='';try{ var _mk=sessionStorage.getItem('flap_modpw'); if(_mk){ var _rr=await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'list'})}); var _jj=await _rr.json().catch(function(){return{};}); if(_rr.ok&&_jj&&_jj.reports){ reports=_jj.reports.filter(function(r){return !r.resolved;}); } else { window.__modErr=(_jj&&_jj.error)||('http '+_rr.status); if(_rr.status===401||_rr.status===403){ sessionStorage.removeItem('flap_modpw'); } } } }catch(e){ window.__modErr=String(e).slice(0,80); }
       var repIds=reports.filter(function(r){return r.target_type==='post'&&r.target_id;}).map(function(r){return r.target_id;});
       var repPosts={};if(repIds.length){try{((await sb.from('flaps').select('id,body,name').in('id',repIds)).data||[]).forEach(function(p){repPosts[p.id]=p;});}catch(e){}}
-      var tickets=[];try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(100)).data||[];}catch(e){}
+      var tickets=[];try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(2000)).data||[];}catch(e){}
       var dms=[];try{dms=(await sb.from('flaps').select('id,body,created_at').eq('name','::dm::').order('id',{ascending:false}).limit(600)).data||[];}catch(e){}
       DATA={
         us:us, flAll:flAll, replyCount:(rcRes.count||0), repliesRecent:repliesRecent,
@@ -619,26 +632,56 @@
     if(sug)return '<div class="tk-sug">💡 Suggested reply: <b>'+PRESETS[sug].label+'</b> <button class="btn green" onclick="ADMIN.preset('+tk.id+',\''+sug+'\')">Use suggested response</button></div>';
     return '';
   }
+  var SUP_CATS=[{k:'login',ic:'🔐',label:'Login Issues'},{k:'bug',ic:'🐛',label:'Bug Reports'},{k:'feature',ic:'💡',label:'Feature Requests'},{k:'account',ic:'🚨',label:'Account / Safety'},{k:'other',ic:'📦',label:'Other'}];
+  function tkDeriveCat(m){m=(m||'').toLowerCase();
+    if(/(log ?in|sign ?in|password|pass ?word|forgot|reset|locked out|can.?t get in|can.?t log|verification code)/.test(m))return 'login';
+    if(/(ban|banned|suspend|report|harass|bully|threat|hack|stolen|impersonat|underage|minor|safety|abuse|delete my account|inappropriate|creep|stalk)/.test(m))return 'account';
+    if(/(bug|crash|error|broken|glitch|not working|does ?n.?t work|freez|lag|won.?t load|blank screen|white screen)/.test(m))return 'bug';
+    if(/(feature|request|suggestion|idea|please add|would be (nice|cool|great)|wish|could you add|add a )/.test(m))return 'feature';
+    return 'other';}
+  function tkParse(tk){var parts=String(tk.body||'').split(PSEP);var who=parts[0]||'?';var raw=parts.length>=3?(parts[1]||''):'';var msg=parts.length>=3?parts.slice(2).join(PSEP):(parts[1]||'');
+    var meta={st:'new',cat:'',pri:'P2',lr:''};
+    if(raw&&raw.indexOf('=')>=0){raw.split('|').forEach(function(kv){var i=kv.indexOf('=');if(i>0){var k=kv.slice(0,i),v=kv.slice(i+1);if(k==='st')meta.st=v;else if(k==='cat')meta.cat=v;else if(k==='pri')meta.pri=v;else if(k==='lr')meta.lr=v;}});}
+    if(!meta.cat)meta.cat=tkDeriveCat(msg);
+    if(!/^P[0-3]$/.test(meta.pri))meta.pri='P2';
+    if(['new','waiting','userreplied','resolved'].indexOf(meta.st)<0)meta.st='new';
+    return {id:tk.id,who:who,msg:msg,meta:meta,created:tk.created_at};}
+  function tkMetaStr(m){return 'st='+m.st+'|cat='+m.cat+'|pri='+m.pri+'|lr='+(m.lr||'');}
+  async function tkSetMeta(id,patch){try{var r=await sb.from('flaps').select('id,body').eq('id',id).maybeSingle();if(!r.data)return;var p=tkParse(r.data);var meta=p.meta;for(var k in patch)meta[k]=patch[k];var nb=p.who+PSEP+tkMetaStr(meta)+PSEP+p.msg;await sb.from('flaps').update({body:nb}).eq('id',id);}catch(e){}}
+  function tkStIcon(s){return s==='waiting'?'⏳':s==='userreplied'?'🔔':s==='resolved'?'✅':'🆕';}
+  function tkStLabel(s){return s==='waiting'?'Waiting on User':s==='userreplied'?'User Replied':s==='resolved'?'Resolved':'Needs Response';}
+  function tkPriIcon(p){return p==='P0'?'🔴':p==='P1'?'🟠':p==='P2'?'🟡':'🟢';}
+  function tkDate(iso){try{return new Date(iso).toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});}catch(e){return '—';}}
   function secSupport(){
-    var d=DATA, h='<div class="sec"><h2>🎫 Support tickets ('+d.tickets.length+') <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
-    h+= d.tickets.length? d.tickets.map(function(tk){
-      var parts=String(tk.body||'').split(PSEP); var who=parts[0]||'?'; var msg=parts.slice(2).join(PSEP)||parts[1]||'';
-      var whoSafe=esq(who);
-      return '<div class="row"><div class="r-top">🎫 Support Ticket #'+tk.id+' — from '+esc(who)+'</div>'+
-        '<div class="r-body">'+esc(msg.slice(0,600))+'</div>'+
-        '<div class="r-meta">Opened '+new Date(tk.created_at).toLocaleString()+' · Status: Open</div>'+
-        tkSug(tk,msg,whoSafe)+
-        '<textarea class="inp" id="tkr_'+tk.id+'" placeholder="Reply to '+esc(who)+' (they get an in-app notification)…" style="margin:8px 0 6px;min-height:72px;width:100%;"></textarea>'+
-        '<div class="tk-presets"><span class="tk-plabel">Quick replies:</span>'+PRESET_ORDER.map(function(k){return '<button class="btn tkp" onclick="ADMIN.preset('+tk.id+',\''+k+'\')">'+PRESETS[k].label+'</button>';}).join('')+'</div>'+
-        '<div class="acts"><button class="btn blue" onclick="ADMIN.replyTicket('+tk.id+',\''+whoSafe+'\')">📨 Send reply</button><button class="btn" style="background:linear-gradient(180deg,#c0632a,#8a3f12)" onclick="ADMIN.forgotPassword('+tk.id+',\''+whoSafe+'\')">🔑 Forgot Password</button><button class="btn green" onclick="ADMIN.resolveTicket('+tk.id+')">Resolve &amp; remove</button></div>'+
-        '<div class="tk-status" id="tkst_'+tk.id+'"></div></div>';
-    }).join(''):'<div class="empty">No open tickets. 🎉</div>';
-    h+='<div class="subhead">⚑ Open reports</div>';
-    h+= d.reports.length?'<div class="muted">'+d.reports.length+' open — see the <b>Moderation</b> tab to act on them.</div>':'<div class="empty">No open reports.</div>';
-    h+='</div>';
-    return h;
+    var d=DATA;var all=(d.tickets||[]).map(tkParse);var open=all.filter(function(t){return t.meta.st!=='resolved';});
+    var p0=open.filter(function(t){return t.meta.pri==='P0';}).length,p1=open.filter(function(t){return t.meta.pri==='P1';}).length;
+    var h='<div class="sec"><h2>🛟 Support <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
+    h+='<div class="sup-pri"><span class="sup-p0">🔴 P0: '+p0+'</span><span class="sup-p1">🟠 P1: '+p1+'</span></div>';
+    if(!SUP_CAT){
+      h+='<div class="subhead">Ticket categories</div><div class="sup-catgrid">';
+      SUP_CATS.forEach(function(c){var n=open.filter(function(t){return t.meta.cat===c.k;}).length;h+='<div class="sup-card" onclick="ADMIN.supOpenCat(\'' + c.k + '\')"><div class="sc-ic">'+c.ic+'</div><div class="sc-lb">'+c.label+'</div><div class="sc-n">'+n+' open</div></div>';});
+      h+='</div>';
+      h+='<div class="subhead">⚑ Open reports</div>'+(d.reports.length?'<div class="muted">'+d.reports.length+' open — see the <b>Moderation</b> tab.</div>':'<div class="empty">No open reports.</div>');
+      h+='</div>';return h;
+    }
+    var cat=SUP_CATS.filter(function(c){return c.k===SUP_CAT;})[0]||SUP_CATS[4];
+    var list=open.filter(function(t){return t.meta.cat===SUP_CAT;});
+    list.sort(function(a,b){return SUP_SORT==='old'?(a.id-b.id):(b.id-a.id);});
+    h+='<div class="sup-listhdr"><a class="sup-back" onclick="ADMIN.supBack()">‹ Categories</a><b>'+cat.ic+' '+cat.label.toUpperCase()+' — '+list.length+'</b></div>';
+    h+='<div class="sup-tools"><label class="sup-all"><input type="checkbox" onclick="ADMIN.supSelectAll(this.checked)"> Select all</label><span class="sup-sortw">Sort: <select onchange="ADMIN.supSort(this.value)"><option value="new"'+(SUP_SORT==='new'?' selected':'')+'>Newest → Oldest</option><option value="old"'+(SUP_SORT==='old'?' selected':'')+'>Oldest → Newest</option></select></span></div>';
+    h+='<div class="sup-batch" id="supBatch" style="display:none"><span id="supSelN">0 selected</span><button class="btn green" onclick="ADMIN.supBatch(\'resolve\')">✅ Resolve</button><button class="btn" onclick="ADMIN.supBatch(\'waiting\')">⏳ Waiting</button><button class="btn" onclick="ADMIN.supBatch(\'needs\')">🆕 Needs</button><button class="btn blue" onclick="ADMIN.supBatch(\'move\')">📂 Move</button><button class="btn del" onclick="ADMIN.supBatch(\'delete\')">🗑️ Delete</button></div>';
+    h+= list.length? list.map(function(t){var whoSafe=esq(t.who);var subj=(t.msg||'').replace(/\s+/g,' ').trim().slice(0,60)||'(no message)';
+      return '<div class="row sup-row"><div class="sup-rowtop"><input type="checkbox" class="sup-ck" data-id="'+t.id+'" onclick="ADMIN.supToggleSel('+t.id+',this.checked)"'+(SUP_SEL[t.id]?' checked':'')+'><span class="sup-pill sup-pri-'+t.meta.pri+'">'+tkPriIcon(t.meta.pri)+' '+t.meta.pri+'</span><span class="sup-pill sup-st">'+tkStIcon(t.meta.st)+' '+tkStLabel(t.meta.st)+'</span></div>'+
+      '<div class="r-top">@'+esc(t.who)+' — '+esc(subj)+'</div><div class="r-body">'+esc((t.msg||'').slice(0,600))+'</div>'+
+      '<div class="r-meta">Opened '+tkDate(t.created)+' · Last response '+(t.meta.lr?tkDate(t.meta.lr):'—')+'</div>'+
+      '<div class="sup-set">Priority: <select onchange="ADMIN.supSetPri('+t.id+',this.value)">'+['P0','P1','P2','P3'].map(function(pp){return '<option value="'+pp+'"'+(t.meta.pri===pp?' selected':'')+'>'+tkPriIcon(pp)+' '+pp+'</option>';}).join('')+'</select> Category: <select onchange="ADMIN.supSetCat('+t.id+',this.value)">'+SUP_CATS.map(function(cc){return '<option value="'+cc.k+'"'+(t.meta.cat===cc.k?' selected':'')+'>'+cc.ic+' '+cc.label+'</option>';}).join('')+'</select></div>'+
+      '<textarea class="inp" id="tkr_'+t.id+'" placeholder="Reply to @'+esc(t.who)+' (they get an in-app notification)…" style="margin:8px 0 6px;min-height:64px;width:100%;"></textarea>'+
+      ((t.meta.cat==='login'||t.meta.cat==='account')?'<div class="tk-presets"><button class="btn" style="background:linear-gradient(180deg,#c0632a,#8a3f12)" onclick="ADMIN.forgotPassword('+t.id+',\'' + whoSafe + '\')">🔑 Forgot Password</button></div>':'')+
+      '<div class="acts"><button class="btn blue" onclick="ADMIN.replyTicket('+t.id+',\'' + whoSafe + '\')">💬 Reply</button><button class="btn green" onclick="ADMIN.supResolve('+t.id+')">✅ Resolve</button><button class="btn del" onclick="ADMIN.supDelete('+t.id+')">🗑️ Delete</button></div>'+
+      '<div class="tk-status" id="tkst_'+t.id+'"></div></div>';
+    }).join(''):'<div class="empty">No open tickets in this category. 🎉</div>';
+    h+='</div>';return h;
   }
-
   /* ---------- STATS ---------- */
   function secStats(){
     var s=stats();
@@ -725,7 +768,7 @@
     deleteFlap:async function(id){if(!confirm('Delete this flap (and its photo) for everyone?'))return;try{await sb.from('flaps').delete().eq('id',id);}catch(e){}toast('Flap deleted.');loadAll();},
     removePhoto:async function(id){if(!confirm('Remove just the photo? The text stays.'))return;try{await sb.from('flaps').update({pic_url:null}).eq('id',id);}catch(e){}toast('Photo removed.');loadAll();},
     deleteReply:async function(id){if(!confirm('Delete this reply for everyone?'))return;try{await sb.from('flap_replies').delete().eq('id',id);}catch(e){}toast('Reply deleted.');loadAll();},
-    resolveTicket:async function(id){try{await sb.from('flaps').delete().eq('id',id);}catch(e){}toast('Ticket resolved.');loadAll();},
+    resolveTicket:async function(id){try{await tkSetMeta(id,{st:'resolved'});}catch(e){}toast('Ticket resolved.');loadAll();},
     toggleVerified:async function(name){
       name=(name||'').trim();if(!name)return;
       var cur=(DATA?DATA.verCur:'')||'';var list=cur.split(/[,\s]+/).filter(Boolean);var low=name.toLowerCase();
@@ -791,6 +834,20 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
       var none=$('memNone'); if(none)none.style.display=(q&&shown===0)?'block':'none';
     },
     resetPassword:async function(name){if(!name){toast('No user selected.');return;}if(!confirm('Send a temporary password to '+name+'? Only do this for a genuine forgotten-password request.'))return;try{var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';var temp='';var rnd=crypto.getRandomValues(new Uint32Array(8));for(var i=0;i<8;i++){temp+=chars[rnd[i]%chars.length];}var hash=await sha256('flapsalt:'+String(name).toLowerCase()+':'+temp);var up=await sb.from('flap_users').update({pass_hash:hash}).eq('name',name).select('name');if(up.error){toast('⚠ Reset failed: '+up.error.message);return;}if(!up.data||!up.data.length){toast('⚠ No member exactly named '+name);return;}var msg='No worries! Your temporary password is: '+temp+' — use it to log back in, then change your password once you are in. 🐥';var ni=await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'support',excerpt:msg,seen:false});if(ni.error){toast('⚠ Password reset, but message failed to send: '+ni.error.message);return;}try{if(window.adminLog)adminLog('reset-pw',name);}catch(e){}toast('🔑 Temp password for '+name+': '+temp);try{if(window.loadAll)loadAll();}catch(e){}}catch(e){toast('⚠ Reset error: '+String(e).slice(0,80));}},
+    supOpenCat:function(k){SUP_CAT=k;SUP_SEL={};renderTab();},
+    supBack:function(){SUP_CAT=null;SUP_SEL={};renderTab();},
+    supSort:function(v){SUP_SORT=v;renderTab();},
+    supToggleSel:function(id,on){if(on)SUP_SEL[id]=1;else delete SUP_SEL[id];ADMIN._supBar();},
+    supSelectAll:function(on){var cks=document.querySelectorAll('.sup-ck');Array.prototype.forEach.call(cks,function(c){c.checked=on;var id=c.getAttribute('data-id');if(on)SUP_SEL[id]=1;else delete SUP_SEL[id];});ADMIN._supBar();},
+    _supBar:function(){var n=Object.keys(SUP_SEL).length;var b=$('supBatch'),s=$('supSelN');if(b)b.style.display=n?'flex':'none';if(s)s.textContent=n+' selected';},
+    supSetPri:async function(id,v){await tkSetMeta(id,{pri:v});toast('Priority set '+v+'.');loadAll();},
+    supSetCat:async function(id,v){await tkSetMeta(id,{cat:v});toast('Category updated.');loadAll();},
+    supResolve:async function(id){await tkSetMeta(id,{st:'resolved'});toast('✅ Resolved (kept in records).');loadAll();},
+    supDelete:async function(id){if(!confirm('Delete this ticket permanently?\nThis cannot be undone.\n\nThis removes ONLY the support ticket record — not the account, profile, badges, followers, messages, reports, or moderation history.'))return;try{await sb.from('flaps').delete().eq('id',id);}catch(e){toast('Delete failed.');return;}delete SUP_SEL[id];toast('🗑️ Ticket deleted.');loadAll();},
+    supBatch:async function(action){var ids=Object.keys(SUP_SEL);if(!ids.length){toast('Select tickets first.');return;}
+      if(action==='delete'){if(!confirm('Delete '+ids.length+' selected ticket'+(ids.length>1?'s':'')+'?\nThis action cannot be undone.\n\nOnly the support ticket records are removed — no accounts or other data.'))return;for(var i=0;i<ids.length;i++){try{await sb.from('flaps').delete().eq('id',ids[i]);}catch(e){}}SUP_SEL={};toast('🗑️ Deleted '+ids.length+' ticket(s).');loadAll();return;}
+      if(action==='move'){var v=prompt('Move '+ids.length+' ticket(s) to which category?\nType one: login, bug, feature, account, other');if(!v)return;v=v.trim().toLowerCase();if(['login','bug','feature','account','other'].indexOf(v)<0){toast('Unknown category.');return;}for(var j=0;j<ids.length;j++){await tkSetMeta(ids[j],{cat:v});}SUP_SEL={};toast('📂 Moved '+ids.length+' ticket(s).');loadAll();return;}
+      var patch=action==='resolve'?{st:'resolved'}:action==='waiting'?{st:'waiting'}:action==='needs'?{st:'new'}:null;if(!patch){toast('Unknown action.');return;}for(var k=0;k<ids.length;k++){await tkSetMeta(ids[k],patch);}SUP_SEL={};toast('Updated '+ids.length+' ticket(s).');loadAll();},
     preset:function(id,key){ var el=$('tkr_'+id); if(!el)return; var p=PRESETS[key]; if(!p)return; el.value=p.text; el.focus(); try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){} toast('Preset loaded — edit if needed, then Send.'); },
     forgotPassword:function(id,who){
       var el=$('tkr_'+id), st=$('tkst_'+id);
@@ -818,7 +875,7 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
       catch(e){ toast('Could not send reply.'); if(pend&&st)st.innerHTML='<span class="tk-warn">⚠️ Password WAS reset but the message did not send. Temp password: <b>'+pend.temp+'</b> — send it to @'+esc(pend.who)+' manually.</span>'; return; }
       try{ fetch(SUPABASE_URL+'/functions/v1/send-push',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_ANON_KEY,'apikey':SUPABASE_ANON_KEY},body:JSON.stringify({recipient:who,title:'TheFlap 🎫',body:'Support replied to your ticket'})}); }catch(e){}
       if(pend){ try{ adminLog(pend.who,'Forgot-password — reset + message sent from ticket'); }catch(e){} delete window.__pendReset[id]; if(st)st.innerHTML='<span class="tk-ok">✅ Password reset + message sent to @'+esc(who)+'.</span>'; }
-      if(el)el.value=''; toast('📨 Reply sent to '+who+' (in-app notification).');
+      if(el)el.value=''; try{ await tkSetMeta(id,{st:'waiting',lr:new Date().toISOString()}); }catch(e){} toast('📨 Reply sent — status set to ⏳ Waiting on User.'); loadAll();
     },
     deleteBadge:async function(id){
       if(!confirm('Delete this badge for everyone?'))return;
