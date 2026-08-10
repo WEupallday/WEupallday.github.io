@@ -151,6 +151,11 @@
   .sup-pill{font-size:11px;font-weight:800;padding:2px 8px;border-radius:9px;background:#1b3556;color:#cfe0f4}
   .sup-pri-P0{background:#5a1b1b;color:#ffb4b4}.sup-pri-P1{background:#5a3a1b;color:#ffd9a8}.sup-pri-P2{background:#4a441b;color:#f0e6a8}.sup-pri-P3{background:#1b4a2e;color:#a8f0c4}
   .sup-set{font-size:12px;color:#9db4d6;margin:6px 0}.sup-set select{margin:0 4px}
+  .mem-tools{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .mem-loading{color:#9db4d6;padding:16px;text-align:center;font-size:13px}
+  .mem-pager{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:10px;flex-wrap:wrap}
+  .mem-pageno{color:#cbd8ee;font-size:13px;font-weight:700}
+  .btn[disabled]{opacity:.4;cursor:not-allowed;pointer-events:none}
   .tk-ok{color:#57d98a}
   .tk-fail{color:#ff8f8f}
   .tk-warn{color:#ffcf6b}
@@ -200,6 +205,7 @@
   var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,detectSessionInUrl:true,autoRefreshToken:true,storageKey:'flap-admin-auth'}});
   var ADMIN_NAME="", DATA=null, TAB="controls", MSG_SEARCH="", MSG_OPEN=null;
   var SUP_CAT=null, SUP_SORT='new', SUP_SEL={};
+  var MEM_PAGE=0, MEM_SORT='new', MEM_SEARCH='', MEM_LOADING=false;
 
   /* ---------- house personas (seed the feed / post-as) ---------- */
   var HOUSE_PERSONAS=[
@@ -490,44 +496,37 @@
   }
 
   /* ---------- MEMBERS ---------- */
+  function memRowHTML(u,counts,verList,dnow){
+    var lc=(u.name||'').toLowerCase();
+    var on=u.last_seen&&dnow-T(u.last_seen)<12e4;
+    var isVer=verList.indexOf(lc)>-1||lc===ADMIN_ACCOUNT;
+    var muted=u.muted_until&&new Date(u.muted_until)>new Date();
+    var av=u.avatar_url?'<img src="'+esc(u.avatar_url)+'" alt="">':initials(u.name);
+    var nm=esq(u.name);
+    var pills=(isVer?'<span class="pill ver">✔ verified</span>':'')+(on?'<span class="pill on">● online</span>':'')+(u.banned?'<span class="pill ban">banned</span>':'')+(muted?'<span class="pill mute">timed out</span>':'');
+    var sub=(counts[u.name]||0)+' flaps · joined '+(u.created_at?new Date(u.created_at).toLocaleDateString():'?')+' · 📱 '+esc(u.device||'unknown')+((u.violations||0)>0?' · ⚠ '+u.violations+' auto-mod removal(s)':'')+(muted?' · until '+new Date(u.muted_until).toLocaleString():'');
+    var acts='<button class="btn gold" onclick="ADMIN.toggleVerified(\'' + nm + '\')">'+(isVer?'Unverify':'Verify')+'</button>';
+    if(lc!==ADMIN_ACCOUNT){
+      acts+= muted?'<button class="btn blue" onclick="ADMIN.liftMute(\'' + nm + '\')">Lift time-out</button>':'<button class="btn" onclick="ADMIN.mute(\'' + nm + '\',1)">1h</button><button class="btn" onclick="ADMIN.mute(\'' + nm + '\',24)">24h</button><button class="btn" onclick="ADMIN.mute(\'' + nm + '\',168)">7d</button><button class="btn" onclick="ADMIN.muteCustom(\'' + nm + '\')">Custom</button>';
+      acts+= u.banned?'<button class="btn green" onclick="ADMIN.unban(\'' + nm + '\')">Un-ban</button>':'<button class="btn" onclick="ADMIN.verify(\'' + nm + '\')">✓ Verify</button><button class="btn" onclick="ADMIN.unverify(\'' + nm + '\')">Unverify</button><button class="btn red" onclick="ADMIN.ban(\'' + nm + '\')">Ban</button>';
+      acts+='<button class="btn blue" onclick="ADMIN.resetPassword(\'' + nm + '\')">🔑 Reset password</button>';
+      acts+='<button class="btn purple" onclick="ADMIN.manageBadges(\'' + nm + '\')">🏅 Badges</button>';
+      acts+='<button class="btn" style="background:linear-gradient(180deg,#b06a2a,#7d4413)" onclick="ADMIN.resetAccount(\'' + nm + '\')">♻ Reset account</button>';
+      acts+='<button class="btn del" onclick="ADMIN.removeUser(\'' + nm + '\')">🗑 Remove</button>';
+    }
+    return '<div class="mem" data-search="'+esc(((u.name||'')+' '+(u.handle||'')).toLowerCase())+'"><span class="ava">'+av+'</span><div class="m-name"><b>'+esc(u.name)+'</b>'+pills+'<div class="m-sub">'+sub+'</div></div><div class="acts" style="margin-top:0;">'+acts+'</div></div>';
+  }
   function secMembers(){
-    var d=DATA, counts={};
-    d.flAll.forEach(function(f){ if(!isSentinel(f.name)) counts[f.name]=(counts[f.name]||0)+1; });
-    var verList=(d.verCur||'').split(/[,\s]+/).filter(Boolean).map(function(x){return x.toLowerCase();});
+    var d=DATA;
     var h='<div class="sec"><h2>👥 Member management ('+fmtN(realMemberCount(d.us))+' members · '+fmtN(d.us.length)+' accounts) <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
-    h+='<div class="hint">Verify, time out, ban, or remove members. Removing deletes their flaps &amp; replies too.</div>';
-    h+='<input class="inp" id="memSearch" placeholder="🔎 Search members by name or @handle…" oninput="ADMIN.filterMembers()" autocomplete="off" autocapitalize="off" spellcheck="false" style="margin-bottom:8px;">';
-    h+='<div id="memList">';
-    h+= d.us.map(function(u){
-      var lc=(u.name||'').toLowerCase();
-      var on=u.last_seen&&d.now-T(u.last_seen)<12e4;
-      var isVer=verList.indexOf(lc)>-1||lc===ADMIN_ACCOUNT;
-      var muted=u.muted_until&&new Date(u.muted_until)>new Date();
-      var av=u.avatar_url?'<img src="'+esc(u.avatar_url)+'" alt="">':initials(u.name);
-      var nm=esq(u.name);
-      var pills=(isVer?'<span class="pill ver">✔ verified</span>':'')+(on?'<span class="pill on">● online</span>':'')+(u.banned?'<span class="pill ban">banned</span>':'')+(muted?'<span class="pill mute">timed out</span>':'');
-      var sub=(counts[u.name]||0)+' flaps · joined '+(u.created_at?new Date(u.created_at).toLocaleDateString():'?')+' · 📱 '+esc(u.device||'unknown')+((u.violations||0)>0?' · ⚠ '+u.violations+' auto-mod removal(s)':'')+(muted?' · until '+new Date(u.muted_until).toLocaleString():'');
-      var acts='<button class="btn gold" onclick="ADMIN.toggleVerified(\''+nm+'\')">'+(isVer?'Unverify':'Verify')+'</button>';
-      if(lc!==ADMIN_ACCOUNT){
-        acts+= muted?'<button class="btn blue" onclick="ADMIN.liftMute(\''+nm+'\')">Lift time-out</button>'
-                    :'<button class="btn" onclick="ADMIN.mute(\''+nm+'\',1)">1h</button><button class="btn" onclick="ADMIN.mute(\''+nm+'\',24)">24h</button><button class="btn" onclick="ADMIN.mute(\''+nm+'\',168)">7d</button><button class="btn" onclick="ADMIN.muteCustom(\''+nm+'\')">Custom</button>';
-        acts+= u.banned?'<button class="btn green" onclick="ADMIN.unban(\''+nm+'\')">Un-ban</button>'
-                      :'<button class="btn" onclick="ADMIN.verify(\''+nm+'\')">✓ Verify</button><button class="btn" onclick="ADMIN.unverify(\''+nm+'\')">Unverify</button><button class="btn red" onclick="ADMIN.ban(\''+nm+'\')">Ban</button>';
-        acts+='<button class="btn blue" onclick="ADMIN.resetPassword(\''+nm+'\')">🔑 Reset password</button>';
-        acts+='<button class="btn purple" onclick="ADMIN.manageBadges(\''+nm+'\')">🏅 Badges</button>';
-        acts+='<button class="btn" style="background:linear-gradient(180deg,#b06a2a,#7d4413)" onclick="ADMIN.resetAccount(\''+nm+'\')">♻ Reset account</button>';
-        acts+='<button class="btn del" onclick="ADMIN.removeUser(\''+nm+'\')">🗑 Remove</button>';
-      }
-      return '<div class="mem" data-search="'+esc(((u.name||'')+' '+(u.handle||'')).toLowerCase())+'"><span class="ava">'+av+'</span>'+
-        '<div class="m-name"><b>'+esc(u.name)+'</b>'+pills+'<div class="m-sub">'+sub+'</div></div>'+
-        '<div class="acts" style="margin-top:0;">'+acts+'</div></div>';
-    }).join('');
-    h+='</div>';   /* /memList */
-    h+='<div id="memNone" class="empty" style="display:none;">No members match your search.</div>';
+    h+='<div class="hint">Verify, time out, ban, or remove members. Removing deletes their flaps &amp; replies too. Loads 50 at a time.</div>';
+    h+='<div class="mem-tools"><input class="inp" id="memSearch" placeholder="🔎 Search members by name…" value="'+esc(MEM_SEARCH)+'" oninput="ADMIN.memSearchInput(this.value)" autocomplete="off" autocapitalize="off" spellcheck="false" style="margin-bottom:0;flex:1;min-width:150px;"><select class="inp" id="memSort" onchange="ADMIN.memSort(this.value)" style="margin-bottom:0;width:auto;"><option value="new"'+(MEM_SORT==='new'?' selected':'')+'>Newest → Oldest</option><option value="old"'+(MEM_SORT==='old'?' selected':'')+'>Oldest → Newest</option></select></div>';
+    h+='<div id="memList"><div class="mem-loading">⏳ Loading members…</div></div>';
+    h+='<div id="memPager" class="mem-pager"></div>';
     h+='</div>';
+    setTimeout(function(){ try{ ADMIN._memFetch(); }catch(e){} }, 0);
     return h;
   }
-
   /* ---------- MODERATION ---------- */
   function secModeration(){
     var d=DATA;
@@ -848,6 +847,30 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
       if(action==='delete'){if(!confirm('Delete '+ids.length+' selected ticket'+(ids.length>1?'s':'')+'?\nThis action cannot be undone.\n\nOnly the support ticket records are removed — no accounts or other data.'))return;for(var i=0;i<ids.length;i++){try{await sb.from('flaps').delete().eq('id',ids[i]);}catch(e){}}SUP_SEL={};toast('🗑️ Deleted '+ids.length+' ticket(s).');loadAll();return;}
       if(action==='move'){var v=prompt('Move '+ids.length+' ticket(s) to which category?\nType one: login, bug, feature, account, other');if(!v)return;v=v.trim().toLowerCase();if(['login','bug','feature','account','other'].indexOf(v)<0){toast('Unknown category.');return;}for(var j=0;j<ids.length;j++){await tkSetMeta(ids[j],{cat:v});}SUP_SEL={};toast('📂 Moved '+ids.length+' ticket(s).');loadAll();return;}
       var patch=action==='resolve'?{st:'resolved'}:action==='waiting'?{st:'waiting'}:action==='needs'?{st:'new'}:null;if(!patch){toast('Unknown action.');return;}for(var k=0;k<ids.length;k++){await tkSetMeta(ids[k],patch);}SUP_SEL={};toast('Updated '+ids.length+' ticket(s).');loadAll();},
+    _memFetch:async function(){
+      var list=$('memList'); if(!list)return; if(MEM_LOADING)return; MEM_LOADING=true;
+      list.innerHTML='<div class="mem-loading">⏳ Loading members…</div>'; var pgEl=$('memPager'); if(pgEl)pgEl.innerHTML='';
+      var PAGE=50, from=MEM_PAGE*PAGE, to=from+PAGE-1;
+      var q=sb.from('flap_users').select('*',{count:'exact'}).order('created_at',{ascending:MEM_SORT==='old'});
+      if(MEM_SEARCH){ q=q.ilike('name','%'+MEM_SEARCH.replace(/[%_,]/g,'')+'%'); }
+      q=q.range(from,to);
+      var res; try{ res=await q; }catch(e){ res={error:e}; }
+      MEM_LOADING=false;
+      if(!$('memList'))return;
+      if(res.error){ $('memList').innerHTML='<div class="empty">Could not load members — tap ↻ refresh.</div>'; return; }
+      var rows=res.data||[], total=res.count||0;
+      var d=DATA, counts={}; (d.flAll||[]).forEach(function(f){ if(!isSentinel(f.name)) counts[f.name]=(counts[f.name]||0)+1; });
+      var verList=(d.verCur||'').split(/[,\s]+/).filter(Boolean).map(function(x){return x.toLowerCase();});
+      var dnow=d.now||Date.now();
+      $('memList').innerHTML= rows.length? rows.map(function(u){ return memRowHTML(u,counts,verList,dnow); }).join('') : '<div class="empty">'+(MEM_SEARCH?'No members match “'+esc(MEM_SEARCH)+'”.':'No members.')+'</div>';
+      var pages=Math.max(1,Math.ceil(total/PAGE)); if(MEM_PAGE>pages-1){ MEM_PAGE=pages-1; }
+      var pg=$('memPager');
+      if(pg){ pg.innerHTML='<button class="btn" '+(MEM_PAGE<=0?'disabled':'')+' onclick="ADMIN.memPrev()">‹ Prev</button><span class="mem-pageno">Page '+(MEM_PAGE+1)+' of '+pages+' · '+fmtN(total)+(MEM_SEARCH?(' match'+(total===1?'':'es')):' accounts')+'</span><button class="btn" '+((MEM_PAGE+1)>=pages?'disabled':'')+' onclick="ADMIN.memNext()">Next ›</button>'; }
+    },
+    memNext:function(){ if(MEM_LOADING)return; MEM_PAGE++; ADMIN._memFetch(); },
+    memPrev:function(){ if(MEM_LOADING)return; if(MEM_PAGE>0)MEM_PAGE--; ADMIN._memFetch(); },
+    memSort:function(v){ MEM_SORT=v; MEM_PAGE=0; ADMIN._memFetch(); },
+    memSearchInput:function(v){ MEM_SEARCH=(v||'').trim(); MEM_PAGE=0; clearTimeout(window.__memT); window.__memT=setTimeout(function(){ try{ ADMIN._memFetch(); }catch(e){} }, 300); },
     preset:function(id,key){ var el=$('tkr_'+id); if(!el)return; var p=PRESETS[key]; if(!p)return; el.value=p.text; el.focus(); try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){} toast('Preset loaded — edit if needed, then Send.'); },
     forgotPassword:function(id,who){
       var el=$('tkr_'+id), st=$('tkst_'+id);
