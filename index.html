@@ -2684,6 +2684,7 @@
     try{
       var res=await sb.from('flap_users').select('*').ilike('name',name).maybeSingle();
       if(res.error)throw res.error;
+      if(!res.data){ try{ var _byH=await sb.from('flap_users').select('*').ilike('handle',name).maybeSingle(); if(!_byH.error&&_byH.data) res.data=_byH.data; }catch(_e){} }
       if(!res.data){
         /* NO account with that name — do NOT create anything. Offer the create screen. */
         err.innerHTML='No account found for “'+esc(name)+'”. <a class="gate-create-link" style="display:inline;padding:0;border:none;background:none;text-decoration:underline;" onclick="showCreate(\''+esc(name).replace(/\x27/g,'')+'\')">Create one? →</a>';
