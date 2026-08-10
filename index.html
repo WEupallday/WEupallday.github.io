@@ -4723,7 +4723,7 @@ function notifText(n){
   function flapErr(e,where){try{var st=(e&&(e.status||e.code))||'';var msg=(e&&(e.message||e.hint||e.details||e.error_description||''))||'';msg=String(msg).slice(0,100);try{console.error('[TheFlap] '+where+' failed:',e);}catch(_c){}var base=(where||'Request')+' failed';if(st)base+=' ('+st+')';if(msg)base+=': '+msg;if(!st&&!msg)base+=' — check your connection.';return base;}catch(_x){return (where||'Request')+' failed.';}}
   function flapIsIOS(){try{if(window.Capacitor&&typeof Capacitor.getPlatform==='function')return Capacitor.getPlatform()==='ios';}catch(_e){}return /iPhone|iPad|iPod/i.test((navigator&&navigator.userAgent)||'');}
   function flapIsAndroid(){try{if(window.Capacitor&&typeof Capacitor.getPlatform==='function')return Capacitor.getPlatform()==='android';}catch(_e){}return /Android/i.test((navigator&&navigator.userAgent)||'');}
-  async function loadFeed(manual){
+  var USERS_LOADED_AT=0; async function loadFeed(manual){
     if(!ONLINE){
       LAST_ROWS=localPosts;
       renderLive();
@@ -4742,8 +4742,7 @@ function notifText(n){
       markPresentToday();
       loadMods();
       loadFeatures();
-      try{await loadPinned();}catch(_lp){try{console.error('loadPinned',_lp);}catch(e){}}
-      try{await loadAnnounce();}catch(_la){try{console.error('loadAnnounce',_la);}catch(e){}}
+      await Promise.all([ Promise.resolve().then(loadPinned).catch(function(_lp){try{console.error('loadPinned',_lp);}catch(e){}}), Promise.resolve().then(loadAnnounce).catch(function(_la){try{console.error('loadAnnounce',_la);}catch(e){}}) ]);
       /* a pinned flap can be OLDER than the newest-N window we just loaded — fetch it directly
          so it always appears (pinned at the top), instead of silently vanishing when newer flaps push it out. */
       if(PINNED_ID && !LAST_ROWS.some(function(r){return String(r.id)===String(PINNED_ID);})){
@@ -4754,10 +4753,10 @@ function notifText(n){
       myFlapCount=res.data.filter(function(r){return r.name===ME.name;}).length;
       document.getElementById('youCount').textContent=myFlapCount;
       /* members list — powers real photos everywhere + the banner */
-      try{
+      var _needU=(manual||!USERS_LOADED_AT||(Date.now()-USERS_LOADED_AT>300000)||!USERS||!Object.keys(USERS).length); if(_needU) try{
         var _uall=[],_uf=0,_upg=1000,_uerr=null;while(true){var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at,handle,device,banned,muted_until,violations,verified,premium,premium_cfg,premium_until').order('created_at',{ascending:false}).range(_uf,_uf+_upg-1);if(um.error){_uerr=um.error;break;}var _ud=um.data||[];_uall=_uall.concat(_ud);if(_ud.length<_upg)break;_uf+=_upg;if(_uf>20000)break;}
         if(!_uerr){USERS={};_uall.forEach(function(u){USERS[u.name.toLowerCase()]=u;});}
-      }catch(eu){}
+      }catch(eu){} if(_needU){ USERS_LOADED_AT=Date.now(); }
       try{ if(ME.name&&USERS[ME.name.toLowerCase()]){ ME.handle=USERS[ME.name.toLowerCase()].handle||ME.handle||''; } }catch(eh){}
       try{ if(ME.name && !FOLLOWS_LOADED){ FOLLOWS_LOADED=true; await loadFollows(); } }catch(efl){}
       try{ if(ME.name&&!ME.admin&&USERS[ME.name.toLowerCase()]&&USERS[ME.name.toLowerCase()].banned){ try{clearSession();}catch(e){} var _bw=document.createElement('div'); _bw.id='banWrap'; _bw.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(10,16,40,.93);display:flex;align-items:center;justify-content:center;padding:22px;'; _bw.innerHTML='<div style="background:#fff;border-top:7px solid #c62828;border-radius:16px;max-width:360px;width:100%;padding:24px;text-align:center;box-shadow:0 18px 60px rgba(0,0,0,.5);"><div style="font-size:46px;line-height:1;">🚫</div><div style="font-size:19px;font-weight:800;color:#b02a24;margin:8px 0 6px;">Account Banned</div><div style="font-size:13.5px;color:#333;line-height:1.5;">Your account has been banned from TheFlap for breaking the Community Guidelines. You can no longer post, reply, or message.</div><div style="font-size:12.5px;color:#666;margin-top:10px;">Believe this is a mistake? Email <b>theflapsupport@gmail.com</b>.</div><button onclick="location.reload()" style="margin-top:16px;width:100%;padding:11px;border:none;border-radius:11px;background:#2a6fb0;color:#fff;font-weight:800;font-size:15px;cursor:pointer;">OK</button></div>'; document.body.appendChild(_bw); return; } }catch(ebn){}
