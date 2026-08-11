@@ -4396,7 +4396,7 @@ function notifText(n){
     }catch(e){}
     POLL_ROTATING=false;
   }
-  function maybeAutoRotatePoll(){ /* disabled: the poll changes ONLY when lock saves it in Admin HQ */ }
+  function maybeAutoRotatePoll(){ try{ if(ONLINE && POLL_POOL && POLL_POOL.length && pollRotationDue()){ return rotatePollNow(); } }catch(e){} }
   /* ===== editable scrolling ticker (admin) — persisted as a hidden sentinel row ===== */
   function setTicker(text){
     var el=document.getElementById('tickerText');
@@ -4606,6 +4606,25 @@ function notifText(n){
     }catch(e){toast('Could not pin — try again.');}
   }
   /* the poll question + options are editable by admin, stored as a hidden ::poll:: sentinel row */
+  var POLL_BANK_LOADED=false;
+  async function loadPollBank(){
+    if(!ONLINE) return;
+    try{
+      var r=await sb.from('flap_poll_bank').select('id,question,opts,category').eq('active',true).order('id',{ascending:true});
+      if(r.error||!r.data||!r.data.length) return;
+      var byCat={};
+      r.data.forEach(function(row){
+        var o=row.opts; if(typeof o==='string'){ try{o=JSON.parse(o);}catch(e){o=[];} }
+        o=(o||[]).filter(function(x){return x&&String(x).length;}).slice(0,3);
+        if(!row.question||o.length<2) return;
+        var c=row.category||'random';
+        (byCat[c]=byCat[c]||[]).push({q:row.question,opts:o,category:c,id:row.id});
+      });
+      var cats=Object.keys(byCat),pool=[],any=true;
+      while(any){ any=false; cats.forEach(function(c){ if(byCat[c].length){ pool.push(byCat[c].shift()); any=true; } }); }
+      if(pool.length>=2) POLL_POOL=pool;   /* category-interleaved bank → daily picks rotate through categories */
+    }catch(e){}
+  }
   async function loadPollConfig(){
     if(!ONLINE)return;
     try{
@@ -4668,7 +4687,9 @@ function notifText(n){
     toast('🗳️ Poll votes reset!');
   }
   async function loadPoll(){
+    if(!POLL_BANK_LOADED){ POLL_BANK_LOADED=true; try{ await loadPollBank(); }catch(e){} }
     await loadPollConfig();
+    try{ await maybeAutoRotatePoll(); }catch(e){}
     if(!ONLINE){renderPoll();return;}
     try{
       var res=await sb.from('flap_poll').select('*');
