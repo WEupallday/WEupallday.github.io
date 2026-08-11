@@ -77,8 +77,7 @@
 
   .topbar{background:linear-gradient(180deg,#ff9a2e 0%,var(--orange) 55%,#d96f00 100%);border-bottom:3px solid #a85400;padding:5px 0;box-shadow:0 3px 10px rgba(0,0,0,.4);}
   /* hide-on-scroll: APP ONLY — the desktop website keeps its original static top bar unchanged */
-  html.is-app .topbar{position:sticky;top:0;z-index:95;transition:transform .34s cubic-bezier(.22,.61,.36,1);will-change:transform;}
-  html.is-app body.bar-hidden .topbar{transform:translateY(-105%);}
+  html.is-app .topbar{position:sticky;top:0;z-index:95;}
   .topbar-inner{width:1010px;margin:0 auto;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
   .navbtn{font-family:Verdana,Arial,sans-serif;font-weight:bold;font-size:9px;letter-spacing:.5px;color:#fff;text-transform:uppercase;cursor:pointer;background:linear-gradient(180deg,#c22a1a 0%,#8f1408 100%);border:1px solid #6b0e04;border-radius:4px;padding:4px 9px;text-shadow:0 1px 1px rgba(0,0,0,.5);}
   /* clean, neat Search — a light "field" pill instead of the red action buttons (desktop website) */
@@ -973,8 +972,6 @@
     .reply{padding:4px 2px;}
     .post-pic{margin-top:5px;}
     /* auto-hiding top bar: slides up when scrolling down, back when scrolling up */
-    .topbar{transition:transform .34s cubic-bezier(.22,.61,.36,1);}
-    body.bar-hidden .topbar{transform:translateY(-100%);}
   }
   /* ===== TheFlap HQ — dedicated tabbed admin ===== */
   .hq-strip{background:linear-gradient(180deg,#ffd23f,#f0a91e)!important;color:#5a3600!important;border-bottom:2px solid #b45c00;}
@@ -1079,8 +1076,6 @@
   .dm-seen{text-align:right;font-size:10px;color:#8aa0c8;margin:-2px 4px 6px 0;letter-spacing:.3px;}
   /* auto-hide the top bar on scroll-down, reveal on scroll-up. Uses `top` (transform is blocked on this
      sticky bar in-app), slid far enough up to fully clear even tall safe-area bars. */
-  html.is-app .topbar{transition:top .34s cubic-bezier(.22,.61,.36,1);}
-  html.is-app body.bar-hidden .topbar{top:-320px;}
   /* ===== PWA STANDALONE render fix (home-screen bookmark) =====
      iOS standalone was letting position:sticky degrade to STATIC, so the top bar scrolled off
      screen even when the reveal STATE said "shown" (debug overlay confirmed shown-but-invisible).
@@ -1090,9 +1085,7 @@
   html.is-standalone .topbar{
     position:fixed !important; top:0 !important; left:0; right:0; z-index:1000 !important;
     padding-top:calc(env(safe-area-inset-top, 0px) + 10px) !important;
-    transform:translateY(0); transition:transform .34s cubic-bezier(.22,.61,.36,1); will-change:transform;
   }
-  html.is-standalone body.bar-hidden .topbar{ transform:translateY(-135%) !important; }
   html.is-standalone body{ padding-top:var(--topbar-h, 104px); }
   html.is-standalone #gate{ padding-top:0; }   /* the sign-in overlay must still cover full screen */
   /* While composing (pear composer) or a full-screen modal (DM / Friends / profile) is open, the
@@ -1167,8 +1160,6 @@
   html.is-app .topbar .navbtn.msg-nav .bell-count, html.is-app .topbar .navbtn.bell .bell-count,
   html.is-standalone .topbar .navbtn.msg-nav .bell-count, html.is-standalone .topbar .navbtn.bell .bell-count{ font-size:10px !important; }
   /* (2) clean X-style reveal: ONE consistent hidden state (kills the -105%/-100%/-135%/top:-320px conflict) */
-  html.is-app body.bar-hidden .topbar, html.is-standalone body.bar-hidden .topbar{ transform:translateY(-110%) !important; top:0 !important; }
-  html.is-app .topbar, html.is-standalone .topbar{ transition:transform .28s cubic-bezier(.22,.61,.36,1) !important; will-change:transform; }
   /* (4) screen-lock: while any section is open, the feed behind cannot scroll */
   html.is-app body.composing, html.is-app body.modal-on, html.is-app body.search-on, html.is-app body.settings-on, html.is-app body.drawer-open,
   html.is-standalone body.composing, html.is-standalone body.modal-on, html.is-standalone body.search-on, html.is-standalone body.settings-on, html.is-standalone body.drawer-open{ overflow:hidden !important; }
@@ -5607,7 +5598,7 @@ function notifText(n){
     var el=document.getElementById('flapDetail'); if(!el)return;
     var body=el.querySelector('.fd-body');
     el.classList.add('open'); document.body.classList.add('detail-open');
-    if(String(id)!==String(LAST_DETAIL_ID)) body.innerHTML='<div style="padding:30px;text-align:center;color:#cfe0ff;">loading flap…</div>';
+    var _haveLocal=(LAST_ROWS||[]).some(function(_r){return String(_r.id)===String(id);})&&(REPLIES[id]||!ONLINE); if(String(id)!==String(LAST_DETAIL_ID)&&!_haveLocal) body.innerHTML='<div style="padding:30px;text-align:center;color:#cfe0ff;">loading flap…</div>';
     function render(r){
       if(!r){ body.innerHTML='<div style="padding:34px;text-align:center;color:#cfe0ff;">This flap isn’t available — it may have been deleted.</div>'; return; }
       try{computeReflaps();}catch(e){}
@@ -5943,57 +5934,6 @@ document.addEventListener('touchmove',function(e){
     }
     x0=y0=null;
   },{passive:true});
-  /* ---- App-context scroll-reveal (X-style INTERACTIVE, Build 10) ----
-     Feed page ONLY. The top panel (bar + tabs) TRACKS your scroll: scroll down and it slides
-     away; scroll up and it eases back in GRADUALLY (proportional to how far you scroll up — no
-     instant pop). When you pause it settles cleanly to fully-shown or fully-hidden. The engine
-     drives the bar's transform inline (with !important) so nothing in the CSS can fight it, and it
-     never runs while any section is open (search / composer / messages / menu / detail / settings). */
-  (function(){
-    var mqR = window.matchMedia('(max-width:760px)');
-    function compactR(){ return !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent) || mqR.matches; }
-    function overlayOpen(){ var b=document.body.classList; return b.contains('composing')||b.contains('modal-on')||b.contains('detail-open')||b.contains('drawer-open')||b.contains('search-on')||b.contains('settings-on'); }
-    var bar=null;
-    function getBar(){ if(!bar||!bar.isConnected) bar=document.querySelector('.topbar'); return bar; }
-    var H=64;
-    function measure(){ var b=getBar(); if(b){ var h=Math.round(b.getBoundingClientRect().height); if(h>0) H=h+2; } }
-    var off=0, cleared=true, snapT=null;
-    function setBar(px, ease){
-      var b=getBar(); if(!b) return;
-      b.style.setProperty('transition', ease ? 'transform .2s cubic-bezier(.22,.61,.36,1)' : 'none', 'important');
-      b.style.setProperty('transform', 'translateY('+px+'px)', 'important');
-      cleared=false;
-    }
-    function clearBar(){ var b=getBar(); if(b && !cleared){ b.style.removeProperty('transform'); b.style.removeProperty('transition'); cleared=true; } if(document.body.classList.contains('bar-hidden')) document.body.classList.remove('bar-hidden'); }
-    function readY(){ var y=window.pageYOffset||0; if(!y){ var se=document.scrollingElement; y=(se&&se.scrollTop)||document.documentElement.scrollTop||(document.body&&document.body.scrollTop)||0; } return y; }
-    var lastY=readY();
-    function scheduleSnap(){
-      if(snapT) clearTimeout(snapT);
-      snapT=setTimeout(function(){
-        if(!compactR()||overlayOpen()) return;
-        var target=(off > -H/2) ? 0 : -H;   /* settle to the nearer state, gently eased */
-        off=target; setBar(off, true);
-      }, 110);
-    }
-    function update(){
-      if(!compactR()){ clearBar(); return; }        /* desktop: never touch the bar */
-      if(overlayOpen()){ return; }                    /* scope isolation: only the feed */
-      var y=readY(), d=y-lastY; lastY=y;
-      if(y<=6){ if(off!==0){ off=0; setBar(0, true); } return; }   /* at the very top: fully shown (settled) */
-      if(d===0) return;   /* stationary: don’t reschedule -> let the snap settle */
-      off -= d;                                        /* 1:1 tracking: scroll DOWN hides, scroll UP reveals */
-      if(off>0) off=0; if(off < -H) off=-H;
-      setBar(off, false);                              /* follow the finger, no transition -> gradual */
-      scheduleSnap();
-    }
-    (function loop(){ update(); requestAnimationFrame(loop); })();
-    ['scroll','wheel','touchmove'].forEach(function(ev){
-      window.addEventListener(ev, update, {passive:true});
-      document.addEventListener(ev, update, {passive:true});
-    });
-    setTimeout(measure, 300); setTimeout(measure, 1500);
-    window.addEventListener('resize', function(){ measure(); if(!compactR()) clearBar(); });
-  })();
 
   /* ---- Tap-vs-scroll guard (Build 10): a "tap" that moved more than ~10px is really a scroll, so we
      cancel the click it would otherwise fire. This stops the feed / messages from opening a view when
