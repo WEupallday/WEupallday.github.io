@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>TheFlap — Full Clickable Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Chewy&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;background:#0a1c4d;color:#fff;font-family:Verdana,Arial,sans-serif;}
+  .app{max-width:480px;margin:0 auto;background:#14337a;min-height:100vh;padding-bottom:76px;position:relative;overflow-x:hidden;}
+  .top{position:sticky;top:0;z-index:30;background:linear-gradient(180deg,#f5a623,#e07d0a);border-bottom:3px solid #b45c00;
+       padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 10px;display:flex;align-items:center;gap:8px;}
+  .brand{font-family:'Chewy',cursive;font-size:20px;text-shadow:0 2px 0 #b45c00;}
+  .bal{margin-left:auto;background:#fff;color:#c05e00;font-weight:bold;border-radius:20px;padding:6px 12px;font-size:15px;box-shadow:0 2px 0 #b45c00;}
+  .earn{background:#1e9e5a;color:#fff;border:none;border-radius:16px;padding:7px 9px;font-weight:bold;font-size:11px;box-shadow:0 2px 0 #0c5c31;}
+  .earn:disabled{opacity:.5;box-shadow:none;}
+  .hq{background:#0e2560;color:#ffd98a;border:1px solid #ffd98a;border-radius:14px;padding:6px 9px;font-weight:bold;font-size:11px;}
+  .screen{display:none;} .screen.on{display:block;}
+  h3.sec{font-family:'Chewy',cursive;font-size:16px;margin:14px 12px 6px;color:#ffd98a;font-weight:normal;}
+  .nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;display:flex;background:#0e2560;border-top:2px solid #2b57b8;z-index:40;}
+  .nav button{flex:1;background:none;border:none;color:#8fa6d8;padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px));font-size:10.5px;font-weight:bold;position:relative;}
+  .nav button .ni{display:block;font-size:19px;margin-bottom:2px;}
+  .nav button.on{color:#ffd98a;}
+  .nbadge{position:absolute;top:4px;right:26%;background:#ff3b6b;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;}
+  /* composer */
+  .comp{margin:12px;background:#1b3f92;border:1px solid #3560b8;border-radius:14px;padding:12px;}
+  .comp textarea{width:100%;background:#0e2560;border:1px solid #2b57b8;border-radius:10px;color:#fff;padding:9px;font-family:inherit;font-size:14px;resize:none;height:52px;}
+  .moodrow{display:flex;gap:7px;overflow-x:auto;margin-top:9px;padding-bottom:2px;}
+  .moodchip{flex:0 0 auto;background:#0e2560;border:1px solid #2b57b8;border-radius:12px;padding:6px 9px;font-size:18px;position:relative;cursor:pointer;}
+  .moodchip.sel{border-color:#f5a623;background:#243a72;}
+  .moodchip.lock{opacity:.5;}
+  .moodchip .lk{position:absolute;bottom:-3px;right:-3px;font-size:10px;}
+  .postbtn{margin-top:9px;width:100%;border:none;border-radius:12px;padding:9px;font-weight:bold;background:#f5a623;color:#5a2d00;box-shadow:0 2px 0 #b45c00;}
+  /* post card */
+  .post{margin:12px;background:#1b3f92;border:1px solid #3560b8;border-radius:14px;padding:12px;}
+  .phead{display:flex;align-items:center;gap:9px;}
+  .pav{width:40px;height:40px;border-radius:50%;background:#37b6ff;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#04294d;font-size:16px;position:relative;flex:0 0 auto;}
+  .pav.fr-gold{box-shadow:0 0 0 3px #ffd54a;} .pav.fr-sparkle{box-shadow:0 0 0 3px #b79cff;} .pav.fr-galaxy{box-shadow:0 0 0 3px #7a5cff;}
+  .pname{font-weight:bold;font-size:14px;}
+  .rainbow{background:linear-gradient(90deg,#ff5db1,#f5a623,#1e9e5a,#37b6ff,#9b6bff);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .ptime{font-size:11px;color:#8fa6d8;}
+  .ptext{margin:9px 0 0;font-size:14px;line-height:1.45;}
+  .pmood{display:inline-flex;align-items:center;gap:5px;margin-top:9px;background:#0e2560;border:1px solid #35507e;border-radius:20px;padding:4px 10px;font-size:12px;color:#ffd98a;}
+  .pmood .em{font-size:18px;display:inline-block;}
+  .pacts{display:flex;gap:16px;margin-top:11px;align-items:center;color:#aebfe6;font-size:13px;}
+  .pacts b{color:#fff;}
+  .fbtn{display:flex;align-items:center;gap:5px;cursor:pointer;}
+  .fbtn .fi{font-size:17px;transition:transform .15s;}
+  .fbtn.on{color:#ffd98a;} .fbtn.on .fi{transform:scale(1.25);}
+  /* buttons/pills shared */
+  .tabs{display:flex;gap:7px;overflow-x:auto;padding:10px 12px 4px;}
+  .tab{white-space:nowrap;background:#0e2560;border:1px solid #2b57b8;color:#cfe0ff;border-radius:16px;padding:7px 12px;font-size:12px;font-weight:bold;}
+  .tab.on{background:#f5a623;color:#5a2d00;border-color:#f5a623;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px 12px;}
+  @media(min-width:430px){.grid{grid-template-columns:1fr 1fr 1fr;}}
+  .card{background:#1b3f92;border:1px solid #3560b8;border-radius:14px;padding:12px 10px;text-align:center;position:relative;overflow:hidden;}
+  .ic{font-size:31px;line-height:1;display:inline-block;margin:3px 0 5px;}
+  .nm{font-size:12px;font-weight:bold;min-height:26px;display:flex;align-items:center;justify-content:center;}
+  .pill{position:absolute;top:6px;left:6px;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:8px;}
+  .pill.feed{background:#ff5db1;color:#4b0026;} .pill.new{background:#1e9e5a;color:#fff;} .pill.soon{background:#33477e;color:#aebfe6;}
+  .pill.limited{background:#ffd98a;color:#5a2d00;} .pill.excl{background:#9b6bff;color:#fff;} .pill.off{background:#a3160b;color:#fff;}
+  .buy{margin-top:6px;width:100%;border:none;border-radius:12px;padding:8px;font-weight:bold;font-size:12px;background:#f5a623;color:#5a2d00;box-shadow:0 2px 0 #b45c00;}
+  .buy.owned{background:#1e9e5a;color:#fff;box-shadow:0 2px 0 #0c5c31;} .buy.poor{background:#33477e;color:#8fa6d8;box-shadow:none;}
+  .buy.soon{background:#24365f;color:#7f93c4;box-shadow:none;} .buy.toggle{background:#ff5db1;color:#4b0026;box-shadow:0 2px 0 #a3204f;}
+  .note{background:#0e2560;border:1px solid #2b57b8;margin:12px;border-radius:12px;padding:10px 12px;font-size:12px;color:#cfe0ff;line-height:1.5;}
+  /* challenges */
+  .chero{margin:12px;background:linear-gradient(135deg,#7a2d9c,#c0348f);border-radius:16px;padding:14px;position:relative;}
+  .chero .tag{font-size:10px;font-weight:bold;background:#ffd98a;color:#5a2d00;padding:3px 8px;border-radius:8px;}
+  .chero h2{font-family:'Chewy',cursive;font-weight:normal;margin:8px 0 4px;font-size:20px;}
+  .chero .meta{font-size:12px;color:#ffd6f0;}
+  .chcard{margin:12px;background:#1b3f92;border:1px solid #3560b8;border-radius:14px;overflow:hidden;cursor:pointer;}
+  .chcard .banner{height:84px;display:flex;align-items:center;justify-content:center;font-size:40px;}
+  .chcard .cb{padding:11px 12px;} .chcard h4{margin:0 0 3px;font-size:15px;} .chcard .csub{font-size:11.5px;color:#8fa6d8;}
+  .kv{margin:10px 12px;background:#0e2560;border:1px solid #2b57b8;border-radius:12px;padding:11px 12px;font-size:13px;line-height:1.6;}
+  .kv b{color:#ffd98a;font-weight:normal;}
+  .jbtn{margin:0 12px;width:calc(100% - 24px);border:none;border-radius:14px;padding:12px;font-weight:bold;font-size:14px;background:#ffd98a;color:#5a2d00;box-shadow:0 3px 0 #b58a2e;}
+  .jbtn.done{background:#1e9e5a;color:#fff;box-shadow:0 3px 0 #0c5c31;}
+  .lin{background:none;border:none;color:#ff9ed0;font-weight:bold;font-size:12px;padding:4px;}
+  .subtabs{display:flex;gap:8px;padding:8px 12px 0;}
+  .subtab{flex:1;text-align:center;background:#0e2560;border:1px solid #2b57b8;color:#cfe0ff;border-radius:12px 12px 0 0;padding:8px;font-size:12px;font-weight:bold;}
+  .subtab.on{background:#f5a623;color:#5a2d00;border-color:#f5a623;}
+  .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;}
+  .vid{background:#1b3f92;border:1px solid #3560b8;border-radius:14px;overflow:hidden;position:relative;}
+  .thumb{height:104px;display:flex;align-items:center;justify-content:center;font-size:42px;cursor:pointer;position:relative;}
+  .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.5);}
+  .vmeta{padding:7px 9px;display:flex;align-items:center;gap:6px;font-size:12px;} .vmeta .who{font-weight:bold;}
+  .vfeat{margin-left:auto;background:#0e2560;border:1px solid #ffd98a;color:#ffd98a;border-radius:12px;padding:3px 7px;font-weight:bold;cursor:pointer;font-size:11px;}
+  .vfeat.on{background:#ffd98a;color:#5a2d00;}
+  .rep{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.4);border:none;color:#fff;border-radius:10px;padding:2px 6px;font-size:11px;z-index:2;}
+  .rank{position:absolute;top:6px;left:6px;background:#ffd98a;color:#5a2d00;border-radius:10px;padding:2px 7px;font-size:11px;font-weight:bold;}
+  .mine-tag{position:absolute;top:6px;left:6px;background:#1e9e5a;color:#fff;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:bold;}
+  /* overlay player + generic modal */
+  .ov{display:none;position:fixed;inset:0;background:rgba(4,12,40,.94);z-index:60;flex-direction:column;align-items:center;justify-content:center;max-width:480px;margin:0 auto;padding:20px;}
+  .ov.on{display:flex;}
+  .pstage{width:88%;height:250px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:78px;}
+  .pbar{width:88%;height:6px;background:#24468f;border-radius:3px;margin-top:12px;overflow:hidden;} .pfill{height:100%;width:0;background:#ff5db1;}
+  .ovbtn{margin-top:14px;background:#f5a623;color:#5a2d00;border:none;border-radius:16px;padding:9px 20px;font-weight:bold;}
+  .ovrow{display:flex;gap:10px;margin-top:12px;}
+  .ovrow .lin{background:#0e2560;border:1px solid #35507e;border-radius:14px;padding:8px 14px;color:#ff9ed0;}
+  /* detail (notification -> post) clean header */
+  .fd-bar{position:relative;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 9px;background:linear-gradient(180deg,#f5a623,#e07d0a);border-bottom:2px solid #b45c00;}
+  .fd-back{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;font-weight:bold;font-size:13px;padding:6px 13px;border-radius:18px;}
+  .fd-title{font-family:'Chewy',cursive;font-size:17px;text-shadow:0 2px 0 #b45c00;}
+  /* profile */
+  .pf{margin:12px;background:#1b3f92;border:1px solid #3560b8;border-radius:16px;padding:16px;text-align:center;}
+  .pfav{width:76px;height:76px;border-radius:50%;background:#f5a623;display:flex;align-items:center;justify-content:center;font-size:30px;color:#5a2d00;font-weight:bold;margin:0 auto 8px;}
+  .pfstats{display:flex;justify-content:center;gap:16px;margin-top:10px;font-size:12px;color:#cfe0ff;} .pfstats b{display:block;font-size:16px;color:#fff;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;} .chip{background:#0e2560;border:1px solid #2b57b8;border-radius:12px;padding:5px 9px;font-size:14px;}
+  .pfacts{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap;}
+  .pfacts button{border:1px solid #35507e;background:#0e2560;color:#cfe0ff;border-radius:14px;padding:8px 14px;font-weight:bold;font-size:12px;}
+  .pfacts button.follow{background:#f5a623;color:#5a2d00;border-color:#f5a623;} .pfacts button.dm{background:#243a72;color:#8fa6d8;}
+  /* notifications */
+  .nrow{display:flex;align-items:center;gap:10px;margin:0 12px;padding:11px 0;border-bottom:1px solid #24468f;cursor:pointer;}
+  .nrow .ni2{font-size:20px;} .nrow .nt{font-size:13px;} .nrow .ntm{font-size:11px;color:#8fa6d8;margin-left:auto;}
+  .ndot{width:8px;height:8px;border-radius:50%;background:#ff3b6b;flex:0 0 auto;}
+  /* admin */
+  .adm{padding:6px 0 20px;}
+  .adm .rolebar{margin:12px;background:#0e2560;border:1px solid #2b57b8;border-radius:12px;padding:10px 12px;font-size:12px;color:#cfe0ff;}
+  .adm select{background:#14337a;color:#fff;border:1px solid #35507e;border-radius:8px;padding:5px 8px;font-family:inherit;font-size:12px;}
+  .amenu{display:flex;gap:7px;overflow-x:auto;padding:4px 12px 8px;}
+  .amenu .tab{background:#14337a;}
+  .arow{margin:0 12px 8px;background:#1b3f92;border:1px solid #3560b8;border-radius:12px;padding:11px 12px;display:flex;align-items:center;gap:10px;}
+  .arow .an{font-weight:bold;font-size:14px;} .arow .as{font-size:11px;color:#8fa6d8;}
+  .arow .sp{margin-left:auto;display:flex;gap:6px;align-items:center;}
+  .mini{border:none;border-radius:10px;padding:6px 9px;font-weight:bold;font-size:12px;cursor:pointer;}
+  .mini.g{background:#1e9e5a;color:#fff;} .mini.r{background:#a3160b;color:#fff;} .mini.o{background:#f5a623;color:#5a2d00;} .mini.n{background:#0e2560;color:#cfe0ff;border:1px solid #35507e;}
+  .priceInput{width:64px;background:#0e2560;border:1px solid #35507e;color:#fff;border-radius:8px;padding:5px;text-align:center;font-family:inherit;}
+  .toggle2{width:44px;height:24px;border-radius:12px;background:#33477e;position:relative;cursor:pointer;flex:0 0 auto;}
+  .toggle2.on{background:#1e9e5a;} .toggle2 .k{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s;} .toggle2.on .k{left:22px;}
+  .secchk{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;} .secchk label{font-size:11px;background:#0e2560;border:1px solid #35507e;border-radius:10px;padding:4px 8px;cursor:pointer;} .secchk input{margin-right:4px;vertical-align:-1px;}
+  .toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);background:#0e2560;border:1px solid #f5a623;color:#fff;padding:10px 16px;border-radius:20px;font-size:13px;font-weight:bold;opacity:0;transition:opacity .2s;z-index:90;pointer-events:none;text-align:center;max-width:88%;}
+  .toast.show{opacity:1;}
+  .conf{position:fixed;width:9px;height:9px;top:-12px;z-index:95;pointer-events:none;border-radius:2px;}
+  @keyframes mBounce{0%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}60%{transform:translateY(2px)}}
+  @keyframes mPop{0%,100%{transform:scale(1)}40%{transform:scale(1.26)}}
+  @keyframes mShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-11deg)}75%{transform:rotate(11deg)}}
+  @keyframes mSpin{100%{transform:rotate(360deg)}}
+  @keyframes mTilt{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}
+  @keyframes mCry{0%,100%{transform:translateY(0)}50%{transform:translateY(3px) scale(1.05)}}
+  @keyframes mSpark{0%,100%{filter:none;transform:scale(1)}50%{filter:brightness(1.4);transform:scale(1.12)}}
+  @keyframes mHeart{0%,100%{transform:scale(1)}25%,75%{transform:scale(1.2)}50%{transform:scale(1)}}
+  @keyframes mExplode{0%,100%{transform:scale(1)}40%{transform:scale(1.3) rotate(8deg)}}
+  @keyframes mFlame{0%,100%{transform:scale(1)}50%{transform:scale(1.15) translateY(-2px)}}
+  @keyframes mFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .anim{animation-duration:1.1s;animation-iteration-count:infinite;animation-timing-function:ease-in-out;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <span class="brand">🐦 TheFlap</span>
+    <button class="hq" onclick="go('admin')">HQ</button>
+    <button class="earn" id="earnBtn" onclick="earn()">Daily +10</button>
+    <span class="bal">🪶 <span id="bal">250</span></span>
+  </div>
+  <div class="screen on" id="s_feed"></div>
+  <div class="screen" id="s_challenges"></div>
+  <div class="screen" id="s_store"></div>
+  <div class="screen" id="s_notifs"></div>
+  <div class="screen" id="s_profile"></div>
+  <div class="screen" id="s_detail"></div>
+  <div class="screen" id="s_admin"></div>
+  <div class="nav">
+    <button class="on" data-s="feed" onclick="go('feed',this)"><span class="ni">🏠</span>Feed</button>
+    <button data-s="challenges" onclick="go('challenges',this)"><span class="ni">🏆</span>Challenges</button>
+    <button data-s="store" onclick="go('store',this)"><span class="ni">🪶</span>Store</button>
+    <button data-s="notifs" onclick="go('notifs',this)"><span class="ni">🔔</span>Alerts<span class="nbadge" id="nbadge">2</span></button>
+    <button data-s="profile" onclick="go('profile',this)"><span class="ni">👤</span>Profile</button>
+  </div>
+</div>
+
+<div class="ov" id="player">
+  <div class="pstage" id="pstage">🎬</div>
+  <div style="margin-top:12px;font-weight:bold" id="pwho"></div>
+  <div class="pbar"><div class="pfill" id="pfill"></div></div>
+  <div class="ovrow"><button class="lin" onclick="reportFromPlayer()">⚑ Report</button><button class="lin" id="pdelBtn" style="display:none" onclick="deleteFromPlayer()">🗑 Delete mine</button></div>
+  <button class="ovbtn" onclick="closeOv('player')">Close</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =================== STATE =================== */
+var bal=250, earned=false, rainbowOn=false;
+var owned={emoji_laugh:1, emoji_party:1};      // moods/cosmetics YOU own
+var follows={};                                 // usernames you follow
+var joined={}, entered={}, feat={};             // challenge state
+var alertsUnread=2;
+
+/* =================== CATALOG (admin-configurable) =================== */
+var REWARDS=[
+ {id:'emoji_laugh',n:'Laughing',ic:'😂',p:60,g:'Moods',a:'mBounce'},
+ {id:'emoji_party',n:'Party',ic:'🥳',p:60,g:'Moods',a:'mSpin'},
+ {id:'emoji_fire',n:'Fire',ic:'🔥',p:75,g:'Moods',a:'mFlame',wk:'new'},
+ {id:'emoji_mindblown',n:'Mind Blown',ic:'🤯',p:80,g:'Moods',a:'mExplode',wk:'new'},
+ {id:'emoji_cool',n:'Too Cool',ic:'😎',p:65,g:'Moods',a:'mTilt',wk:'new'},
+ {id:'emoji_skull',n:'Dead',ic:'💀',p:70,g:'Moods',a:'mShake',wk:'new'},
+ {id:'emoji_crylaugh',n:'Crying Laughing',ic:'😹',p:65,g:'Moods',a:'mBounce'},
+ {id:'emoji_shock',n:'Shocked',ic:'😱',p:60,g:'Moods',a:'mPop'},
+ {id:'emoji_angry',n:'Angry',ic:'😠',p:60,g:'Moods',a:'mShake'},
+ {id:'emoji_excited',n:'Excited',ic:'🤩',p:60,g:'Moods',a:'mSpark'},
+ {id:'emoji_confused',n:'Confused',ic:'😕',p:55,g:'Moods',a:'mTilt'},
+ {id:'emoji_love',n:'Heart Eyes',ic:'😍',p:65,g:'Moods',a:'mHeart',wk:'soon'},
+ {id:'emoji_cry',n:'Crying',ic:'😭',p:60,g:'Moods',a:'mCry',wk:'soon'},
+ {id:'emoji_ghost',n:'Ghost',ic:'👻',p:70,g:'Moods',a:'mFloat',wk:'soon'},
+ {id:'rainbow_name',n:'Rainbow Name',ic:'🌈',p:400,g:'Name FX',feed:true},
+ {id:'gold_frame',n:'Golden Frame',ic:'🥇',p:180,g:'Frames',fr:'gold'},
+ {id:'sparkle_frame',n:'Sparkle Frame',ic:'✨',p:220,g:'Frames',fr:'sparkle'},
+ {id:'galaxy_frame',n:'Galaxy Frame',ic:'🌌',p:300,g:'Frames',fr:'galaxy'},
+ {id:'post_confetti',n:'Post Confetti',ic:'🎉',p:120,g:'Post FX'},
+ {id:'post_snow',n:'Snowfall',ic:'❄️',p:130,g:'Post FX'},
+ {id:'pinaflap',n:'PinaFlap (24h pin)',ic:'📌',p:350,g:'Boosts',dur:'24h'},
+ {id:'boost_spotlight',n:'Spotlight (1h)',ic:'🔦',p:200,g:'Boosts',dur:'1h'},
+ {id:'vip_badge',n:'VIP Badge',ic:'🌟',p:450,g:'Badges'},
+ {id:'og_badge',n:'OG Badge',ic:'🏅',p:0,g:'Badges',excl:true},
+ {id:'summer_shades',n:'Summer Shades',ic:'😎',p:150,g:'Limited',limited:true},
+ {id:'winter_frost',n:'Winter Frost',ic:'☃️',p:150,g:'Limited',limited:true}
+];
+REWARDS.forEach(function(r){ if(r.avail===undefined) r.avail=true; });
+function reward(id){for(var i=0;i<REWARDS.length;i++)if(REWARDS[i].id===id)return REWARDS[i];return null;}
+var STGROUPS=['Moods','Name FX','Frames','Post FX','Boosts','Badges','Limited'];
+var MOODS=REWARDS.filter(function(r){return r.g==='Moods';});
+
+/* =================== DEMO FEED =================== */
+var FEED=[
+ {u:'maya',c:'#c0348f',fr:'sparkle',rb:false,t:'who else still remembers staying up all night flappin 😭 best times fr',mood:'emoji_crylaugh',f:214,cm:31,mine:false},
+ {u:'deej',c:'#1e6fae',fr:null,rb:false,t:'dropped a new beat for the talent challenge 🔥 go vote',mood:'emoji_fire',f:188,cm:12,mine:false},
+ {u:'kj',c:'#e07d0a',fr:'gold',rb:true,t:'rainbow name hits different ngl 🌈',mood:'emoji_cool',f:301,cm:44,mine:false},
+ {u:'nova',c:'#1e9e5a',fr:null,rb:false,t:'bro the new moods are so clean 🤯',mood:'emoji_mindblown',f:97,cm:8,mine:false}
+];
+
+/* =================== CHALLENGES =================== */
+var CHALLENGES=[
+ {id:'talent',ic:'🎬',c:'#7a2d9c,#c0348f',title:'15-Second Talent Show',status:'weekly',left:'4 days left',
+  desc:'Show us your best 15-second talent — dance, sing, comedy, magic, anything. Keep it fun and original.',
+  rules:'Max 15 seconds. One entry per person. Keep it PG. No music you don’t have rights to. Be kind in the comments.',
+  reward:'500 🪶 + Legend Badge',entries:37},
+ {id:'duet',ic:'🎤',c:'#1e6fae,#0e2560',title:'Best Lip Sync Duet',status:'weekly',left:'6 days left',
+  desc:'Grab a friend (or split-screen yourself) and lip sync your favorite throwback.',
+  rules:'Max 20 seconds. One entry per person. Duets or solo split-screen allowed.',
+  reward:'300 🪶 + Sparkle Frame',entries:19},
+ {id:'june',ic:'🏆',c:'#f5a623,#e07d0a',title:'June — Best Dance (ended)',status:'ended',left:'Winners posted',
+  desc:'June’s dance challenge. Congrats to everyone who entered!',
+  rules:'Ended.',reward:'Winner: trell 🏆',entries:52}
+];
+var SUBS={
+ talent:[{u:'maya',ic:'💃',g:'#c0348f,#7a2d9c',f:214},{u:'deej',ic:'🎤',g:'#1e6fae,#0e2560',f:188},{u:'kj',ic:'🕺',g:'#e07d0a,#b45c00',f:301},{u:'nova',ic:'🎸',g:'#1e9e5a,#0c5c31',f:97},{u:'rell',ic:'🤹',g:'#7a2d9c,#37206b',f:143}],
+ duet:[{u:'bee',ic:'🎨',g:'#c0348f,#e07d0a',f:76},{u:'sky',ic:'🎧',g:'#9b6bff,#7a2d9c',f:120}],
+ june:[]
+};
+var WINNERS={june:[{u:'trell',ic:'🏆',g:'#f5a623,#e07d0a',t:'1st — Best Dance'},{u:'sky',ic:'🥈',g:'#9b6bff,#7a2d9c',t:'2nd'}]};
+var VIDREPORTS=[
+ {id:1,u:'rell',ch:'talent',ic:'🤹',reason:'Spam / off-topic',by:'nova',status:'open'},
+ {id:2,u:'sky',ch:'duet',ic:'🎧',reason:'Possible copyright audio',by:'auto-check',status:'open'}
+];
+
+/* =================== ADMIN (roles) =================== */
+var ALLSEC=['members','rewards','challenges','videoreports','reports','moderation','staff'];
+var STAFF=[
+ {name:'lock',sections:ALLSEC.slice(),role:'Owner'},
+ {name:'jordan',sections:['support','reports'],role:'Support'},
+ {name:'riley',sections:['members','moderation','videoreports'],role:'Moderator'}
+];
+var MEMBERS=[
+ {name:'lock (you)',feathers:function(){return bal;},me:true},
+ {name:'maya',feathers:function(){return 640;}},
+ {name:'deej',feathers:function(){return 220;}},
+ {name:'kj',feathers:function(){return 1180;}},
+ {name:'nova',feathers:function(){return 75;}}
+];
+var memBonus={};
+var viewRole='Owner';   // which staff role admin is "viewing as"
+var admSec='members';
+
+/* =================== HELPERS =================== */
+function setBal(v){bal=v;var e=document.getElementById('bal');if(e)e.textContent=v;}
+function toast(m){var t=document.getElementById('toast');t.innerHTML=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},1700);}
+function go(s,btn){
+  document.querySelectorAll('.screen').forEach(function(e){e.classList.remove('on');});
+  document.getElementById('s_'+s).classList.add('on');
+  if(btn){document.querySelectorAll('.nav button').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');}
+  else if(s!=='detail'&&s!=='admin'){document.querySelectorAll('.nav button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-s')===s);});}
+  window.scrollTo(0,0);
+  if(s==='feed')renderFeed(); if(s==='store')renderStore(); if(s==='profile')renderProfile('lock');
+  if(s==='notifs'){alertsUnread=0;var nb=document.getElementById('nbadge');if(nb)nb.style.display='none';renderNotifs();}
+  if(s==='challenges'){curChallenge=null;renderChallenges();}
+  if(s==='admin')renderAdmin();
+}
+function earn(){if(earned)return;earned=true;setBal(bal+10);var b=document.getElementById('earnBtn');b.disabled=true;b.textContent='Claimed ✓';toast('+10 🪶 daily bonus!');confetti();}
+function myFrame(){for(var i=0;i<REWARDS.length;i++){var r=REWARDS[i];if(r.g==='Frames'&&owned[r.id])return r.fr;}return null;}
+
+/* =================== FEED + MOODS =================== */
+var composeMood=null;
+function renderFeed(){
+  var fr=myFrame();
+  var h='<div class="comp"><textarea id="ctext" placeholder="What’s flappin’, lock?"></textarea>';
+  h+='<div style="font-size:11px;color:#8fa6d8;margin-top:7px;">Pick a mood <span style="color:#ffd98a">(only moods you own)</span>:</div>';
+  h+='<div class="moodrow">';
+  MOODS.forEach(function(m){
+    var own=owned[m.id];
+    h+='<div class="moodchip'+(own?'':' lock')+(composeMood===m.id?' sel':'')+'" onclick="'+(own?'pickMood(\''+m.id+'\')':'lockedMood(\''+m.id+'\')')+'"><span class="'+(own?'anim':'')+'" style="'+(own?'animation-name:'+m.a:'')+'">'+m.ic+'</span>'+(own?'':'<span class="lk">🔒</span>')+'</div>';
+  });
+  h+='</div><button class="postbtn" onclick="postFlap()">Post flap 🐦</button></div>';
+  FEED.forEach(function(p,i){ h+=postCard(p,i); });
+  document.getElementById('s_feed').innerHTML=h;
+}
+function pickMood(id){composeMood=(composeMood===id?null:id);renderFeed();}
+function lockedMood(id){var m=reward(id);toast('🔒 '+m.n+' is locked — unlock it in the Store for '+m.p+' 🪶');}
+function postFlap(){
+  var tx=(document.getElementById('ctext').value||'').trim();
+  if(!tx){toast('Write something first ✍️');return;}
+  FEED.unshift({u:'lock',c:'#f5a623',fr:myFrame(),rb:rainbowOn,t:tx,mood:composeMood,f:0,cm:0,mine:true,youfeather:false});
+  composeMood=null;renderFeed();toast('Flap posted! 🐦');window.scrollTo(0,0);
+}
+function postCard(p,i){
+  var frcls=p.fr?(' fr-'+p.fr):'';
+  var mood=p.mood?reward(p.mood):null;
+  var moodHTML=mood?'<div class="pmood"><span class="em anim" style="animation-name:'+mood.a+'">'+mood.ic+'</span> feeling '+mood.n+'</div>':'';
+  var nameCls='pname'+(p.rb?' rainbow':'');
+  var fon=p.youfeather?' on':'';
+  var fcount=p.f+(p.youfeather?1:0);
+  return '<div class="post"><div class="phead"><div class="pav'+frcls+'" onclick="renderProfile(\''+p.u+'\');go(\'profile\')">'+p.u.charAt(0).toUpperCase()+'</div>'+
+    '<div><div class="'+nameCls+'">'+p.u+(p.u==='lock'?'':'')+'</div><div class="ptime">'+(p.mine?'just now':'2h')+' · TheFlap</div></div></div>'+
+    '<div class="ptext">'+esc(p.t)+'</div>'+moodHTML+
+    '<div class="pacts"><span class="fbtn'+fon+'" onclick="featherPost('+i+',this)"><span class="fi">🪶</span> <b>'+fcount+'</b></span>'+
+    '<span>💬 '+p.cm+'</span>'+(p.mine?'<span style="margin-left:auto;color:#ff9ed0;cursor:pointer" onclick="delPost('+i+')">🗑 delete</span>':'<span style="margin-left:auto;cursor:pointer" onclick="openPost('+i+')">open ›</span>')+'</div></div>';
+}
+function featherPost(i,el){FEED[i].youfeather=!FEED[i].youfeather;renderFeed();}
+function delPost(i){if(!confirm('Delete your flap?'))return;FEED.splice(i,1);renderFeed();toast('Flap deleted');}
+
+/* =================== NOTIFICATIONS -> clean post detail =================== */
+var NOTIFS=[
+ {ic:'🪶',t:'maya feathered your flap',unread:true,post:0},
+ {ic:'💬',t:'deej replied to your flap',unread:true,post:1},
+ {ic:'🏆',t:'You placed #3 in a challenge!',unread:false,post:2},
+ {ic:'👤',t:'kj started following you',unread:false,post:null}
+];
+function renderNotifs(){
+  var h='<h3 class="sec">Alerts</h3>';
+  NOTIFS.forEach(function(n,i){
+    h+='<div class="nrow" onclick="'+(n.post!=null?'openPost('+n.post+')':'toast(\'Opened profile\')')+'">'+(n.unread?'<span class="ndot"></span>':'<span style="width:8px"></span>')+'<span class="ni2">'+n.ic+'</span><span class="nt">'+n.t+'</span><span class="ntm">'+(i+1)+'h</span></div>';
+  });
+  document.getElementById('s_notifs').innerHTML=h;
+}
+function openPost(i){
+  var p=FEED[i]; if(!p){toast('That flap isn’t available.');return;}
+  var mood=p.mood?reward(p.mood):null;
+  var moodHTML=mood?'<div class="pmood"><span class="em anim" style="animation-name:'+mood.a+'">'+mood.ic+'</span> feeling '+mood.n+'</div>':'';
+  var fcount=p.f+(p.youfeather?1:0);
+  var h='<div class="fd-bar"><button class="fd-back" onclick="go(\'feed\')">‹ Back</button><span class="fd-title">Flap</span></div>';
+  h+='<div class="post" style="margin-top:12px"><div class="phead"><div class="pav'+(p.fr?' fr-'+p.fr:'')+'">'+p.u.charAt(0).toUpperCase()+'</div>'+
+    '<div><div class="pname'+(p.rb?' rainbow':'')+'">'+p.u+'</div><div class="ptime">2h · TheFlap</div></div></div>'+
+    '<div class="ptext">'+esc(p.t)+'</div>'+moodHTML+
+    '<div class="pacts"><span class="fbtn'+(p.youfeather?' on':'')+'"><span class="fi">🪶</span> <b>'+fcount+'</b></span><span>💬 '+p.cm+'</span></div></div>';
+  h+='<div style="margin:0 12px 12px"><div class="post" style="margin:0"><div style="font-size:12px;color:#8fa6d8">💬 Replies</div><div style="margin-top:8px;font-size:13px"><b>deej:</b> this is heat 🔥</div><div style="margin-top:6px;font-size:13px"><b>maya:</b> 🪶🪶🪶</div></div></div>';
+  document.getElementById('s_detail').innerHTML=h;
+  go('detail');
+}
+
+/* =================== STORE =================== */
+var curSt='Moods';
+function renderStore(){
+  var h='<div class="note"><b>🪶 Flap Store.</b> Feathers are <b>earned, never bought</b> — from daily opens, challenges &amp; wins. Every price &amp; item is set from HQ (admin) — no rebuild.</div>';
+  h+='<div class="tabs">';
+  STGROUPS.forEach(function(g){h+='<div class="tab'+(g===curSt?' on':'')+'" onclick="curSt=\''+g+'\';renderStore();">'+g+'</div>';});
+  h+='</div><div class="grid">';
+  REWARDS.filter(function(r){return r.g===curSt;}).forEach(function(r){h+=storeCard(r);});
+  h+='</div>';
+  if(curSt==='Moods')h='<div class="note"><b>Moods</b> appear on your posts in the feed — but only the ones you own. Unlock more with Feathers; new moods drop weekly.</div>'.concat(h.substring(h.indexOf('<div class="tabs"')));
+  document.getElementById('s_store').innerHTML=h;
+}
+function storeCard(r){
+  if(!r.avail) return '<div class="card"><span class="pill off">OFF</span><span class="ic">'+r.ic+'</span><div class="nm">'+r.n+'</div><button class="buy poor">Unavailable</button></div>';
+  var pill=r.feed?'<span class="pill feed">FEED</span>':r.limited?'<span class="pill limited">LIMITED</span>':r.excl?'<span class="pill excl">EXCLUSIVE</span>':r.wk==='new'?'<span class="pill new">NEW</span>':r.wk==='soon'?'<span class="pill soon">SOON</span>':'';
+  var icon='<span class="ic'+(r.a?' anim':'')+'" style="'+(r.a?'animation-name:'+r.a:'')+'">'+r.ic+'</span>';
+  var btn;
+  if(owned[r.id]){btn=r.feed?'<button class="buy toggle" onclick="toggleRainbow()">'+(rainbowOn?'✓ On (feed)':'Turn on')+'</button>':'<button class="buy owned">✓ Owned</button>';}
+  else if(r.excl){btn='<button class="buy poor" onclick="toast(\'The OG Badge is exclusive — earned, not bought.\')">Earned only</button>';}
+  else if(r.wk==='soon'){btn='<button class="buy soon">Drops soon</button>';}
+  else if(bal<r.p){btn='<button class="buy poor" onclick="toast(\'Need '+r.p+' 🪶 — earn more!\')">Need '+r.p+' 🪶</button>';}
+  else{btn='<button class="buy" onclick="buy(\''+r.id+'\')">Unlock · '+r.p+' 🪶</button>';}
+  return '<div class="card">'+pill+icon+'<div class="nm">'+r.n+'</div>'+btn+'</div>';
+}
+function buy(id){var r=reward(id);if(!r||owned[id]||bal<r.p||!r.avail)return;
+  setBal(bal-r.p);owned[id]=1;confetti();if(r.feed){rainbowOn=true;}
+  toast('Unlocked '+r.n+'! '+(r.g==='Moods'?'It’s now in your mood picker 🎉':'🪶'));renderStore();}
+function toggleRainbow(){rainbowOn=!rainbowOn;renderStore();toast(rainbowOn?'🌈 Rainbow Name ON (shows in feed)':'Rainbow Name off');}
+
+/* =================== PROFILE =================== */
+function renderProfile(who){
+  who=who||'lock'; var me=(who==='lock');
+  var frames=REWARDS.filter(function(r){return r.g==='Frames'&&owned[r.id];});
+  var ownedMoods=MOODS.filter(function(m){return owned[m.id];});
+  var badges=REWARDS.filter(function(r){return r.g==='Badges'&&owned[r.id];});
+  var frameIc=frames.length?frames[0].ic:'';
+  var name=me?'lock':who;
+  var rb=me?rainbowOn:(who==='kj');
+  var h='<div class="pf">'+
+    '<div class="pfav'+(me&&myFrame()?' fr-'+myFrame():'')+'">'+(me?(frameIc||'L'):name.charAt(0).toUpperCase())+'</div>'+
+    '<div class="pname'+(rb?' rainbow':'')+'" style="font-size:20px">'+name+'</div>'+
+    '<div style="font-size:12px;color:#8fa6d8;margin-top:2px">@'+name+' · 🔥 12 day streak</div>';
+  if(me){
+    h+='<div class="pfstats"><div><b>'+bal+'</b>🪶</div><div><b>'+ownedMoods.length+'</b>Moods</div><div><b>'+(frames.length+badges.length)+'</b>Cosmetics</div></div>';
+    var chips=ownedMoods.map(function(m){return '<span class="chip">'+m.ic+'</span>';}).concat(frames.map(function(f){return '<span class="chip">'+f.ic+'</span>';})).concat(badges.map(function(b){return '<span class="chip">'+b.ic+'</span>';}));
+    h+='<div class="chips">'+(chips.length?chips.join(''):'<span style="font-size:12px;color:#8fa6d8">Unlock moods &amp; cosmetics in the Store 🪶</span>')+'</div>';
+    h+='<div class="pfacts"><button onclick="go(\'store\')">🪶 Open Store</button><button onclick="go(\'admin\')">HQ (admin)</button></div>';
+  } else {
+    h+='<div class="pfstats"><div><b>'+(who==='kj'?'1.2K':'340')+'</b>Followers</div><div><b>210</b>Following</div></div>';
+    var isF=follows[who];
+    h+='<div class="pfacts"><button class="follow" onclick="toggleFollow(\''+who+'\')">'+(isF?'✓ Following':'+ Follow')+'</button>'+
+       '<button class="dm" onclick="dmSoon(\''+who+'\')">💬 Message</button>'+
+       '<button onclick="toast(\'Reported @'+who+'\')">⚑ Report</button></div>';
+    h+='<div style="font-size:11px;color:#8fa6d8;margin-top:10px;line-height:1.5">Message unlocks once you <b>both follow</b> each other. (Messaging is off in this demo.)</div>';
+  }
+  h+='<div style="font-size:11px;color:#8fa6d8;margin-top:12px;line-height:1.5">'+(rb?'🌈 Rainbow Name is the only cosmetic that colors a name in the live feed.':'Frames &amp; effects show on the profile. Only Rainbow Name colors the name in the feed.')+'</div></div>';
+  document.getElementById('s_profile').innerHTML=h;
+}
+function toggleFollow(who){follows[who]=!follows[who];renderProfile(who);toast(follows[who]?'Following @'+who:'Unfollowed');}
+function dmSoon(who){toast('💬 Direct messages are coming soon — you’ll message people you both follow.');}
+
+/* =================== CHALLENGES =================== */
+var curChallenge=null, chSub='subs';
+function renderChallenges(){
+  if(curChallenge){renderChallengeDetail();return;}
+  var h='<div class="chero"><span class="tag">THEFLAP CHALLENGES</span><h2>🎬 Show up. Show out. Win 🪶.</h2><div class="meta">Join a challenge, drop a video, climb the leaderboard.</div></div>';
+  h+='<h3 class="sec">Available now</h3>';
+  CHALLENGES.forEach(function(c){
+    h+='<div class="chcard" onclick="openChallenge(\''+c.id+'\')"><div class="banner" style="background:linear-gradient(135deg,'+c.c+')">'+c.ic+'</div>'+
+      '<div class="cb"><h4>'+c.title+'</h4><div class="csub">'+(c.status==='ended'?'✅ '+c.left:'⏳ '+c.left+' · '+c.entries+' entries · '+c.reward)+'</div></div></div>';
+  });
+  document.getElementById('s_challenges').innerHTML=h;
+}
+function openChallenge(id){curChallenge=id;chSub='subs';renderChallengeDetail();window.scrollTo(0,0);}
+function renderChallengeDetail(){
+  var c=CHALLENGES.filter(function(x){return x.id===curChallenge;})[0];
+  var jn=joined[c.id], en=entered[c.id];
+  var h='<div class="fd-bar"><button class="fd-back" onclick="curChallenge=null;renderChallenges();">‹ Back</button><span class="fd-title">Challenge</span></div>';
+  h+='<div class="chero" style="margin-top:12px"><span class="tag">'+(c.status==='ended'?'ENDED':'ACTIVE · '+c.left)+'</span><h2>'+c.ic+' '+c.title+'</h2><div class="meta">'+c.entries+' entries · one entry per person</div></div>';
+  h+='<div class="kv"><b>What it is</b><br>'+c.desc+'</div>';
+  h+='<div class="kv"><b>Rules &amp; details</b><br>'+c.rules+'</div>';
+  h+='<div class="kv"><b>Reward</b> &nbsp;'+c.reward+'</div>';
+  if(c.status!=='ended'){
+    if(!jn) h+='<button class="jbtn" onclick="joinCh(\''+c.id+'\')">Join challenge</button>';
+    else if(!en) h+='<button class="jbtn done" onclick="submitCh(\''+c.id+'\')">🎥 Submit your video</button>';
+    else h+='<div style="text-align:center;margin:6px 0"><span style="color:#1e9e5a;font-weight:bold">✅ Your entry is in.</span><br><button class="lin" onclick="deleteMine(\''+c.id+'\')">🗑 Delete my submission</button> · <button class="lin" onclick="leaveCh(\''+c.id+'\')">Leave challenge</button></div>';
+  }
+  h+='<div class="subtabs"><div class="subtab'+(chSub==='subs'?' on':'')+'" onclick="chSub=\'subs\';renderChallengeDetail();">Submissions</div>'+
+     '<div class="subtab'+(chSub==='lead'?' on':'')+'" onclick="chSub=\'lead\';renderChallengeDetail();">Leaderboard</div>'+
+     '<div class="subtab'+(chSub==='win'?' on':'')+'" onclick="chSub=\'win\';renderChallengeDetail();">Winners</div></div>';
+  if(chSub==='win'){
+    var w=WINNERS[c.id]||[];
+    h+='<div class="vgrid">'+(w.length?w.map(function(x){return vidCard(c.id,x,null,true);}).join(''):'<div style="grid-column:1/-1;color:#8fa6d8;text-align:center;padding:20px;font-size:13px">Winners post when the challenge ends.</div>')+'</div>';
+  } else {
+    var list=(SUBS[c.id]||[]).slice();
+    if(en) list.unshift({u:'you',ic:'⭐',g:'#f5a623,#b45c00',f:(feat['you_'+c.id]?1:0),me:true});
+    if(chSub==='lead') list.sort(function(a,b){return (b.f+(feat[b.u+'_'+c.id]?1:0))-(a.f+(feat[a.u+'_'+c.id]?1:0));});
+    h+='<div class="vgrid">'+(list.length?list.map(function(s,i){return vidCard(c.id,s,chSub==='lead'?(i+1):null,false);}).join(''):'<div style="grid-column:1/-1;color:#8fa6d8;text-align:center;padding:20px;font-size:13px">No entries yet — be the first!</div>')+'</div>';
+  }
+  document.getElementById('s_challenges').innerHTML=h;
+}
+function vidCard(chid,s,rank,isWin){
+  var key=s.u+'_'+chid; var fon=feat[key]?' on':'';
+  var fc=(s.f||0)+(feat[key]?1:0);
+  var badge=isWin?'<span class="rank">'+(s.t||'')+'</span>':s.me?'<span class="mine-tag">YOUR ENTRY</span>':rank?'<span class="rank">#'+rank+'</span>':'';
+  var rep=(isWin)?'':'<button class="rep" onclick="reportVid(\''+s.u+'\',\''+chid+'\')">⚑</button>';
+  var bottom=isWin?'<div class="vmeta"><span class="who">🏆 @'+s.u+'</span></div>'
+    :'<div class="vmeta"><span class="who">@'+s.u+'</span><span class="vfeat'+fon+'" onclick="featherVid(\''+key+'\')">🪶 '+fc+'</span></div>';
+  return '<div class="vid">'+badge+rep+'<div class="thumb" style="background:linear-gradient(135deg,'+s.g+')" onclick="playVid(\''+s.u+'\',\''+s.ic+'\',\''+s.g+'\','+(s.me?'true':'false')+',\''+chid+'\')">'+s.ic+'<span class="play">▶</span></div>'+bottom+'</div>';
+}
+function joinCh(id){joined[id]=true;renderChallengeDetail();toast('You joined! Now submit a video 🎥');}
+function submitCh(id){entered[id]=true;var c=CHALLENGES.filter(function(x){return x.id===id;})[0];c.entries++;renderChallengeDetail();toast('Video submitted! 🎬 (auto pre-checked for the demo)');confetti();}
+function deleteMine(id){if(!confirm('Delete your submission?'))return;entered[id]=false;var c=CHALLENGES.filter(function(x){return x.id===id;})[0];c.entries--;renderChallengeDetail();toast('Submission deleted');}
+function leaveCh(id){if(!confirm('Leave this challenge? Your submission will be removed.'))return;joined[id]=false;entered[id]=false;renderChallengeDetail();toast('You left the challenge');}
+function featherVid(key){feat[key]=!feat[key];renderChallengeDetail();}
+function reportVid(u,ch){VIDREPORTS.push({id:Date.now(),u:u,ch:ch,ic:'🎬',reason:'User report',by:'lock',status:'open'});toast('Reported @'+u+'’s video — sent to HQ 🚩');}
+var playCtx={};
+function playVid(u,ic,g,mine,chid){playCtx={u:u,chid:chid};var p=document.getElementById('player');document.getElementById('pstage').textContent=ic;document.getElementById('pstage').style.background='linear-gradient(135deg,'+g+')';document.getElementById('pwho').textContent='@'+u;
+  document.getElementById('pdelBtn').style.display=mine?'':'none';
+  p.classList.add('on');var f=document.getElementById('pfill');f.style.transition='none';f.style.width='0';setTimeout(function(){f.style.transition='width 4s linear';f.style.width='100%';},50);}
+function reportFromPlayer(){reportVid(playCtx.u,playCtx.chid);}
+function deleteFromPlayer(){closeOv('player');deleteMine(playCtx.chid);}
+function closeOv(id){document.getElementById(id).classList.remove('on');}
+
+/* =================== ADMIN =================== */
+function roleSections(){var r=STAFF.filter(function(s){return s.role===viewRole;})[0];return r?r.sections:ALLSEC;}
+function canSee(sec){ if(viewRole==='Owner')return true; var s=roleSections(); return s.indexOf(sec)>=0; }
+function renderAdmin(){
+  var secs=[['members','Members'],['rewards','Rewards'],['challenges','Challenges'],['videoreports','Video Reports'],['reports','Reports'],['moderation','Moderation'],['staff','Staff & Roles']];
+  var visible=secs.filter(function(s){return canSee(s[0]);});
+  if(visible.length && !visible.some(function(s){return s[0]===admSec;})) admSec=visible[0][0];
+  var h='<div class="fd-bar"><button class="fd-back" onclick="go(\'feed\')">‹ Exit HQ</button><span class="fd-title">Admin HQ</span></div>';
+  h+='<div class="rolebar">👁 View as role: <select onchange="viewRole=this.value;renderAdmin();">'+
+     ['Owner','Support','Moderator'].map(function(r){return '<option'+(r===viewRole?' selected':'')+'>'+r+'</option>';}).join('')+
+     '</select><div style="margin-top:6px;font-size:11px;color:#8fa6d8">Staff only see the sections their role allows. Owner sees everything. (You’re already authenticated — no extra password prompts.)</div></div>';
+  h+='<div class="amenu">'+visible.map(function(s){return '<div class="tab'+(s[0]===admSec?' on':'')+'" onclick="admSec=\''+s[0]+'\';renderAdmin();">'+s[1]+'</div>';}).join('')+'</div>';
+  h+='<div class="adm">'+(canSee(admSec)?admBody(admSec):'<div class="note">Your role doesn’t have access to this section.</div>')+'</div>';
+  document.getElementById('s_admin').innerHTML=h;
+}
+function admBody(sec){
+  if(sec==='members'){
+    return '<div class="note">Grant or remove Feathers. Granting yourself flows straight into the Store balance — try it, then open the Store.</div>'+
+      MEMBERS.map(function(m){var v=m.me?bal:(m.feathers()+(memBonus[m.name]||0));
+        return '<div class="arow"><div><div class="an">'+m.name+'</div><div class="as">'+v+' 🪶</div></div><div class="sp">'+
+          '<button class="mini g" onclick="grantF(\''+m.name+'\',50)">+50</button>'+
+          '<button class="mini r" onclick="grantF(\''+m.name+'\',-50)">-50</button>'+
+          '<button class="mini n" onclick="toast(\'Opened '+m.name+' — manage/ban/verify\')">Manage</button></div></div>';
+      }).join('');
+  }
+  if(sec==='rewards'){
+    return '<div class="note">Change any price, or flip an item on/off — instantly, no rebuild. Edits here show up in the Store.</div>'+
+      REWARDS.map(function(r){return '<div class="arow"><span class="ic" style="font-size:22px;margin:0">'+r.ic+'</span><div><div class="an" style="font-size:13px">'+r.n+'</div><div class="as">'+r.g+(r.excl?' · exclusive':'')+(r.dur?' · '+r.dur:'')+'</div></div>'+
+        '<div class="sp"><input class="priceInput" type="number" value="'+r.p+'" onchange="setPrice(\''+r.id+'\',this.value)"><span style="font-size:12px">🪶</span>'+
+        '<div class="toggle2'+(r.avail?' on':'')+'" onclick="toggleAvail(\''+r.id+'\')"><div class="k"></div></div></div></div>';
+      }).join('');
+  }
+  if(sec==='challenges'){
+    return '<div class="note">Create, edit, start/stop challenges and set rewards. (Demo shows the structure.)</div>'+
+      CHALLENGES.map(function(c){return '<div class="arow"><span style="font-size:22px">'+c.ic+'</span><div><div class="an" style="font-size:13px">'+c.title+'</div><div class="as">'+c.status+' · '+c.entries+' entries · '+c.reward+'</div></div><div class="sp"><button class="mini o" onclick="toast(\'Edit challenge\')">Edit</button><button class="mini n" onclick="toast(\'Ended challenge\')">End</button></div></div>';}).join('')+
+      '<div style="text-align:center"><button class="mini g" style="padding:9px 16px" onclick="toast(\'New challenge form\')">+ New challenge</button></div>';
+  }
+  if(sec==='videoreports'){
+    var open=VIDREPORTS.filter(function(v){return v.status==='open';});
+    return '<div class="note"><b>Challenge Video Reports</b> — separate from post/user reports. Auto pre-check + user reports land here for review.</div>'+
+      (open.length?open.map(function(v){return '<div class="arow"><span style="font-size:22px">'+v.ic+'</span><div><div class="an" style="font-size:13px">@'+v.u+' · '+v.ch+'</div><div class="as">'+v.reason+' · by '+v.by+'</div></div><div class="sp">'+
+        '<button class="mini r" onclick="vrAction('+v.id+',\'removed\')">Remove</button>'+
+        '<button class="mini o" onclick="vrAction('+v.id+',\'warned\')">Warn</button>'+
+        '<button class="mini n" onclick="vrAction('+v.id+',\'dismissed\')">Dismiss</button></div></div>';}).join(''):'<div class="note">No open video reports 🎉</div>');
+  }
+  if(sec==='reports'){return '<div class="note">Post &amp; user reports (existing pipeline). No extra password to enter or to delete — just a confirm on destructive actions.</div><div class="arow"><span style="font-size:20px">⚑</span><div><div class="an" style="font-size:13px">Reported flap · @spammer</div><div class="as">Spam</div></div><div class="sp"><button class="mini r" onclick="if(confirm(\'Delete this flap?\'))toast(\'Deleted\')">Delete</button><button class="mini n" onclick="toast(\'Resolved\')">Resolve</button></div></div>';}
+  if(sec==='moderation'){return '<div class="note">Warn, mute, timeout or ban members. Backend-enforced.</div><div class="arow"><div class="an" style="font-size:13px">@rowdyuser</div><div class="sp"><button class="mini o" onclick="toast(\'Warned\')">Warn</button><button class="mini n" onclick="toast(\'Muted 24h\')">Mute</button><button class="mini r" onclick="if(confirm(\'Ban this user?\'))toast(\'Banned\')">Ban</button></div></div>';}
+  if(sec==='staff'){
+    return '<div class="note">Give staff access to only the sections they need. Toggle sections per person — role-limited access.</div>'+
+      STAFF.map(function(s,idx){return '<div class="arow" style="display:block"><div style="display:flex;align-items:center"><div class="an">'+s.name+'</div><div class="as" style="margin-left:8px">'+s.role+'</div></div>'+
+        '<div class="secchk">'+ALLSEC.map(function(sec){return '<label><input type="checkbox" '+(s.sections.indexOf(sec)>=0?'checked':'')+' onchange="toggleStaffSec('+idx+',\''+sec+'\')">'+sec+'</label>';}).join('')+'</div></div>';}).join('');
+  }
+  return '';
+}
+function grantF(name,amt){
+  if(MEMBERS.filter(function(m){return m.name===name&&m.me;}).length){ setBal(Math.max(0,bal+amt)); }
+  else { memBonus[name]=(memBonus[name]||0)+amt; }
+  renderAdmin();toast((amt>0?'+':'')+amt+' 🪶 → '+name);
+}
+function setPrice(id,v){var r=reward(id);r.p=Math.max(0,parseInt(v)||0);toast('Set '+r.n+' to '+r.p+' 🪶');}
+function toggleAvail(id){var r=reward(id);r.avail=!r.avail;renderAdmin();toast(r.n+(r.avail?' enabled':' disabled')+' in Store');}
+function vrAction(vid,act){var v=VIDREPORTS.filter(function(x){return x.id===vid;})[0];if(!v)return;
+  if(act==='removed'&&!confirm('Remove @'+v.u+'’s video?'))return;
+  v.status=act;renderAdmin();toast('Video '+act+' · @'+v.u);}
+function toggleStaffSec(idx,sec){var s=STAFF[idx];var i=s.sections.indexOf(sec);if(i>=0)s.sections.splice(i,1);else s.sections.push(sec);toast(s.name+': '+(i>=0?'removed ':'added ')+sec);}
+
+/* =================== FX =================== */
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function confetti(){var cols=['#ff5db1','#f5a623','#1e9e5a','#37b6ff','#9b6bff','#ffd98a'];
+  for(var i=0;i<24;i++){(function(){var c=document.createElement('div');c.className='conf';c.style.left=(Math.random()*100)+'vw';c.style.background=cols[i%cols.length];document.body.appendChild(c);
+    var dy=(window.innerHeight+40),dur=900+Math.random()*700;
+    c.animate([{transform:'translateY(0) rotate(0)'},{transform:'translateY('+dy+'px) rotate(540deg)'}],{duration:dur,easing:'ease-in'});
+    setTimeout(function(){c.remove();},dur);})();}}
+
+renderFeed();
+</script>
+</body>
+</html>
