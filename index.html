@@ -6110,5 +6110,189 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
 })();
 </script>
 <script src="recovery.js?v=1"></script>
+<style>
+  /* ===== TheFlap add-on: Challenges + Store (isolated, owner-only preview) ===== */
+  .nx-launch{position:fixed;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:900;display:flex;flex-direction:column;gap:8px;}
+  .nx-fab{width:52px;height:52px;border-radius:50%;border:2px solid #b45c00;background:linear-gradient(180deg,#f5a623,#e07d0a);color:#fff;font-size:23px;box-shadow:0 3px 8px rgba(0,0,0,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .nx-fab.store{background:linear-gradient(180deg,#37b6ff,#1e6fae);border-color:#0e447c;}
+  .nx-ov{display:none;position:fixed;inset:0;z-index:950;background:#14337a;color:#fff;flex-direction:column;overflow:hidden;font-family:Verdana,Arial,sans-serif;}
+  .nx-ov.on{display:flex;}
+  .nx-ov *{box-sizing:border-box;}
+  .nx-bar{position:relative;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px 10px;background:linear-gradient(180deg,#f5a623,#e07d0a);border-bottom:2px solid #b45c00;flex:0 0 auto;}
+  .nx-back{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;font-weight:bold;font-size:13px;padding:6px 13px;border-radius:18px;}
+  .nx-title{font-family:'Chewy','Comic Sans MS',cursive;font-size:18px;text-shadow:0 2px 0 #b45c00;}
+  .nx-bal{margin-left:auto;background:#fff;color:#c05e00;font-weight:bold;border-radius:20px;padding:5px 12px;font-size:14px;}
+  .nx-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:24px;}
+  .nx-note{background:#0e2560;border:1px solid #2b57b8;margin:12px;border-radius:12px;padding:10px 12px;font-size:12px;color:#cfe0ff;line-height:1.5;}
+  .nx-sec{font-family:'Chewy','Comic Sans MS',cursive;font-size:16px;margin:14px 12px 6px;color:#ffd98a;}
+  .nx-tabs{display:flex;gap:7px;overflow-x:auto;padding:10px 12px 4px;}
+  .nx-tab{white-space:nowrap;background:#0e2560;border:1px solid #2b57b8;color:#cfe0ff;border-radius:16px;padding:7px 12px;font-size:12px;font-weight:bold;}
+  .nx-tab.on{background:#f5a623;color:#5a2d00;border-color:#f5a623;}
+  .nx-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px 12px;}
+  @media(min-width:430px){.nx-grid{grid-template-columns:1fr 1fr 1fr;}}
+  .nx-card{background:#1b3f92;border:1px solid #3560b8;border-radius:14px;padding:12px 10px;text-align:center;position:relative;overflow:hidden;}
+  .nx-ic{font-size:31px;line-height:1;display:inline-block;margin:3px 0 5px;}
+  .nx-nm{font-size:12px;font-weight:bold;min-height:26px;display:flex;align-items:center;justify-content:center;}
+  .nx-pill{position:absolute;top:6px;left:6px;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:8px;}
+  .nx-pill.feed{background:#ff5db1;color:#4b0026;} .nx-pill.excl{background:#9b6bff;color:#fff;} .nx-pill.lim{background:#ffd98a;color:#5a2d00;}
+  .nx-buy{margin-top:6px;width:100%;border:none;border-radius:12px;padding:8px;font-weight:bold;font-size:12px;background:#f5a623;color:#5a2d00;box-shadow:0 2px 0 #b45c00;}
+  .nx-buy.owned{background:#1e9e5a;color:#fff;box-shadow:0 2px 0 #0c5c31;} .nx-buy.poor{background:#33477e;color:#8fa6d8;box-shadow:none;}
+  .nx-chero{margin:12px;background:linear-gradient(135deg,#7a2d9c,#c0348f);border-radius:16px;padding:14px;}
+  .nx-chero .tag{font-size:10px;font-weight:bold;background:#ffd98a;color:#5a2d00;padding:3px 8px;border-radius:8px;}
+  .nx-chero h2{font-family:'Chewy','Comic Sans MS',cursive;font-weight:normal;margin:8px 0 4px;font-size:20px;}
+  .nx-chero .meta{font-size:12px;color:#ffd6f0;}
+  .nx-chcard{margin:12px;background:#1b3f92;border:1px solid #3560b8;border-radius:14px;overflow:hidden;cursor:pointer;}
+  .nx-chcard .ban{height:80px;display:flex;align-items:center;justify-content:center;font-size:38px;}
+  .nx-chcard .cb{padding:11px 12px;} .nx-chcard h4{margin:0 0 3px;font-size:15px;} .nx-chcard .cs{font-size:11.5px;color:#8fa6d8;}
+  .nx-kv{margin:10px 12px;background:#0e2560;border:1px solid #2b57b8;border-radius:12px;padding:11px 12px;font-size:13px;line-height:1.6;} .nx-kv b{color:#ffd98a;font-weight:normal;}
+  .nx-j{margin:0 12px;width:calc(100% - 24px);border:none;border-radius:14px;padding:12px;font-weight:bold;font-size:14px;background:#ffd98a;color:#5a2d00;box-shadow:0 3px 0 #b58a2e;}
+  .nx-j.done{background:#1e9e5a;color:#fff;box-shadow:0 3px 0 #0c5c31;}
+  .nx-lin{background:none;border:none;color:#ff9ed0;font-weight:bold;font-size:12px;padding:4px;}
+  .nx-sub{display:flex;gap:8px;padding:8px 12px 0;} .nx-st{flex:1;text-align:center;background:#0e2560;border:1px solid #2b57b8;color:#cfe0ff;border-radius:12px 12px 0 0;padding:8px;font-size:12px;font-weight:bold;} .nx-st.on{background:#f5a623;color:#5a2d00;border-color:#f5a623;}
+  .nx-vg{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;}
+  .nx-vid{background:#1b3f92;border:1px solid #3560b8;border-radius:14px;overflow:hidden;position:relative;}
+  .nx-th{height:100px;display:flex;align-items:center;justify-content:center;font-size:40px;cursor:pointer;position:relative;}
+  .nx-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.5);}
+  .nx-vm{padding:7px 9px;display:flex;align-items:center;gap:6px;font-size:12px;} .nx-vm .who{font-weight:bold;}
+  .nx-feat{margin-left:auto;background:#0e2560;border:1px solid #ffd98a;color:#ffd98a;border-radius:12px;padding:3px 7px;font-weight:bold;font-size:11px;} .nx-feat.on{background:#ffd98a;color:#5a2d00;}
+  .nx-rep{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.4);border:none;color:#fff;border-radius:10px;padding:2px 6px;font-size:11px;z-index:2;}
+  .nx-rank{position:absolute;top:6px;left:6px;background:#ffd98a;color:#5a2d00;border-radius:10px;padding:2px 7px;font-size:11px;font-weight:bold;}
+  .nx-toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#0e2560;border:1px solid #f5a623;color:#fff;padding:10px 16px;border-radius:20px;font-size:13px;font-weight:bold;opacity:0;transition:opacity .2s;z-index:999;pointer-events:none;text-align:center;max-width:88%;}
+  .nx-toast.on{opacity:1;}
+</style>
+<div class="nx-launch" id="nxLaunch" style="display:none">
+  <button class="nx-fab" title="Challenges" onclick="nxOpen('chal')">🏆</button>
+  <button class="nx-fab store" title="Store" onclick="nxOpen('store')">🪶</button>
+</div>
+<div class="nx-ov" id="nxChal"></div>
+<div class="nx-ov" id="nxStore"></div>
+<div class="nx-toast" id="nxToast"></div>
+<script>
+(function(){
+  var CH=[
+    {id:'talent',ic:'🎬',c:'#7a2d9c,#c0348f',title:'15-Second Talent Show',status:'weekly',left:'4 days left',
+     desc:'Show us your best 15-second talent — dance, sing, comedy, magic, anything.',
+     rules:'Max 15 seconds. One entry per person. Keep it PG.',reward:'500 🪶 + Legend Badge',entries:37},
+    {id:'duet',ic:'🎤',c:'#1e6fae,#0e2560',title:'Best Lip Sync Duet',status:'weekly',left:'6 days left',
+     desc:'Grab a friend (or split-screen yourself) and lip sync a throwback.',
+     rules:'Max 20 seconds. One entry per person.',reward:'300 🪶 + Sparkle Frame',entries:19},
+    {id:'june',ic:'🏆',c:'#f5a623,#e07d0a',title:'June — Best Dance (ended)',status:'ended',left:'Winners posted',
+     desc:'June’s dance challenge. Congrats to everyone!',rules:'Ended.',reward:'Winner: trell 🏆',entries:52}
+  ];
+  var SUBS={talent:[{u:'maya',ic:'💃',g:'#c0348f,#7a2d9c',f:214},{u:'deej',ic:'🎤',g:'#1e6fae,#0e2560',f:188},{u:'kj',ic:'🕺',g:'#e07d0a,#b45c00',f:301},{u:'nova',ic:'🎸',g:'#1e9e5a,#0c5c31',f:97}],
+    duet:[{u:'bee',ic:'🎨',g:'#c0348f,#e07d0a',f:76},{u:'sky',ic:'🎧',g:'#9b6bff,#7a2d9c',f:120}],june:[]};
+  var WIN={june:[{u:'trell',ic:'🏆',g:'#f5a623,#e07d0a',t:'1st — Best Dance'},{u:'sky',ic:'🥈',g:'#9b6bff,#7a2d9c',t:'2nd'}]};
+  var joined={},entered={},feat={},cur=null,csub='subs';
+  var REW=[], bal=500, owned={};
+
+  function meName(){ try{ return String((window.ME&&ME.name)||'').toLowerCase(); }catch(e){ return ''; } }
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function toast(m){var t=document.getElementById('nxToast');t.innerHTML=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('on');},1600);}
+
+  function nxOpen(which){
+    document.getElementById('nxChal').classList.toggle('on',which==='chal');
+    document.getElementById('nxStore').classList.toggle('on',which==='store');
+    if(which==='chal'){cur=null;renderChal();}
+    if(which==='store'){renderStore();}
+  }
+  function nxClose(){document.getElementById('nxChal').classList.remove('on');document.getElementById('nxStore').classList.remove('on');}
+  window.nxOpen=nxOpen; window.nxClose=nxClose;
+
+  /* ---------- CHALLENGES ---------- */
+  function renderChal(){
+    var el=document.getElementById('nxChal');
+    if(cur){return renderChalDetail();}
+    var h='<div class="nx-bar"><button class="nx-back" onclick="nxClose()">‹ Back to Feed</button><span class="nx-title">🏆 Challenges</span></div><div class="nx-body">';
+    h+='<div class="nx-chero"><span class="tag">THEFLAP CHALLENGES</span><h2>Show up. Show out. Win 🪶.</h2><div class="meta">Join a challenge, drop a video, climb the board.</div></div>';
+    h+='<div class="nx-note">Preview — this is the Challenges section living inside your real app. Video uploads turn on once the Cloudflare token is added; for now it uses demo clips.</div>';
+    h+='<div class="nx-sec">Available now</div>';
+    CH.forEach(function(c){h+='<div class="nx-chcard" onclick="nxCh(\''+c.id+'\')"><div class="ban" style="background:linear-gradient(135deg,'+c.c+')">'+c.ic+'</div><div class="cb"><h4>'+c.title+'</h4><div class="cs">'+(c.status==='ended'?'✅ '+c.left:'⏳ '+c.left+' · '+c.entries+' entries · '+c.reward)+'</div></div></div>';});
+    h+='</div>';
+    el.innerHTML=h;
+  }
+  function nxCh(id){cur=id;csub='subs';renderChalDetail();}
+  window.nxCh=nxCh;
+  function renderChalDetail(){
+    var el=document.getElementById('nxChal');
+    var c=CH.filter(function(x){return x.id===cur;})[0];
+    var jn=joined[c.id],en=entered[c.id];
+    var h='<div class="nx-bar"><button class="nx-back" onclick="cur=null;renderChal();">‹ Back</button><span class="nx-title">Challenge</span></div><div class="nx-body">';
+    h+='<div class="nx-chero"><span class="tag">'+(c.status==='ended'?'ENDED':'ACTIVE · '+c.left)+'</span><h2>'+c.ic+' '+c.title+'</h2><div class="meta">'+c.entries+' entries · one entry per person</div></div>';
+    h+='<div class="nx-kv"><b>What it is</b><br>'+c.desc+'</div><div class="nx-kv"><b>Rules &amp; details</b><br>'+c.rules+'</div><div class="nx-kv"><b>Reward</b> &nbsp;'+c.reward+'</div>';
+    if(c.status!=='ended'){
+      if(!jn) h+='<button class="nx-j" onclick="nxJoin(\''+c.id+'\')">Join challenge</button>';
+      else if(!en) h+='<button class="nx-j done" onclick="nxSubmit(\''+c.id+'\')">🎥 Submit your video</button>';
+      else h+='<div style="text-align:center;margin:6px 0"><span style="color:#1e9e5a;font-weight:bold">✅ Your entry is in.</span><br><button class="nx-lin" onclick="nxDelSub(\''+c.id+'\')">🗑 Delete my submission</button> · <button class="nx-lin" onclick="nxLeave(\''+c.id+'\')">Leave challenge</button></div>';
+    }
+    h+='<div class="nx-sub"><div class="nx-st'+(csub==='subs'?' on':'')+'" onclick="csub=\'subs\';renderChalDetail();">Submissions</div><div class="nx-st'+(csub==='lead'?' on':'')+'" onclick="csub=\'lead\';renderChalDetail();">Leaderboard</div><div class="nx-st'+(csub==='win'?' on':'')+'" onclick="csub=\'win\';renderChalDetail();">Winners</div></div>';
+    if(csub==='win'){var w=WIN[c.id]||[];h+='<div class="nx-vg">'+(w.length?w.map(function(x){return vid(c.id,x,null,true);}).join(''):'<div style="grid-column:1/-1;color:#8fa6d8;text-align:center;padding:20px;font-size:13px">Winners post when the challenge ends.</div>')+'</div>';}
+    else{var list=(SUBS[c.id]||[]).slice();if(en)list.unshift({u:'you',ic:'⭐',g:'#f5a623,#b45c00',f:(feat['you_'+c.id]?1:0),me:true});
+      if(csub==='lead')list.sort(function(a,b){return (b.f+(feat[b.u+'_'+c.id]?1:0))-(a.f+(feat[a.u+'_'+c.id]?1:0));});
+      h+='<div class="nx-vg">'+(list.length?list.map(function(s,i){return vid(c.id,s,csub==='lead'?(i+1):null,false);}).join(''):'<div style="grid-column:1/-1;color:#8fa6d8;text-align:center;padding:20px;font-size:13px">No entries yet — be the first!</div>')+'</div>';}
+    h+='</div>';
+    el.innerHTML=h;
+  }
+  function vid(chid,s,rank,isWin){
+    var key=s.u+'_'+chid,fon=feat[key]?' on':'',fc=(s.f||0)+(feat[key]?1:0);
+    var badge=isWin?'<span class="nx-rank">'+(s.t||'')+'</span>':s.me?'<span class="nx-rank" style="background:#1e9e5a;color:#fff">YOUR ENTRY</span>':rank?'<span class="nx-rank">#'+rank+'</span>':'';
+    var rep=isWin?'':'<button class="nx-rep" onclick="nxReport(\''+s.u+'\')">⚑</button>';
+    var bottom=isWin?'<div class="nx-vm"><span class="who">🏆 @'+s.u+'</span></div>':'<div class="nx-vm"><span class="who">@'+s.u+'</span><span class="nx-feat'+fon+'" onclick="nxFeat(\''+key+'\')">🪶 '+fc+'</span></div>';
+    return '<div class="nx-vid">'+badge+rep+'<div class="nx-th" style="background:linear-gradient(135deg,'+s.g+')" onclick="nxPlay(\''+s.u+'\')">'+s.ic+'<span class="nx-play">▶</span></div>'+bottom+'</div>';
+  }
+  window.nxJoin=function(id){joined[id]=true;renderChalDetail();toast('You joined! Now submit a video 🎥');};
+  window.nxSubmit=function(id){entered[id]=true;var c=CH.filter(function(x){return x.id===id;})[0];c.entries++;renderChalDetail();toast('Video submitted! 🎬 (demo)');};
+  window.nxDelSub=function(id){if(!confirm('Delete your submission?'))return;entered[id]=false;var c=CH.filter(function(x){return x.id===id;})[0];c.entries--;renderChalDetail();toast('Submission deleted');};
+  window.nxLeave=function(id){if(!confirm('Leave this challenge?'))return;joined[id]=false;entered[id]=false;renderChalDetail();toast('You left the challenge');};
+  window.nxFeat=function(key){feat[key]=!feat[key];renderChalDetail();};
+  window.nxReport=function(u){toast('Reported @'+u+'’s video — sent to admin 🚩');};
+  window.nxPlay=function(u){toast('▶ Playing @'+u+'’s clip (demo)');};
+
+  /* ---------- STORE (real catalog) ---------- */
+  var curG='Moods';
+  async function loadCatalog(){
+    if(REW.length) return;
+    try{
+      var res=await sb.from('flap_rewards').select('*').eq('available',true).order('sort',{ascending:true});
+      REW=(res&&res.data)||[];
+      var b=await sb.from('flap_feathers').select('balance').ilike('name',meName()).maybeSingle();
+      if(b&&b.data&&typeof b.data.balance==='number') bal=Math.max(bal,b.data.balance);
+    }catch(e){ REW=[]; }
+  }
+  async function renderStore(){
+    var el=document.getElementById('nxStore');
+    el.innerHTML='<div class="nx-bar"><button class="nx-back" onclick="nxClose()">‹ Back to Feed</button><span class="nx-title">🪶 Store</span><span class="nx-bal">🪶 '+bal+'</span></div><div class="nx-body"><div class="nx-note">Loading the live catalog…</div></div>';
+    await loadCatalog();
+    var groups=[];REW.forEach(function(r){if(groups.indexOf(r.g)<0)groups.push(r.g);});
+    if(!groups.length)groups=['Moods'];
+    if(groups.indexOf(curG)<0)curG=groups[0];
+    var h='<div class="nx-bar"><button class="nx-back" onclick="nxClose()">‹ Back to Feed</button><span class="nx-title">🪶 Store</span><span class="nx-bal">🪶 <span id="nxBal">'+bal+'</span></span></div><div class="nx-body">';
+    h+='<div class="nx-note"><b>Flap Store.</b> Feathers are earned, never bought. Prices &amp; items are set from the admin panel — this reads your live catalog. (Preview — redeeming turns fully on with the Feathers server.)</div>';
+    h+='<div class="nx-tabs">'+groups.map(function(g){return '<div class="nx-tab'+(g===curG?' on':'')+'" onclick="nxG(\''+g+'\')">'+g+'</div>';}).join('')+'</div>';
+    h+='<div class="nx-grid">'+REW.filter(function(r){return r.g===curG;}).map(scard).join('')+'</div></div>';
+    el.innerHTML=h;
+  }
+  function scard(r){
+    var pill=r.meta&&r.meta.feed?'<span class="nx-pill feed">FEED</span>':(!r.purchasable?'<span class="nx-pill excl">EARN ONLY</span>':(r.limited_end?'<span class="nx-pill lim">LIMITED</span>':''));
+    var btn;
+    if(owned[r.id])btn='<button class="nx-buy owned">✓ Owned</button>';
+    else if(!r.purchasable)btn='<button class="nx-buy poor" onclick="nxToast(\'Earned only — not for sale.\')">Earned only</button>';
+    else if(bal<r.price)btn='<button class="nx-buy poor" onclick="nxToast(\'Need '+r.price+' 🪶 — earn more!\')">Need '+r.price+' 🪶</button>';
+    else btn='<button class="nx-buy" onclick="nxBuy(\''+r.id+'\')">Unlock · '+r.price+' 🪶</button>';
+    return '<div class="nx-card">'+pill+'<span class="nx-ic">'+(r.icon||'🎁')+'</span><div class="nx-nm">'+esc(r.name)+'</div>'+btn+'</div>';
+  }
+  window.nxG=function(g){curG=g;renderStore();};
+  window.nxToast=toast;
+  window.nxBuy=function(id){var r=REW.filter(function(x){return x.id===id;})[0];if(!r||owned[id]||bal<r.price)return;bal-=r.price;owned[id]=1;var e=document.getElementById('nxBal');if(e)e.textContent=bal;toast('Unlocked '+r.name+'! 🪶 (preview)');renderStore();};
+
+  /* ---------- launcher (owner only) ---------- */
+  function boot(){
+    if(meName()!=='lock')return false;
+    var l=document.getElementById('nxLaunch'); if(l) l.style.display='flex';
+    return true;
+  }
+  var tries=0;var iv=setInterval(function(){tries++;if(boot()||tries>80){clearInterval(iv);}},600);
+})();
+</script>
+
 </body>
 </html>
