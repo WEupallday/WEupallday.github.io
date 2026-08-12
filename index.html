@@ -1103,7 +1103,7 @@
   /* ===== single-post detail view + image lightbox ===== */
   #flapDetail{position:fixed;inset:0;z-index:300;background:#14337a;display:none;flex-direction:column;}
   #flapDetail.open{display:flex;}
-  .fd-bar{position:sticky;top:0;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;background:linear-gradient(180deg,#f5a623,#e07d0a);border-bottom:2px solid #b45c00;z-index:2;}
+  .fd-bar{position:relative;flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;background:linear-gradient(180deg,#f5a623,#e07d0a);border-bottom:2px solid #b45c00;z-index:2;}
   .fd-back{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.45);color:#fff;font-weight:bold;font-size:14px;padding:7px 14px;border-radius:20px;cursor:pointer;}
   .fd-title{font-family:'Chewy','Comic Sans MS',cursive;font-size:19px;color:#fff;text-shadow:0 2px 0 var(--orange-dark);}
   .fd-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px;}
@@ -2523,6 +2523,12 @@
     try{ var r=await sb.from('flap_follows').select('following').ilike('follower',ME.name); FOLLOWING={}; (r.data||[]).forEach(function(x){ if(x.following)FOLLOWING[String(x.following).toLowerCase()]=true; }); }catch(e){}
   }
   function isFollowing(name){ return !!FOLLOWING[(name||'').toLowerCase()]; }
+  function dmBtnHTML(name){
+    if(!name || (ME.name&&name.toLowerCase()===ME.name.toLowerCase())) return '';
+    var pn=esc(name).replace(/'/g,'');
+    return '<button type="button" class="dm-btn" onclick="event.stopPropagation();flapMsgSoon(\''+pn+'\')">\uD83D\uDCAC Message</button>';
+  }
+  function flapMsgSoon(name){ try{ toast('\uD83D\uDCAC Direct messages are coming soon \u2014 you\u2019ll be able to message people you both follow.'); }catch(e){} }
   function followBtnHTML(name){
     if(!name || (ME.name&&name.toLowerCase()===ME.name.toLowerCase())) return '';
     var f=isFollowing(name), pn=esc(name).replace(/'/g,'');
@@ -3440,6 +3446,7 @@
         var pn2=esc(name).replace(/'/g,'');
         h+='<div class="pc-actions">'+
            followBtnHTML(name)+
+           dmBtnHTML(name)+
            '<button type="button" onclick="openReport(\'user\',null,\''+pn2+'\')">⚑ Report</button>'+
            (isBlocked(name)
              ?'<button type="button" onclick="unblockUser(\''+pn2+'\')">✓ Unblock</button>'
