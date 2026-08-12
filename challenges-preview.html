@@ -120,19 +120,34 @@
   .toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#12357a;color:#fff;padding:11px 18px;border-radius:24px;font-size:13px;font-weight:700;z-index:80;opacity:0;transition:.25s;box-shadow:0 4px 14px rgba(0,0,0,.4);white-space:nowrap;}
   .toast.on{opacity:1;bottom:92px;}
   .note{background:#fff8e2;border:1px solid #f0d98a;border-radius:10px;padding:9px 12px;font-size:11.5px;color:#8a6d1a;margin:14px 4px 0;}
+  .feathBox{background:linear-gradient(160deg,#3a2c05,#7a5c0a);border:2px solid var(--gold);border-radius:16px;padding:14px 16px;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.25);}
+  .fbTop{display:flex;align-items:center;justify-content:space-between;font-weight:800;}
+  .fbTop span{font-size:14px;color:#ffe9ad;} .fbTop b{font-size:28px;color:var(--gold);}
+  .fbEarn{font-size:12px;color:#ffe9ad;margin:6px 0 10px;line-height:1.4;}
+  .fbWays{display:flex;gap:8px;} .fbWays div{flex:1;background:rgba(0,0,0,.25);border-radius:10px;padding:7px 0;text-align:center;font-size:10px;} .fbWays b{display:block;font-size:15px;color:var(--gold);}
+  .rcard{background:#fff;border-radius:14px;padding:12px;text-align:center;box-shadow:0 3px 9px rgba(0,0,0,.14);}
+  .rcard .ric{font-size:34px;line-height:1;} .rcard .rn{font-size:12px;font-weight:700;color:#12357a;margin:6px 0 2px;}
+  .rcost{font-size:12px;font-weight:800;color:#a86b00;}
+  .rbtn{margin-top:8px;width:100%;border:none;border-radius:10px;padding:8px;font-weight:800;font-size:12px;cursor:pointer;background:var(--gold);color:#5a4300;font-family:inherit;}
+  .rbtn.owned{background:#d7f0dd;color:#1a7a3a;}
+  .emoWrap{display:flex;flex-wrap:wrap;gap:9px;}
+  .emoChip{background:#fff;border-radius:12px;padding:10px;text-align:center;width:calc(25% - 7px);box-shadow:0 2px 7px rgba(0,0,0,.12);cursor:pointer;}
+  .emoChip .e{font-size:26px;filter:grayscale(1);opacity:.5;} .emoChip.un .e{filter:none;opacity:1;}
+  .emoChip .lk{font-size:10px;font-weight:800;color:#a86b00;margin-top:3px;} .emoChip.un .lk{color:#1a7a3a;}
 </style>
 </head>
 <body>
 <div class="phone">
   <div class="top">
     <h1>🏆 Challenges</h1>
-    <div class="pts">⚡ <span id="pts">1,240</span> pts</div>
+    <div class="pts">🪶 <span id="pts">340</span> Feathers</div>
   </div>
   <div class="tabs">
     <button class="on" onclick="tab(0,this)">Current</button>
     <button onclick="tab(1,this)">Submissions</button>
     <button onclick="tab(2,this)">Leaderboard</button>
     <button onclick="tab(3,this)">Past</button>
+    <button onclick="tab(4,this)">🪶 Rewards</button>
   </div>
 
   <!-- CURRENT -->
@@ -150,9 +165,9 @@
       </div>
       <button class="cta" onclick="openSubmit()">🎬 Submit Your Video</button>
       <div class="prize">
-        <div class="p"><b>+500</b>pts to win</div>
+        <div class="p"><b>+500</b>🪶 to win</div>
         <div class="p"><b>👑</b>Winner badge</div>
-        <div class="p"><b>+50</b>pts to enter</div>
+        <div class="p"><b>+50</b>🪶 to enter</div>
       </div>
     </div>
 
@@ -200,6 +215,19 @@
     </div>
     <h3 class="sec">📜 Challenge history</h3>
     <div id="hist"></div>
+  </div></div>
+
+  <div class="screen" id="s4"><div class="wrap">
+    <div class="feathBox">
+      <div class="fbTop"><span>🪶 Your Feathers</span><b id="featBal">340</b></div>
+      <div class="fbEarn">Earn Feathers by entering Challenges, winning the week, and opening TheFlap every day.</div>
+      <div class="fbWays"><div><b>+50</b>enter</div><div><b>+500</b>win</div><div><b>+10</b>daily open</div></div>
+    </div>
+    <h3 class="sec">🛍️ Rewards store</h3>
+    <div class="grid" id="rewardGrid"></div>
+    <h3 class="sec">😜 Unlock new moods</h3>
+    <div class="emoWrap" id="emoWrap"></div>
+    <div class="note">Feathers are earn-only for now — no real money. Buying Feathers can switch on later once store billing is ready.</div>
   </div></div>
 
   <div class="toast" id="toast"></div>
@@ -293,7 +321,7 @@
   }).join('');
 
   function tab(n,btn){
-    for(var i=0;i<4;i++) document.getElementById('s'+i).classList.toggle('on',i===n);
+    for(var i=0;i<5;i++) document.getElementById('s'+i).classList.toggle('on',i===n);
     document.querySelectorAll('.tabs button').forEach(function(b){b.classList.remove('on');});
     if(btn)btn.classList.add('on'); else document.querySelectorAll('.tabs button')[n].classList.add('on');
     window.scrollTo(0,0);
@@ -303,7 +331,7 @@
   function closeSubmit(){document.getElementById('submitModal').classList.remove('on');}
   function fakePick(){document.getElementById('dropTxt').textContent='✅ trick_shot.mp4 (0:21) ready';}
   function fakeRecord(){document.getElementById('dropTxt').textContent='🔴 Recording… tap Post when done';}
-  function doSubmit(){closeSubmit();addPts(50);flash('🎉 Entry submitted! +50 pts');setTimeout(function(){tab(1,document.querySelectorAll('.tabs button')[1]);},700);}
+  function doSubmit(){closeSubmit();addPts(50);flash('🎉 Entry submitted! +50 🪶');setTimeout(function(){tab(1,document.querySelectorAll('.tabs button')[1]);},700);}
   // viewer
   var cur=0,playing=false;
   function openViewer(i){cur=i;var s=subs[i];
@@ -336,9 +364,29 @@
   }
   function react(e){flash(e+' reaction sent');}
   // points + toast
-  function addPts(n){var el=document.getElementById('pts');var v=parseInt(el.textContent.replace(/,/g,''))+n;el.textContent=v.toLocaleString();}
+  function addPts(n){var el=document.getElementById('pts');var v=parseInt(el.textContent.replace(/,/g,''))+n;el.textContent=v.toLocaleString();var fb=document.getElementById("featBal");if(fb)fb.textContent=v.toLocaleString();}
   var tt;
   function flash(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('on');},1600);}
+  var REWARDS=[
+    {ic:'🖼️',n:'Gold frame',cost:120,owned:false},{ic:'✨',n:'Sparkle frame',cost:200,owned:false},
+    {ic:'🌈',n:'Rainbow name',cost:150,owned:false},{ic:'🏅',n:'OG badge',cost:300,owned:true},
+    {ic:'📌',n:'Pin a flap (1 day)',cost:80,owned:false},{ic:'🎉',n:'Post confetti',cost:60,owned:false}
+  ];
+  var EMOJIS=[
+    {e:'😂',n:'Laughing',cost:40,un:false},{e:'😭',n:'Crying',cost:40,un:false},{e:'😮',n:'Shocked',cost:40,un:false},
+    {e:'😠',n:'Angry',cost:50,un:false},{e:'🤩',n:'Excited',cost:50,un:false},{e:'😕',n:'Confused',cost:40,un:false},
+    {e:'😎',n:'Cool',cost:60,un:true},{e:'🥳',n:'Party',cost:60,un:false}
+  ];
+  function bal(){return parseInt((document.getElementById('pts').textContent||'0').replace(/[^0-9]/g,''));}
+  function renderRewards(){document.getElementById('rewardGrid').innerHTML=REWARDS.map(function(r,i){
+    return '<div class="rcard"><div class="ric">'+r.ic+'</div><div class="rn">'+r.n+'</div><div class="rcost">'+(r.owned?'Owned':'🪶 '+r.cost)+'</div><button class="rbtn'+(r.owned?' owned':'')+'" onclick="redeem('+i+')">'+(r.owned?'✓ Owned':'Redeem')+'</button></div>';
+  }).join('');}
+  function renderEmos(){document.getElementById('emoWrap').innerHTML=EMOJIS.map(function(m,i){
+    return '<div class="emoChip'+(m.un?' un':'')+'" onclick="unlockEmo('+i+')"><div class="e">'+m.e+'</div><div class="lk">'+(m.un?'Unlocked':'🪶 '+m.cost)+'</div></div>';
+  }).join('');}
+  function redeem(i){var r=REWARDS[i];if(r.owned){flash('You already own that ✓');return;}if(bal()<r.cost){flash('Not enough Feathers 🪶');return;}if(!confirm('Redeem '+r.n+' for '+r.cost+' Feathers?'))return;addPts(-r.cost);r.owned=true;renderRewards();flash('🎉 Unlocked '+r.n+'!');}
+  function unlockEmo(i){var m=EMOJIS[i];if(m.un){flash(m.e+' already unlocked');return;}if(bal()<m.cost){flash('Not enough Feathers 🪶');return;}if(!confirm('Unlock the '+m.n+' mood for '+m.cost+' Feathers?'))return;addPts(-m.cost);m.un=true;renderEmos();flash('😜 '+m.n+' mood unlocked!');}
+  renderRewards();renderEmos();
 </script>
 </body>
 </html>
