@@ -880,9 +880,6 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
     deleteAccount:async function(name){
       if((name||'').toLowerCase()===ADMIN_ACCOUNT){toast("Can't delete the admin account.");return;}
       if(!confirm('Are you sure you want to permanently delete @'+name+'? This cannot be undone.'))return;
-      var pw=prompt('SECOND CONFIRMATION — permanently DELETE @'+name+' and ALL their data (posts, replies, follows, messages, notifications, badges)? There is no undo.\n\nEnter the admin password to confirm:');
-      if(pw===null)return;
-      if(!pw){ toast('❌ Cancelled — no password entered. Account was NOT deleted.'); return; }
       toast('⏳ Deleting @'+name+'…');
       var r; try{ r=await sb.functions.invoke('admin-delete-account',{body:{target:name,adminName:ADMIN_ACCOUNT,adminPass:pw}}); }catch(e){ r={error:e}; }
       if(!r||r.error||!r.data){ toast('❌ Delete failed — '+((r&&r.error&&(r.error.message||r.error))||'server error')+'. Account was NOT deleted.'); return; }
