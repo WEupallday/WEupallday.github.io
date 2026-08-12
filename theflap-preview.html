@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>TheFlap — Full Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Chewy&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;background:#0a1c4d;color:#fff;font-family:Verdana,Arial,sans-serif;}
+  .app{max-width:480px;margin:0 auto;background:#14337a;min-height:100vh;padding-bottom:74px;position:relative;overflow:hidden;}
+  .top{position:sticky;top:0;z-index:30;background:linear-gradient(180deg,#f5a623,#e07d0a);border-bottom:3px solid #b45c00;
+       padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;display:flex;align-items:center;gap:10px;}
+  .brand{font-family:'Chewy',cursive;font-size:21px;text-shadow:0 2px 0 #b45c00;}
+  .bal{margin-left:auto;background:#fff;color:#c05e00;font-weight:bold;border-radius:20px;padding:6px 13px;font-size:15px;box-shadow:0 2px 0 #b45c00;}
+  .earn{background:#1e9e5a;color:#fff;border:none;border-radius:16px;padding:7px 10px;font-weight:bold;font-size:11px;box-shadow:0 2px 0 #0c5c31;}
+  .earn:disabled{opacity:.5;box-shadow:none;}
+  .screen{display:none;}
+  .screen.on{display:block;}
+  h3.sec{font-family:'Chewy',cursive;font-size:17px;margin:14px 14px 6px;color:#ffd98a;font-weight:normal;}
+  .nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;display:flex;background:#0e2560;border-top:2px solid #2b57b8;z-index:40;}
+  .nav button{flex:1;background:none;border:none;color:#8fa6d8;padding:9px 0 calc(9px + env(safe-area-inset-bottom,0px));font-size:11px;font-weight:bold;}
+  .nav button .ni{display:block;font-size:20px;margin-bottom:2px;}
+  .nav button.on{color:#ffd98a;}
+  /* challenge */
+  .chero{margin:12px;background:linear-gradient(135deg,#7a2d9c,#c0348f);border-radius:16px;padding:14px;position:relative;overflow:hidden;}
+  .chero .tag{font-size:10px;font-weight:bold;background:#ffd98a;color:#5a2d00;padding:3px 8px;border-radius:8px;}
+  .chero h2{font-family:'Chewy',cursive;font-weight:normal;margin:8px 0 4px;font-size:22px;}
+  .chero .meta{font-size:12px;color:#ffd6f0;}
+  .chero .prize{margin-top:8px;font-size:13px;font-weight:bold;color:#fff;}
+  .jbtn{margin-top:10px;width:100%;border:none;border-radius:14px;padding:11px;font-weight:bold;font-size:14px;background:#ffd98a;color:#5a2d00;box-shadow:0 3px 0 #b58a2e;}
+  .jbtn.done{background:#1e9e5a;color:#fff;box-shadow:0 3px 0 #0c5c31;}
+  .subtabs{display:flex;gap:8px;padding:6px 12px 0;}
+  .subtab{flex:1;text-align:center;background:#0e2560;border:1px solid #2b57b8;color:#cfe0ff;border-radius:14px 14px 0 0;padding:8px;font-size:12px;font-weight:bold;}
+  .subtab.on{background:#f5a623;color:#5a2d00;border-color:#f5a623;}
+  .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;}
+  .vid{background:#1b3f92;border:1px solid #3560b8;border-radius:14px;overflow:hidden;position:relative;}
+  .thumb{height:112px;display:flex;align-items:center;justify-content:center;font-size:44px;position:relative;cursor:pointer;}
+  .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.5);}
+  .vmeta{padding:8px 10px;display:flex;align-items:center;gap:6px;font-size:12px;}
+  .vmeta .who{font-weight:bold;}
+  .vmeta .vote{margin-left:auto;background:#0e2560;border:1px solid #ff5db1;color:#ff9ed0;border-radius:12px;padding:3px 8px;font-weight:bold;cursor:pointer;font-size:11px;}
+  .vmeta .vote.on{background:#ff5db1;color:#4b0026;}
+  .rep{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.35);border:none;color:#fff;border-radius:10px;padding:2px 6px;font-size:11px;cursor:pointer;z-index:2;}
+  .rank{position:absolute;top:6px;left:6px;background:#ffd98a;color:#5a2d00;border-radius:10px;padding:2px 7px;font-size:11px;font-weight:bold;}
+  /* player overlay (in-flow faux viewport) */
+  .player{display:none;position:fixed;inset:0;background:rgba(4,12,40,.94);z-index:60;flex-direction:column;align-items:center;justify-content:center;max-width:480px;margin:0 auto;}
+  .player.on{display:flex;}
+  .pstage{width:82%;height:280px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:84px;position:relative;overflow:hidden;}
+  .pbar{width:82%;height:6px;background:#24468f;border-radius:3px;margin-top:14px;overflow:hidden;}
+  .pfill{height:100%;width:0;background:#ff5db1;}
+  .pclose{margin-top:16px;background:#f5a623;color:#5a2d00;border:none;border-radius:16px;padding:9px 20px;font-weight:bold;}
+  .pwho{margin-top:12px;font-weight:bold;font-size:15px;}
+  /* store + moods grids */
+  .tabs{display:flex;gap:8px;overflow-x:auto;padding:10px 12px 4px;}
+  .tab{white-space:nowrap;background:#0e2560;border:1px solid #2b57b8;color:#cfe0ff;border-radius:16px;padding:7px 13px;font-size:12px;font-weight:bold;}
+  .tab.on{background:#f5a623;color:#5a2d00;border-color:#f5a623;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px 12px;}
+  @media(min-width:430px){.grid{grid-template-columns:1fr 1fr 1fr;}}
+  .card{background:#1b3f92;border:1px solid #3560b8;border-radius:14px;padding:12px 10px;text-align:center;position:relative;overflow:hidden;}
+  .ic{font-size:32px;line-height:1;display:inline-block;margin:4px 0 6px;}
+  .nm{font-size:12px;font-weight:bold;min-height:26px;display:flex;align-items:center;justify-content:center;}
+  .pill{position:absolute;top:6px;left:6px;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:8px;}
+  .pill.feed{background:#ff5db1;color:#4b0026;}
+  .pill.new{background:#1e9e5a;color:#fff;}
+  .pill.soon{background:#33477e;color:#aebfe6;}
+  .pill.limited{background:#ffd98a;color:#5a2d00;}
+  .pill.excl{background:#9b6bff;color:#fff;}
+  .buy{margin-top:6px;width:100%;border:none;border-radius:14px;padding:8px;font-weight:bold;font-size:12px;background:#f5a623;color:#5a2d00;box-shadow:0 2px 0 #b45c00;}
+  .buy.owned{background:#1e9e5a;color:#fff;box-shadow:0 2px 0 #0c5c31;}
+  .buy.poor{background:#33477e;color:#8fa6d8;box-shadow:none;}
+  .buy.soon{background:#24365f;color:#7f93c4;box-shadow:none;}
+  .buy.toggle{background:#ff5db1;color:#4b0026;box-shadow:0 2px 0 #a3204f;}
+  .note{background:#0e2560;border:1px solid #2b57b8;margin:12px;border-radius:12px;padding:10px 12px;font-size:12px;color:#cfe0ff;line-height:1.5;}
+  /* profile */
+  .pf{margin:12px;background:#1b3f92;border:1px solid #3560b8;border-radius:16px;padding:16px;text-align:center;}
+  .pfav{width:78px;height:78px;border-radius:50%;background:#f5a623;display:flex;align-items:center;justify-content:center;font-size:34px;color:#5a2d00;font-weight:bold;margin:0 auto 8px;border:3px solid #ffd98a;}
+  .pfname{font-size:20px;font-weight:bold;}
+  .rainbow{background:linear-gradient(90deg,#ff5db1,#f5a623,#1e9e5a,#37b6ff,#9b6bff);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .pfstats{display:flex;justify-content:center;gap:18px;margin-top:10px;font-size:12px;color:#cfe0ff;}
+  .pfstats b{display:block;font-size:17px;color:#fff;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;}
+  .chip{background:#0e2560;border:1px solid #2b57b8;border-radius:12px;padding:5px 9px;font-size:14px;}
+  .toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#0e2560;border:1px solid #f5a623;color:#fff;padding:10px 16px;border-radius:20px;font-size:13px;font-weight:bold;opacity:0;transition:opacity .2s;z-index:70;pointer-events:none;}
+  .toast.show{opacity:1;}
+  .conf{position:fixed;width:9px;height:9px;top:-12px;z-index:80;pointer-events:none;border-radius:2px;}
+  @keyframes mBounce{0%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}60%{transform:translateY(2px)}}
+  @keyframes mPop{0%,100%{transform:scale(1)}40%{transform:scale(1.26)}}
+  @keyframes mShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-11deg)}75%{transform:rotate(11deg)}}
+  @keyframes mSpin{100%{transform:rotate(360deg)}}
+  @keyframes mTilt{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}
+  @keyframes mCry{0%,100%{transform:translateY(0)}50%{transform:translateY(3px) scale(1.05)}}
+  @keyframes mSpark{0%,100%{filter:none;transform:scale(1)}50%{filter:brightness(1.4);transform:scale(1.12)}}
+  @keyframes mHeart{0%,100%{transform:scale(1)}25%,75%{transform:scale(1.2)}50%{transform:scale(1)}}
+  @keyframes mSlide{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+  @keyframes mExplode{0%,100%{transform:scale(1)}40%{transform:scale(1.3) rotate(8deg)}}
+  @keyframes mFlame{0%,100%{transform:scale(1)}50%{transform:scale(1.15) translateY(-2px)}}
+  @keyframes mFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .anim{animation-duration:1.1s;animation-iteration-count:infinite;animation-timing-function:ease-in-out;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <span class="brand">🐦 TheFlap</span>
+    <button class="earn" id="earnBtn" onclick="earn()">Daily +10 🪶</button>
+    <span class="bal">🪶 <span id="bal">300</span></span>
+  </div>
+
+  <div class="screen on" id="s_challenges"></div>
+  <div class="screen" id="s_store"></div>
+  <div class="screen" id="s_moods"></div>
+  <div class="screen" id="s_profile"></div>
+
+  <div class="nav">
+    <button class="on" data-s="challenges" onclick="go('challenges',this)"><span class="ni">🏆</span>Challenges</button>
+    <button data-s="store" onclick="go('store',this)"><span class="ni">🪶</span>Store</button>
+    <button data-s="moods" onclick="go('moods',this)"><span class="ni">😄</span>Moods</button>
+    <button data-s="profile" onclick="go('profile',this)"><span class="ni">👤</span>Profile</button>
+  </div>
+</div>
+
+<div class="player" id="player">
+  <div class="pstage" id="pstage">🎬</div>
+  <div class="pwho" id="pwho"></div>
+  <div class="pbar"><div class="pfill" id="pfill"></div></div>
+  <button class="pclose" onclick="closePlayer()">Close</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var bal=300, owned={emoji_laugh:1, emoji_party:1}, rainbowOn=false, earned=false, joined=false, entered=false, votes={};
+
+var SUBS=[
+ {u:'maya',ic:'💃',g:'#c0348f,#7a2d9c',v:214},
+ {u:'deej',ic:'🎤',g:'#1e6fae,#0e2560',v:188},
+ {u:'kj',ic:'🕺',g:'#e07d0a,#b45c00',v:301},
+ {u:'nova',ic:'🎸',g:'#1e9e5a,#0c5c31',v:97},
+ {u:'rell',ic:'🤹',g:'#7a2d9c,#37206b',v:143},
+ {u:'bee',ic:'🎨',g:'#c0348f,#e07d0a',v:76}
+];
+var WINNERS=[{u:'trell',ic:'🏆',g:'#f5a623,#e07d0a',t:'June — Best Dance'},{u:'sky',ic:'👑',g:'#9b6bff,#7a2d9c',t:'May — Lip Sync'}];
+
+var REWARDS=[
+ {id:'emoji_laugh',n:'Laughing',ic:'😂',p:60,g:'Moods',a:'mBounce'},
+ {id:'emoji_party',n:'Party',ic:'🥳',p:60,g:'Moods',a:'mSpin'},
+ {id:'emoji_fire',n:'Fire',ic:'🔥',p:75,g:'Moods',a:'mFlame',wk:'new'},
+ {id:'emoji_mindblown',n:'Mind Blown',ic:'🤯',p:80,g:'Moods',a:'mExplode',wk:'new'},
+ {id:'emoji_cool',n:'Too Cool',ic:'😎',p:65,g:'Moods',a:'mSlide',wk:'new'},
+ {id:'emoji_skull',n:'Dead',ic:'💀',p:70,g:'Moods',a:'mShake',wk:'new'},
+ {id:'emoji_love',n:'Heart Eyes',ic:'😍',p:65,g:'Moods',a:'mHeart',wk:'soon'},
+ {id:'emoji_cry',n:'Crying',ic:'😭',p:60,g:'Moods',a:'mCry',wk:'soon'},
+ {id:'emoji_ghost',n:'Ghost',ic:'👻',p:70,g:'Moods',a:'mFloat',wk:'soon'},
+ {id:'emoji_100',n:'Hundred',ic:'💯',p:70,g:'Moods',a:'mPop',wk:'soon'},
+ {id:'rainbow_name',n:'Rainbow Name',ic:'🌈',p:400,g:'Name FX',feed:true},
+ {id:'name_glow',n:'Glow Name',ic:'🔆',p:150,g:'Name FX'},
+ {id:'name_sunset',n:'Sunset Name',ic:'🌇',p:200,g:'Name FX'},
+ {id:'gold_frame',n:'Gold Frame',ic:'🥇',p:180,g:'Frames'},
+ {id:'sparkle_frame',n:'Sparkle Frame',ic:'✨',p:220,g:'Frames'},
+ {id:'frame_galaxy',n:'Galaxy Frame',ic:'🌌',p:300,g:'Frames'},
+ {id:'frame_diamond',n:'Diamond Frame',ic:'💎',p:500,g:'Frames'},
+ {id:'post_confetti',n:'Post Confetti',ic:'🎉',p:120,g:'Post FX'},
+ {id:'post_hearts',n:'Floating Hearts',ic:'💗',p:130,g:'Post FX'},
+ {id:'post_snow',n:'Snowfall',ic:'❄️',p:130,g:'Post FX'},
+ {id:'pinaflap',n:'PinaFlap (24h)',ic:'📌',p:350,g:'Boosts'},
+ {id:'boost_spotlight',n:'Spotlight (1h)',ic:'🔦',p:200,g:'Boosts'},
+ {id:'badge_vip',n:'VIP Badge',ic:'🌟',p:400,g:'Badges'},
+ {id:'badge_legend',n:'Legend Badge',ic:'🏆',p:450,g:'Badges'},
+ {id:'og_badge',n:'OG Badge',ic:'🏅',p:0,g:'Badges',excl:true},
+ {id:'summer_shades',n:'Summer Shades',ic:'😎',p:150,g:'Limited',limited:true},
+ {id:'winter_frost',n:'Winter Frost',ic:'☃️',p:150,g:'Limited',limited:true}
+];
+var STGROUPS=['Name FX','Frames','Post FX','Boosts','Badges','Limited'];
+var curSt='Name FX';
+
+function setBal(v){bal=v;document.querySelectorAll('#bal').forEach(function(e){e.textContent=v;});}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},1600);}
+function go(s,btn){document.querySelectorAll('.screen').forEach(function(e){e.classList.remove('on');});document.getElementById('s_'+s).classList.add('on');
+  document.querySelectorAll('.nav button').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');window.scrollTo(0,0);
+  if(s==='profile')renderProfile();}
+function earn(){if(earned)return;earned=true;setBal(bal+10);var b=document.getElementById('earnBtn');b.disabled=true;b.textContent='Claimed ✓';toast('+10 🪶 daily bonus!');confetti();}
+
+/* ---------- CHALLENGES ---------- */
+var chSub='subs';
+function renderChallenges(){
+  var h='<div class="chero"><span class="tag">WEEKLY CHALLENGE · 4 days left</span>'+
+    '<h2>🎬 15-Second Talent Show</h2>'+
+    '<div class="meta">37 entries · one entry per person</div>'+
+    '<div class="prize">🏆 Winner: 500 🪶 + Legend Badge</div>'+
+    '<button class="jbtn '+(joined?'done':'')+'" onclick="'+(joined?'submitVid()':'joinCh()')+'">'+
+      (entered?'✅ Your entry is in':joined?'🎥 Submit your video':'Join challenge')+'</button></div>';
+  h+='<div class="subtabs">'+
+     '<div class="subtab'+(chSub==='subs'?' on':'')+'" onclick="chSub=\'subs\';renderChallenges();">Submissions</div>'+
+     '<div class="subtab'+(chSub==='lead'?' on':'')+'" onclick="chSub=\'lead\';renderChallenges();">Leaderboard</div>'+
+     '<div class="subtab'+(chSub==='win'?' on':'')+'" onclick="chSub=\'win\';renderChallenges();">Winners</div></div>';
+  if(chSub==='win'){
+    h+='<div class="vgrid">';
+    WINNERS.forEach(function(w){h+=vidCard(w,null,true);});
+    h+='</div>';
+  } else {
+    var list=SUBS.slice();
+    if(entered) list.unshift({u:'you',ic:'⭐',g:'#f5a623,#b45c00',v:(votes['you']?1:0),me:true});
+    if(chSub==='lead') list=list.slice().sort(function(a,b){return curV(b)-curV(a);});
+    h+='<div class="vgrid">';
+    list.forEach(function(s,i){h+=vidCard(s,chSub==='lead'?(i+1):null,false);});
+    h+='</div>';
+  }
+  document.getElementById('s_challenges').innerHTML=h;
+}
+function curV(s){return s.v+(votes[s.u]?1:0);}
+function vidCard(s,rank,isWin){
+  var rk=rank?'<span class="rank">#'+rank+'</span>':'';
+  var rep=isWin?'':'<button class="rep" onclick="reportVid(\''+s.u+'\')">⚑</button>';
+  var bottom=isWin?'<div class="vmeta"><span class="who">🏆 '+s.u+'</span></div><div style="font-size:11px;color:#8fa6d8;padding:0 10px 8px;">'+s.t+'</div>'
+    :'<div class="vmeta"><span class="who">@'+s.u+'</span><span class="vote'+(votes[s.u]?' on':'')+'" onclick="voteVid(\''+s.u+'\')">❤️ '+curV(s)+'</span></div>';
+  return '<div class="vid">'+rk+rep+
+    '<div class="thumb" style="background:linear-gradient(135deg,'+s.g+')" onclick="playVid(\''+s.u+'\',\''+s.ic+'\',\''+s.g+'\')">'+s.ic+'<span class="play">▶</span></div>'+
+    bottom+'</div>';
+}
+function joinCh(){joined=true;renderChallenges();toast('You joined! Now submit a video 🎥');}
+function submitVid(){if(entered)return;entered=true;renderChallenges();toast('Video submitted! 🎬 (auto-checked)');confetti();}
+function voteVid(u){votes[u]=votes[u]?0:1;renderChallenges();}
+function reportVid(u){toast('Reported @'+u+' — sent to admin 🚩');}
+function playVid(u,ic,g){
+  var p=document.getElementById('player');document.getElementById('pstage').textContent=ic;
+  document.getElementById('pstage').style.background='linear-gradient(135deg,'+g+')';
+  document.getElementById('pwho').textContent='@'+u;
+  p.classList.add('on');var f=document.getElementById('pfill');f.style.width='0';
+  setTimeout(function(){f.style.transition='width 4s linear';f.style.width='100%';},50);
+}
+function closePlayer(){var f=document.getElementById('pfill');f.style.transition='none';f.style.width='0';document.getElementById('player').classList.remove('on');}
+
+/* ---------- STORE ---------- */
+function renderStore(){
+  var h='<div class="note"><b>🪶 Feathers Store.</b> Earned, never bought. Every price &amp; item is set from the admin panel — no rebuild.</div>';
+  h+='<div class="tabs">';
+  STGROUPS.forEach(function(g){h+='<div class="tab'+(g===curSt?' on':'')+'" onclick="curSt=\''+g+'\';renderStore();">'+g+'</div>';});
+  h+='</div><div class="grid">';
+  REWARDS.filter(function(r){return r.g===curSt;}).forEach(function(r){h+=rewardCard(r);});
+  h+='</div>';
+  document.getElementById('s_store').innerHTML=h;
+}
+function rewardCard(r){
+  var pill=r.feed?'<span class="pill feed">FEED</span>':r.limited?'<span class="pill limited">LIMITED</span>':r.excl?'<span class="pill excl">EARN ONLY</span>':'';
+  var icon='<span class="ic'+(r.a?' anim':'')+'" style="'+(r.a?'animation-name:'+r.a:'')+'">'+r.ic+'</span>';
+  var btn;
+  if(owned[r.id]){btn=r.feed?'<button class="buy toggle" onclick="toggleRainbow()">'+(rainbowOn?'✓ On':'Turn on')+'</button>':'<button class="buy owned">✓ Owned</button>';}
+  else if(r.excl){btn='<button class="buy poor">Earned only</button>';}
+  else if(bal<r.p){btn='<button class="buy poor" onclick="toast(\'Need more Feathers 🪶\')">Need '+r.p+' 🪶</button>';}
+  else{btn='<button class="buy" onclick="buy(\''+r.id+'\')">Get · '+r.p+' 🪶</button>';}
+  return '<div class="card">'+pill+icon+'<div class="nm">'+r.n+'</div>'+btn+'</div>';
+}
+function buy(id){var r=REWARDS.find(function(x){return x.id===id;})||MOODS.find(function(x){return x.id===id;});if(!r||bal<r.p)return;
+  setBal(bal-r.p);owned[id]=1;confetti();if(r.feed){rainbowOn=true;}toast('Unlocked '+r.n+'! 🪶');renderStore();renderMoods();}
+function toggleRainbow(){rainbowOn=!rainbowOn;renderStore();toast(rainbowOn?'Rainbow name ON':'Rainbow name off');}
+
+/* ---------- MOODS (weekly drops) ---------- */
+var MOODS=REWARDS.filter(function(r){return r.g==='Moods';});
+function renderMoods(){
+  var h='<div class="note"><b>Fresh moods every week 🎉</b> We drop <b>4 new animated moods</b> each week — never all at once. Unlock the ones you love with Feathers; past drops stay available.</div>';
+  h+=moodSection('🔥 New this week', MOODS.filter(function(m){return m.wk==='new';}));
+  h+=moodSection('😄 Your moods & the vault', MOODS.filter(function(m){return !m.wk;}));
+  h+=moodSection('⏳ Dropping soon', MOODS.filter(function(m){return m.wk==='soon';}));
+  document.getElementById('s_moods').innerHTML=h;
+}
+function moodSection(title,list){
+  if(!list.length)return '';
+  var h='<h3 class="sec">'+title+'</h3><div class="grid">';
+  list.forEach(function(m){
+    var soon=m.wk==='soon';
+    var pill=soon?'<span class="pill soon">SOON</span>':m.wk==='new'?'<span class="pill new">NEW</span>':'';
+    var icon='<span class="ic anim" style="animation-name:'+m.a+'">'+m.ic+'</span>';
+    var btn;
+    if(owned[m.id])btn='<button class="buy owned">✓ Unlocked</button>';
+    else if(soon)btn='<button class="buy soon">Next drop</button>';
+    else if(bal<m.p)btn='<button class="buy poor" onclick="toast(\'Need more Feathers 🪶\')">Need '+m.p+' 🪶</button>';
+    else btn='<button class="buy" onclick="buy(\''+m.id+'\')">Unlock · '+m.p+' 🪶</button>';
+    h+='<div class="card">'+pill+icon+'<div class="nm">'+m.n+'</div>'+btn+'</div>';
+  });
+  return h+'</div>';
+}
+
+/* ---------- PROFILE ---------- */
+function renderProfile(){
+  var frames=REWARDS.filter(function(r){return r.g==='Frames'&&owned[r.id];});
+  var ownedMoods=MOODS.filter(function(m){return owned[m.id];});
+  var badges=REWARDS.filter(function(r){return r.g==='Badges'&&owned[r.id];});
+  var frameIc=frames.length?frames[0].ic:'';
+  var h='<div class="pf">'+
+    '<div class="pfav">'+(frameIc||'L')+'</div>'+
+    '<div class="pfname'+(rainbowOn?' rainbow':'')+'">lock</div>'+
+    '<div style="font-size:12px;color:#8fa6d8;margin-top:2px;">@lock · 🔥 12 day streak</div>'+
+    '<div class="pfstats"><div><b>'+bal+'</b>🪶 Feathers</div><div><b>'+ownedMoods.length+'</b>Moods</div><div><b>'+(frames.length+badges.length)+'</b>Cosmetics</div></div>';
+  var chips=ownedMoods.map(function(m){return '<span class="chip">'+m.ic+'</span>';}).concat(frames.map(function(f){return '<span class="chip">'+f.ic+'</span>';})).concat(badges.map(function(b){return '<span class="chip">'+b.ic+'</span>';}));
+  h+='<div class="chips">'+(chips.length?chips.join(''):'<span style="font-size:12px;color:#8fa6d8">Unlock moods &amp; cosmetics in the Store 🪶</span>')+'</div>';
+  h+='<div style="font-size:11px;color:#8fa6d8;margin-top:12px;line-height:1.5;">'+(rainbowOn?'🌈 Rainbow Name is ON — the only cosmetic that colors your name in the live feed.':'Frames &amp; effects show here on your profile. Only Rainbow Name colors your name in the live feed.')+'</div>';
+  h+='</div>';
+  document.getElementById('s_profile').innerHTML=h;
+}
+
+function confetti(){var cols=['#ff5db1','#f5a623','#1e9e5a','#37b6ff','#9b6bff','#ffd98a'];
+  for(var i=0;i<24;i++){(function(){var c=document.createElement('div');c.className='conf';c.style.left=(Math.random()*100)+'vw';c.style.background=cols[i%cols.length];document.body.appendChild(c);
+    var dy=(window.innerHeight+40),dur=900+Math.random()*700;
+    c.animate([{transform:'translateY(0) rotate(0)'},{transform:'translateY('+dy+'px) rotate(540deg)'}],{duration:dur,easing:'ease-in'});
+    setTimeout(function(){c.remove();},dur);})();}}
+
+renderChallenges();renderStore();renderMoods();
+</script>
+</body>
+</html>
