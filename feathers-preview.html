@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>TheFlap — Feathers Store (Preview)</title>
+<link href="https://fonts.googleapis.com/css2?family=Chewy&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;background:#14337a;color:#fff;font-family:Verdana,Arial,sans-serif;padding-bottom:40px;}
+  .wrap{max-width:520px;margin:0 auto;}
+  .top{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#f5a623,#e07d0a);border-bottom:3px solid #b45c00;
+       padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;display:flex;align-items:center;gap:10px;}
+  .brand{font-family:'Chewy',cursive;font-size:22px;text-shadow:0 2px 0 #b45c00;}
+  .bal{margin-left:auto;background:#fff;color:#c05e00;font-weight:bold;border-radius:20px;padding:6px 14px;font-size:16px;
+       display:flex;align-items:center;gap:6px;box-shadow:0 2px 0 #b45c00;}
+  .earn{background:#1e9e5a;color:#fff;border:none;border-radius:18px;padding:8px 12px;font-weight:bold;font-size:12px;
+        box-shadow:0 2px 0 #0c5c31;cursor:pointer;}
+  .earn:disabled{opacity:.5;box-shadow:none;}
+  .note{background:#0e2560;border:1px solid #2b57b8;margin:12px;border-radius:12px;padding:10px 12px;font-size:12px;color:#cfe0ff;line-height:1.5;}
+  .tabs{display:flex;gap:8px;overflow-x:auto;padding:10px 12px;position:sticky;top:56px;background:#14337a;z-index:15;}
+  .tab{white-space:nowrap;background:#0e2560;border:1px solid #2b57b8;color:#cfe0ff;border-radius:16px;padding:7px 13px;font-size:12px;font-weight:bold;cursor:pointer;}
+  .tab.on{background:#f5a623;color:#5a2d00;border-color:#f5a623;}
+  h3.sec{font-family:'Chewy',cursive;font-size:17px;margin:14px 14px 6px;color:#ffd98a;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px;}
+  @media(min-width:440px){.grid{grid-template-columns:1fr 1fr 1fr;}}
+  .card{background:#1b3f92;border:1px solid #3560b8;border-radius:14px;padding:12px 10px;text-align:center;position:relative;overflow:hidden;}
+  .ic{font-size:34px;line-height:1;display:inline-block;margin:4px 0 6px;}
+  .nm{font-size:12px;font-weight:bold;min-height:28px;display:flex;align-items:center;justify-content:center;}
+  .pill{position:absolute;top:6px;left:6px;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:8px;}
+  .pill.feed{background:#ff5db1;color:#4b0026;}
+  .pill.limited{background:#ffd98a;color:#5a2d00;}
+  .pill.excl{background:#9b6bff;color:#fff;}
+  .buy{margin-top:6px;width:100%;border:none;border-radius:14px;padding:8px;font-weight:bold;font-size:12px;cursor:pointer;
+       background:#f5a623;color:#5a2d00;box-shadow:0 2px 0 #b45c00;}
+  .buy.owned{background:#1e9e5a;color:#fff;box-shadow:0 2px 0 #0c5c31;}
+  .buy.poor{background:#33477e;color:#8fa6d8;box-shadow:none;}
+  .buy.toggle{background:#ff5db1;color:#4b0026;box-shadow:0 2px 0 #a3204f;}
+  .price{font-size:11px;color:#ffd98a;font-weight:bold;margin-top:2px;}
+  .feedbox{margin:14px 12px;background:#0e2560;border:1px solid #2b57b8;border-radius:12px;padding:12px;}
+  .feedbox h4{margin:0 0 8px;font-family:'Chewy',cursive;color:#ffd98a;font-size:15px;font-weight:normal;}
+  .frow{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #24468f;}
+  .av{width:34px;height:34px;border-radius:50%;background:#f5a623;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#5a2d00;}
+  .fnm{font-weight:bold;font-size:13px;}
+  .rainbow{background:linear-gradient(90deg,#ff5db1,#f5a623,#1e9e5a,#37b6ff,#9b6bff);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .ftx{font-size:12px;color:#cfe0ff;}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0e2560;border:1px solid #f5a623;color:#fff;
+         padding:10px 16px;border-radius:20px;font-size:13px;font-weight:bold;opacity:0;transition:opacity .2s;z-index:50;pointer-events:none;}
+  .toast.show{opacity:1;}
+  .conf{position:fixed;width:9px;height:9px;top:-12px;z-index:60;pointer-events:none;border-radius:2px;}
+  @keyframes mBounce{0%,100%{transform:translateY(0)}30%{transform:translateY(-7px)}60%{transform:translateY(2px)}}
+  @keyframes mPop{0%,100%{transform:scale(1)}40%{transform:scale(1.28)}}
+  @keyframes mShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-11deg)}75%{transform:rotate(11deg)}}
+  @keyframes mSpin{100%{transform:rotate(360deg)}}
+  @keyframes mTilt{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}
+  @keyframes mCry{0%,100%{transform:translateY(0)}50%{transform:translateY(3px) scale(1.05)}}
+  @keyframes mSpark{0%,100%{filter:none;transform:scale(1)}50%{filter:brightness(1.4);transform:scale(1.12)}}
+  @keyframes mHeart{0%,100%{transform:scale(1)}25%{transform:scale(1.2)}50%{transform:scale(1)}75%{transform:scale(1.2)}}
+  @keyframes mSlide{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+  @keyframes mWink{0%,100%{transform:scale(1)}50%{transform:scale(1,.6)}}
+  @keyframes mExplode{0%,100%{transform:scale(1)}40%{transform:scale(1.3) rotate(8deg)}}
+  @keyframes mSnore{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px) rotate(-5deg)}}
+  @keyframes mFlame{0%,100%{transform:scale(1)}50%{transform:scale(1.15) translateY(-2px)}}
+  @keyframes mFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .anim{animation-duration:1.1s;animation-iteration-count:infinite;animation-timing-function:ease-in-out;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <span class="brand">🪶 Feathers</span>
+    <button class="earn" id="earnBtn" onclick="earn()">Daily +10</button>
+    <span class="bal">🪶 <span id="bal">320</span></span>
+  </div>
+  <div class="note">
+    <b>Preview.</b> Feathers are <b>earned, never bought</b> — from daily opens, challenges &amp; wins.
+    Every price, item, and limited-time drop is set from the admin panel (no app rebuild). Tap items to try buying.
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div id="store"></div>
+
+  <div class="feedbox">
+    <h4>Live feed preview</h4>
+    <div class="frow"><div class="av">L</div><div><div class="fnm" id="myName">you</div><div class="ftx">just posted a flap 🐦</div></div></div>
+    <div class="frow"><div class="av" style="background:#37b6ff;color:#04294d">M</div><div><div class="fnm">maya</div><div class="ftx">standard name color</div></div></div>
+    <div style="font-size:11px;color:#8fa6d8;margin-top:8px;">Only <b style="color:#ff9ed0">Rainbow Name</b> changes your name in the live feed. Frames &amp; effects show on your profile only.</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var REWARDS=[
+ {id:'emoji_laugh',n:'Laughing',ic:'😂',p:60,g:'Moods',a:'mBounce'},
+ {id:'emoji_cry',n:'Crying',ic:'😭',p:60,g:'Moods',a:'mCry'},
+ {id:'emoji_shock',n:'Shocked',ic:'😱',p:60,g:'Moods',a:'mPop'},
+ {id:'emoji_angry',n:'Angry',ic:'😠',p:60,g:'Moods',a:'mShake'},
+ {id:'emoji_excited',n:'Excited',ic:'🤩',p:60,g:'Moods',a:'mSpark'},
+ {id:'emoji_confused',n:'Confused',ic:'😕',p:60,g:'Moods',a:'mTilt'},
+ {id:'emoji_party',n:'Party',ic:'🥳',p:60,g:'Moods',a:'mSpin'},
+ {id:'emoji_love',n:'Heart Eyes',ic:'😍',p:65,g:'Moods',a:'mHeart'},
+ {id:'emoji_cool',n:'Too Cool',ic:'😎',p:65,g:'Moods',a:'mSlide'},
+ {id:'emoji_wink',n:'Wink',ic:'😉',p:55,g:'Moods',a:'mWink'},
+ {id:'emoji_mindblown',n:'Mind Blown',ic:'🤯',p:80,g:'Moods',a:'mExplode'},
+ {id:'emoji_sleepy',n:'Sleepy',ic:'😴',p:55,g:'Moods',a:'mSnore'},
+ {id:'emoji_nerd',n:'Nerd',ic:'🤓',p:55,g:'Moods',a:'mTilt'},
+ {id:'emoji_skull',n:'Dead',ic:'💀',p:70,g:'Moods',a:'mShake'},
+ {id:'emoji_fire',n:'Fire',ic:'🔥',p:75,g:'Moods',a:'mFlame'},
+ {id:'emoji_100',n:'Hundred',ic:'💯',p:70,g:'Moods',a:'mPop'},
+ {id:'emoji_clown',n:'Clown',ic:'🤡',p:65,g:'Moods',a:'mSpin'},
+ {id:'emoji_ghost',n:'Ghost',ic:'👻',p:70,g:'Moods',a:'mFloat'},
+ {id:'emoji_robot',n:'Robot',ic:'🤖',p:65,g:'Moods',a:'mTilt'},
+ {id:'emoji_pleading',n:'Pleading',ic:'🥺',p:60,g:'Moods',a:'mBounce'},
+ {id:'rainbow_name',n:'Rainbow Name',ic:'🌈',p:400,g:'Name FX',feed:true},
+ {id:'name_shadow',n:'Shadow Name',ic:'🕶️',p:120,g:'Name FX'},
+ {id:'name_glow',n:'Glow Name',ic:'🔆',p:150,g:'Name FX'},
+ {id:'name_sunset',n:'Sunset Name',ic:'🌇',p:200,g:'Name FX'},
+ {id:'name_ocean',n:'Ocean Name',ic:'🌊',p:200,g:'Name FX'},
+ {id:'gold_frame',n:'Gold Frame',ic:'🥇',p:180,g:'Frames'},
+ {id:'sparkle_frame',n:'Sparkle Frame',ic:'✨',p:220,g:'Frames'},
+ {id:'frame_pixel',n:'Pixel Frame',ic:'🟦',p:180,g:'Frames'},
+ {id:'frame_neon',n:'Neon Frame',ic:'💠',p:200,g:'Frames'},
+ {id:'frame_hearts',n:'Hearts Frame',ic:'💕',p:200,g:'Frames'},
+ {id:'frame_fire',n:'Fire Frame',ic:'🔥',p:240,g:'Frames'},
+ {id:'frame_ice',n:'Ice Frame',ic:'🧊',p:240,g:'Frames'},
+ {id:'frame_galaxy',n:'Galaxy Frame',ic:'🌌',p:300,g:'Frames'},
+ {id:'frame_royal',n:'Royal Gold',ic:'👑',p:350,g:'Frames'},
+ {id:'frame_diamond',n:'Diamond Frame',ic:'💎',p:500,g:'Frames'},
+ {id:'post_confetti',n:'Post Confetti',ic:'🎉',p:120,g:'Post FX'},
+ {id:'post_hearts',n:'Floating Hearts',ic:'💗',p:130,g:'Post FX'},
+ {id:'post_stars',n:'Shooting Stars',ic:'⭐',p:130,g:'Post FX'},
+ {id:'post_snow',n:'Snowfall',ic:'❄️',p:130,g:'Post FX'},
+ {id:'post_bubbles',n:'Bubbles',ic:'🫧',p:130,g:'Post FX'},
+ {id:'post_glow',n:'Glow Post',ic:'🌟',p:150,g:'Post FX'},
+ {id:'pinaflap',n:'PinaFlap (24h)',ic:'📌',p:350,g:'Boosts'},
+ {id:'boost_highlight',n:'Highlight (24h)',ic:'🖍️',p:160,g:'Boosts'},
+ {id:'boost_spotlight',n:'Spotlight (1h)',ic:'🔦',p:200,g:'Boosts'},
+ {id:'streak_freeze',n:'Streak Freeze',ic:'🧊',p:180,g:'Boosts'},
+ {id:'badge_vip',n:'VIP Badge',ic:'🌟',p:400,g:'Badges'},
+ {id:'badge_legend',n:'Legend Badge',ic:'🏆',p:450,g:'Badges'},
+ {id:'og_badge',n:'OG Badge',ic:'🏅',p:0,g:'Badges',excl:true},
+ {id:'badge_founder',n:'Founder',ic:'🛠️',p:0,g:'Badges',excl:true},
+ {id:'badge_early_bird',n:'Early Bird',ic:'🐦',p:0,g:'Badges',excl:true},
+ {id:'summer_shades',n:'Summer Shades',ic:'😎',p:150,g:'Limited',limited:true},
+ {id:'winter_frost',n:'Winter Frost',ic:'☃️',p:150,g:'Limited',limited:true}
+];
+var GROUPS=['Moods','Frames','Name FX','Post FX','Boosts','Badges','Limited'];
+var bal=320, owned={}, curGroup='Moods', earned=false;
+
+function setBal(v){bal=v;document.getElementById('bal').textContent=v;}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},1600);}
+
+function renderTabs(){
+  var h='';GROUPS.forEach(function(g){h+='<div class="tab'+(g===curGroup?' on':'')+'" onclick="curGroup=\''+g+'\';renderTabs();renderStore();">'+g+'</div>';});
+  document.getElementById('tabs').innerHTML=h;
+}
+function renderStore(){
+  var items=REWARDS.filter(function(r){return r.g===curGroup;});
+  var h='<h3 class="sec">'+curGroup+'</h3><div class="grid">';
+  items.forEach(function(r){
+    var pill=r.feed?'<span class="pill feed">FEED</span>':r.limited?'<span class="pill limited">LIMITED</span>':r.excl?'<span class="pill excl">EARN ONLY</span>':'';
+    var icon='<span class="ic'+(r.a?' anim':'')+'" style="'+(r.a?'animation-name:'+r.a:'')+'">'+r.ic+'</span>';
+    var btn;
+    if(owned[r.id]){
+      if(r.feed) btn='<button class="buy toggle" onclick="toggleRainbow()">'+(rainbowOn?'✓ On — tap off':'Tap to turn on')+'</button>';
+      else btn='<button class="buy owned">✓ Owned</button>';
+    } else if(r.excl){
+      btn='<button class="buy poor">Earned only</button>';
+    } else if(bal<r.p){
+      btn='<button class="buy poor" onclick="toast(\'Need more Feathers 🪶\')">Need '+r.p+' 🪶</button>';
+    } else {
+      btn='<button class="buy" onclick="buy(\''+r.id+'\')">Get · '+r.p+' 🪶</button>';
+    }
+    h+='<div class="card">'+pill+icon+'<div class="nm">'+r.n+'</div>'+btn+'</div>';
+  });
+  h+='</div>';
+  document.getElementById('store').innerHTML=h;
+}
+var rainbowOn=false;
+function buy(id){
+  var r=REWARDS.find(function(x){return x.id===id;});
+  if(!r||bal<r.p)return;
+  setBal(bal-r.p); owned[id]=true; confetti();
+  if(r.feed){rainbowOn=true;applyFeed();}
+  toast('Unlocked '+r.n+'! 🪶');
+  renderStore();
+}
+function toggleRainbow(){rainbowOn=!rainbowOn;applyFeed();renderStore();toast(rainbowOn?'Rainbow name ON':'Rainbow name off');}
+function applyFeed(){document.getElementById('myName').className='fnm'+(rainbowOn?' rainbow':'');}
+function earn(){
+  if(earned)return; earned=true;
+  setBal(bal+10);document.getElementById('earnBtn').disabled=true;document.getElementById('earnBtn').textContent='Claimed ✓';
+  toast('+10 🪶 daily bonus!');confetti();
+}
+function confetti(){
+  var cols=['#ff5db1','#f5a623','#1e9e5a','#37b6ff','#9b6bff','#ffd98a'];
+  for(var i=0;i<26;i++){(function(){var c=document.createElement('div');c.className='conf';
+    c.style.left=(Math.random()*100)+'vw';c.style.background=cols[i%cols.length];
+    c.style.transform='rotate('+(Math.random()*360)+'deg)';document.body.appendChild(c);
+    var dy=(window.innerHeight+40),dur=900+Math.random()*700;
+    c.animate([{transform:'translateY(0) rotate(0)'},{transform:'translateY('+dy+'px) rotate(540deg)'}],{duration:dur,easing:'ease-in'});
+    setTimeout(function(){c.remove();},dur);
+  })();}
+}
+renderTabs();renderStore();
+</script>
+</body>
+</html>
