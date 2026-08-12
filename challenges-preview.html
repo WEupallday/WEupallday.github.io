@@ -134,6 +134,11 @@
   .emoChip{background:#fff;border-radius:12px;padding:10px;text-align:center;width:calc(25% - 7px);box-shadow:0 2px 7px rgba(0,0,0,.12);cursor:pointer;}
   .emoChip .e{font-size:26px;filter:grayscale(1);opacity:.5;} .emoChip.un .e{filter:none;opacity:1;}
   .emoChip .lk{font-size:10px;font-weight:800;color:#a86b00;margin-top:3px;} .emoChip.un .lk{color:#1a7a3a;}
+  .emoChip .e{display:inline-block;}
+  .m-bounce{animation:mBounce .8s ease-in-out infinite;} .m-pop{animation:mPop 1s ease-in-out infinite;} .m-shake{animation:mShake .5s ease-in-out infinite;}
+  .m-spin{animation:mSpin 2s linear infinite;} .m-tilt{animation:mTilt 1.4s ease-in-out infinite;} .m-spark{animation:mPop .6s ease-in-out infinite;} .m-cry{animation:mBounce 1.5s ease-in-out infinite;}
+  @keyframes mBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}} @keyframes mPop{0%,100%{transform:scale(1);}50%{transform:scale(1.25);}}
+  @keyframes mShake{0%,100%{transform:rotate(-10deg);}50%{transform:rotate(10deg);}} @keyframes mSpin{to{transform:rotate(360deg);}} @keyframes mTilt{0%,100%{transform:rotate(-7deg);}50%{transform:rotate(7deg);}}
 </style>
 </head>
 <body>
@@ -373,16 +378,16 @@
     {ic:'📌',n:'Pin a flap (1 day)',cost:80,owned:false},{ic:'🎉',n:'Post confetti',cost:60,owned:false}
   ];
   var EMOJIS=[
-    {e:'😂',n:'Laughing',cost:40,un:false},{e:'😭',n:'Crying',cost:40,un:false},{e:'😮',n:'Shocked',cost:40,un:false},
-    {e:'😠',n:'Angry',cost:50,un:false},{e:'🤩',n:'Excited',cost:50,un:false},{e:'😕',n:'Confused',cost:40,un:false},
-    {e:'😎',n:'Cool',cost:60,un:true},{e:'🥳',n:'Party',cost:60,un:false}
+    {e:'😂',n:'Laughing',cost:40,un:false,anim:'bounce'},{e:'😭',n:'Crying',cost:40,un:false,anim:'cry'},{e:'😮',n:'Shocked',cost:40,un:false,anim:'pop'},
+    {e:'😠',n:'Angry',cost:50,un:false,anim:'shake'},{e:'🤩',n:'Excited',cost:50,un:false,anim:'spark'},{e:'😕',n:'Confused',cost:40,un:false,anim:'tilt'},
+    {e:'😎',n:'Cool',cost:60,un:true,anim:'bounce'},{e:'🥳',n:'Party',cost:60,un:false,anim:'spin'}
   ];
   function bal(){return parseInt((document.getElementById('pts').textContent||'0').replace(/[^0-9]/g,''));}
   function renderRewards(){document.getElementById('rewardGrid').innerHTML=REWARDS.map(function(r,i){
     return '<div class="rcard"><div class="ric">'+r.ic+'</div><div class="rn">'+r.n+'</div><div class="rcost">'+(r.owned?'Owned':'🪶 '+r.cost)+'</div><button class="rbtn'+(r.owned?' owned':'')+'" onclick="redeem('+i+')">'+(r.owned?'✓ Owned':'Redeem')+'</button></div>';
   }).join('');}
   function renderEmos(){document.getElementById('emoWrap').innerHTML=EMOJIS.map(function(m,i){
-    return '<div class="emoChip'+(m.un?' un':'')+'" onclick="unlockEmo('+i+')"><div class="e">'+m.e+'</div><div class="lk">'+(m.un?'Unlocked':'🪶 '+m.cost)+'</div></div>';
+    return '<div class="emoChip'+(m.un?' un':'')+'" onclick="unlockEmo('+i+')"><div class="e '+(m.un?('m-'+m.anim):'')+'">'+m.e+'</div><div class="lk">'+(m.un?'Unlocked':'🪶 '+m.cost)+'</div></div>';
   }).join('');}
   function redeem(i){var r=REWARDS[i];if(r.owned){flash('You already own that ✓');return;}if(bal()<r.cost){flash('Not enough Feathers 🪶');return;}if(!confirm('Redeem '+r.n+' for '+r.cost+' Feathers?'))return;addPts(-r.cost);r.owned=true;renderRewards();flash('🎉 Unlocked '+r.n+'!');}
   function unlockEmo(i){var m=EMOJIS[i];if(m.un){flash(m.e+' already unlocked');return;}if(bal()<m.cost){flash('Not enough Feathers 🪶');return;}if(!confirm('Unlock the '+m.n+' mood for '+m.cost+' Feathers?'))return;addPts(-m.cost);m.un=true;renderEmos();flash('😜 '+m.n+' mood unlocked!');}
