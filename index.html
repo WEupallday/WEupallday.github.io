@@ -6112,10 +6112,8 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
 <script src="recovery.js?v=1"></script>
 <style>
   /* ===== TheFlap add-on: Challenges + Store (isolated, owner-only preview) ===== */
-  .nx-launch{position:fixed;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:900;display:flex;flex-direction:column;gap:8px;}
-  .nx-fab{width:52px;height:52px;border-radius:50%;border:2px solid #b45c00;background:linear-gradient(180deg,#f5a623,#e07d0a);color:#fff;font-size:23px;box-shadow:0 3px 8px rgba(0,0,0,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;}
-  .nx-fab.store{background:linear-gradient(180deg,#37b6ff,#1e6fae);border-color:#0e447c;}
-  .nx-ov{display:none;position:fixed;inset:0;z-index:950;background:#14337a;color:#fff;flex-direction:column;overflow:hidden;font-family:Verdana,Arial,sans-serif;}
+  /* No floating launcher — entries live in the OG drawer menu. Nothing follows the feed. */
+  .nx-ov{display:none;position:fixed;inset:0;z-index:2147483000;background:#14337a;color:#fff;flex-direction:column;overflow:hidden;font-family:Verdana,Arial,sans-serif;}
   .nx-ov.on{display:flex;}
   .nx-ov *{box-sizing:border-box;}
   .nx-bar{position:relative;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px 10px;background:linear-gradient(180deg,#f5a623,#e07d0a);border-bottom:2px solid #b45c00;flex:0 0 auto;}
@@ -6157,13 +6155,9 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   .nx-feat{margin-left:auto;background:#0e2560;border:1px solid #ffd98a;color:#ffd98a;border-radius:12px;padding:3px 7px;font-weight:bold;font-size:11px;} .nx-feat.on{background:#ffd98a;color:#5a2d00;}
   .nx-rep{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.4);border:none;color:#fff;border-radius:10px;padding:2px 6px;font-size:11px;z-index:2;}
   .nx-rank{position:absolute;top:6px;left:6px;background:#ffd98a;color:#5a2d00;border-radius:10px;padding:2px 7px;font-size:11px;font-weight:bold;}
-  .nx-toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#0e2560;border:1px solid #f5a623;color:#fff;padding:10px 16px;border-radius:20px;font-size:13px;font-weight:bold;opacity:0;transition:opacity .2s;z-index:999;pointer-events:none;text-align:center;max-width:88%;}
+  .nx-toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#0e2560;border:1px solid #f5a623;color:#fff;padding:10px 16px;border-radius:20px;font-size:13px;font-weight:bold;opacity:0;transition:opacity .2s;z-index:2147483647;pointer-events:none;text-align:center;max-width:88%;}
   .nx-toast.on{opacity:1;}
 </style>
-<div class="nx-launch" id="nxLaunch" style="display:none">
-  <button class="nx-fab" title="Challenges" onclick="nxOpen('chal')">🏆</button>
-  <button class="nx-fab store" title="Store" onclick="nxOpen('store')">🪶</button>
-</div>
 <div class="nx-ov" id="nxChal"></div>
 <div class="nx-ov" id="nxStore"></div>
 <div class="nx-toast" id="nxToast"></div>
@@ -6189,20 +6183,41 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function toast(m){var t=document.getElementById('nxToast');t.innerHTML=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('on');},1600);}
 
+  /* ---------- open / close / isolated back ---------- */
+  function lockScroll(){ try{ document.body.style.overflow='hidden'; }catch(e){} }
+  function unlockScroll(){ try{ document.body.style.overflow=''; }catch(e){} }
+  function closeDrawer(){ try{ var dc=document.querySelector('.drawer-close'); if(dc && dc.offsetParent!==null){ dc.click(); } }catch(e){} }
+
   function nxOpen(which){
+    closeDrawer();           // never leave the OG menu open behind us
+    lockScroll();            // feed can't scroll behind the section
     document.getElementById('nxChal').classList.toggle('on',which==='chal');
     document.getElementById('nxStore').classList.toggle('on',which==='store');
     if(which==='chal'){cur=null;renderChal();}
     if(which==='store'){renderStore();}
+    var b=document.getElementById(which==='chal'?'nxChal':'nxStore'); if(b){var bd=b.querySelector('.nx-body'); if(bd) bd.scrollTop=0;}
   }
-  function nxClose(){document.getElementById('nxChal').classList.remove('on');document.getElementById('nxStore').classList.remove('on');}
-  window.nxOpen=nxOpen; window.nxClose=nxClose;
+  function nxClose(){
+    document.getElementById('nxChal').classList.remove('on');
+    document.getElementById('nxStore').classList.remove('on');
+    unlockScroll();
+  }
+  /* Back to Feed: close AND absorb the stray tap so it can't hit the feed/menu underneath. */
+  function nxBack(e){
+    if(e){ try{ e.preventDefault(); e.stopPropagation(); }catch(_){ } }
+    var sh=document.getElementById('nxShield');
+    if(!sh){ sh=document.createElement('div'); sh.id='nxShield'; document.body.appendChild(sh); }
+    sh.style.cssText='position:fixed;inset:0;z-index:2147483646;background:transparent;';
+    nxClose();
+    setTimeout(function(){ if(sh&&sh.parentNode) sh.parentNode.removeChild(sh); },450);
+  }
+  window.nxOpen=nxOpen; window.nxClose=nxClose; window.nxBack=nxBack;
 
   /* ---------- CHALLENGES ---------- */
   function renderChal(){
     var el=document.getElementById('nxChal');
     if(cur){return renderChalDetail();}
-    var h='<div class="nx-bar"><button class="nx-back" onclick="nxClose()">‹ Back to Feed</button><span class="nx-title">🏆 Challenges</span></div><div class="nx-body">';
+    var h='<div class="nx-bar"><button class="nx-back" onclick="nxBack(event)">‹ Back to Feed</button><span class="nx-title">🏆 Challenges</span></div><div class="nx-body">';
     h+='<div class="nx-chero"><span class="tag">THEFLAP CHALLENGES</span><h2>Show up. Show out. Win 🪶.</h2><div class="meta">Join a challenge, drop a video, climb the board.</div></div>';
     h+='<div class="nx-note">Preview — this is the Challenges section living inside your real app. Video uploads turn on once the Cloudflare token is added; for now it uses demo clips.</div>';
     h+='<div class="nx-sec">Available now</div>';
@@ -6212,11 +6227,13 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   }
   function nxCh(id){cur=id;csub='subs';renderChalDetail();}
   window.nxCh=nxCh;
+  window.nxChalBack=function(){cur=null;renderChal();};
+  window.nxSetSub=function(s){csub=s;renderChalDetail();};
   function renderChalDetail(){
     var el=document.getElementById('nxChal');
     var c=CH.filter(function(x){return x.id===cur;})[0];
     var jn=joined[c.id],en=entered[c.id];
-    var h='<div class="nx-bar"><button class="nx-back" onclick="cur=null;renderChal();">‹ Back</button><span class="nx-title">Challenge</span></div><div class="nx-body">';
+    var h='<div class="nx-bar"><button class="nx-back" onclick="nxChalBack()">‹ Back</button><span class="nx-title">Challenge</span></div><div class="nx-body">';
     h+='<div class="nx-chero"><span class="tag">'+(c.status==='ended'?'ENDED':'ACTIVE · '+c.left)+'</span><h2>'+c.ic+' '+c.title+'</h2><div class="meta">'+c.entries+' entries · one entry per person</div></div>';
     h+='<div class="nx-kv"><b>What it is</b><br>'+c.desc+'</div><div class="nx-kv"><b>Rules &amp; details</b><br>'+c.rules+'</div><div class="nx-kv"><b>Reward</b> &nbsp;'+c.reward+'</div>';
     if(c.status!=='ended'){
@@ -6224,7 +6241,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
       else if(!en) h+='<button class="nx-j done" onclick="nxSubmit(\''+c.id+'\')">🎥 Submit your video</button>';
       else h+='<div style="text-align:center;margin:6px 0"><span style="color:#1e9e5a;font-weight:bold">✅ Your entry is in.</span><br><button class="nx-lin" onclick="nxDelSub(\''+c.id+'\')">🗑 Delete my submission</button> · <button class="nx-lin" onclick="nxLeave(\''+c.id+'\')">Leave challenge</button></div>';
     }
-    h+='<div class="nx-sub"><div class="nx-st'+(csub==='subs'?' on':'')+'" onclick="csub=\'subs\';renderChalDetail();">Submissions</div><div class="nx-st'+(csub==='lead'?' on':'')+'" onclick="csub=\'lead\';renderChalDetail();">Leaderboard</div><div class="nx-st'+(csub==='win'?' on':'')+'" onclick="csub=\'win\';renderChalDetail();">Winners</div></div>';
+    h+='<div class="nx-sub"><div class="nx-st'+(csub==='subs'?' on':'')+'" onclick="nxSetSub(\'subs\')">Submissions</div><div class="nx-st'+(csub==='lead'?' on':'')+'" onclick="nxSetSub(\'lead\')">Leaderboard</div><div class="nx-st'+(csub==='win'?' on':'')+'" onclick="nxSetSub(\'win\')">Winners</div></div>';
     if(csub==='win'){var w=WIN[c.id]||[];h+='<div class="nx-vg">'+(w.length?w.map(function(x){return vid(c.id,x,null,true);}).join(''):'<div style="grid-column:1/-1;color:#8fa6d8;text-align:center;padding:20px;font-size:13px">Winners post when the challenge ends.</div>')+'</div>';}
     else{var list=(SUBS[c.id]||[]).slice();if(en)list.unshift({u:'you',ic:'⭐',g:'#f5a623,#b45c00',f:(feat['you_'+c.id]?1:0),me:true});
       if(csub==='lead')list.sort(function(a,b){return (b.f+(feat[b.u+'_'+c.id]?1:0))-(a.f+(feat[a.u+'_'+c.id]?1:0));});
@@ -6249,6 +6266,14 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
 
   /* ---------- STORE (real catalog) ---------- */
   var curG='Moods';
+  function catOf(r){
+    var n=(r.name||'').toLowerCase(), e=(r.effect||'').toLowerCase(), m=(r.meta||{});
+    if(m.feed || /rainbow|(^|\b)name\b/.test(n)) return 'Names';
+    if(/frame/.test(n)||/frame/.test(e)) return 'Frames';
+    if(/badge/.test(n)||/badge/.test(e)) return 'Badges';
+    if(/confetti|pinaflap|pin|boost|glow|spotlight|highlight|effect/.test(n)) return 'Boosts';
+    return 'Moods';
+  }
   async function loadCatalog(){
     if(REW.length) return;
     try{
@@ -6258,17 +6283,24 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
       if(b&&b.data&&typeof b.data.balance==='number') bal=Math.max(bal,b.data.balance);
     }catch(e){ REW=[]; }
   }
+  function storeGroups(){
+    var ORDER=['Moods','Frames','Names','Boosts','Badges'];
+    var present=[]; REW.forEach(function(r){var c=catOf(r); if(present.indexOf(c)<0)present.push(c);});
+    var g=ORDER.filter(function(x){return present.indexOf(x)>=0;});
+    present.forEach(function(x){if(g.indexOf(x)<0)g.push(x);});
+    return g.length?g:['Moods'];
+  }
   async function renderStore(){
     var el=document.getElementById('nxStore');
-    el.innerHTML='<div class="nx-bar"><button class="nx-back" onclick="nxClose()">‹ Back to Feed</button><span class="nx-title">🪶 Store</span><span class="nx-bal">🪶 '+bal+'</span></div><div class="nx-body"><div class="nx-note">Loading the live catalog…</div></div>';
+    el.innerHTML='<div class="nx-bar"><button class="nx-back" onclick="nxBack(event)">‹ Back to Feed</button><span class="nx-title">🪶 Store</span><span class="nx-bal">🪶 '+bal+'</span></div><div class="nx-body"><div class="nx-note">Loading the live catalog…</div></div>';
     await loadCatalog();
-    var groups=[];REW.forEach(function(r){if(groups.indexOf(r.g)<0)groups.push(r.g);});
-    if(!groups.length)groups=['Moods'];
+    var groups=storeGroups();
     if(groups.indexOf(curG)<0)curG=groups[0];
-    var h='<div class="nx-bar"><button class="nx-back" onclick="nxClose()">‹ Back to Feed</button><span class="nx-title">🪶 Store</span><span class="nx-bal">🪶 <span id="nxBal">'+bal+'</span></span></div><div class="nx-body">';
+    var h='<div class="nx-bar"><button class="nx-back" onclick="nxBack(event)">‹ Back to Feed</button><span class="nx-title">🪶 Store</span><span class="nx-bal">🪶 <span id="nxBal">'+bal+'</span></span></div><div class="nx-body">';
     h+='<div class="nx-note"><b>Flap Store.</b> Feathers are earned, never bought. Prices &amp; items are set from the admin panel — this reads your live catalog. (Preview — redeeming turns fully on with the Feathers server.)</div>';
     h+='<div class="nx-tabs">'+groups.map(function(g){return '<div class="nx-tab'+(g===curG?' on':'')+'" onclick="nxG(\''+g+'\')">'+g+'</div>';}).join('')+'</div>';
-    h+='<div class="nx-grid">'+REW.filter(function(r){return r.g===curG;}).map(scard).join('')+'</div></div>';
+    var cards=REW.filter(function(r){return catOf(r)===curG;});
+    h+='<div class="nx-grid">'+(cards.length?cards.map(scard).join(''):'<div style="grid-column:1/-1;color:#8fa6d8;text-align:center;padding:20px;font-size:13px">Nothing here yet.</div>')+'</div></div>';
     el.innerHTML=h;
   }
   function scard(r){
@@ -6284,13 +6316,20 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   window.nxToast=toast;
   window.nxBuy=function(id){var r=REW.filter(function(x){return x.id===id;})[0];if(!r||owned[id]||bal<r.price)return;bal-=r.price;owned[id]=1;var e=document.getElementById('nxBal');if(e)e.textContent=bal;toast('Unlocked '+r.name+'! 🪶 (preview)');renderStore();};
 
-  /* ---------- launcher (owner only) ---------- */
+  /* ---------- entries in the OG drawer menu (owner only) — additions, never replacements ---------- */
   function boot(){
     if(meName()!=='lock')return false;
-    var l=document.getElementById('nxLaunch'); if(l) l.style.display='flex';
+    if(document.querySelector('.nx-navbtn'))return true;
+    var anchor=document.querySelector('.support-nav');
+    if(!anchor||!anchor.parentNode)return false;
+    var mk=function(txt,which){var b=document.createElement('button');b.type='button';b.className='navbtn nx-navbtn';b.textContent=txt;b.addEventListener('click',function(ev){ev.preventDefault();nxOpen(which);});return b;};
+    var store=mk('🪶 Store','store');
+    var chal=mk('🏆 Challenges','chal');
+    anchor.parentNode.insertBefore(chal, anchor.nextSibling);
+    anchor.parentNode.insertBefore(store, anchor.nextSibling);
     return true;
   }
-  var tries=0;var iv=setInterval(function(){tries++;if(boot()||tries>80){clearInterval(iv);}},600);
+  var tries=0;var iv=setInterval(function(){tries++;if(boot()||tries>120){clearInterval(iv);}},600);
 })();
 </script>
 
