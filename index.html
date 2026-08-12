@@ -4403,7 +4403,7 @@ function notifText(n){
     }catch(e){}
     POLL_ROTATING=false;
   }
-  function maybeAutoRotatePoll(){ try{ if(ONLINE && POLL_POOL && POLL_POOL.length && pollRotationDue()){ return rotatePollNow(); } }catch(e){} }
+  function maybeAutoRotatePoll(){ /* AUTO-ROTATION DISABLED: poll never resets on a timer or at midnight; it only changes when an admin changes it manually, so votes and rankings persist. */ }
   /* ===== editable scrolling ticker (admin) — persisted as a hidden sentinel row ===== */
   function setTicker(text){
     var el=document.getElementById('tickerText');
