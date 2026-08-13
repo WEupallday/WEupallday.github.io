@@ -6118,6 +6118,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   body.nx-owner #xTabs, body.nx-owner .xtabs { position: static !important; top: auto !important; }
   .nx-topcap { display:none; position:fixed; top:0; left:0; right:0; height: env(safe-area-inset-top,0px); background: linear-gradient(180deg,#ff9a2e,#e07d0a); z-index:70; pointer-events:none; }
   body.nx-owner .nx-topcap { display:block; }
+  body.nx-owner.nx-open .nx-topcap { display:none; }
 
   /* --- floating Challenge button (owner only) — sits just above the OG "+" post button, scrolls with the feed --- */
   .nx-fab-ch { display:none; position:fixed; right:16px; bottom: calc(78px + env(safe-area-inset-bottom,0px)); width:48px; height:48px; border-radius:50%; border:2px solid #b45c00; background:linear-gradient(180deg,#f5a623,#e07d0a); color:#fff; font-size:22px; box-shadow:0 3px 8px rgba(0,0,0,.4); z-index:96; align-items:center; justify-content:center; padding:0; }
@@ -6191,7 +6192,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   var SUBS={talent:[{u:'maya',ic:'💃',g:'#c0348f,#7a2d9c',f:214},{u:'deej',ic:'🎤',g:'#1e6fae,#0e2560',f:188},{u:'kj',ic:'🕺',g:'#e07d0a,#b45c00',f:301},{u:'nova',ic:'🎸',g:'#1e9e5a,#0c5c31',f:97}],
     duet:[{u:'bee',ic:'🎨',g:'#c0348f,#e07d0a',f:76},{u:'sky',ic:'🎧',g:'#9b6bff,#7a2d9c',f:120}],june:[]};
   var WIN={june:[{u:'trell',ic:'🏆',g:'#f5a623,#e07d0a',t:'1st — Best Dance'},{u:'sky',ic:'🥈',g:'#9b6bff,#7a2d9c',t:'2nd'}]};
-  var joined={},entered={},feat={},cur=null,csub='subs';
+  var joined={},entered={},feat={},cur=null,csub='subs',nxScrollY=0;
   var REW=[], bal=500, owned={};
   var view='chal', curG='Moods';
 
@@ -6202,14 +6203,17 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   function unlockScroll(){ try{ document.body.style.overflow=''; }catch(e){} }
 
   /* ---------- open / close (isolated so a stray tap can't hit the feed) ---------- */
-  function nxOpen(v){ view=v||view; lockScroll(); document.getElementById('nxPanel').classList.add('on'); if(v==='chal')cur=null; render(); if(v==='store'&&!REW.length){ loadCatalog().then(render); } }
-  function nxClose(e){
-    if(e){ try{ e.preventDefault(); e.stopPropagation(); }catch(_){ } }
+  function nxOpen(v){ view=v||view; nxScrollY=window.pageYOffset||document.documentElement.scrollTop||0; lockScroll(); document.body.classList.add('nx-open'); document.getElementById('nxPanel').classList.add('on'); try{ if(!(history.state&&history.state.nx)) history.pushState({nx:1},''); }catch(_){ } if(v==='chal')cur=null; render(); if(v==='store'&&!REW.length){ loadCatalog().then(render); } }
+  function nxClose(e,fromPop){
+    if(e&&e.preventDefault){ try{ e.preventDefault(); e.stopPropagation(); }catch(_){ } }
     var sh=document.getElementById('nxShield');
     if(!sh){ sh=document.createElement('div'); sh.id='nxShield'; document.body.appendChild(sh); }
     sh.style.cssText='position:fixed;inset:0;z-index:2147483646;background:transparent;';
     document.getElementById('nxPanel').classList.remove('on');
+    document.body.classList.remove('nx-open');
     unlockScroll();
+    try{ window.scrollTo(0,nxScrollY); }catch(_){ }
+    if(!fromPop){ try{ if(history.state&&history.state.nx) history.back(); }catch(_){ } }
     setTimeout(function(){ if(sh&&sh.parentNode) sh.parentNode.removeChild(sh); },450);
   }
   window.nxOpen=nxOpen; window.nxClose=nxClose;
@@ -6326,6 +6330,11 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   function boot(){
     if(meName()!=='lock')return false;
     document.body.classList.add('nx-owner');
+    if(!window._nxNav){ window._nxNav=true;
+      window.addEventListener('popstate',function(){ var p=document.getElementById('nxPanel'); if(p&&p.classList.contains('on')) nxClose(null,true); });
+      var pnl=document.getElementById('nxPanel');
+      if(pnl){ ['touchstart','touchmove','touchend'].forEach(function(t){ pnl.addEventListener(t,function(e){ e.stopPropagation(); },{passive:true}); }); }
+    }
     var fab=document.getElementById('nxFabCh');
     if(fab && !fab._wired){ fab._wired=true; fab.addEventListener('click',function(ev){ev.preventDefault();nxOpen('chal');}); }
     return true;
