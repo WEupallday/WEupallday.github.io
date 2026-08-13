@@ -6114,10 +6114,10 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   /* ===== TheFlap add-on: Challenges + Store (isolated, owner-only preview) ===== */
 
   /* --- owner preview: top bar scrolls AWAY with the feed (no sticky lag); a thin orange strip stays over the notch --- */
-  body.nx-owner .topbar { position: static !important; top: auto !important; }
+  body.nx-owner .topbar { position: sticky !important; top: 0 !important; }
   body.nx-owner #xTabs, body.nx-owner .xtabs { position: static !important; top: auto !important; }
   .nx-topcap { display:none; position:fixed; top:0; left:0; right:0; height: env(safe-area-inset-top,0px); background: linear-gradient(180deg,#ff9a2e,#e07d0a); z-index:70; pointer-events:none; }
-  body.nx-owner .nx-topcap { display:block; }
+  body.nx-owner .nx-topcap { display:none; }
   body.nx-owner.nx-open .nx-topcap { display:none; }
 
   /* --- floating Challenge button (owner only) — sits just above the OG "+" post button, scrolls with the feed --- */
