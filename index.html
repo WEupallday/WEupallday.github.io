@@ -3403,7 +3403,7 @@
     try{
       var u=null,posts=[];
       if(ONLINE){
-        var ur=await sb.from('flap_users').select('*').ilike('name',name).maybeSingle();
+        var _nm=String(name), _esc=_nm.replace(/([%_\\])/g,'\\$1'); var ur=await sb.from('flap_users').select('*').eq('name',_nm).maybeSingle(); if(!(ur&&ur.data)){ var _u2=await sb.from('flap_users').select('*').ilike('name',_esc).limit(1); if(_u2&&_u2.data&&_u2.data[0]) ur={data:_u2.data[0]}; } if(!(ur&&ur.data)){ try{ var _c=window.USERS&&window.USERS[_nm.toLowerCase()]; if(_c) ur={data:_c}; }catch(_e){} }
         u=ur.data;
         if(!u){   /* no such account — refuse to open a ghost profile; no Follow/Report/Block, nothing created */
           box.innerHTML='<div class="pc-strip"><span>Not found</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>'+
@@ -3413,7 +3413,7 @@
             '<div style="font-size:11px;color:#7a869e;margin-top:8px;">Tags only work for real members.</div></div>';
           return;
         }
-        var pr=await sb.from('flaps').select('*').ilike('name',name).order('id',{ascending:false}).limit(40);
+        var pr=await sb.from('flaps').select('*').ilike('name',_esc).order('id',{ascending:false}).limit(40);
         posts=pr.data||[];
       }else{
         posts=(localPosts||[]).filter(function(p){return p.name===name;});
