@@ -6193,7 +6193,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     duet:[{u:'bee',ic:'🎨',g:'#c0348f,#e07d0a',f:76},{u:'sky',ic:'🎧',g:'#9b6bff,#7a2d9c',f:120}],june:[]};
   var WIN={june:[{u:'trell',ic:'🏆',g:'#f5a623,#e07d0a',t:'1st — Best Dance'},{u:'sky',ic:'🥈',g:'#9b6bff,#7a2d9c',t:'2nd'}]};
   var joined={},entered={},feat={},cur=null,csub='subs',nxScrollY=0;
-  var REW=[], bal=500, owned={};
+  var REW=[], bal=500, owned={}, pending={};
   var view='chal', curG='Moods';
 
   function meName(){ try{ return String((window.ME&&ME.name)||'').toLowerCase(); }catch(e){ return ''; } }
@@ -6316,7 +6316,8 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   function scard(r){
     var pill=r.meta&&r.meta.feed?'<span class="nx-pill feed">FEED</span>':(!r.purchasable?'<span class="nx-pill excl">EARN ONLY</span>':(r.limited_end?'<span class="nx-pill lim">LIMITED</span>':''));
     var btn;
-    if(owned[r.id])btn='<button class="nx-buy owned">✓ Owned</button>';
+    if(pending[r.id])btn='<button class="nx-buy" disabled style="opacity:.65">Redeeming…</button>';
+    else if(owned[r.id])btn='<button class="nx-buy owned">✓ Owned</button>';
     else if(!r.purchasable)btn='<button class="nx-buy poor" onclick="nxToast(\'Earned only — not for sale.\')">Earned only</button>';
     else if(bal<r.price)btn='<button class="nx-buy poor" onclick="nxToast(\'Need '+r.price+' 🪶 — earn more!\')">Need '+r.price+' 🪶</button>';
     else btn='<button class="nx-buy" onclick="nxBuy(\''+r.id+'\')">Unlock · '+r.price+' 🪶</button>';
@@ -6324,7 +6325,45 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   }
   window.nxG=function(g){curG=g;render();};
   window.nxToast=toast;
-  window.nxBuy=function(id){var r=REW.filter(function(x){return x.id===id;})[0];if(!r||owned[id]||bal<r.price)return;bal-=r.price;owned[id]=1;toast('Unlocked '+r.name+'! 🪶 (preview)');render();};
+  function refreshBal(){ return sb.from('flap_feathers').select('balance').ilike('name',meName()).maybeSingle().then(function(b){ if(b&&b.data&&typeof b.data.balance==='number') bal=b.data.balance; }).catch(function(){}); }
+  function nxRedeem(rewardId){
+    var body={action:'redeem',name:meName(),reward:rewardId};
+    var slugs=['feathers','theflap-feathers'];
+    return (function tryOne(i){
+      if(i>=slugs.length) return Promise.resolve(null);
+      return sb.functions.invoke(slugs[i],{body:body}).then(function(res){
+        if(res&&!res.error&&res.data) return res.data;
+        return tryOne(i+1);
+      }).catch(function(){ return tryOne(i+1); });
+    })(0);
+  }
+  window.nxBuy=function(id){
+    var r=REW.filter(function(x){return x.id===id;})[0];
+    if(!r||owned[id]||pending[id]||!r.purchasable||bal<r.price)return;
+    pending[id]=1; render();
+    nxRedeem(id).then(function(resp){
+      delete pending[id];
+      if(resp&&resp.ok===false){
+        render();
+        var rn=String(resp.reason||'');
+        if(/insuffic|balance|enough/.test(rn)) toast('Not enough 🪶 for that.');
+        else if(/own|already/.test(rn)){ owned[id]=1; render(); toast('You already own this.'); }
+        else toast('🪶 Redeem is being set up — try again soon.');
+        return;
+      }
+      if(resp){
+        if(typeof resp.balance==='number') bal=resp.balance;
+        return Promise.all([
+          refreshBal(),
+          sb.from('flap_user_unlocks').select('reward_id').ilike('name',meName()).eq('reward_id',id).maybeSingle().then(function(u){ return u&&u.data; }).catch(function(){ return null; })
+        ]).then(function(a){
+          if(a[1]){ owned[id]=1; render(); toast('Unlocked '+r.name+'! 🪶'); }
+          else { render(); toast('🪶 Redeem is being set up — try again soon.'); }
+        });
+      }
+      render(); toast('🪶 Redeem is being set up — try again soon.');
+    }).catch(function(){ delete pending[id]; render(); toast('🪶 Redeem is being set up — try again soon.'); });
+  };
 
   /* ---------- boot: owner-only. Mark body, show challenge button, wire it. ---------- */
   function boot(){
