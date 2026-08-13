@@ -6192,7 +6192,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   var SUBS={talent:[{u:'maya',ic:'💃',g:'#c0348f,#7a2d9c',f:214},{u:'deej',ic:'🎤',g:'#1e6fae,#0e2560',f:188},{u:'kj',ic:'🕺',g:'#e07d0a,#b45c00',f:301},{u:'nova',ic:'🎸',g:'#1e9e5a,#0c5c31',f:97}],
     duet:[{u:'bee',ic:'🎨',g:'#c0348f,#e07d0a',f:76},{u:'sky',ic:'🎧',g:'#9b6bff,#7a2d9c',f:120}],june:[]};
   var WIN={june:[{u:'trell',ic:'🏆',g:'#f5a623,#e07d0a',t:'1st — Best Dance'},{u:'sky',ic:'🥈',g:'#9b6bff,#7a2d9c',t:'2nd'}]};
-  var joined={},entered={},feat={},cur=null,csub='subs',nxScrollY=0;
+  var joined={},entered={},feat={},cur=null,csub='subs',nxScrollY=0,composing={},MYSUB={};
   var REW=[], bal=500, owned={}, pending={};
   var view='chal', curG='Moods';
 
@@ -6237,7 +6237,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   function chalBody(){
     if(cur) return chalDetail();
     var h='<div class="nx-chero"><span class="tag">THEFLAP CHALLENGES</span><h2>Show up. Show out. Win 🪶.</h2><div class="meta">Join a challenge, drop a video, climb the board.</div></div>';
-    h+='<div class="nx-note">Preview — Challenges lives inside your app. Video uploads turn on once the Cloudflare token is added; for now it uses demo clips.</div>';
+    h+='<div class="nx-note">Prototype — post text + photo entries, like entries, and watch the leaderboard. Entries are saved on this device until the Challenges tables are added; video needs Cloudflare Stream.</div>';
     h+='<div class="nx-sec">Available now</div>';
     CH.forEach(function(c){h+='<div class="nx-chcard" onclick="nxCh(\''+c.id+'\')"><div class="ban" style="background:linear-gradient(135deg,'+c.c+')">'+c.ic+'</div><div class="cb"><h4>'+c.title+'</h4><div class="cs">'+(c.status==='ended'?'✅ '+c.left:'⏳ '+c.left+' · '+c.entries+' entries · '+c.reward)+'</div></div></div>';});
     return h;
@@ -6253,12 +6253,12 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     h+='<div class="nx-kv"><b>What it is</b><br>'+c.desc+'</div><div class="nx-kv"><b>Rules &amp; details</b><br>'+c.rules+'</div><div class="nx-kv"><b>Reward</b> &nbsp;'+c.reward+'</div>';
     if(c.status!=='ended'){
       if(!jn) h+='<button class="nx-j" onclick="nxJoin(\''+c.id+'\')">Join challenge</button>';
-      else if(!en) h+='<button class="nx-j done" onclick="nxSubmit(\''+c.id+'\')">🎥 Submit your video</button>';
+      else if(!en){ if(composing[c.id]) h+=nxComposer(); else h+='<button class="nx-j done" onclick="nxCompose()">✍️ Add your entry</button>'; }
       else h+='<div style="text-align:center;margin:6px 0"><span style="color:#1e9e5a;font-weight:bold">✅ Your entry is in.</span><br><button class="nx-lin" onclick="nxDelSub(\''+c.id+'\')">🗑 Delete my submission</button> · <button class="nx-lin" onclick="nxLeave(\''+c.id+'\')">Leave challenge</button></div>';
     }
     h+='<div class="nx-sub"><div class="nx-st'+(csub==='subs'?' on':'')+'" onclick="nxSetSub(\'subs\')">Submissions</div><div class="nx-st'+(csub==='lead'?' on':'')+'" onclick="nxSetSub(\'lead\')">Leaderboard</div><div class="nx-st'+(csub==='win'?' on':'')+'" onclick="nxSetSub(\'win\')">Winners</div></div>';
     if(csub==='win'){var w=WIN[c.id]||[];h+='<div class="nx-vg">'+(w.length?w.map(function(x){return vid(c.id,x,null,true);}).join(''):'<div style="grid-column:1/-1;color:#8fa6d8;text-align:center;padding:20px;font-size:13px">Winners post when the challenge ends.</div>')+'</div>';}
-    else{var list=(SUBS[c.id]||[]).slice();if(en)list.unshift({u:'you',ic:'⭐',g:'#f5a623,#b45c00',f:(feat['you_'+c.id]?1:0),me:true});
+    else{var list=(SUBS[c.id]||[]).slice();if(en){var ms=MYSUB[c.id]||{};list.unshift({u:'you',ic:'⭐',g:'#f5a623,#b45c00',f:(feat['you_'+c.id]?1:0),me:true,text:ms.text||'',img:ms.img||''});}
       if(csub==='lead')list.sort(function(a,b){return (b.f+(feat[b.u+'_'+c.id]?1:0))-(a.f+(feat[a.u+'_'+c.id]?1:0));});
       h+='<div class="nx-vg">'+(list.length?list.map(function(s,i){return vid(c.id,s,csub==='lead'?(i+1):null,false);}).join(''):'<div style="grid-column:1/-1;color:#8fa6d8;text-align:center;padding:20px;font-size:13px">No entries yet — be the first!</div>')+'</div>';}
     return h;
@@ -6268,13 +6268,42 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     var badge=isWin?'<span class="nx-rank">'+(s.t||'')+'</span>':s.me?'<span class="nx-rank" style="background:#1e9e5a;color:#fff">YOUR ENTRY</span>':rank?'<span class="nx-rank">#'+rank+'</span>':'';
     var rep=isWin?'':'<button class="nx-rep" onclick="nxReport(\''+s.u+'\')">⚑</button>';
     var bottom=isWin?'<div class="nx-vm"><span class="who">🏆 @'+s.u+'</span></div>':'<div class="nx-vm"><span class="who">@'+s.u+'</span><span class="nx-feat'+fon+'" onclick="nxFeat(\''+key+'\')">🪶 '+fc+'</span></div>';
-    return '<div class="nx-vid">'+badge+rep+'<div class="nx-th" style="background:linear-gradient(135deg,'+s.g+')" onclick="nxPlay(\''+s.u+'\')">'+s.ic+'<span class="nx-play">▶</span></div>'+bottom+'</div>';
+    var thumb = s.img ? '<div class="nx-th" style="background:#0b1f52;padding:0;overflow:hidden;"><img src="'+s.img+'" style="width:100%;height:100%;object-fit:cover;"></div>' : '<div class="nx-th" style="background:linear-gradient(135deg,'+s.g+')" onclick="nxPlay(\''+s.u+'\')">'+s.ic+'<span class="nx-play">▶</span></div>';
+    var cap = s.text ? '<div style="padding:6px 9px 0;font-size:12px;color:#dbe6ff;line-height:1.35;">'+esc(s.text)+'</div>' : '';
+    return '<div class="nx-vid">'+badge+rep+thumb+cap+bottom+'</div>';
   }
-  window.nxJoin=function(id){joined[id]=true;render();toast('You joined! Now submit a video 🎥');};
+  function nxComposer(){
+    return '<div class="nx-kv"><b>Your entry</b>'
+      +'<textarea id="nxCapText" placeholder="Say something about your entry…" style="width:100%;margin-top:8px;min-height:56px;border-radius:10px;border:1px solid #2b57b8;background:#0b1f52;color:#fff;padding:8px;font-family:inherit;font-size:13px;box-sizing:border-box;"></textarea>'
+      +'<label style="display:block;margin:8px 0 4px;font-size:12px;color:#cfe0ff;">Add a photo (optional). Video entries need Cloudflare Stream — coming soon.</label>'
+      +'<input id="nxCapImg" type="file" accept="image/*" style="font-size:12px;color:#cfe0ff;max-width:100%;">'
+      +'<div style="margin-top:10px;display:flex;gap:8px;align-items:center;"><button class="nx-j done" style="flex:1;margin:0;width:auto;" onclick="nxDoSubmit()">Post entry</button>'
+      +'<button class="nx-lin" onclick="nxCancelCompose()">Cancel</button></div></div>';
+  }
+  window.nxCompose=function(){ composing[cur]=true; render(); setTimeout(function(){ var t=document.getElementById('nxCapText'); if(t)t.focus(); },40); };
+  window.nxCancelCompose=function(){ composing[cur]=false; render(); };
+  window.nxDoSubmit=function(){
+    var id=cur; if(!id)return;
+    var t=document.getElementById('nxCapText'); var f=document.getElementById('nxCapImg');
+    var text=t?t.value.trim():'';
+    var file=f&&f.files&&f.files[0];
+    if(!text&&!file){ toast('Add a caption or a photo first.'); return; }
+    function finish(imgUrl){
+      MYSUB[id]={text:text,img:imgUrl||''};
+      entered[id]=true; composing[id]=false;
+      var c=CH.filter(function(x){return x.id===id;})[0]; if(c)c.entries++;
+      render(); toast('Entry posted! 🎬');
+      nxPersistEntry(id,text,imgUrl||'');
+    }
+    if(file){ var rd=new FileReader(); rd.onload=function(){ finish(String(rd.result)); }; rd.onerror=function(){ finish(''); }; rd.readAsDataURL(file); }
+    else finish('');
+  };
+  function nxPersistEntry(id,text,img){ try{ sb.from('flap_challenge_entries').insert({challenge:id,name:meName(),text:text,image:img,likes:0}).then(function(){}).catch(function(){}); }catch(e){} }
+  window.nxJoin=function(id){joined[id]=true;render();toast('You joined! Now add your entry ✍️');};
   window.nxSubmit=function(id){entered[id]=true;var c=CH.filter(function(x){return x.id===id;})[0];c.entries++;render();toast('Video submitted! 🎬 (demo)');};
-  window.nxDelSub=function(id){if(!confirm('Delete your submission?'))return;entered[id]=false;var c=CH.filter(function(x){return x.id===id;})[0];c.entries--;render();toast('Submission deleted');};
+  window.nxDelSub=function(id){if(!confirm('Delete your submission?'))return;entered[id]=false;delete MYSUB[id];var c=CH.filter(function(x){return x.id===id;})[0];c.entries--;render();toast('Submission deleted');};
   window.nxLeave=function(id){if(!confirm('Leave this challenge?'))return;joined[id]=false;entered[id]=false;render();toast('You left the challenge');};
-  window.nxFeat=function(key){feat[key]=!feat[key];render();};
+  window.nxFeat=function(key){feat[key]=!feat[key];render();try{ sb.from('flap_challenge_likes').upsert({entry_key:key,name:meName(),liked:!!feat[key]}).then(function(){}).catch(function(){}); }catch(e){}};
   window.nxReport=function(u){toast('Reported @'+u+'’s video — sent to admin 🚩');};
   window.nxPlay=function(u){toast('▶ Playing @'+u+'’s clip (demo)');};
 
