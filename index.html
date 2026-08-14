@@ -6196,7 +6196,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   function unlockScroll(){ try{ document.body.style.overflow=''; }catch(e){} }
 
   /* ---------- open / close (isolated so a stray tap can't hit the feed) ---------- */
-  function nxOpen(v){ view=v||view; nxScrollY=window.pageYOffset||document.documentElement.scrollTop||0; lockScroll(); document.body.classList.add('nx-open'); document.getElementById('nxPanel').classList.add('on'); try{ if(!(history.state&&history.state.nx)) history.pushState({nx:1},''); }catch(_){ } if(v==='chal')cur=null; render(); if(v==='store'&&!REW.length){ loadCatalog().then(render); } }
+  function nxOpen(v){ view=v||view; nxScrollY=window.pageYOffset||document.documentElement.scrollTop||0; lockScroll(); document.body.classList.add('nx-open'); document.getElementById('nxPanel').classList.add('on'); try{ if(!(history.state&&history.state.nx)) history.pushState({nx:1},''); }catch(_){ } if(v==='chal')cur=null; render(); if(v==='store'){ try{ sb.from('flap_user_unlocks').select('reward_id,active').ilike('name',meName()).then(function(u){ try{(u&&u.data||[]).forEach(function(x){ if(x&&x.active!==false) owned[x.reward_id]=1; });}catch(_e){} if(!REW.length){ loadCatalog().then(render); } else { render(); } }).catch(function(){ if(!REW.length){ loadCatalog().then(render); } else { render(); } }); }catch(e){ if(!REW.length){ loadCatalog().then(render); } else { render(); } } } }
   function nxClose(e,fromPop){
     if(e&&e.preventDefault){ try{ e.preventDefault(); e.stopPropagation(); }catch(_){ } }
     var sh=document.getElementById('nxShield');
@@ -6404,5 +6404,86 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
 })();
 </script>
 
+
+<script>
+/* ===== Feathers cosmetics: apply unlocked cosmetics (Rainbow Name etc.) from flap_user_unlocks ===== */
+(function(){
+  try{
+    if(window.__nxCosInit) return; window.__nxCosInit=1;
+    var VER=0;
+    window.NX_COS={};
+    function low(n){return String(n||'').toLowerCase().trim();}
+    function db(){ try{ return window.sb||sb; }catch(e){ return null; } }
+    function styleFor(rid){
+      rid=String(rid||'').toLowerCase();
+      if(/rainbow/.test(rid)) return 'rainbow';
+      if(/gold|vip|premium/.test(rid)) return 'gold';
+      if(/neon|glow|electric|aqua|cyan/.test(rid)) return 'neon';
+      if(/name|color|colour/.test(rid)) return 'rainbow';
+      return '';
+    }
+    var css=document.createElement('style');
+    css.textContent=
+      '.nx-cos-rainbow{background:linear-gradient(90deg,#ff004c,#ff7a00,#ffe600,#39ff14,#00e5ff,#3d5afe,#d500f9,#ff004c);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent!important;color:transparent!important;animation:nxRainbow 4s linear infinite;font-weight:800;}'+
+      '.nx-cos-gold{background:linear-gradient(90deg,#a9791c,#f6e27a,#fff3b0,#c9a227,#f6e27a);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent!important;color:transparent!important;animation:nxRainbow 5s linear infinite;font-weight:800;}'+
+      '.nx-cos-neon{color:#39f6ff!important;text-shadow:0 0 6px rgba(57,246,255,.85),0 0 12px rgba(57,246,255,.5);font-weight:700;}'+
+      '.nx-cos-rainbow .flap-prem-mini,.nx-cos-gold .flap-prem-mini{-webkit-text-fill-color:initial!important;color:initial!important;}'+
+      '@keyframes nxRainbow{to{background-position:200% center;}}';
+    (document.head||document.documentElement).appendChild(css);
+    function nameFromClick(oc){ var m=/showUserProfile\((['"])([\s\S]*?)\1/.exec(oc||''); return m?m[2]:''; }
+    function apply(){
+      try{
+        var els=document.querySelectorAll('[onclick*="showUserProfile"]');
+        for(var i=0;i<els.length;i++){
+          var el=els[i];
+          var n=low(nameFromClick(el.getAttribute('onclick')));
+          if(!n) continue;
+          var own=window.NX_COS[n]||null;
+          var target=(el.querySelector&&el.querySelector('.pname'))||el;
+          if(target.getAttribute('data-nxcos')===String(VER)) continue;
+          target.setAttribute('data-nxcos',String(VER));
+          target.classList.remove('nx-cos-rainbow','nx-cos-gold','nx-cos-neon');
+          if(own){ for(var rid in own){ if(!own[rid]) continue; var st=styleFor(rid); if(st){ target.classList.add('nx-cos-'+st); break; } } }
+        }
+      }catch(e){}
+    }
+    window.nxApplyCosmetics=apply;
+    function load(){
+      var d=db(); if(!d) return Promise.resolve();
+      try{
+        return d.from('flap_user_unlocks').select('reward_id,name,active').then(function(r){
+          try{
+            var map={};
+            (r&&r.data||[]).forEach(function(x){ if(!x||x.active===false) return; var k=low(x.name); (map[k]=map[k]||{})[x.reward_id]=true; });
+            window.NX_COS=map; VER++; apply();
+          }catch(e){}
+        }).catch(function(){});
+      }catch(e){ return Promise.resolve(); }
+    }
+    window.nxRefreshCosmetics=load;
+    try{
+      var t=null;
+      var mo=new MutationObserver(function(){ if(t) clearTimeout(t); t=setTimeout(apply,350); });
+      mo.observe(document.body,{childList:true,subtree:true});
+    }catch(e){}
+    (function(){
+      var tries=0;
+      var iv=setInterval(function(){
+        if(window.nxBuy && !window.nxBuy.__wrapped){
+          var orig=window.nxBuy;
+          window.nxBuy=function(){ var res; try{ res=orig.apply(this,arguments); }catch(e){} setTimeout(load,1600); setTimeout(load,3400); return res; };
+          window.nxBuy.__wrapped=1; clearInterval(iv);
+        }
+        if(++tries>40) clearInterval(iv);
+      },500);
+    })();
+    (function(){
+      var tries=0;
+      var iv=setInterval(function(){ tries++; if(db()){ load(); clearInterval(iv); } else if(tries>30){ clearInterval(iv); } },800);
+    })();
+    setInterval(load,30000);
+  }catch(e){}
+})();
+</script>
 </body>
 </html>
