@@ -4064,7 +4064,7 @@ function notifText(n){
     if(n.kind==='friend')return who+' '+esc(n.excerpt||'sent you a friend request')+' 👯';
     if(n.kind==='follow')return who+' followed you 👤';
     if(n.kind==='dm')    return who+' messaged you:'+ex;
-    if(n.kind==='support')return '<b>TheFlap Support</b> 🎫 replied to your ticket:'+ex;
+    if(n.kind==='support')return '<b>TheFlap Support</b> 🎫 replied to your ticket:'+(n.excerpt?(' "'+esc(String(n.excerpt))+'"'):'');
     if(n.kind==='notice')return '<b>⚠️ Community Notice</b>'+ex;
     return who+' interacted with you';
   }
