@@ -4388,22 +4388,6 @@ function notifText(n){
     if(pollIsNailBiter() && now<nextMidnight+POLL_HOLD_HOURS*3600000)return false;   /* let the nail-biter ride a few more hours */
     return true;
   }
-  async function rotatePollNow(){
-    if(POLL_ROTATING||!ONLINE)return;
-    POLL_ROTATING=true;
-    try{
-      var idx=pickTodayPollIndex(), p=POLL_POOL[idx];
-      var body=[p.q,p.opts[0],p.opts[1],p.opts[2],'AUTO',String(Date.now()),String(idx)].join('␟');
-      var ex=await sb.from('flaps').select('id').eq('name','::poll::').order('id',{ascending:false}).limit(1);
-      if(!ex.error && ex.data && ex.data[0]) await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id);
-      else await sb.from('flaps').insert({name:'::poll::',body:body,mood:'flappy',likes:0});
-      try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){}   /* fresh votes for the new poll */
-      POLL={q:p.q,opts:p.opts.slice()}; POLL_START_MS=Date.now(); POLL_CUR_INDEX=idx;
-      myVote=null; pollVotes=[0,0,0]; renderPoll();
-    }catch(e){}
-    POLL_ROTATING=false;
-  }
-  function maybeAutoRotatePoll(){ /* AUTO-ROTATION DISABLED: poll never resets on a timer or at midnight; it only changes when an admin changes it manually, so votes and rankings persist. */ }
   /* ===== editable scrolling ticker (admin) — persisted as a hidden sentinel row ===== */
   function setTicker(text){
     var el=document.getElementById('tickerText');
