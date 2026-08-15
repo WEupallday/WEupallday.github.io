@@ -289,6 +289,52 @@
   .emo.dorky{animation:emoTilt 1.2s steps(2,end) infinite;}
   .emo.tired{animation:emoNod 3.2s steps(10,end) infinite;}
   .emo.tired .bz{animation:emoZ 2.4s steps(6) infinite;transform-origin:center;}
+    /* ===== unlockable EMOJI MOODS: each owned emoji reward becomes a REAL animated mood — the glyph rendered through the SAME .emo mechanism as base moods, each with its OWN unique keyframe ===== */
+  .emo.nxmood svg text{font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji','Twemoji Mozilla',sans-serif;dominant-baseline:middle;}
+  .emo.emoji_laugh{animation:nxLaugh .5s ease-in-out infinite;}
+  @keyframes nxLaugh{0%,100%{transform:translateY(0) rotate(-7deg);}50%{transform:translateY(-3px) rotate(7deg);}}
+  .emo.emoji_cry{animation:nxCry 1s ease-in-out infinite;}
+  @keyframes nxCry{0%,100%{transform:translateY(0) rotate(-3deg);}25%{transform:translateY(1.5px) rotate(3deg);}50%{transform:translateY(0) rotate(-3deg);}75%{transform:translateY(1.5px) rotate(3deg);}}
+  .emo.emoji_shock{animation:nxShock .38s steps(2,end) infinite;}
+  @keyframes nxShock{0%,100%{transform:scale(1);}50%{transform:scale(1.18) translateY(-2px);}}
+  .emo.emoji_angry{animation:nxAngry .3s steps(2,end) infinite;}
+  @keyframes nxAngry{0%{transform:translateX(-1.6px) rotate(-2.5deg);}100%{transform:translateX(1.6px) rotate(2.5deg);}}
+  .emo.emoji_excited{animation:nxExcited .5s ease infinite;}
+  @keyframes nxExcited{0%,100%{transform:translateY(0) scale(1);}40%{transform:translateY(-5px) scale(1.09);}}
+  .emo.emoji_confused{animation:nxConfused 2s ease-in-out infinite;}
+  @keyframes nxConfused{0%,100%{transform:rotate(-9deg);}50%{transform:rotate(9deg);}}
+  .emo.emoji_party{animation:nxParty .7s ease-in-out infinite;}
+  @keyframes nxParty{0%,100%{transform:translateY(0) rotate(-9deg);}25%{transform:translateY(-3px) rotate(0);}50%{transform:translateY(0) rotate(9deg);}75%{transform:translateY(-3px) rotate(0);}}
+  .emo.emoji_love{animation:nxLove .65s ease-in-out infinite;}
+  @keyframes nxLove{0%,100%{transform:scale(1);}30%{transform:scale(1.2);}45%{transform:scale(1);}60%{transform:scale(1.12);}}
+  .emo.emoji_cool{animation:nxCool 3s ease-in-out infinite;}
+  @keyframes nxCool{0%,100%{transform:rotate(-4deg) translateX(-1px);}50%{transform:rotate(4deg) translateX(1px);}}
+  .emo.emoji_wink{animation:nxWink 1.6s ease-in-out infinite;}
+  @keyframes nxWink{0%,38%,62%,100%{transform:scale(1,1) rotate(0);}50%{transform:scale(1.06,.82) rotate(-5deg);}}
+  .emo.emoji_mindblown{animation:nxMind .6s ease-in-out infinite;}
+  @keyframes nxMind{0%,100%{transform:scale(1) translateY(0);}50%{transform:scale(1.22) translateY(-3px);}}
+  .emo.emoji_sleepy{animation:nxSleepy 3s ease-in-out infinite;}
+  @keyframes nxSleepy{0%,55%,100%{transform:translateY(0) rotate(0);}80%{transform:translateY(3px) rotate(10deg);}}
+  .emo.emoji_nerd{animation:nxNerd 2.2s ease-in-out infinite;}
+  @keyframes nxNerd{0%,100%{transform:rotate(-3deg) translateY(0);}50%{transform:rotate(3deg) translateY(-1px);}}
+  .emo.emoji_smirk{animation:nxSmirk 2.4s ease-in-out infinite;}
+  @keyframes nxSmirk{0%,100%{transform:rotate(-5deg) translateX(-1px);}50%{transform:rotate(3deg) translateX(1.5px);}}
+  .emo.emoji_skull{animation:nxSkull .5s steps(2,end) infinite;}
+  @keyframes nxSkull{0%,100%{transform:translateX(-1.2px) rotate(-3deg);}50%{transform:translateX(1.2px) rotate(3deg);}}
+  .emo.emoji_fire{animation:nxFire .45s ease-in-out infinite;}
+  @keyframes nxFire{0%,100%{transform:scaleY(1) scaleX(1) translateY(0);}25%{transform:scaleY(1.13) scaleX(.93) translateY(-2px);}50%{transform:scaleY(.95) scaleX(1.05) translateY(0);}75%{transform:scaleY(1.08) scaleX(.97) translateY(-1px);}}
+  .emo.emoji_100{animation:nx100 1.1s ease-out infinite;}
+  @keyframes nx100{0%,68%,100%{transform:scale(1) rotate(0);}78%{transform:scale(1.28) rotate(-7deg);}88%{transform:scale(.94) rotate(3deg);}}
+  .emo.emoji_clown{animation:nxClown 1.4s ease-in-out infinite;}
+  @keyframes nxClown{0%,100%{transform:translateY(0) rotate(-11deg);}50%{transform:translateY(-3px) rotate(11deg);}}
+  .emo.emoji_ghost{animation:nxGhost 2.4s ease-in-out infinite;}
+  @keyframes nxGhost{0%,100%{transform:translateY(0) translateX(-2px);}50%{transform:translateY(-4px) translateX(2px);}}
+  .emo.emoji_robot{animation:nxRobot 1s steps(4,end) infinite;}
+  @keyframes nxRobot{0%,100%{transform:translateX(-2px) rotate(-2deg);}50%{transform:translateX(2px) rotate(2deg);}}
+  .emo.emoji_pleading{animation:nxPlead 1.2s ease-in-out infinite;}
+  @keyframes nxPlead{0%,100%{transform:scale(1) translateY(0);}50%{transform:scale(1.07) translateY(-1.5px);}}
+  .emo.emoji_rage{animation:nxRage .22s steps(2,end) infinite;}
+  @keyframes nxRage{0%{transform:translateX(-2px) rotate(-3deg);}100%{transform:translateX(2px) rotate(3deg);}}
   @keyframes emoNod{0%,55%{transform:translateY(0) rotate(0);}78%{transform:translateY(3px) rotate(7deg);}84%{transform:translateY(0) rotate(0);}100%{transform:translateY(0) rotate(0);}}
   /* small inline mood face — match the original archive scale, not an oversized sticker */
   .moodbox .emo{width:26px;height:26px;margin:2px auto 0;}
@@ -1847,7 +1893,7 @@
              '<ellipse cx="14" cy="12" rx="6" ry="3.6" fill="#fff" opacity=".5"/>';
     var f='';
     /* authentic TheSlap mood words map onto our animated faces */
-    mood=({blissful:'sparkly',chillin:'flappy',fierce:'styling',wondering:'confused',blah:'bleh',beat:'zonked',hungry:'hangry',bummed:'sad',crushed:'weepy',upset:'unhappy',anxious:'uncomfortable',freakin:'freaking',cranky:'angry',suspicious:'impatient',yuck:'grossed'})[mood]||mood;
+    mood=({blissful:'sparkly',chillin:'flappy',fierce:'styling',wondering:'confused',blah:'bleh',beat:'zonked',hungry:'hangry',bummed:'sad',crushed:'weepy',upset:'unhappy',anxious:'uncomfortable',freakin:'freaking',cranky:'angry',suspicious:'impatient',yuck:'grossed'})[mood]||mood;if(window.NX_MOOD_EMOJI&&NX_MOOD_EMOJI[mood]){return '<span class="emo nxmood '+mood+(small?' emo-sm':'')+'"><svg viewBox="0 0 40 40"><text x="20" y="31" text-anchor="middle" font-size="30">'+NX_MOOD_EMOJI[mood]+'</text></svg></span>';}
     if(mood==='flappy'){
       f='<ellipse cx="14" cy="17" rx="1.9" ry="2.7" fill="#4a2c00"/><ellipse cx="26" cy="17" rx="1.9" ry="2.7" fill="#4a2c00"/>'+
         '<path d="M12 24 Q20 31 28 24" stroke="#7a4a00" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
@@ -2122,7 +2168,7 @@
   function dmInsert(tok){ var inp=document.getElementById('dmInput'); if(!inp)return; inp.value=(inp.value||'')+tok; inp.focus(); }
   function toggleDmTray(){ var t=document.getElementById('dmTray'); if(t)t.style.display=(t.style.display==='none'||!t.style.display)?'block':'none'; }
   /* render a DM bubble: escape text, then turn ⟨mood:name⟩ tokens into animated mood faces */
-  function dmText(t){ return esc(t||'').replace(/⟨mood:([a-z]+)⟩/g,function(m,name){ return '<span class="remoji remoji-anim">'+emoHTML(name,true)+'</span>'; }); }
+  function dmText(t){ return esc(t||'').replace(/⟨mood:([a-z0-9_]+)⟩/g,function(m,name){ return '<span class="remoji remoji-anim">'+emoHTML(name,true)+'</span>'; }); }
 
   /* ===== @mention autocomplete: type @ and tap a name to tag them ===== */
   var MENTION_EL=null, MENTION_TOKEN=null;
@@ -6385,7 +6431,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     var FRAME_CLASS={gold_frame:'nx-fr-gold',sparkle_frame:'nx-fr-sparkle',frame_pixel:'nx-fr-pixel',frame_neon:'nx-fr-neon',frame_hearts:'nx-fr-hearts',frame_fire:'nx-fr-fire',frame_ice:'nx-fr-ice',frame_galaxy:'nx-fr-galaxy',frame_royal:'nx-fr-royal',frame_diamond:'nx-fr-diamond'};
     var BADGE_ICON={og_badge:'🏅',badge_vip:'🌟',badge_legend:'🏆',badge_founder:'🛠️',badge_early_bird:'🐦'};
     var EMOJI_CAT={emoji_laugh:'😂',emoji_cry:'😭',emoji_shock:'😱',emoji_angry:'😠',emoji_excited:'🤩',emoji_confused:'😕',emoji_party:'🥳',emoji_love:'😍',emoji_cool:'😎',emoji_wink:'😉',emoji_mindblown:'🤯',emoji_sleepy:'😴',emoji_nerd:'🤓',emoji_smirk:'😏',emoji_skull:'💀',emoji_fire:'🔥',emoji_100:'💯',emoji_clown:'🤡',emoji_ghost:'👻',emoji_robot:'🤖',emoji_pleading:'🥺',emoji_rage:'😡'};
-    function styleFor(rid){ rid=String(rid||'').toLowerCase(); if(/rainbow/.test(rid)) return 'nx-cos-rainbow'; if(/gold|vip|premium/.test(rid)) return 'nx-cos-gold'; if(/neon|electric|aqua|cyan/.test(rid)) return 'nx-cos-neon'; return ''; }
+    window.NX_MOOD_EMOJI=EMOJI_CAT;var RM_BASE=null;function styleFor(rid){ rid=String(rid||'').toLowerCase(); if(/rainbow/.test(rid)) return 'nx-cos-rainbow'; if(/gold|vip|premium/.test(rid)) return 'nx-cos-gold'; if(/neon|electric|aqua|cyan/.test(rid)) return 'nx-cos-neon'; return ''; }
     var NAME_ALL=['nx-cos-rainbow','nx-cos-gold','nx-cos-neon','nx-nc-shadow','nx-nc-glow','nx-nc-sunset','nx-nc-ocean'];
     var FRAME_ALL=['nx-fr-gold','nx-fr-sparkle','nx-fr-pixel','nx-fr-neon','nx-fr-hearts','nx-fr-fire','nx-fr-ice','nx-fr-galaxy','nx-fr-royal','nx-fr-diamond'];
     var css=document.createElement('style');
@@ -6443,13 +6489,23 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     function myName(){ try{ return low((window.ME&&(ME.name||ME.handle))||''); }catch(e){ return ''; } }
     function syncEmojis(){
       try{
-        if(!Array.isArray(window.RE_EMOJIS)) return;
-        if(RE_BASE===null) RE_BASE=window.RE_EMOJIS.slice();
+        if(RE_BASE===null && Array.isArray(window.RE_EMOJIS)) RE_BASE=window.RE_EMOJIS.slice();
+        if(RM_BASE===null && Array.isArray(window.RE_MOODS)) RM_BASE=window.RE_MOODS.slice();
         var me=myName(); var own=(me&&window.NX_COS[me])||null;
-        var arr=RE_BASE.slice();
-        if(own){ for(var rid in own){ if(!own[rid]) continue; var e=EMOJI_CAT[rid]; if(e&&arr.indexOf(e)<0) arr.push(e); } }
-        var same=(arr.length===window.RE_EMOJIS.length); if(same){ for(var k=0;k<arr.length;k++){ if(arr[k]!==window.RE_EMOJIS[k]){ same=false; break; } } }
-        if(!same){ window.RE_EMOJIS.length=0; for(var j=0;j<arr.length;j++) window.RE_EMOJIS.push(arr[j]); }
+        /* keep the STATIC reply/DM emoji picker at its base list — emoji rewards are now animated MOODS, not static glyphs */
+        if(Array.isArray(window.RE_EMOJIS) && RE_BASE){
+          var esame=(window.RE_EMOJIS.length===RE_BASE.length);
+          if(esame){ for(var e0=0;e0<RE_BASE.length;e0++){ if(window.RE_EMOJIS[e0]!==RE_BASE[e0]){ esame=false; break; } } }
+          if(!esame){ window.RE_EMOJIS.length=0; for(var e1=0;e1<RE_BASE.length;e1++) window.RE_EMOJIS.push(RE_BASE[e1]); }
+        }
+        /* owned emoji rewards appear as animated moods in the SAME mood scroll (ownership-gated) */
+        if(Array.isArray(window.RE_MOODS) && RM_BASE){
+          var marr=RM_BASE.slice();
+          if(own){ for(var rid in own){ if(!own[rid]) continue; if(EMOJI_CAT[rid] && marr.indexOf(rid)<0) marr.push(rid); } }
+          var msame=(marr.length===window.RE_MOODS.length);
+          if(msame){ for(var k=0;k<marr.length;k++){ if(marr[k]!==window.RE_MOODS[k]){ msame=false; break; } } }
+          if(!msame){ window.RE_MOODS.length=0; for(var j=0;j<marr.length;j++) window.RE_MOODS.push(marr[j]); }
+        }
       }catch(e){}
     }
     window.nxSyncEmojis=syncEmojis;
