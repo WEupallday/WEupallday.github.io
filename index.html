@@ -6149,7 +6149,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     duet:[{u:'bee',ic:'🎨',g:'#c0348f,#e07d0a',f:76},{u:'sky',ic:'🎧',g:'#9b6bff,#7a2d9c',f:120}],june:[]};
   var WIN={june:[{u:'trell',ic:'🏆',g:'#f5a623,#e07d0a',t:'1st — Best Dance'},{u:'sky',ic:'🥈',g:'#9b6bff,#7a2d9c',t:'2nd'}]};
   var joined={},entered={},feat={},cur=null,csub='subs',nxScrollY=0,composing={},MYSUB={};
-  var REW=[], bal=500, owned={}, pending={};
+  var REW=[], bal=500, owned={}, equipped={}, pending={};
   var view='chal', curG='Moods';
 
   function meName(){ try{ return String((window.ME&&ME.name)||'').toLowerCase(); }catch(e){ return ''; } }
@@ -6159,7 +6159,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   function unlockScroll(){ try{ document.body.style.overflow=''; }catch(e){} }
 
   /* ---------- open / close (isolated so a stray tap can't hit the feed) ---------- */
-  function nxOpen(v){ view=v||view; nxScrollY=window.pageYOffset||document.documentElement.scrollTop||0; lockScroll(); document.body.classList.add('nx-open'); document.getElementById('nxPanel').classList.add('on'); try{ if(!(history.state&&history.state.nx)) history.pushState({nx:1},''); }catch(_){ } if(v==='chal')cur=null; render(); if(v==='store'){ try{ sb.from('flap_user_unlocks').select('reward_id,active').ilike('name',meName()).then(function(u){ try{(u&&u.data||[]).forEach(function(x){ if(x&&x.active!==false) owned[x.reward_id]=1; });}catch(_e){} if(!REW.length){ loadCatalog().then(render); } else { render(); } }).catch(function(){ if(!REW.length){ loadCatalog().then(render); } else { render(); } }); }catch(e){ if(!REW.length){ loadCatalog().then(render); } else { render(); } } } }
+  function nxOpen(v){ view=v||view; nxScrollY=window.pageYOffset||document.documentElement.scrollTop||0; lockScroll(); document.body.classList.add('nx-open'); document.getElementById('nxPanel').classList.add('on'); try{ if(!(history.state&&history.state.nx)) history.pushState({nx:1},''); }catch(_){ } if(v==='chal')cur=null; render(); if(v==='store'){ try{ sb.from('flap_user_unlocks').select('reward_id,active').ilike('name',meName()).then(function(u){ try{(u&&u.data||[]).forEach(function(x){ if(x&&x.reward_id){ owned[x.reward_id]=1; if(x.active===true) equipped[x.reward_id]=1; else delete equipped[x.reward_id]; } });}catch(_e){} if(!REW.length){ loadCatalog().then(render); } else { render(); } }).catch(function(){ if(!REW.length){ loadCatalog().then(render); } else { render(); } }); }catch(e){ if(!REW.length){ loadCatalog().then(render); } else { render(); } } } }
   function nxClose(e,fromPop){
     if(e&&e.preventDefault){ try{ e.preventDefault(); e.stopPropagation(); }catch(_){ } }
     var sh=document.getElementById('nxShield');
@@ -6302,7 +6302,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     var pill=r.meta&&r.meta.feed?'<span class="nx-pill feed">FEED</span>':(!r.purchasable?'<span class="nx-pill excl">EARN ONLY</span>':(r.limited_end?'<span class="nx-pill lim">LIMITED</span>':''));
     var btn;
     if(pending[r.id])btn='<button class="nx-buy" disabled style="opacity:.65">Redeeming…</button>';
-    else if(owned[r.id])btn='<button class="nx-buy owned">✓ Owned</button>';
+    else if(owned[r.id])btn=(nxIsNameFx(r)?(equipped[r.id]?'<button class="nx-buy owned" onclick="nxUnequip(\''+r.id+'\')">✓ Equipped · tap to Unequip</button>':'<button class="nx-buy" onclick="nxEquip(\''+r.id+'\')">Equip</button>'):'<button class="nx-buy owned">✓ Owned</button>');
     else if(!r.purchasable)btn='<button class="nx-buy poor" onclick="nxToast(\'Earned only — not for sale.\')">Earned only</button>';
     else if(bal<r.price)btn='<button class="nx-buy poor" onclick="nxToast(\'Need '+r.price+' 🪶 — earn more!\')">Need '+r.price+' 🪶</button>';
     else btn='<button class="nx-buy" onclick="nxBuy(\''+r.id+'\')">Unlock · '+r.price+' 🪶</button>';
@@ -6350,6 +6350,10 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     }).catch(function(){ delete pending[id]; render(); toast('🪶 Redeem is being set up — try again soon.'); });
   };
 
+  function nxIsNameFx(r){ if(!r) return false; var e=(r.effect||'').toLowerCase(); var id=String(r.id||'').toLowerCase(); return e==='feed'||/^name_/.test(id)||id==='rainbow_name'; }
+  function nxToggleFx(rewardId,on){ var body={action:'toggle',name:meName(),reward:rewardId,active:!!on}; var slugs=['feathers','theflap-feathers']; return (function tryOne(i){ if(i>=slugs.length) return Promise.resolve(null); return sb.functions.invoke(slugs[i],{body:body}).then(function(res){ if(res&&!res.error) return res.data||{ok:true}; return tryOne(i+1); }).catch(function(){ return tryOne(i+1); }); })(0); }
+  window.nxEquip=function(id){ var r=REW.filter(function(x){return x.id===id;})[0]; if(!r||!owned[id]||pending[id])return; pending[id]=1; render(); var others=REW.filter(function(x){return nxIsNameFx(x)&&x.id!==id&&equipped[x.id];}); var chain=Promise.resolve(); others.forEach(function(o){ chain=chain.then(function(){ return nxToggleFx(o.id,false).then(function(){ delete equipped[o.id]; }); }); }); chain.then(function(){ return nxToggleFx(id,true); }).then(function(){ equipped[id]=1; delete pending[id]; render(); toast('Equipped '+r.name+'! 🪶'); if(window.nxRefreshCosmetics) window.nxRefreshCosmetics(); }).catch(function(){ delete pending[id]; render(); toast('🪶 Could not equip — try again.'); }); };
+  window.nxUnequip=function(id){ var r=REW.filter(function(x){return x.id===id;})[0]; if(!r||!owned[id]||pending[id])return; pending[id]=1; render(); nxToggleFx(id,false).then(function(){ delete equipped[id]; delete pending[id]; render(); toast('Unequipped '+(r?r.name:'effect')+'.'); if(window.nxRefreshCosmetics) window.nxRefreshCosmetics(); }).catch(function(){ delete pending[id]; render(); toast('🪶 Could not unequip — try again.'); }); };
   /* ---------- boot: owner-only. Mark body, show challenge button, wire it. ---------- */
   function boot(){
     if(meName()!=='lock')return false;
@@ -6455,7 +6459,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
         return d.from('flap_user_unlocks').select('reward_id,name,active').then(function(r){
           try{
             var map={};
-            (r&&r.data||[]).forEach(function(x){ if(!x||x.active===false) return; var k=low(x.name); (map[k]=map[k]||{})[x.reward_id]=true; });
+            (r&&r.data||[]).forEach(function(x){ if(!x||x.active!==true) return; var k=low(x.name); (map[k]=map[k]||{})[x.reward_id]=true; });
             window.NX_COS=map; VER++; apply(); syncEmojis();
           }catch(e){}
         }).catch(function(){});
