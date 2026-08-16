@@ -640,13 +640,13 @@
     if(/(feature|request|suggestion|idea|please add|would be (nice|cool|great)|wish|could you add|add a )/.test(m))return 'feature';
     return 'other';}
   function tkParse(tk){var parts=String(tk.body||'').split(PSEP);var who=parts[0]||'?';var raw=parts.length>=3?(parts[1]||''):'';var msg=parts.length>=3?parts.slice(2).join(PSEP):(parts[1]||'');
-    var meta={st:'new',cat:'',pri:'P2',lr:''};
-    if(raw&&raw.indexOf('=')>=0){raw.split('|').forEach(function(kv){var i=kv.indexOf('=');if(i>0){var k=kv.slice(0,i),v=kv.slice(i+1);if(k==='st')meta.st=v;else if(k==='cat')meta.cat=v;else if(k==='pri')meta.pri=v;else if(k==='lr')meta.lr=v;}});}
+    var meta={st:'new',cat:'',pri:'P2',lr:'',ra:''};
+    if(raw&&raw.indexOf('=')>=0){raw.split('|').forEach(function(kv){var i=kv.indexOf('=');if(i>0){var k=kv.slice(0,i),v=kv.slice(i+1);if(k==='st')meta.st=v;else if(k==='cat')meta.cat=v;else if(k==='pri')meta.pri=v;else if(k==='lr')meta.lr=v;else if(k==='ra')meta.ra=v;}});}
     if(!meta.cat)meta.cat=tkDeriveCat(msg);
     if(!/^P[0-3]$/.test(meta.pri))meta.pri='P2';
     if(['new','waiting','userreplied','resolved'].indexOf(meta.st)<0)meta.st='new';
     return {id:tk.id,who:who,msg:msg,meta:meta,created:tk.created_at};}
-  function tkMetaStr(m){return 'st='+m.st+'|cat='+m.cat+'|pri='+m.pri+'|lr='+(m.lr||'');}
+  function tkMetaStr(m){return 'st='+m.st+'|cat='+m.cat+'|pri='+m.pri+'|lr='+(m.lr||'')+'|ra='+(m.ra||'');}
   async function tkSetMeta(id,patch){try{var r=await sb.from('flaps').select('id,body').eq('id',id).maybeSingle();if(!r.data)return;var p=tkParse(r.data);var meta=p.meta;for(var k in patch)meta[k]=patch[k];var nb=p.who+PSEP+tkMetaStr(meta)+PSEP+p.msg;await sb.from('flaps').update({body:nb}).eq('id',id);}catch(e){}}
   function tkStIcon(s){return s==='waiting'?'⏳':s==='userreplied'?'🔔':s==='resolved'?'✅':'🆕';}
   function tkStLabel(s){return s==='waiting'?'Waiting on User':s==='userreplied'?'User Replied':s==='resolved'?'Resolved':'Needs Response';}
@@ -662,6 +662,9 @@
       SUP_CATS.forEach(function(c){var n=open.filter(function(t){return t.meta.cat===c.k;}).length;h+='<div class="sup-card" onclick="ADMIN.supOpenCat(\'' + c.k + '\')"><div class="sc-ic">'+c.ic+'</div><div class="sc-lb">'+c.label+'</div><div class="sc-n">'+n+' open</div></div>';});
       h+='</div>';
       h+='<div class="subhead">⚑ Open reports</div>'+(d.reports.length?'<div class="muted">'+d.reports.length+' open — see the <b>Moderation</b> tab.</div>':'<div class="empty">No open reports.</div>');
+      var rr=all.filter(function(t){return t.meta.st==='resolved';}).sort(function(a,b){var c=(b.meta.ra||'').localeCompare(a.meta.ra||'');return c!==0?c:(b.id-a.id);}).slice(0,5);
+      h+='<div class="subhead">✅ Recently resolved <span style="color:#8fa8cf;font-weight:normal;font-size:12px">reopen if resolved by mistake</span></div>';
+      h+= rr.length? rr.map(function(t){var subj=(t.msg||'').trim().slice(0,60)||'(no message)';var when=t.meta.ra?('Resolved '+tkDate(t.meta.ra)):('Resolved · opened '+tkDate(t.created));return '<div class="row"><div class="r-top">#'+t.id+' · @'+esc(t.who)+' — '+esc(subj)+'</div><div class="r-meta">'+esc(when)+'</div><div class="acts"><button class="btn green" onclick="ADMIN.supReopen('+t.id+')">↩️ Reopen</button></div></div>';}).join(''):'<div class="empty">No resolved tickets yet.</div>';
       h+='</div>';return h;
     }
     var cat=SUP_CATS.filter(function(c){return c.k===SUP_CAT;})[0]||SUP_CATS[4];
@@ -847,7 +850,8 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
     _supBar:function(){var n=Object.keys(SUP_SEL).length;var b=$('supBatch'),s=$('supSelN');if(b)b.style.display=n?'flex':'none';if(s)s.textContent=n+' selected';},
     supSetPri:async function(id,v){await tkSetMeta(id,{pri:v});toast('Priority set '+v+'.');loadAll();},
     supSetCat:async function(id,v){await tkSetMeta(id,{cat:v});toast('Category updated.');loadAll();},
-    supResolve:async function(id){await tkSetMeta(id,{st:'resolved'});toast('✅ Resolved (kept in records).');loadAll();},
+    supResolve:async function(id){await tkSetMeta(id,{st:'resolved',ra:new Date().toISOString()});toast('✅ Resolved (kept in records).');loadAll();},
+    supReopen:async function(id){await tkSetMeta(id,{st:'new',ra:''});toast('↩️ Ticket reopened.');loadAll();},
     supDelete:async function(id){if(!confirm('Delete this ticket permanently?\nThis cannot be undone.\n\nThis removes ONLY the support ticket record — not the account, profile, badges, followers, messages, reports, or moderation history.'))return;try{await sb.from('flaps').delete().eq('id',id);}catch(e){toast('Delete failed.');return;}delete SUP_SEL[id];toast('🗑️ Ticket deleted.');loadAll();},
     supBatch:async function(action){var ids=Object.keys(SUP_SEL);if(!ids.length){toast('Select tickets first.');return;}
       if(action==='delete'){if(!confirm('Delete '+ids.length+' selected ticket'+(ids.length>1?'s':'')+'?\nThis action cannot be undone.\n\nOnly the support ticket records are removed — no accounts or other data.'))return;for(var i=0;i<ids.length;i++){try{await sb.from('flaps').delete().eq('id',ids[i]);}catch(e){}}SUP_SEL={};toast('🗑️ Deleted '+ids.length+' ticket(s).');loadAll();return;}
