@@ -4613,7 +4613,7 @@ function notifText(n){
   }
   window.annAsk=function(i){ if(!ME.name){try{requireAuth();}catch(e){}return;} if(myVote!==null)return; ANN_CONFIRM=i; try{renderLive();}catch(e){} };
   window.annCancel=function(){ ANN_CONFIRM=null; try{renderLive();}catch(e){} };
-  window.annVote=function(i){ if(!ME.name){try{requireAuth();}catch(e){}return;} if(myVote!==null)return; ANN_CONFIRM=null; myVote=i; pollVotes[i]=(pollVotes[i]||0)+1; try{renderLive();}catch(e){} if(ONLINE&&ME.name){ try{ sb.from('flap_poll').upsert({name:ME.name,choice:i}).then(function(){ try{loadPoll().then(function(){try{renderLive();}catch(e){}});}catch(e){} }); }catch(e){} } try{toast('Vote counted! \ud83d\uddf3\ufe0f');}catch(e){} };
+  window.annVote=function(i){ if(!ME.name){try{requireAuth();}catch(e){}return;} if(myVote!==null)return; ANN_CONFIRM=null; myVote=i; pollVotes[i]=(pollVotes[i]||0)+1; try{renderLive();}catch(e){} if(ONLINE&&ME.name){ try{ sb.from('flap_poll').upsert({poll_id:(Number(window.POLL_START_MS)||0),name:ME.name,choice:i},{onConflict:'poll_id,name'}).then(function(){ try{loadPoll().then(function(){try{renderLive();}catch(e){}});}catch(e){} }); }catch(e){} } try{toast('Vote counted! \ud83d\uddf3\ufe0f');}catch(e){} };
   async function annSetState(state){ if(!ME.admin)return; try{ var lines=String(ANNOUNCE_TXT||'').split(/\n/); lines[0]='[[SOUNDVOTE:'+state+']]'; var body=lines.join('\n'); var ex=await sb.from('flaps').select('id').eq('name','::announce::').order('id',{ascending:false}).limit(1); if(ex.data&&ex.data[0]) await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id); ANNOUNCE_TXT=body; try{renderLive();}catch(e){} toast(state==='CLOSED'?'\ud83d\udd12 Voting closed.':'\ud83d\udd13 Voting re-opened.'); }catch(e){toast('Could not update — retry.');} }
   window.annClose=function(){ annSetState('CLOSED'); };
   window.annReopen=function(){ annSetState('OPEN'); };
@@ -4708,19 +4708,35 @@ function notifText(n){
     myVote=null; pollVotes=[0,0,0]; renderPoll(); loadPoll();
     toast('🗳️ Poll votes reset!');
   }
+  /* ===== POLL (rebuilt: persistent, vote-once, poll_id-scoped) ===== */
+  function pollId(){ return Number(window.POLL_START_MS)||0; }
+  function pollLocalKey(){ return 'flapPollVote_'+pollId(); }
+  function pollLocalVote(){ try{ var v=localStorage.getItem(pollLocalKey()); return (v==null||v==='')?null:parseInt(v,10); }catch(_e){ return null; } }
+  function pollSetLocalVote(i){ try{ localStorage.setItem(pollLocalKey(), String(i)); }catch(_e){} }
+  async function pollTallyCounts(){
+    var n=(POLL.opts||[]).length||0; var out=[]; for(var _c=0;_c<n;_c++)out.push(0);
+    if(!ONLINE||!n) return out;
+    var pid=pollId();
+    var rs=await Promise.all((POLL.opts||[]).map(function(o,i){
+      return sb.from('flap_poll').select('name',{count:'exact',head:true}).eq('poll_id',pid).eq('choice',i);
+    }));
+    for(var i=0;i<n;i++){ out[i]=(rs[i]&&rs[i].count)||0; }
+    return out;
+  }
   async function loadPoll(){
     await loadPollConfig();
-    if(!ONLINE){renderPoll();return;}
+    var n=(POLL.opts||[]).length||3;
+    pollVotes=[]; for(var _z=0;_z<n;_z++)pollVotes.push(0); myVote=null;
+    if(!ONLINE){ var lv0=pollLocalVote(); if(lv0!=null&&lv0<n)myVote=lv0; renderPoll(); return; }
     try{
-      var res=await sb.from('flap_poll').select('*');
-      if(res.error)throw res.error;
-      pollVotes=(POLL.opts||[]).map(function(){return 0;}); if(!pollVotes.length)pollVotes=[0,0,0]; myVote=null;
-      res.data.forEach(function(v){
-        if(v.choice>=0&&v.choice<pollVotes.length)pollVotes[v.choice]++;
-        if(ME.name&&v.name===ME.name&&v.choice>=0&&v.choice<pollVotes.length)myVote=v.choice;
-      });
+      pollVotes=await pollTallyCounts();
+      if(ME&&ME.name){
+        var mv=await sb.from('flap_poll').select('choice').eq('poll_id',pollId()).eq('name',ME.name).limit(1);
+        if(!mv.error&&mv.data&&mv.data[0]&&mv.data[0].choice>=0&&mv.data[0].choice<n) myVote=mv.data[0].choice;
+      }
+      if(myVote==null){ var lv=pollLocalVote(); if(lv!=null&&lv<n)myVote=lv; }
       renderPoll();
-    }catch(e){renderPoll();}
+    }catch(e){ var lv2=pollLocalVote(); if(lv2!=null&&lv2<n)myVote=lv2; renderPoll(); }
   }
   function renderPoll(){
     var box=document.getElementById('pollBox');if(!box)return;
@@ -4745,12 +4761,15 @@ function notifText(n){
     box.innerHTML=h;
   }
   async function votePoll(i){
-    if(myVote!==null)return;
+    if(myVote!=null)return;
     if(!requireAuth())return;
-    myVote=i;pollVotes[i]++;renderPoll();
+    var n=(POLL.opts||[]).length||0; if(i<0||i>=n)return;
+    if(pollLocalVote()!=null){ myVote=pollLocalVote(); renderPoll(); return; }
+    myVote=i; if(pollVotes[i]!=null)pollVotes[i]++; pollSetLocalVote(i); renderPoll();
     if(ONLINE){
-      try{await sb.from('flap_poll').upsert({name:ME.name,choice:i});}catch(e){}
-      loadPoll();
+      try{ await sb.from('flap_poll').upsert({poll_id:pollId(),name:ME.name,choice:i},{onConflict:'poll_id,name'}); }catch(e){}
+      try{ pollVotes=await pollTallyCounts(); }catch(e2){}
+      myVote=i; renderPoll();
     }
     toast('Vote counted! 🗳️');
   }
