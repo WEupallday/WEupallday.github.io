@@ -310,29 +310,57 @@
     $('panel').innerHTML='<div class="loading">Loading your HQ…</div>';
     try{ var _s=await sb.auth.getSession(); window.__modAuthed=!!(_s&&_s.data&&_s.data.session); window.__modEmail=(window.__modAuthed&&_s.data.session.user&&_s.data.session.user.email)||''; }catch(e){ window.__modAuthed=false; }
     try{
-      var us=[];{var _uf=0,_upg=1000;while(true){var _ur=await sb.from('flap_users').select('*').order('created_at',{ascending:false}).range(_uf,_uf+_upg-1);var _ud=(_ur&&_ur.data)||[];us=us.concat(_ud);if(_ud.length<_upg)break;_uf+=_upg;if(_uf>20000)break;}}
-      var flAll=(await sb.from('flaps').select('id,name,body,pic_url,mood,created_at').order('id',{ascending:false}).limit(500)).data||[];
-      var rcRes=await sb.from('flap_replies').select('*',{count:'exact',head:true});
-      var repliesRecent=[];try{repliesRecent=(await sb.from('flap_replies').select('*').order('id',{ascending:false}).limit(80)).data||[];}catch(e){}
-      var reports=[];window.__modErr='';try{ var _mk=sessionStorage.getItem('flap_modpw'); if(_mk){ var _rr=await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'list'})}); var _jj=await _rr.json().catch(function(){return{};}); if(_rr.ok&&_jj&&_jj.reports){ reports=_jj.reports.filter(function(r){return !r.resolved;}); } else { window.__modErr=(_jj&&_jj.error)||('http '+_rr.status); if(_rr.status===401||_rr.status===403){ sessionStorage.removeItem('flap_modpw'); } } } }catch(e){ window.__modErr=String(e).slice(0,80); }
+      var SENKEYS=['::ticker::','::verified::','::poll::','::announce::','::features::','::delcount::','::badgedefs::','::badgegrants::'];
+      var NONMEM=['moonchild','the plug','sunny','lowkey','dramaqueen','bestie','lock','theflap','flapbot'];
+      var _now=Date.now();
+      var _dayISO=new Date(_now-864e5).toISOString(),_weekISO=new Date(_now-7*864e5).toISOString(),_onlineISO=new Date(_now-12e4).toISOString(),_nowISO=new Date(_now).toISOString();
+      var _mk=sessionStorage.getItem('flap_modpw');
+      var _R=await Promise.all([
+        sb.from('flaps').select('id,name,body,pic_url,mood,created_at').order('id',{ascending:false}).limit(500),
+        sb.from('flap_replies').select('*',{count:'estimated',head:true}),
+        sb.from('flap_replies').select('*').order('id',{ascending:false}).limit(80),
+        sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(2000),
+        sb.from('flaps').select('id,name,body').in('name',SENKEYS).order('id',{ascending:false}),
+        sb.from('flap_delete_requests').select('*').order('id',{ascending:false}).limit(200),
+        sb.from('flap_users').select('*',{count:'estimated',head:true}),
+        sb.from('flap_users').select('name').in('name',NONMEM),
+        sb.from('flap_users').select('*',{count:'exact',head:true}).gte('last_seen',_onlineISO),
+        sb.from('flap_users').select('*',{count:'exact',head:true}).gte('created_at',_dayISO),
+        sb.from('flap_users').select('*',{count:'exact',head:true}).gte('created_at',_weekISO),
+        sb.from('flap_users').select('*',{count:'exact',head:true}).eq('banned',true),
+        sb.from('flap_users').select('*',{count:'exact',head:true}).gt('muted_until',_nowISO),
+        (isOwner()?sb.from('flap_admins').select('name,sections').order('name'):Promise.resolve({data:[]})),
+        (_mk?fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'list'})}).then(function(r){return r.json().then(function(j){return{ok:r.ok,status:r.status,j:j};}).catch(function(){return{ok:r.ok,status:r.status,j:{}};});}).catch(function(e){return{err:String(e)};}):Promise.resolve(null))
+      ]);
+      var flAll=(_R[0]&&_R[0].data)||[];
+      var rcRes=_R[1]||{};
+      var repliesRecent=(_R[2]&&_R[2].data)||[];
+      var tickets=(_R[3]&&_R[3].data)||[];
+      var _senRows=(_R[4]&&_R[4].data)||[];
+      var _sen={};_senRows.forEach(function(r){if(!(r.name in _sen))_sen[r.name]=r.body;});
+      function _S(k){return _sen[k]||'';}
+      DELREQS=(_R[5]&&_R[5].data)||[];
+      var _acct=(_R[6]&&_R[6].count)||0;
+      var _personas=((_R[7]&&_R[7].data)||[]).length;
+      var _counts={accounts:_acct,members:Math.max(0,_acct-_personas),online:(_R[8]&&_R[8].count)||0,joinsToday:(_R[9]&&_R[9].count)||0,joinsWeek:(_R[10]&&_R[10].count)||0,banned:(_R[11]&&_R[11].count)||0,muted:(_R[12]&&_R[12].count)||0};
+      STAFF=(_R[13]&&_R[13].data)||[];
+      var reports=[];window.__modErr='';
+      var _rr=_R[14];
+      if(_rr){if(_rr.err){window.__modErr=String(_rr.err).slice(0,80);}else if(_rr.ok&&_rr.j&&_rr.j.reports){reports=_rr.j.reports.filter(function(r){return !r.resolved;});}else{window.__modErr=(_rr.j&&_rr.j.error)||('http '+_rr.status);if(_rr.status===401||_rr.status===403){sessionStorage.removeItem('flap_modpw');}}}
       var repIds=reports.filter(function(r){return r.target_type==='post'&&r.target_id;}).map(function(r){return r.target_id;});
       var repPosts={};if(repIds.length){try{((await sb.from('flaps').select('id,body,name').in('id',repIds)).data||[]).forEach(function(p){repPosts[p.id]=p;});}catch(e){}}
-      var tickets=[];try{tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(2000)).data||[];}catch(e){}
-      var dms=[];try{dms=(await sb.from('flaps').select('id,body,created_at').eq('name','::dm::').order('id',{ascending:false}).limit(600)).data||[];}catch(e){}
       DATA={
-        us:us, flAll:flAll, replyCount:(rcRes.count||0), repliesRecent:repliesRecent,
-        reports:reports, repPosts:repPosts, tickets:tickets, dms:dms,
-        tickerCur:await sen('::ticker::'), verCur:await sen('::verified::'),
-        pollCur:await sen('::poll::'), annCur:await sen('::announce::'),
-        featuresOn:/on/i.test(await sen('::features::')||''),
-        delCount:(parseInt(await sen('::delcount::'),10)||0),
-        badgeDefs:[], badgeGrants:{},
+        us:[],counts:_counts,flAll:flAll,replyCount:(rcRes.count||0),repliesRecent:repliesRecent,
+        reports:reports,repPosts:repPosts,tickets:tickets,dms:null,
+        tickerCur:_S('::ticker::'),verCur:_S('::verified::'),
+        pollCur:_S('::poll::'),annCur:_S('::announce::'),
+        featuresOn:/on/i.test(_S('::features::')||''),
+        delCount:(parseInt(_S('::delcount::'),10)||0),
+        badgeDefs:[],badgeGrants:{},
         now:Date.now()
       };
-      try{ var _bd=await sen('::badgedefs::'); DATA.badgeDefs=_bd?(JSON.parse(_bd)||[]):[]; }catch(e){ DATA.badgeDefs=[]; }
-      try{ var _bg=await sen('::badgegrants::'); DATA.badgeGrants=_bg?(JSON.parse(_bg)||{}):{}; }catch(e){ DATA.badgeGrants={}; }
-      try{ DELREQS=(await sb.from('flap_delete_requests').select('*').order('id',{ascending:false}).limit(200)).data||[]; }catch(e){ DELREQS=[]; }
-      try{ if(isOwner()){ STAFF=(await sb.from('flap_admins').select('name,sections').order('name')).data||[]; } }catch(e){ STAFF=[]; }
+      try{var _bd=_S('::badgedefs::');DATA.badgeDefs=_bd?(JSON.parse(_bd)||[]):[];}catch(e){DATA.badgeDefs=[];}
+      try{var _bg=_S('::badgegrants::');DATA.badgeGrants=_bg?(JSON.parse(_bg)||{}):{};}catch(e){DATA.badgeGrants={};}
       renderStrip(); renderTabs(); renderTab();
     }catch(e){
       $('panel').innerHTML='<div class="sec"><h2>⚠ Could not load</h2><div class="muted">Check your connection and tap Refresh.</div></div>';
@@ -349,15 +377,15 @@
     var d=DATA, now=d.now, dayAgo=now-864e5, weekAgo=now-7*864e5;
     var real=d.flAll.filter(function(r){return !isSentinel(r.name);});
     return {
-      members:realMemberCount(d.us),
-      online:d.us.filter(function(u){return u.last_seen&&now-T(u.last_seen)<12e4;}).length,
-      joinsToday:d.us.filter(function(u){return T(u.created_at)>dayAgo;}).length,
-      joinsWeek:d.us.filter(function(u){return T(u.created_at)>weekAgo;}).length,
+      members:d.counts.members,
+      online:d.counts.online,
+      joinsToday:d.counts.joinsToday,
+      joinsWeek:d.counts.joinsWeek,
       flapsToday:real.filter(function(r){return T(r.created_at)>dayAgo;}).length,
       repliesToday:d.repliesRecent.filter(function(r){return r.created_at&&T(r.created_at)>dayAgo;}).length,
       totalFlaps:real.length, totalReplies:d.replyCount,
-      banned:d.us.filter(function(u){return u.banned;}).length,
-      muted:d.us.filter(function(u){return u.muted_until&&new Date(u.muted_until)>new Date();}).length,
+      banned:d.counts.banned,
+      muted:d.counts.muted,
       deleted:d.delCount,
       openIssues:d.reports.length+d.tickets.filter(function(t){return tkParse(t).meta.st!=='resolved';}).length
     };
@@ -538,7 +566,7 @@
   }
   function secMembers(){
     var d=DATA;
-    var h='<div class="sec"><h2>👥 Member management ('+fmtN(realMemberCount(d.us))+' members · '+fmtN(d.us.length)+' accounts) <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
+    var h='<div class="sec"><h2>👥 Member management ('+fmtN(d.counts.members)+' members · '+fmtN(d.counts.accounts)+' accounts) <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
     h+='<div class="hint">Verify, time out, ban, or remove members. Removing deletes their flaps &amp; replies too. Loads 50 at a time.</div>';
     h+='<div class="mem-tools"><input class="inp" id="memSearch" placeholder="🔎 Search members by name…" value="'+esc(MEM_SEARCH)+'" oninput="ADMIN.memSearchInput(this.value)" autocomplete="off" autocapitalize="off" spellcheck="false" style="margin-bottom:0;flex:1;min-width:150px;"><select class="inp" id="memSort" onchange="ADMIN.memSort(this.value)" style="margin-bottom:0;width:auto;"><option value="new"'+(MEM_SORT==='new'?' selected':'')+'>Newest → Oldest</option><option value="old"'+(MEM_SORT==='old'?' selected':'')+'>Oldest → Newest</option></select></div>';
     h+='<div id="memList"><div class="mem-loading">⏳ Loading members…</div></div>';
@@ -602,7 +630,7 @@
   }
 
   /* ---------- MESSAGES (grouped + search + drill-in) ---------- */
-  function secMessages(){
+  function secMessages(){ if(DATA&&!DATA.dms){ setTimeout(function(){try{ADMIN._ensureDMs();}catch(e){}},0); return '<div class="sec"><div class="loading">Loading messages…</div></div>'; }
     var d=DATA;
     var msgs=(d.dms||[]).map(function(x){var p=String(x.body||'').split(PSEP);return {from:p[0]||'',to:p[1]||'',text:p.slice(2).join(PSEP),at:x.created_at};}).filter(function(m){return m.from&&m.to;});
     var convs={};
@@ -755,6 +783,12 @@
   var ADMIN={
     tab:function(t){ TAB=t; if(t!=='messages')MSG_OPEN=null; renderTabs(); renderTab(); },
     reload:function(){ loadAll(); },
+    _ensureDMs:function(){ if(!DATA)return; if(DATA.dms){ if(TAB==='messages')renderTab(); return; } sb.from('flaps').select('id,body,created_at').eq('name','::dm::').order('id',{ascending:false}).limit(600).then(function(r){ DATA.dms=(r&&r.data)||[]; if(TAB==='messages')renderTab(); }); },
+    _memberNames:async function(){ if(window.__memberNames)return window.__memberNames; var names=[],off=0,pg=1000; try{ while(true){ var r=await sb.from('flap_users').select('name').order('created_at',{ascending:false}).range(off,off+pg-1); var d=(r&&r.data)||[]; d.forEach(function(u){ if(isRealMember(u&&u.name))names.push(u.name); }); if(d.length<pg)break; off+=pg; if(off>20000)break; } }catch(e){} window.__memberNames=names; return names; },
+    _refreshCounts:async function(){ if(!DATA||!DATA.counts)return; try{ var NM=['moonchild','the plug','sunny','lowkey','dramaqueen','bestie','lock','theflap','flapbot']; var _n=Date.now(); var R=await Promise.all([ sb.from('flap_users').select('*',{count:'estimated',head:true}), sb.from('flap_users').select('name').in('name',NM), sb.from('flap_users').select('*',{count:'exact',head:true}).gte('last_seen',new Date(_n-12e4).toISOString()), sb.from('flap_users').select('*',{count:'exact',head:true}).eq('banned',true), sb.from('flap_users').select('*',{count:'exact',head:true}).gt('muted_until',new Date(_n).toISOString()) ]); var a=(R[0]&&R[0].count)||0,p=((R[1]&&R[1].data)||[]).length; DATA.counts.accounts=a; DATA.counts.members=Math.max(0,a-p); DATA.counts.online=(R[2]&&R[2].count)||0; DATA.counts.banned=(R[3]&&R[3].count)||0; DATA.counts.muted=(R[4]&&R[4].count)||0; }catch(e){} renderStrip(); renderTab(); },
+    refreshMembers:function(){ window.__memberNames=null; ADMIN._refreshCounts(); },
+    refreshTickets:async function(){ try{ DATA.tickets=(await sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(2000)).data||[]; }catch(e){} renderStrip(); renderTab(); },
+    refreshReports:async function(){ try{ var mk=sessionStorage.getItem('flap_modpw'); if(mk){ var r=await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:mk,action:'list'})}); var j=await r.json().catch(function(){return{};}); if(r.ok&&j&&j.reports){ DATA.reports=j.reports.filter(function(x){return !x.resolved;}); } } }catch(e){} renderStrip(); renderTab(); },
     requestDelete:async function(){
       var target=(($('drTarget')&&$('drTarget').value)||'').trim();
       var reason=(($('drReason')&&$('drReason').value)||'').trim();
@@ -805,7 +839,7 @@
       if(target==='test'){ out.bell=['lock']; out.pushNames=uniq(subs.filter(function(s){return (s.name||'').toLowerCase()==='lock';}).map(function(s){return s.name;})); if(!out.pushNames.length)out.pushNames=['lock']; return out; }
       if(target==='ios'){ var ni=uniq(subs.filter(function(s){return s.p256dh==='ios';}).map(function(s){return s.name;})); out.bell=ni; out.pushNames=ni; return out; }
       if(target==='android'){ var na=uniq(subs.filter(function(s){return s.p256dh==='android';}).map(function(s){return s.name;})); out.bell=na; out.pushNames=na; return out; }
-      out.bell=(DATA.us||[]).filter(function(u){return isRealMember(u&&u.name);}).map(function(u){return u.name;});
+      out.bell=await ADMIN._memberNames();
       out.pushNames=uniq(subs.map(function(s){return s.name;}));
       return out;
     },
@@ -858,38 +892,38 @@
     msgBack:function(){ MSG_OPEN=null; renderTab(); },
     modSignIn:function(){ var pw=window.__ADMINPW||sessionStorage.getItem('flap_modpw')||''; if(pw==null||pw==='')return; sessionStorage.setItem('flap_modpw',pw); toast('Unlocking…'); loadAll(); },
     modSignOut:function(){ sessionStorage.removeItem('flap_modpw'); toast('Locked.'); loadAll(); },
-    setReportStatus:async function(id,st){ var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){toast('Unlock reports first.');return;} try{ var _r=await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:id,status:st})}); if(!_r.ok){ toast('Update failed.'); return; } }catch(e){ toast('Update failed.'); return; } toast('Updated.'); loadAll(); },
+    setReportStatus:async function(id,st){ var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){toast('Unlock reports first.');return;} try{ var _r=await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:id,status:st})}); if(!_r.ok){ toast('Update failed.'); return; } }catch(e){ toast('Update failed.'); return; } toast('Updated.'); ADMIN.refreshReports(); },
     viewFlap:function(id){ try{ window.open('/index.html?openflap='+id,'_blank'); }catch(e){} },
     viewProfile:function(n){ try{ window.open('/index.html?profile='+encodeURIComponent(n),'_blank'); }catch(e){} },
     warnUser:async function(name){ name=(name||'').trim(); if(!name)return; var why=prompt('Warning to show '+name+' as a Community Notice:','Your recent activity broke a House Rule. Please keep it kind. 💛'); if(why==null||why==='')return; try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:why.slice(0,200)}); }catch(e){} try{ fetch(SUPABASE_URL+'/functions/v1/send-push',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_ANON_KEY,'apikey':SUPABASE_ANON_KEY},body:JSON.stringify({recipient:name,title:'TheFlap ⚠️',body:'You have a Community Notice',url:'/'})}); }catch(e){} try{ adminLog(name,'Warned (community notice): '+why.slice(0,80)); }catch(e){} toast('⚠️ Warning sent to '+name+'.'); },
-    muteUser24:async function(name){ name=(name||'').trim(); if(!name)return; if(!confirm('Mute '+name+' for 24 hours? They can read but not post.'))return; var until=new Date(Date.now()+86400000).toISOString(); try{ var r=await sb.from('flap_users').update({muted_until:until}).ilike('name',name); if(r&&r.error)throw r.error; }catch(e){ toast('Mute failed.'); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'You have been muted for 24 hours for breaking a House Rule. You can still read TheFlap.'}); }catch(e){} try{ adminLog(name,'Muted 24h'); }catch(e){} toast('🔇 '+name+' muted 24h.'); loadAll(); },
-    banUser:async function(name){ name=(name||'').trim(); if(!name)return; if(!confirm('BAN '+name+'? They will be blocked from the app.'))return; try{ var r=await sb.from('flap_users').update({banned:true}).ilike('name',name); if(r&&r.error)throw r.error; }catch(e){ toast('Ban failed.'); return; } try{ adminLog(name,'Banned'); }catch(e){} toast('🚫 '+name+' banned.'); loadAll(); },
-    resolveReport:async function(id){ var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){toast('Unlock reports first.');return;} try{ await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:id,resolved:true})}); }catch(e){} toast('Resolved.'); loadAll(); },
+    muteUser24:async function(name){ name=(name||'').trim(); if(!name)return; if(!confirm('Mute '+name+' for 24 hours? They can read but not post.'))return; var until=new Date(Date.now()+86400000).toISOString(); try{ var r=await sb.from('flap_users').update({muted_until:until}).ilike('name',name); if(r&&r.error)throw r.error; }catch(e){ toast('Mute failed.'); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'You have been muted for 24 hours for breaking a House Rule. You can still read TheFlap.'}); }catch(e){} try{ adminLog(name,'Muted 24h'); }catch(e){} toast('🔇 '+name+' muted 24h.'); ADMIN.refreshMembers(); },
+    banUser:async function(name){ name=(name||'').trim(); if(!name)return; if(!confirm('BAN '+name+'? They will be blocked from the app.'))return; try{ var r=await sb.from('flap_users').update({banned:true}).ilike('name',name); if(r&&r.error)throw r.error; }catch(e){ toast('Ban failed.'); return; } try{ adminLog(name,'Banned'); }catch(e){} toast('🚫 '+name+' banned.'); ADMIN.refreshMembers(); },
+    resolveReport:async function(id){ var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){toast('Unlock reports first.');return;} try{ await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:id,resolved:true})}); }catch(e){} toast('Resolved.'); ADMIN.refreshReports(); },
     modToggleSel:function(id,on){ if(on)MOD_SEL[id]=1; else delete MOD_SEL[id]; ADMIN._modBar(); },
     modSelectAll:function(on){ var cks=document.querySelectorAll('.mod-ck'); Array.prototype.forEach.call(cks,function(c){ c.checked=on; var id=c.getAttribute('data-id'); if(on)MOD_SEL[id]=1; else delete MOD_SEL[id]; }); ADMIN._modBar(); },
     _modBar:function(){ var n=Object.keys(MOD_SEL).length; var s=document.getElementById('modSelN'); if(s)s.textContent=n+' selected'; },
-    modBatchDelete:async function(){ var ids=Object.keys(MOD_SEL); if(!ids.length){ toast('Select reports first.'); return; } var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){ toast('Unlock reports first.'); return; } if(!confirm('Delete '+ids.length+' selected report'+(ids.length>1?'s':'')+'?\nThis removes the report records only — no accounts or flaps are affected.'))return; for(var i=0;i<ids.length;i++){ try{ await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'delete',id:parseInt(ids[i],10)})}); }catch(e){} } MOD_SEL={}; toast('🗑 Deleted '+ids.length+' report(s).'); loadAll(); },
-    modBatchResolve:async function(){ var ids=Object.keys(MOD_SEL); if(!ids.length){ toast('Select reports first.'); return; } var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){ toast('Unlock reports first.'); return; } for(var i=0;i<ids.length;i++){ try{ await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:parseInt(ids[i],10),resolved:true})}); }catch(e){} } MOD_SEL={}; toast('✔ Resolved '+ids.length+' report(s).'); loadAll(); },
-    modDeletePost:async function(pid,rid){if(!confirm('Delete this flap for everyone?'))return;try{await sb.from('flaps').delete().eq('id',pid);}catch(e){} var _mk=sessionStorage.getItem('flap_modpw'); if(_mk){try{ await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:rid,resolved:true})}); }catch(e){}} toast('Flap deleted.');loadAll();},
+    modBatchDelete:async function(){ var ids=Object.keys(MOD_SEL); if(!ids.length){ toast('Select reports first.'); return; } var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){ toast('Unlock reports first.'); return; } if(!confirm('Delete '+ids.length+' selected report'+(ids.length>1?'s':'')+'?\nThis removes the report records only — no accounts or flaps are affected.'))return; for(var i=0;i<ids.length;i++){ try{ await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'delete',id:parseInt(ids[i],10)})}); }catch(e){} } MOD_SEL={}; toast('🗑 Deleted '+ids.length+' report(s).'); ADMIN.refreshReports(); },
+    modBatchResolve:async function(){ var ids=Object.keys(MOD_SEL); if(!ids.length){ toast('Select reports first.'); return; } var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){ toast('Unlock reports first.'); return; } for(var i=0;i<ids.length;i++){ try{ await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:parseInt(ids[i],10),resolved:true})}); }catch(e){} } MOD_SEL={}; toast('✔ Resolved '+ids.length+' report(s).'); ADMIN.refreshReports(); },
+    modDeletePost:async function(pid,rid){if(!confirm('Delete this flap for everyone?'))return;try{await sb.from('flaps').delete().eq('id',pid);}catch(e){} var _mk=sessionStorage.getItem('flap_modpw'); if(_mk){try{ await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:rid,resolved:true})}); }catch(e){}} toast('Flap deleted.');ADMIN.refreshReports();},
     deleteFlap:async function(id){if(!confirm('Delete this flap (and its photo) for everyone?'))return;try{await sb.from('flaps').delete().eq('id',id);}catch(e){}toast('Flap deleted.');loadAll();},
     removePhoto:async function(id){if(!confirm('Remove just the photo? The text stays.'))return;try{await sb.from('flaps').update({pic_url:null}).eq('id',id);}catch(e){}toast('Photo removed.');loadAll();},
     deleteReply:async function(id){if(!confirm('Delete this reply for everyone?'))return;try{await sb.from('flap_replies').delete().eq('id',id);}catch(e){}toast('Reply deleted.');loadAll();},
-    resolveTicket:async function(id){try{await tkSetMeta(id,{st:'resolved'});}catch(e){}toast('Ticket resolved.');loadAll();},
+    resolveTicket:async function(id){try{await tkSetMeta(id,{st:'resolved'});}catch(e){}toast('Ticket resolved.');ADMIN.refreshTickets();},
     toggleVerified:async function(name){
       name=(name||'').trim();if(!name)return;
       var cur=(DATA?DATA.verCur:'')||'';var list=cur.split(/[,\s]+/).filter(Boolean);var low=name.toLowerCase();
       var has=list.some(function(x){return x.toLowerCase()===low;});
       list=has?list.filter(function(x){return x.toLowerCase()!==low;}):list.concat([name]);
       await setSen('::verified::',list.join(', '));
-      toast((has?'Removed':'Granted')+' verified: '+name);loadAll();
+      toast((has?'Removed':'Granted')+' verified: '+name);ADMIN.refreshMembers();
     },
-    mute:async function(name,hours){ name=(name||'').trim(); if(!name)return; var lbl=(hours>=168?'7 days':(hours>=24?Math.round(hours/24)+' day(s)':hours+' hour(s)')); var until=new Date(Date.now()+hours*3600*1000).toISOString(); var r; try{ r=await sb.from('flap_users').update({muted_until:until}).eq('name',name).select('name'); }catch(e){ toast('Timeout failed — try again.'); return; } if(r&&r.error){ toast('Timeout failed: '+(r.error.message||'').slice(0,50)); return; } if(!r.data||!r.data.length){ toast('⚠ No member exactly named "'+name+'" — nothing changed.'); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'You have been timed out for '+lbl+' for breaking a House Rule. You can still read TheFlap, but posting, replies, and messages are paused until it ends.'}); }catch(e){} try{ adminLog(name,'Timed out '+lbl); }catch(e){} toast('⏳ '+name+' timed out for '+lbl+' ✓'); loadAll(); },
+    mute:async function(name,hours){ name=(name||'').trim(); if(!name)return; var lbl=(hours>=168?'7 days':(hours>=24?Math.round(hours/24)+' day(s)':hours+' hour(s)')); var until=new Date(Date.now()+hours*3600*1000).toISOString(); var r; try{ r=await sb.from('flap_users').update({muted_until:until}).eq('name',name).select('name'); }catch(e){ toast('Timeout failed — try again.'); return; } if(r&&r.error){ toast('Timeout failed: '+(r.error.message||'').slice(0,50)); return; } if(!r.data||!r.data.length){ toast('⚠ No member exactly named "'+name+'" — nothing changed.'); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'You have been timed out for '+lbl+' for breaking a House Rule. You can still read TheFlap, but posting, replies, and messages are paused until it ends.'}); }catch(e){} try{ adminLog(name,'Timed out '+lbl); }catch(e){} toast('⏳ '+name+' timed out for '+lbl+' ✓'); ADMIN.refreshMembers(); },
     muteCustom:function(name){var h=prompt('Time out '+name+' for how many HOURS?','12');if(h===null)return;h=parseFloat(h);if(!(h>0)){toast('Enter a number of hours.');return;}ADMIN.mute(name,h);},
-    liftMute:async function(name){ name=(name||'').trim(); if(!name)return; var r; try{ r=await sb.from('flap_users').update({muted_until:null}).eq('name',name).select('name'); }catch(e){ toast('Could not lift — try again.'); return; } if(r&&r.error){ toast('Failed: '+(r.error.message||'').slice(0,50)); return; } if(!r.data||!r.data.length){ toast('⚠ No member exactly named "'+name+'".'); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'Your time-out has been lifted. Welcome back — please keep it kind. 💛'}); }catch(e){} try{ adminLog(name,'Time-out lifted'); }catch(e){} toast('✓ Time-out lifted for '+name+' ✓'); loadAll(); },
-    ban:async function(name){ name=(name||'').trim(); if(!name)return; if(!confirm('Ban '+name+'? They will be locked out of the app.'))return; var r; try{ r=await sb.from('flap_users').update({banned:true}).eq('name',name).select('name'); }catch(e){ toast('Ban failed — try again.'); return; } if(r&&r.error){ toast('Ban failed: '+(r.error.message||'').slice(0,50)); return; } if(!r.data||!r.data.length){ toast('⚠ No member exactly named "'+name+'" — nobody was banned.'); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'Your account has been banned from TheFlap for breaking the Community Guidelines. If you believe this is a mistake, email theflapsupport@gmail.com.'}); }catch(e){} try{ adminLog(name,'Banned'); }catch(e){} toast('🔨 '+name+' banned ✓'); loadAll(); },
-verify:async function(name){var r=await sb.from('flap_users').update({verified:true}).eq('name',name).select('name');if(r.error){toast('⚠ '+r.error.message);return;}if(!r.data||!r.data.length){toast('⚠ No member exactly named '+name);return;}try{await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',body:'✓ Your account is now verified on TheFlap.',created_at:new Date().toISOString()});}catch(e){}try{adminLog('verify',name);}catch(e){}toast('✓ '+name+' is now verified.');loadAll();},
-unverify:async function(name){var r=await sb.from('flap_users').update({verified:false}).eq('name',name).select('name');if(r.error){toast('⚠ '+r.error.message);return;}if(!r.data||!r.data.length){toast('⚠ No member exactly named '+name);return;}try{adminLog('unverify',name);}catch(e){}toast('Verification removed from '+name+'.');loadAll();},
-    unban:async function(name){ name=(name||'').trim(); if(!name)return; var r; try{ r=await sb.from('flap_users').update({banned:false}).eq('name',name).select('name'); }catch(e){ toast('Could not un-ban — try again.'); return; } if(r&&r.error){ toast('Failed: '+(r.error.message||'').slice(0,50)); return; } if(!r.data||!r.data.length){ toast('⚠ No member exactly named "'+name+'".'); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'Your account has been reinstated. Welcome back to TheFlap — please follow the Community Guidelines.'}); }catch(e){} try{ adminLog(name,'Un-banned'); }catch(e){} toast('♻ '+name+' un-banned ✓'); loadAll(); },
+    liftMute:async function(name){ name=(name||'').trim(); if(!name)return; var r; try{ r=await sb.from('flap_users').update({muted_until:null}).eq('name',name).select('name'); }catch(e){ toast('Could not lift — try again.'); return; } if(r&&r.error){ toast('Failed: '+(r.error.message||'').slice(0,50)); return; } if(!r.data||!r.data.length){ toast('⚠ No member exactly named "'+name+'".'); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'Your time-out has been lifted. Welcome back — please keep it kind. 💛'}); }catch(e){} try{ adminLog(name,'Time-out lifted'); }catch(e){} toast('✓ Time-out lifted for '+name+' ✓'); ADMIN.refreshMembers(); },
+    ban:async function(name){ name=(name||'').trim(); if(!name)return; if(!confirm('Ban '+name+'? They will be locked out of the app.'))return; var r; try{ r=await sb.from('flap_users').update({banned:true}).eq('name',name).select('name'); }catch(e){ toast('Ban failed — try again.'); return; } if(r&&r.error){ toast('Ban failed: '+(r.error.message||'').slice(0,50)); return; } if(!r.data||!r.data.length){ toast('⚠ No member exactly named "'+name+'" — nobody was banned.'); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'Your account has been banned from TheFlap for breaking the Community Guidelines. If you believe this is a mistake, email theflapsupport@gmail.com.'}); }catch(e){} try{ adminLog(name,'Banned'); }catch(e){} toast('🔨 '+name+' banned ✓'); ADMIN.refreshMembers(); },
+verify:async function(name){var r=await sb.from('flap_users').update({verified:true}).eq('name',name).select('name');if(r.error){toast('⚠ '+r.error.message);return;}if(!r.data||!r.data.length){toast('⚠ No member exactly named '+name);return;}try{await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',body:'✓ Your account is now verified on TheFlap.',created_at:new Date().toISOString()});}catch(e){}try{adminLog('verify',name);}catch(e){}toast('✓ '+name+' is now verified.');ADMIN.refreshMembers();},
+unverify:async function(name){var r=await sb.from('flap_users').update({verified:false}).eq('name',name).select('name');if(r.error){toast('⚠ '+r.error.message);return;}if(!r.data||!r.data.length){toast('⚠ No member exactly named '+name);return;}try{adminLog('unverify',name);}catch(e){}toast('Verification removed from '+name+'.');ADMIN.refreshMembers();},
+    unban:async function(name){ name=(name||'').trim(); if(!name)return; var r; try{ r=await sb.from('flap_users').update({banned:false}).eq('name',name).select('name'); }catch(e){ toast('Could not un-ban — try again.'); return; } if(r&&r.error){ toast('Failed: '+(r.error.message||'').slice(0,50)); return; } if(!r.data||!r.data.length){ toast('⚠ No member exactly named "'+name+'".'); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'Your account has been reinstated. Welcome back to TheFlap — please follow the Community Guidelines.'}); }catch(e){} try{ adminLog(name,'Un-banned'); }catch(e){} toast('♻ '+name+' un-banned ✓'); ADMIN.refreshMembers(); },
     removeUser:async function(name){ if(!isOwner()){toast('Owner only.');return;}
       if((name||'').toLowerCase()===ADMIN_ACCOUNT){toast("Can't remove the admin account.");return;}
       if(!confirm('Remove '+name+' and delete ALL their flaps & replies? This cannot be undone.'))return;
@@ -898,7 +932,7 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
         if(ex.data&&ex.data[0]){ await sb.from('flaps').update({body:String((parseInt(ex.data[0].body,10)||0)+1)}).eq('id',ex.data[0].id); }
         else { await sb.from('flaps').insert({name:'::delcount::',body:'1',mood:'flappy',likes:0}); }
       }catch(e){}
-      toast('Removed '+name+'.');loadAll();
+      toast('Removed '+name+'.');ADMIN.refreshMembers();
     },
     saveAnnounce:async function(){var v=($('cAnnounce').value||'').trim();await setSen('::announce::',v);toast(v?'📢 Announcement posted.':'Announcement cleared.');loadAll();},
     clearAnnounce:async function(){await setSen('::announce::','');toast('Announcement cleared.');loadAll();},
@@ -939,22 +973,22 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
       for(var i=0;i<rows.length;i++){ var hay=rows[i].getAttribute('data-search')||''; var vis=!q||hay.indexOf(q)>-1; rows[i].style.display=vis?'':'none'; if(vis)shown++; }
       var none=$('memNone'); if(none)none.style.display=(q&&shown===0)?'block':'none';
     },
-    resetPassword:async function(name){ if(!isOwner()){toast('Owner only.');return;}if(!name){toast('No user selected.');return;}if(!confirm('Send a temporary password to '+name+'? Only do this for a genuine forgotten-password request.'))return;try{var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';var temp='';var rnd=crypto.getRandomValues(new Uint32Array(8));for(var i=0;i<8;i++){temp+=chars[rnd[i]%chars.length];}var hash=await sha256('flapsalt:'+String(name).toLowerCase()+':'+temp);var up=await sb.from('flap_users').update({pass_hash:hash}).eq('name',name).select('name');if(up.error){toast('⚠ Reset failed: '+up.error.message);return;}if(!up.data||!up.data.length){toast('⚠ No member exactly named '+name);return;}var msg='No worries! Your temporary password is: '+temp+' — use it to log back in, then change your password once you are in. 🐥';var ni=await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'support',excerpt:msg,seen:false});if(ni.error){toast('⚠ Password reset, but message failed to send: '+ni.error.message);return;}try{if(window.adminLog)adminLog('reset-pw',name);}catch(e){};(function(){window.__lastTemp=temp;var h='<h3 style="margin:0 0 8px">🔑 Temporary password</h3>'+'<div class="hint" style="margin-bottom:10px">Temporary password for @'+esc(name)+' — copy it and send it to them.</div>'+'<input id="tpwIn" readonly style="width:100%;box-sizing:border-box;font:18px monospace;letter-spacing:3px;padding:12px;border-radius:8px;border:1px solid #2e5290;background:#0f2340;color:#fff;text-align:center" />'+'<div style="display:flex;gap:8px;margin-top:12px"><button id="tpwCopy" class="btn" style="background:#1f8f4d">📋 Copy</button><button class="btn" onclick="closeModal()">Done</button></div>'+'<div id="tpwMsg" class="muted" style="margin-top:8px;font-size:12px">This panel stays open until you close it.</div>';openModal(h);try{var _i=document.getElementById('tpwIn');if(_i){_i.value=window.__lastTemp;_i.focus();_i.select();}var _b=document.getElementById('tpwCopy');if(_b){_b.addEventListener('click',function(){var v=(document.getElementById('tpwIn')||{}).value||window.__lastTemp;function ok(){var m=document.getElementById('tpwMsg');if(m)m.textContent='Copied! ✓ Send it to @'+name+'.';}function fb(){try{var el=document.getElementById('tpwIn');el.focus();el.select();document.execCommand('copy');ok();}catch(e){var m=document.getElementById('tpwMsg');if(m)m.textContent='Select the text and press Ctrl+C to copy.';}}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(v).then(ok,fb);}else{fb();}});}}catch(e){}})();try{if(window.loadAll)loadAll();}catch(e){}}catch(e){toast('⚠ Reset error: '+String(e).slice(0,80));}},
+    resetPassword:async function(name){ if(!isOwner()){toast('Owner only.');return;}if(!name){toast('No user selected.');return;}if(!confirm('Send a temporary password to '+name+'? Only do this for a genuine forgotten-password request.'))return;try{var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';var temp='';var rnd=crypto.getRandomValues(new Uint32Array(8));for(var i=0;i<8;i++){temp+=chars[rnd[i]%chars.length];}var hash=await sha256('flapsalt:'+String(name).toLowerCase()+':'+temp);var up=await sb.from('flap_users').update({pass_hash:hash}).eq('name',name).select('name');if(up.error){toast('⚠ Reset failed: '+up.error.message);return;}if(!up.data||!up.data.length){toast('⚠ No member exactly named '+name);return;}var msg='No worries! Your temporary password is: '+temp+' — use it to log back in, then change your password once you are in. 🐥';var ni=await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'support',excerpt:msg,seen:false});if(ni.error){toast('⚠ Password reset, but message failed to send: '+ni.error.message);return;}try{if(window.adminLog)adminLog('reset-pw',name);}catch(e){};(function(){window.__lastTemp=temp;var h='<h3 style="margin:0 0 8px">🔑 Temporary password</h3>'+'<div class="hint" style="margin-bottom:10px">Temporary password for @'+esc(name)+' — copy it and send it to them.</div>'+'<input id="tpwIn" readonly style="width:100%;box-sizing:border-box;font:18px monospace;letter-spacing:3px;padding:12px;border-radius:8px;border:1px solid #2e5290;background:#0f2340;color:#fff;text-align:center" />'+'<div style="display:flex;gap:8px;margin-top:12px"><button id="tpwCopy" class="btn" style="background:#1f8f4d">📋 Copy</button><button class="btn" onclick="closeModal()">Done</button></div>'+'<div id="tpwMsg" class="muted" style="margin-top:8px;font-size:12px">This panel stays open until you close it.</div>';openModal(h);try{var _i=document.getElementById('tpwIn');if(_i){_i.value=window.__lastTemp;_i.focus();_i.select();}var _b=document.getElementById('tpwCopy');if(_b){_b.addEventListener('click',function(){var v=(document.getElementById('tpwIn')||{}).value||window.__lastTemp;function ok(){var m=document.getElementById('tpwMsg');if(m)m.textContent='Copied! ✓ Send it to @'+name+'.';}function fb(){try{var el=document.getElementById('tpwIn');el.focus();el.select();document.execCommand('copy');ok();}catch(e){var m=document.getElementById('tpwMsg');if(m)m.textContent='Select the text and press Ctrl+C to copy.';}}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(v).then(ok,fb);}else{fb();}});}}catch(e){}})();try{if(window.loadAll)ADMIN.refreshMembers();}catch(e){}}catch(e){toast('⚠ Reset error: '+String(e).slice(0,80));}},
     supOpenCat:function(k){SUP_CAT=k;SUP_SEL={};renderTab();},
     supBack:function(){SUP_CAT=null;SUP_SEL={};renderTab();},
     supSort:function(v){SUP_SORT=v;renderTab();},
     supToggleSel:function(id,on){if(on)SUP_SEL[id]=1;else delete SUP_SEL[id];ADMIN._supBar();},
     supSelectAll:function(on){var cks=document.querySelectorAll('.sup-ck');Array.prototype.forEach.call(cks,function(c){c.checked=on;var id=c.getAttribute('data-id');if(on)SUP_SEL[id]=1;else delete SUP_SEL[id];});ADMIN._supBar();},
     _supBar:function(){var n=Object.keys(SUP_SEL).length;var b=$('supBatch'),s=$('supSelN');if(b)b.style.display=n?'flex':'none';if(s)s.textContent=n+' selected';},
-    supSetPri:async function(id,v){await tkSetMeta(id,{pri:v});toast('Priority set '+v+'.');loadAll();},
-    supSetCat:async function(id,v){await tkSetMeta(id,{cat:v});toast('Category updated.');loadAll();},
-    supResolve:async function(id){await tkSetMeta(id,{st:'resolved',ra:new Date().toISOString()});toast('✅ Resolved (kept in records).');loadAll();},
-    supReopen:async function(id){await tkSetMeta(id,{st:'new',ra:''});toast('↩️ Ticket reopened.');loadAll();},
-    supDelete:async function(id){if(!confirm('Delete this ticket permanently?\nThis cannot be undone.\n\nThis removes ONLY the support ticket record — not the account, profile, badges, followers, messages, reports, or moderation history.'))return;try{await sb.from('flaps').delete().eq('id',id);}catch(e){toast('Delete failed.');return;}delete SUP_SEL[id];toast('🗑️ Ticket deleted.');loadAll();},
+    supSetPri:async function(id,v){await tkSetMeta(id,{pri:v});toast('Priority set '+v+'.');ADMIN.refreshTickets();},
+    supSetCat:async function(id,v){await tkSetMeta(id,{cat:v});toast('Category updated.');ADMIN.refreshTickets();},
+    supResolve:async function(id){await tkSetMeta(id,{st:'resolved',ra:new Date().toISOString()});toast('✅ Resolved (kept in records).');ADMIN.refreshTickets();},
+    supReopen:async function(id){await tkSetMeta(id,{st:'new',ra:''});toast('↩️ Ticket reopened.');ADMIN.refreshTickets();},
+    supDelete:async function(id){if(!confirm('Delete this ticket permanently?\nThis cannot be undone.\n\nThis removes ONLY the support ticket record — not the account, profile, badges, followers, messages, reports, or moderation history.'))return;try{await sb.from('flaps').delete().eq('id',id);}catch(e){toast('Delete failed.');return;}delete SUP_SEL[id];toast('🗑️ Ticket deleted.');ADMIN.refreshTickets();},
     supBatch:async function(action){var ids=Object.keys(SUP_SEL);if(!ids.length){toast('Select tickets first.');return;}
-      if(action==='delete'){if(!confirm('Delete '+ids.length+' selected ticket'+(ids.length>1?'s':'')+'?\nThis action cannot be undone.\n\nOnly the support ticket records are removed — no accounts or other data.'))return;for(var i=0;i<ids.length;i++){try{await sb.from('flaps').delete().eq('id',ids[i]);}catch(e){}}SUP_SEL={};toast('🗑️ Deleted '+ids.length+' ticket(s).');loadAll();return;}
-      if(action==='move'){var v=prompt('Move '+ids.length+' ticket(s) to which category?\nType one: login, bug, feature, account, other');if(!v)return;v=v.trim().toLowerCase();if(['login','bug','feature','account','other'].indexOf(v)<0){toast('Unknown category.');return;}for(var j=0;j<ids.length;j++){await tkSetMeta(ids[j],{cat:v});}SUP_SEL={};toast('📂 Moved '+ids.length+' ticket(s).');loadAll();return;}
-      var patch=action==='resolve'?{st:'resolved'}:action==='waiting'?{st:'waiting'}:action==='needs'?{st:'new'}:null;if(!patch){toast('Unknown action.');return;}for(var k=0;k<ids.length;k++){await tkSetMeta(ids[k],patch);}SUP_SEL={};toast('Updated '+ids.length+' ticket(s).');loadAll();},
+      if(action==='delete'){if(!confirm('Delete '+ids.length+' selected ticket'+(ids.length>1?'s':'')+'?\nThis action cannot be undone.\n\nOnly the support ticket records are removed — no accounts or other data.'))return;for(var i=0;i<ids.length;i++){try{await sb.from('flaps').delete().eq('id',ids[i]);}catch(e){}}SUP_SEL={};toast('🗑️ Deleted '+ids.length+' ticket(s).');ADMIN.refreshTickets();return;}
+      if(action==='move'){var v=prompt('Move '+ids.length+' ticket(s) to which category?\nType one: login, bug, feature, account, other');if(!v)return;v=v.trim().toLowerCase();if(['login','bug','feature','account','other'].indexOf(v)<0){toast('Unknown category.');return;}for(var j=0;j<ids.length;j++){await tkSetMeta(ids[j],{cat:v});}SUP_SEL={};toast('📂 Moved '+ids.length+' ticket(s).');ADMIN.refreshTickets();return;}
+      var patch=action==='resolve'?{st:'resolved'}:action==='waiting'?{st:'waiting'}:action==='needs'?{st:'new'}:null;if(!patch){toast('Unknown action.');return;}for(var k=0;k<ids.length;k++){await tkSetMeta(ids[k],patch);}SUP_SEL={};toast('Updated '+ids.length+' ticket(s).');ADMIN.refreshTickets();},
     _memFetch:async function(){
       var list=$('memList'); if(!list)return; if(MEM_LOADING)return; MEM_LOADING=true;
       list.innerHTML='<div class="mem-loading">⏳ Loading members…</div>'; var pgEl=$('memPager'); if(pgEl)pgEl.innerHTML='';
@@ -994,7 +1028,7 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
       }
       try{ if(window.adminLog)adminLog(name,'Permanently deleted account + all related data (server-side)'); }catch(e){}
       toast('🗑️ Permanently deleted @'+name+'.');
-      try{ if(typeof loadAll==='function'){ loadAll(); } else if(ADMIN._memFetch){ ADMIN._memFetch(); } }catch(e){}
+      try{ if(typeof loadAll==='function'){ ADMIN.refreshMembers(); } else if(ADMIN._memFetch){ ADMIN._memFetch(); } }catch(e){}
     },
     preset:function(id,key){ var el=$('tkr_'+id); if(!el)return; var p=PRESETS[key]; if(!p)return; el.value=p.text; el.focus(); try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){} toast('Preset loaded — edit if needed, then Send.'); },
     forgotPassword:function(id,who){ if(!isOwner()){toast('Owner only — ask the owner to reset.');return;}
@@ -1023,7 +1057,7 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
       catch(e){ toast('Could not send reply.'); if(pend&&st)st.innerHTML='<span class="tk-warn">⚠️ Password WAS reset but the message did not send. Temp password: <b>'+pend.temp+'</b> — send it to @'+esc(pend.who)+' manually.</span>'; return; }
       try{ fetch(SUPABASE_URL+'/functions/v1/send-push',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_ANON_KEY,'apikey':SUPABASE_ANON_KEY},body:JSON.stringify({recipient:who,title:'TheFlap 🎫',body:'Support replied to your ticket'})}); }catch(e){}
       if(pend){ try{ adminLog(pend.who,'Forgot-password — reset + message sent from ticket'); }catch(e){} delete window.__pendReset[id]; if(st)st.innerHTML='<span class="tk-ok">✅ Password reset + message sent to @'+esc(who)+'.</span>'; }
-      if(el)el.value=''; try{ await tkSetMeta(id,{st:'waiting',lr:new Date().toISOString()}); }catch(e){} toast('📨 Reply sent — status set to ⏳ Waiting on User.'); loadAll();
+      if(el)el.value=''; try{ await tkSetMeta(id,{st:'waiting',lr:new Date().toISOString()}); }catch(e){} toast('📨 Reply sent — status set to ⏳ Waiting on User.'); ADMIN.refreshTickets();
     },
     deleteBadge:async function(id){
       if(!confirm('Delete this badge for everyone?'))return;
