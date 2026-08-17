@@ -204,6 +204,9 @@
   var PSEP="␟";
   var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,detectSessionInUrl:true,autoRefreshToken:true,storageKey:'flap-admin-auth'}});
   var ADMIN_NAME="", DATA=null, TAB="controls", MSG_SEARCH="", MSG_OPEN=null;
+  var ROLE="", SECTIONS=[], DELREQS=[], STAFF=[];
+  function isOwner(){ return ROLE==="owner"; }
+  function can(sec){ return isOwner() || SECTIONS.indexOf(sec)>-1; }
   var SUP_CAT=null, SUP_SORT='new', SUP_SEL={}, MOD_SEL={};
   var MEM_PAGE=0, MEM_SORT='new', MEM_SEARCH='', MEM_LOADING=false;
 
@@ -274,19 +277,30 @@
     err.textContent='checking…';
     try{
       var hash=await sha256('flapsalt:'+name.toLowerCase()+':'+pass);
+      if(name.toLowerCase()!==ADMIN_ACCOUNT){
+        var sres=await sb.from('flap_admins').select('name,pass_hash,sections').ilike('name',name).maybeSingle();
+        if(sres.error)throw sres.error;
+        if(!sres.data){err.textContent='No such account.';return;}
+        if(sres.data.pass_hash!==hash){err.textContent='Wrong password.';return;}
+        ADMIN_NAME=sres.data.name; ROLE='staff';
+        var _s=sres.data.sections; if(typeof _s==='string'){try{_s=JSON.parse(_s);}catch(e){_s=String(_s).split(/[, ]+/).filter(Boolean);}}
+        SECTIONS=Array.isArray(_s)?_s:['support','moderation'];
+        enterApp(); return;
+      }
       var res=await sb.from('flap_users').select('name,pass_hash,banned').ilike('name',name).maybeSingle();
       if(res.error)throw res.error;
       if(!res.data){err.textContent='No such account.';return;}
       if(res.data.pass_hash!==hash){err.textContent='Wrong password.';return;}
       if((res.data.name||'').toLowerCase()!==ADMIN_ACCOUNT){err.textContent='That account is not an administrator.';return;}
-      ADMIN_NAME=res.data.name;window.__ADMINPW=pass;try{sessionStorage.setItem('flap_modpw',pass);}catch(e){}
+      ADMIN_NAME=res.data.name; ROLE='owner'; SECTIONS=['*'];window.__ADMINPW=pass;try{sessionStorage.setItem('flap_modpw',pass);}catch(e){}
       enterApp();
     }catch(e){err.textContent='Could not reach the server — try again.';}
   }
   function enterApp(){
     $('gate').style.display='none';
     $('app').style.display='block';
-    $('whoLabel').textContent='signed in as '+ADMIN_NAME;
+    $('whoLabel').textContent='signed in as '+ADMIN_NAME+(isOwner()?' 👑 owner':' · staff');
+    if(!isOwner()&&!tabAllowed(TAB)){ TAB='support'; }
     loadAll();
   }
   function logout(){ ADMIN_NAME=""; DATA=null; $('app').style.display='none'; $('gate').style.display='flex'; $('aPass').value=''; $('gateErr').textContent=''; }
@@ -317,6 +331,8 @@
       };
       try{ var _bd=await sen('::badgedefs::'); DATA.badgeDefs=_bd?(JSON.parse(_bd)||[]):[]; }catch(e){ DATA.badgeDefs=[]; }
       try{ var _bg=await sen('::badgegrants::'); DATA.badgeGrants=_bg?(JSON.parse(_bg)||{}):{}; }catch(e){ DATA.badgeGrants={}; }
+      try{ DELREQS=(await sb.from('flap_delete_requests').select('*').order('id',{ascending:false}).limit(200)).data||[]; }catch(e){ DELREQS=[]; }
+      try{ if(isOwner()){ STAFF=(await sb.from('flap_admins').select('name,sections').order('name')).data||[]; } }catch(e){ STAFF=[]; }
       renderStrip(); renderTabs(); renderTab();
     }catch(e){
       $('panel').innerHTML='<div class="sec"><h2>⚠ Could not load</h2><div class="muted">Check your connection and tap Refresh.</div></div>';
@@ -356,13 +372,17 @@
   function strip(n,label,cls){return '<span class="s'+(cls?' '+cls:'')+'"><b>'+fmtN(n)+'</b> '+label+'</span>';}
 
   /* ---------- tab nav ---------- */
-  var TABS=[['controls','⚙️ Controls'],['broadcast','📣 Broadcast'],['members','👥 Members'],['badges','🏅 Badges'],['moderation','🛡️ Moderation'],['messages','💬 Messages'],['support','🎫 Support'],['stats','📊 Stats']];
+  var TABS=[['controls','⚙️ Controls'],['broadcast','📣 Broadcast'],['members','👥 Members'],['badges','🏅 Badges'],['moderation','🛡️ Moderation'],['messages','💬 Messages'],['support','🎫 Support'],['stats','📊 Stats'],['staff','👤 Staff']];
+  var TAB_SEC={controls:'__owner__',broadcast:'__owner__',members:'__owner__',badges:'__owner__',messages:'__owner__',stats:'__owner__',staff:'__owner__',moderation:'moderation',support:'support'};
+  function tabAllowed(k){ if(isOwner())return true; var need=TAB_SEC[k]; if(!need||need==='__owner__')return false; return can(need); }
   function renderTabs(){
-    $('tabNav').innerHTML=TABS.map(function(t){return '<button class="'+(TAB===t[0]?'on':'')+'" onclick="ADMIN.tab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');
+    $('tabNav').innerHTML=TABS.filter(function(t){return tabAllowed(t[0]);}).map(function(t){return '<button class="'+(TAB===t[0]?'on':'')+'" onclick="ADMIN.tab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');
   }
   function renderTab(){
     var h='';
-    if(TAB==='controls')h=secControls();
+    if(!tabAllowed(TAB)){ TAB=isOwner()?'controls':'support'; renderTabs(); }
+    if(TAB==='staff')h=secStaff();
+    else if(TAB==='controls')h=secControls();
     else if(TAB==='broadcast')h=secBroadcast();
     else if(TAB==='members')h=secMembers();
     else if(TAB==='badges')h=secBadges();
@@ -533,6 +553,7 @@
     var appeals=d.reports.filter(function(r){return r.target_type==='appeal'||/^\[APPEAL/i.test(r.reason||'');});
     var reports=d.reports.filter(function(r){return !(r.target_type==='appeal'||/^\[APPEAL/i.test(r.reason||''));});
     var h='<div class="sec"><h2>🛡️ Moderation queue <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
+    h+=delReqPanelHtml();
     h+='<div class="subhead">📩 Appeals ('+appeals.length+')</div>';
     h+= appeals.length? appeals.map(function(r){
       return '<div class="row appeal"><div class="r-top">📩 '+esc(r.target_name||r.reporter||'?')+' is appealing</div>'+
@@ -697,9 +718,86 @@
   function card(n,label,cls){return '<div class="stat'+(cls?' '+cls:'')+'"><b>'+fmtN(n)+'</b><span>'+label+'</span></div>';}
 
   /* ---------- actions ---------- */
+  function secStaff(){
+    if(!isOwner()) return '<div class="sec"><h2>👤 Staff</h2><div class="muted">Owner only.</div></div>';
+    var h='<div class="sec"><h2>👤 Staff logins <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
+    h+='<div class="hint">Create limited staff logins. Staff can ONLY handle Support tickets and Moderation. They cannot delete accounts, reset passwords, broadcast, edit polls, or manage members. Account deletions must be requested and approved by you.</div>';
+    h+='<div class="subhead">➕ Create / update a staff login</div>';
+    h+='<input class="inp" id="stName" placeholder="Staff login name" autocapitalize="off" spellcheck="false">';
+    h+='<input class="inp" id="stPass" type="text" placeholder="Password (set for new, or leave blank to keep)">';
+    h+='<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#bcd0ee;margin:4px 0"><input type="checkbox" id="stSecSupport" checked style="width:auto"> Support tickets</label>';
+    h+='<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#bcd0ee;margin-bottom:8px"><input type="checkbox" id="stSecMod" checked style="width:auto"> Moderation</label>';
+    h+='<button class="btn green wfull" onclick="ADMIN.staffSave()">Save staff login</button>';
+    h+='<div class="subhead" style="margin-top:18px">👥 Existing staff</div>';
+    h+=(STAFF&&STAFF.length)?STAFF.map(function(s,i){var secs=s.sections; if(typeof secs==='string'){try{secs=JSON.parse(secs);}catch(e){secs=String(secs).split(/[, ]+/).filter(Boolean);}} secs=Array.isArray(secs)?secs:[]; return '<div class="row"><div class="r-top">'+esc(s.name)+'</div><div class="r-meta">sections: '+esc(secs.join(', ')||'(none)')+'</div><div class="acts"><button class="btn del" onclick="ADMIN.staffDelete('+i+')">Remove</button></div></div>';}).join(''):'<div class="empty">No staff logins yet.</div>';
+    h+='</div>';
+    return h;
+  }
+  function delReqPanelHtml(){
+    var list=DELREQS||[];
+    if(isOwner()){
+      var pend=list.filter(function(r){return (r.status||'pending')==='pending';});
+      var h='<div class="subhead">🗑️ Pending deletion requests ('+pend.length+')</div>';
+      h+= pend.length? pend.map(function(r){ return '<div class="row" style="border-color:#c0632a"><div class="r-top">Delete <b>'+esc(r.target_name)+'</b></div><div class="r-body">'+esc(r.reason||'(no reason given)')+'</div><div class="r-meta">requested by '+esc(r.requester||'?')+(r.created_at?' · '+new Date(r.created_at).toLocaleString():'')+'</div><div class="acts"><button class="btn del" onclick="ADMIN.delReqApprove('+r.id+')">✅ Approve & delete</button><button class="btn" onclick="ADMIN.delReqDeny('+r.id+')">Deny</button></div></div>'; }).join(''):'<div class="empty">No pending deletion requests. 🎉</div>';
+      var done=list.filter(function(r){return (r.status||'pending')!=='pending';}).slice(0,8);
+      if(done.length){ h+='<div class="muted" style="margin:6px 0 10px;font-size:12px">Recent decisions: '+done.map(function(r){return esc(r.target_name)+' — '+esc(r.status);}).join(' · ')+'</div>'; }
+      return h;
+    }
+    var h='<div class="subhead">🗑️ Request account deletion</div>';
+    h+='<div class="hint">You cannot delete accounts directly. Submit a request with a reason and the owner will approve or deny it.</div>';
+    h+='<input class="inp" id="drTarget" placeholder="Account name to delete" autocapitalize="off" spellcheck="false">';
+    h+='<input class="inp" id="drReason" placeholder="Reason (required)">';
+    h+='<button class="btn wfull" style="background:linear-gradient(180deg,#8f1d1d,#5a0f0f);border:1px solid #ff6b6b" onclick="ADMIN.requestDelete()">Send delete request to owner</button>';
+    var mine=list.filter(function(r){return (r.requester||'').toLowerCase()===(ADMIN_NAME||'').toLowerCase();}).slice(0,15);
+    if(mine.length){ h+='<div class="subhead" style="margin-top:14px">Your requests</div>'; h+=mine.map(function(r){return '<div class="row"><div class="r-top">'+esc(r.target_name)+' — <b>'+esc(r.status||'pending')+'</b></div><div class="r-meta">'+esc(r.reason||'')+'</div></div>';}).join(''); }
+    return h;
+  }
   var ADMIN={
     tab:function(t){ TAB=t; if(t!=='messages')MSG_OPEN=null; renderTabs(); renderTab(); },
     reload:function(){ loadAll(); },
+    requestDelete:async function(){
+      var target=(($('drTarget')&&$('drTarget').value)||'').trim();
+      var reason=(($('drReason')&&$('drReason').value)||'').trim();
+      if(!target){toast('Enter the account name.');return;}
+      if(!reason){toast('Please add a reason.');return;}
+      if(target.toLowerCase()===ADMIN_ACCOUNT){toast('Cannot request deletion of the owner.');return;}
+      try{ var r=await sb.from('flap_delete_requests').insert({requester:ADMIN_NAME||'staff',target_name:target,reason:reason,status:'pending'}); if(r&&r.error)throw r.error; }catch(e){ toast('Could not send request.'); return; }
+      toast('🗑️ Delete request sent to the owner.'); loadAll();
+    },
+    delReqApprove:async function(id){
+      if(!isOwner()){toast('Owner only.');return;}
+      var req=(DELREQS||[]).filter(function(r){return r.id===id;})[0]; if(!req){toast('Request not found.');return;}
+      if(!confirm('Approve and DELETE account "'+req.target_name+'"? This performs the real, irreversible deletion.'))return;
+      try{ await ADMIN.deleteAccount(req.target_name,true); }catch(e){}
+      try{ await sb.from('flap_delete_requests').update({status:'approved',decided_by:ADMIN_NAME,decided_at:new Date().toISOString()}).eq('id',id); }catch(e){}
+      toast('✅ Approved & account deleted.'); loadAll();
+    },
+    delReqDeny:async function(id){
+      if(!isOwner()){toast('Owner only.');return;}
+      try{ await sb.from('flap_delete_requests').update({status:'denied',decided_by:ADMIN_NAME,decided_at:new Date().toISOString()}).eq('id',id); }catch(e){}
+      toast('Request denied.'); loadAll();
+    },
+    staffSave:async function(){
+      if(!isOwner()){toast('Owner only.');return;}
+      var name=(($('stName')&&$('stName').value)||'').trim();
+      var pass=(($('stPass')&&$('stPass').value)||'');
+      if(!name){toast('Enter a staff login name.');return;}
+      if(name.toLowerCase()===ADMIN_ACCOUNT){toast('That name is reserved for the owner.');return;}
+      var secs=[]; if($('stSecSupport')&&$('stSecSupport').checked)secs.push('support'); if($('stSecMod')&&$('stSecMod').checked)secs.push('moderation'); if(!secs.length)secs=['support','moderation'];
+      try{
+        var ex=await sb.from('flap_admins').select('name').ilike('name',name).maybeSingle();
+        if(ex&&ex.data){ var upd={sections:secs}; if(pass)upd.pass_hash=await sha256('flapsalt:'+name.toLowerCase()+':'+pass); var r=await sb.from('flap_admins').update(upd).ilike('name',name); if(r&&r.error)throw r.error; }
+        else { if(!pass){toast('Set a password for the new staff login.');return;} var ph=await sha256('flapsalt:'+name.toLowerCase()+':'+pass); var r2=await sb.from('flap_admins').insert({name:name,pass_hash:ph,sections:secs}); if(r2&&r2.error)throw r2.error; }
+      }catch(e){ toast('Save failed: '+((e&&e.message)||'').slice(0,60)); return; }
+      toast('✔ Staff login saved: '+name); if($('stPass'))$('stPass').value=''; loadAll();
+    },
+    staffDelete:async function(i){
+      if(!isOwner()){toast('Owner only.');return;}
+      var s=(STAFF||[])[i]; if(!s){toast('Not found.');return;}
+      if(!confirm('Remove staff login "'+s.name+'"?'))return;
+      try{ var r=await sb.from('flap_admins').delete().ilike('name',s.name); if(r&&r.error)throw r.error; }catch(e){ toast('Remove failed.'); return; }
+      toast('Removed staff: '+s.name); loadAll();
+    },
     _broadcastTargets:async function(target){
       var out={bell:[],pushNames:[]};
       var subs=[]; try{ subs=(await sb.from('push_subs').select('name,p256dh').limit(5000)).data||[]; }catch(e){}
@@ -792,7 +890,7 @@
 verify:async function(name){var r=await sb.from('flap_users').update({verified:true}).eq('name',name).select('name');if(r.error){toast('⚠ '+r.error.message);return;}if(!r.data||!r.data.length){toast('⚠ No member exactly named '+name);return;}try{await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',body:'✓ Your account is now verified on TheFlap.',created_at:new Date().toISOString()});}catch(e){}try{adminLog('verify',name);}catch(e){}toast('✓ '+name+' is now verified.');loadAll();},
 unverify:async function(name){var r=await sb.from('flap_users').update({verified:false}).eq('name',name).select('name');if(r.error){toast('⚠ '+r.error.message);return;}if(!r.data||!r.data.length){toast('⚠ No member exactly named '+name);return;}try{adminLog('unverify',name);}catch(e){}toast('Verification removed from '+name+'.');loadAll();},
     unban:async function(name){ name=(name||'').trim(); if(!name)return; var r; try{ r=await sb.from('flap_users').update({banned:false}).eq('name',name).select('name'); }catch(e){ toast('Could not un-ban — try again.'); return; } if(r&&r.error){ toast('Failed: '+(r.error.message||'').slice(0,50)); return; } if(!r.data||!r.data.length){ toast('⚠ No member exactly named "'+name+'".'); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'Your account has been reinstated. Welcome back to TheFlap — please follow the Community Guidelines.'}); }catch(e){} try{ adminLog(name,'Un-banned'); }catch(e){} toast('♻ '+name+' un-banned ✓'); loadAll(); },
-    removeUser:async function(name){
+    removeUser:async function(name){ if(!isOwner()){toast('Owner only.');return;}
       if((name||'').toLowerCase()===ADMIN_ACCOUNT){toast("Can't remove the admin account.");return;}
       if(!confirm('Remove '+name+' and delete ALL their flaps & replies? This cannot be undone.'))return;
       try{ await sb.from('flaps').delete().ilike('name',name); await sb.from('flap_replies').delete().ilike('name',name); await sb.from('flap_users').delete().ilike('name',name); }catch(e){}
@@ -841,7 +939,7 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
       for(var i=0;i<rows.length;i++){ var hay=rows[i].getAttribute('data-search')||''; var vis=!q||hay.indexOf(q)>-1; rows[i].style.display=vis?'':'none'; if(vis)shown++; }
       var none=$('memNone'); if(none)none.style.display=(q&&shown===0)?'block':'none';
     },
-    resetPassword:async function(name){if(!name){toast('No user selected.');return;}if(!confirm('Send a temporary password to '+name+'? Only do this for a genuine forgotten-password request.'))return;try{var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';var temp='';var rnd=crypto.getRandomValues(new Uint32Array(8));for(var i=0;i<8;i++){temp+=chars[rnd[i]%chars.length];}var hash=await sha256('flapsalt:'+String(name).toLowerCase()+':'+temp);var up=await sb.from('flap_users').update({pass_hash:hash}).eq('name',name).select('name');if(up.error){toast('⚠ Reset failed: '+up.error.message);return;}if(!up.data||!up.data.length){toast('⚠ No member exactly named '+name);return;}var msg='No worries! Your temporary password is: '+temp+' — use it to log back in, then change your password once you are in. 🐥';var ni=await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'support',excerpt:msg,seen:false});if(ni.error){toast('⚠ Password reset, but message failed to send: '+ni.error.message);return;}try{if(window.adminLog)adminLog('reset-pw',name);}catch(e){};(function(){window.__lastTemp=temp;var h='<h3 style="margin:0 0 8px">🔑 Temporary password</h3>'+'<div class="hint" style="margin-bottom:10px">Temporary password for @'+esc(name)+' — copy it and send it to them.</div>'+'<input id="tpwIn" readonly style="width:100%;box-sizing:border-box;font:18px monospace;letter-spacing:3px;padding:12px;border-radius:8px;border:1px solid #2e5290;background:#0f2340;color:#fff;text-align:center" />'+'<div style="display:flex;gap:8px;margin-top:12px"><button id="tpwCopy" class="btn" style="background:#1f8f4d">📋 Copy</button><button class="btn" onclick="closeModal()">Done</button></div>'+'<div id="tpwMsg" class="muted" style="margin-top:8px;font-size:12px">This panel stays open until you close it.</div>';openModal(h);try{var _i=document.getElementById('tpwIn');if(_i){_i.value=window.__lastTemp;_i.focus();_i.select();}var _b=document.getElementById('tpwCopy');if(_b){_b.addEventListener('click',function(){var v=(document.getElementById('tpwIn')||{}).value||window.__lastTemp;function ok(){var m=document.getElementById('tpwMsg');if(m)m.textContent='Copied! ✓ Send it to @'+name+'.';}function fb(){try{var el=document.getElementById('tpwIn');el.focus();el.select();document.execCommand('copy');ok();}catch(e){var m=document.getElementById('tpwMsg');if(m)m.textContent='Select the text and press Ctrl+C to copy.';}}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(v).then(ok,fb);}else{fb();}});}}catch(e){}})();try{if(window.loadAll)loadAll();}catch(e){}}catch(e){toast('⚠ Reset error: '+String(e).slice(0,80));}},
+    resetPassword:async function(name){ if(!isOwner()){toast('Owner only.');return;}if(!name){toast('No user selected.');return;}if(!confirm('Send a temporary password to '+name+'? Only do this for a genuine forgotten-password request.'))return;try{var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';var temp='';var rnd=crypto.getRandomValues(new Uint32Array(8));for(var i=0;i<8;i++){temp+=chars[rnd[i]%chars.length];}var hash=await sha256('flapsalt:'+String(name).toLowerCase()+':'+temp);var up=await sb.from('flap_users').update({pass_hash:hash}).eq('name',name).select('name');if(up.error){toast('⚠ Reset failed: '+up.error.message);return;}if(!up.data||!up.data.length){toast('⚠ No member exactly named '+name);return;}var msg='No worries! Your temporary password is: '+temp+' — use it to log back in, then change your password once you are in. 🐥';var ni=await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'support',excerpt:msg,seen:false});if(ni.error){toast('⚠ Password reset, but message failed to send: '+ni.error.message);return;}try{if(window.adminLog)adminLog('reset-pw',name);}catch(e){};(function(){window.__lastTemp=temp;var h='<h3 style="margin:0 0 8px">🔑 Temporary password</h3>'+'<div class="hint" style="margin-bottom:10px">Temporary password for @'+esc(name)+' — copy it and send it to them.</div>'+'<input id="tpwIn" readonly style="width:100%;box-sizing:border-box;font:18px monospace;letter-spacing:3px;padding:12px;border-radius:8px;border:1px solid #2e5290;background:#0f2340;color:#fff;text-align:center" />'+'<div style="display:flex;gap:8px;margin-top:12px"><button id="tpwCopy" class="btn" style="background:#1f8f4d">📋 Copy</button><button class="btn" onclick="closeModal()">Done</button></div>'+'<div id="tpwMsg" class="muted" style="margin-top:8px;font-size:12px">This panel stays open until you close it.</div>';openModal(h);try{var _i=document.getElementById('tpwIn');if(_i){_i.value=window.__lastTemp;_i.focus();_i.select();}var _b=document.getElementById('tpwCopy');if(_b){_b.addEventListener('click',function(){var v=(document.getElementById('tpwIn')||{}).value||window.__lastTemp;function ok(){var m=document.getElementById('tpwMsg');if(m)m.textContent='Copied! ✓ Send it to @'+name+'.';}function fb(){try{var el=document.getElementById('tpwIn');el.focus();el.select();document.execCommand('copy');ok();}catch(e){var m=document.getElementById('tpwMsg');if(m)m.textContent='Select the text and press Ctrl+C to copy.';}}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(v).then(ok,fb);}else{fb();}});}}catch(e){}})();try{if(window.loadAll)loadAll();}catch(e){}}catch(e){toast('⚠ Reset error: '+String(e).slice(0,80));}},
     supOpenCat:function(k){SUP_CAT=k;SUP_SEL={};renderTab();},
     supBack:function(){SUP_CAT=null;SUP_SEL={};renderTab();},
     supSort:function(v){SUP_SORT=v;renderTab();},
@@ -881,7 +979,7 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
     memPrev:function(){ if(MEM_LOADING)return; if(MEM_PAGE>0)MEM_PAGE--; ADMIN._memFetch(); },
     memSort:function(v){ MEM_SORT=v; MEM_PAGE=0; ADMIN._memFetch(); },
     memSearchInput:function(v){ MEM_SEARCH=(v||'').trim(); MEM_PAGE=0; clearTimeout(window.__memT); window.__memT=setTimeout(function(){ try{ ADMIN._memFetch(); }catch(e){} }, 300); },
-    deleteAccount:async function(name){
+    deleteAccount:async function(name){ if(!isOwner()){toast('Owner only — use Request account deletion.');return;}
       if((name||'').toLowerCase()===ADMIN_ACCOUNT){toast("Can't delete the admin account.");return;}
       if(!confirm('Are you sure you want to permanently delete @'+name+'? This cannot be undone.'))return;
       toast('⏳ Deleting @'+name+'…');
@@ -899,7 +997,7 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
       try{ if(typeof loadAll==='function'){ loadAll(); } else if(ADMIN._memFetch){ ADMIN._memFetch(); } }catch(e){}
     },
     preset:function(id,key){ var el=$('tkr_'+id); if(!el)return; var p=PRESETS[key]; if(!p)return; el.value=p.text; el.focus(); try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){} toast('Preset loaded — edit if needed, then Send.'); },
-    forgotPassword:function(id,who){
+    forgotPassword:function(id,who){ if(!isOwner()){toast('Owner only — ask the owner to reset.');return;}
       var el=$('tkr_'+id), st=$('tkst_'+id);
       var CS='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789', a=new Uint32Array(10);
       (window.crypto||window.msCrypto).getRandomValues(a);
@@ -983,7 +1081,7 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
       toast(id==='*'?('Cleared all badges for '+name+'.'):('Revoked from '+name+' — slot reopened if it was a drop.'));
       await loadAll(); ADMIN.manageBadges(name);
     },
-    resetAccount:function(name){
+    resetAccount:function(name){ if(!isOwner()){toast('Owner only.');return;}
       var h='<h3>♻ Reset account — '+esc(name)+'</h3>';
       h+='<div class="mdl-sub">Pick what to reset. Nothing happens until you confirm.</div>';
       h+='<label class="mdl-opt"><input type="checkbox" id="ra_prof" checked><span><span class="mo-t">Clear profile customization</span><br><span class="mo-d">Banner, bio, and links back to default.</span></span></label>';
