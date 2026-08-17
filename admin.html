@@ -278,12 +278,11 @@
     try{
       var hash=await sha256('flapsalt:'+name.toLowerCase()+':'+pass);
       if(name.toLowerCase()!==ADMIN_ACCOUNT){
-        var sres=await sb.from('flap_admins').select('name,pass_hash,sections').ilike('name',name).maybeSingle();
-        if(sres.error)throw sres.error;
-        if(!sres.data){err.textContent='No such account.';return;}
-        if(sres.data.pass_hash!==hash){err.textContent='Wrong password.';return;}
-        ADMIN_NAME=sres.data.name; ROLE='staff';
-        var _s=sres.data.sections; if(typeof _s==='string'){try{_s=JSON.parse(_s);}catch(e){_s=String(_s).split(/[, ]+/).filter(Boolean);}}
+        var _slr=await fetch(SUPABASE_URL+'/functions/v1/feathers',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({action:'staff_login',name:name,hash:hash})});
+        var _slj=await _slr.json().catch(function(){return{};});
+        if(!_slr.ok||!_slj.ok){err.textContent=(_slj&&_slj.reason==='bad_login')?'Wrong name or password.':'No such account.';return;}
+        ADMIN_NAME=_slj.name||name; ROLE='staff';
+        var _s=_slj.sections;
         SECTIONS=Array.isArray(_s)?_s:['support','moderation'];
         enterApp(); return;
       }
@@ -292,7 +291,7 @@
       if(!res.data){err.textContent='No such account.';return;}
       if(res.data.pass_hash!==hash){err.textContent='Wrong password.';return;}
       if((res.data.name||'').toLowerCase()!==ADMIN_ACCOUNT){err.textContent='That account is not an administrator.';return;}
-      ADMIN_NAME=res.data.name; ROLE='owner'; SECTIONS=['*'];window.__ADMINPW=pass;try{sessionStorage.setItem('flap_modpw',pass);}catch(e){}
+      ADMIN_NAME=res.data.name; ROLE='owner'; SECTIONS=['*'];window.__ADMINPW=pass;window.__OWNERHASH=hash;try{sessionStorage.setItem('flap_modpw',pass);}catch(e){}
       enterApp();
     }catch(e){err.textContent='Could not reach the server — try again.';}
   }
@@ -321,7 +320,7 @@
         sb.from('flap_replies').select('*').order('id',{ascending:false}).limit(80),
         sb.from('flaps').select('id,body,created_at').eq('name','::ticket::').order('id',{ascending:false}).limit(2000),
         sb.from('flaps').select('id,name,body').in('name',SENKEYS).order('id',{ascending:false}),
-        sb.from('flap_delete_requests').select('*').order('id',{ascending:false}).limit(200),
+        fetch(SUPABASE_URL+'/functions/v1/feathers',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({action:'delete_request_list',owner:(isOwner()?ADMIN_ACCOUNT:''),ownerhash:(isOwner()?(window.__OWNERHASH||''):''),requester:(isOwner()?'':(ADMIN_NAME||''))})}).then(function(r){return r.json();}).then(function(jj){return {data:(jj&&jj.requests)||[]};}).catch(function(){return {data:[]};}),
         sb.from('flap_users').select('*',{count:'estimated',head:true}),
         sb.from('flap_users').select('name').in('name',NONMEM),
         sb.from('flap_users').select('*',{count:'exact',head:true}).gte('last_seen',_onlineISO),
@@ -329,7 +328,7 @@
         sb.from('flap_users').select('*',{count:'exact',head:true}).gte('created_at',_weekISO),
         sb.from('flap_users').select('*',{count:'exact',head:true}).eq('banned',true),
         sb.from('flap_users').select('*',{count:'exact',head:true}).gt('muted_until',_nowISO),
-        (isOwner()?sb.from('flap_admins').select('name,sections').order('name'):Promise.resolve({data:[]})),
+        (isOwner()?fetch(SUPABASE_URL+'/functions/v1/feathers',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({action:'staff_list',owner:ADMIN_ACCOUNT,ownerhash:(window.__OWNERHASH||'')})}).then(function(r){return r.json();}).then(function(jj){return {data:(jj&&jj.staff)||[]};}).catch(function(){return {data:[]};}):Promise.resolve({data:[]})),
         (_mk?fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'list'})}).then(function(r){return r.json().then(function(j){return{ok:r.ok,status:r.status,j:j};}).catch(function(){return{ok:r.ok,status:r.status,j:{}};});}).catch(function(e){return{err:String(e)};}):Promise.resolve(null))
       ]);
       var flAll=(_R[0]&&_R[0].data)||[];
@@ -795,20 +794,20 @@
       if(!target){toast('Enter the account name.');return;}
       if(!reason){toast('Please add a reason.');return;}
       if(target.toLowerCase()===ADMIN_ACCOUNT){toast('Cannot request deletion of the owner.');return;}
-      try{ var r=await sb.from('flap_delete_requests').insert({requester:ADMIN_NAME||'staff',target_name:target,reason:reason,status:'pending'}); if(r&&r.error)throw r.error; }catch(e){ toast('Could not send request.'); return; }
+      try{ var _dr=await fetch(SUPABASE_URL+'/functions/v1/feathers',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({action:'delete_request_submit',requester:(ADMIN_NAME||'staff'),target:target,reason:reason})}); var _drj=await _dr.json().catch(function(){return{};}); if(!_dr.ok||!_drj.ok)throw 0; }catch(e){ toast('Could not send request.'); return; }
       toast('🗑️ Delete request sent to the owner.'); loadAll();
     },
     delReqApprove:async function(id){
       if(!isOwner()){toast('Owner only.');return;}
       var req=(DELREQS||[]).filter(function(r){return r.id===id;})[0]; if(!req){toast('Request not found.');return;}
       if(!confirm('Approve and DELETE account "'+req.target_name+'"? This performs the real, irreversible deletion.'))return;
+      try{ var _da=await fetch(SUPABASE_URL+'/functions/v1/feathers',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({action:'delete_request_decide',owner:ADMIN_ACCOUNT,ownerhash:(window.__OWNERHASH||''),id:id,decision:'approve'})}); var _daj=await _da.json().catch(function(){return{};}); if(!_da.ok||!_daj.ok){ toast('Approve failed.'); return; } }catch(e){ toast('Approve failed.'); return; }
       try{ await ADMIN.deleteAccount(req.target_name,true); }catch(e){}
-      try{ await sb.from('flap_delete_requests').update({status:'approved',decided_by:ADMIN_NAME,decided_at:new Date().toISOString()}).eq('id',id); }catch(e){}
       toast('✅ Approved & account deleted.'); loadAll();
     },
     delReqDeny:async function(id){
       if(!isOwner()){toast('Owner only.');return;}
-      try{ await sb.from('flap_delete_requests').update({status:'denied',decided_by:ADMIN_NAME,decided_at:new Date().toISOString()}).eq('id',id); }catch(e){}
+      try{ var _dd=await fetch(SUPABASE_URL+'/functions/v1/feathers',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({action:'delete_request_decide',owner:ADMIN_ACCOUNT,ownerhash:(window.__OWNERHASH||''),id:id,decision:'deny'})}); var _ddj=await _dd.json().catch(function(){return{};}); if(!_dd.ok||!_ddj.ok){ toast('Deny failed.'); return; } }catch(e){ toast('Deny failed.'); return; }
       toast('Request denied.'); loadAll();
     },
     staffSave:async function(){
@@ -819,17 +818,17 @@
       if(name.toLowerCase()===ADMIN_ACCOUNT){toast('That name is reserved for the owner.');return;}
       var secs=[]; if($('stSecSupport')&&$('stSecSupport').checked)secs.push('support'); if($('stSecMod')&&$('stSecMod').checked)secs.push('moderation'); if(!secs.length)secs=['support','moderation'];
       try{
-        var ex=await sb.from('flap_admins').select('name').ilike('name',name).maybeSingle();
-        if(ex&&ex.data){ var upd={sections:secs}; if(pass)upd.pass_hash=await sha256('flapsalt:'+name.toLowerCase()+':'+pass); var r=await sb.from('flap_admins').update(upd).ilike('name',name); if(r&&r.error)throw r.error; }
-        else { if(!pass){toast('Set a password for the new staff login.');return;} var ph=await sha256('flapsalt:'+name.toLowerCase()+':'+pass); var r2=await sb.from('flap_admins').insert({name:name,pass_hash:ph,sections:secs}); if(r2&&r2.error)throw r2.error; }
-      }catch(e){ toast('Save failed: '+((e&&e.message)||'').slice(0,60)); return; }
+        var _ss=await fetch(SUPABASE_URL+'/functions/v1/feathers',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({action:'staff_save',owner:ADMIN_ACCOUNT,ownerhash:(window.__OWNERHASH||''),name:name,pass:pass,sections:secs})});
+        var _ssj=await _ss.json().catch(function(){return{};});
+        if(!_ss.ok||!_ssj.ok){ if(_ssj&&_ssj.reason==='need_password'){toast('Set a password for the new staff login.');return;} toast('Save failed: '+((_ssj&&_ssj.reason)||'error')); return; }
+      }catch(e){ toast('Save failed.'); return; }
       toast('✔ Staff login saved: '+name); if($('stPass'))$('stPass').value=''; loadAll();
     },
     staffDelete:async function(i){
       if(!isOwner()){toast('Owner only.');return;}
       var s=(STAFF||[])[i]; if(!s){toast('Not found.');return;}
       if(!confirm('Remove staff login "'+s.name+'"?'))return;
-      try{ var r=await sb.from('flap_admins').delete().ilike('name',s.name); if(r&&r.error)throw r.error; }catch(e){ toast('Remove failed.'); return; }
+      try{ var _sd=await fetch(SUPABASE_URL+'/functions/v1/feathers',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({action:'staff_delete',owner:ADMIN_ACCOUNT,ownerhash:(window.__OWNERHASH||''),name:s.name})}); var _sdj=await _sd.json().catch(function(){return{};}); if(!_sd.ok||!_sdj.ok)throw 0; }catch(e){ toast('Remove failed.'); return; }
       toast('Removed staff: '+s.name); loadAll();
     },
     _broadcastTargets:async function(target){
