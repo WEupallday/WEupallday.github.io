@@ -2269,7 +2269,7 @@
       var __lk=hasLiked(o.liveId);
       h+='<button class="likebtn'+(__lk?' liked':'')+'" type="button" data-n="'+(o.likes||0)+'" data-id="'+o.liveId+'" onclick="likeLive(this)">'+(__lk?'✔ Flapped! ('+(o.likes||0)+')':'👍 Flap This! ('+(o.likes||0)+')')+'</button>';
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase())h+='<button class="reflapbtn'+(o.reflapped?' on':'')+'" type="button" onclick="reflapPost('+o.liveId+')">🔁 '+(o.reflapped?'Reflapped':'Reflap')+'</button>';
-      if(ME.admin||ME.mod)h+='<button class="pinbtn" type="button" onclick="pinPost('+o.liveId+')">'+(o.pinned?'📌 Unpin':'📌 Pin')+'</button>';
+      if(ME.admin)h+='<button class="pinbtn" type="button" onclick="pinPost('+o.liveId+')">'+(o.pinned?'📌 Unpin':'📌 Pin')+'</button>';
       if(ME.admin||ME.mod)h+='<button class="delbtn" type="button" onclick="delLive('+o.liveId+')">DELETE</button>';
       else if(o.memberDel)h+='<button class="delbtn" type="button" title="Delete your own flap (within '+DELETE_WINDOW_MIN+' min of posting)" onclick="delMineFlap('+o.liveId+','+(o.createdMs||0)+')">🗑 Delete</button>';
       if((o.name||'').toLowerCase()!==(ME.name||'').toLowerCase()){
@@ -4389,26 +4389,7 @@ function notifText(n){
      Fully serverless: the first person to open TheFlap after the rotation moment writes
      the new poll to the DB (a day-seeded pick, so everyone lands on the SAME poll) and
      clears the old votes. Admin can still set a custom poll — it holds until next midnight. */
-  var POLL_POOL=[
-    {q:"What's the best pizza topping? 🍕",opts:["Pepperoni, obviously 🐷","Pineapple (fight me) 🍍","Extra cheese, no notes 🧀"]},
-    {q:"Best animal, no contest? 🐾",opts:["Dogs — loyal kings 🐶","Cats — chaotic royalty 🐱","Capybara — unbothered icon 🦫"]},
-    {q:"What do you love most about TheFlap? 🐦",opts:["The unhinged flaps 🍿","My friends are here 💛","No algorithm, no ads 🚫"]},
-    {q:"Pineapple on pizza: final verdict? 🍍",opts:["Elite, actually 👑","A crime 🚔","Only when drunk 🍻"]},
-    {q:"Your texting-back speed? ⏱️",opts:["Instant, no shame 📲","Read it, forgot 😴","3–5 business days 📅"]},
-    {q:"Best late-night snack? 🌙",opts:["Leftover pizza 🍕","Cereal, obviously 🥣","Whatever's closest 🤷"]},
-    {q:"Your toxic trait, be honest 😈",opts:["Always right (I am) 💅","Leave on read 😶","Start drama, then watch 🍿"]},
-    {q:"Coffee or tea — pick a side ☕",opts:["Coffee or I'm feral ☕","Tea, I'm zen 🍵","Energy drinks 💀"]},
-    {q:"Group chat goes silent. You? 💬",opts:["Send a meme 🤡","Type 'anyway' 😐","Screenshot & scheme 🕵️"]},
-    {q:"Best season, final answer? 🍂",opts:["Fall — cozy supremacy 🍁","Summer — sun's out ☀️","Winter — hoodie szn 🧥"]},
-    {q:"Would you rather always be…? ✨",opts:["10 min early ⏰","10 min late 🏃","Clueless about the time 🌀"]},
-    {q:"Ideal Friday night? 🌃",opts:["Out, obviously 🕺","Home, blanket, snacks 🛋️","Depends who's asking 👀"]},
-    {q:"Most useless superpower you'd take? 🦸",opts:["Talk to pigeons 🐦","Always find parking 🅿️","Reheat coffee with a look ☕"]},
-    {q:"Cereal: milk first or last? 🥣",opts:["Cereal first, always 🥣","Milk first, you monster 🥛","I don't do cereal 🚫"]},
-    {q:"Your red flag in one tap 🚩",opts:["I reflap, never post 🔁","I ghost, then reappear 👻","I'm 'the funny one' 🤡"]},
-    {q:"Beach or mountains? 🏖️",opts:["Beach — sand everywhere 🏖️","Mountains — cozy views 🏔️","Neither, I'm inside 🏠"]},
-    {q:"Best emoji, be honest 😭",opts:["💀 (I'm deceased)","😭 (crying-laughing)","🐦 (obviously)"]},
-    {q:"How do you take criticism? 🫣",opts:["Grow from it 🌱","Cry, then grow 😭","Absolutely not 🙅"]}
-  ];
+  var POLL_POOL=[]; /* bank removed: poll is owner-editor only */
   /* tune to taste */
   var POLL_NAILBITER_MIN_VOTES=6;   /* need at least this many votes to count as real "traction" */
   var POLL_NAILBITER_MARGIN=12;     /* top two options within this % of each other = nail-biter */
@@ -4423,14 +4404,14 @@ function notifText(n){
     if(total<POLL_NAILBITER_MIN_VOTES)return false;                 /* not enough traction to bother holding */
     return ((v[0]-v[1])/total*100)<=POLL_NAILBITER_MARGIN;          /* top two are close = nail-biter */
   }
-  function pickTodayPollIndex(){
+  function pickTodayPollIndex(){ return -1; /* rotation removed */
     var t=new Date(), key=t.getFullYear()+'-'+(t.getMonth()+1)+'-'+t.getDate();
     var h=5381; for(var i=0;i<key.length;i++)h=((h<<5)+h+key.charCodeAt(i))>>>0;   /* day-seeded → everyone lands on the same poll */
     var idx=h%POLL_POOL.length;
     if(idx===POLL_CUR_INDEX)idx=(idx+1)%POLL_POOL.length;           /* never run the same poll two days running */
     return idx;
   }
-  function pollRotationDue(){
+  function pollRotationDue(){ return false; /* rotation removed */
     if(POLL_START_MS==null)return false;
     var m=new Date(POLL_START_MS); m.setHours(24,0,0,0);            /* the midnight AFTER the poll started */
     var nextMidnight=m.getTime(), now=Date.now();
@@ -4635,7 +4616,7 @@ function notifText(n){
     await saveAnnounce();
   }
   async function pinPost(id){
-    if(!ME.admin && !ME.mod)return;
+    if(!ME.admin)return;
     var cur=String(id), newVal=(PINNED_ID===cur)?'':cur;
     try{
       var ex=await sb.from('flaps').select('id').eq('name','::pinned::').order('id',{ascending:false}).limit(1);
@@ -4683,7 +4664,7 @@ function notifText(n){
     }catch(e){toast('Could not save poll — try again.');}
   }
   /* admin: instantly drop a fresh RANDOM poll from the pool (holds until the next midnight, then auto-rotation resumes) */
-  async function adminRandomPoll(){
+  async function adminRandomPoll(){ return; /* disabled: poll only via savePoll editor */
     if(!ME.admin)return;
     if(!ONLINE){toast('Need to be online for that.');return;}
     var idx=Math.floor(Math.random()*POLL_POOL.length);
