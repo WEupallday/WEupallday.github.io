@@ -3474,7 +3474,7 @@
       var av=(u&&u.avatar_url)?'<img src="'+esc(u.avatar_url)+'">':userPortrait(name);
       var on=u&&u.last_seen&&(Date.now()-new Date(u.last_seen).getTime()<2*60*1000);
       var lc=(name||'').toLowerCase();
-      var flapCount=mine.length;
+      var flapCount=mine.length; try{ if(typeof sb!=='undefined'&&sb){ var _pfc=await sb.from('flaps').select('id',{count:'exact',head:true}).eq('name',name); if(_pfc&&!_pfc.error&&typeof _pfc.count==='number') flapCount=_pfc.count; } }catch(_e){}
       var streak=(u&&u.active_days)?streakFromDates(u.active_days):computeStreak(posts);
       var badges=userBadges(name,u,flapCount,streak);
       var h='<div class="pc-strip"><span>'+esc(name)+' — Profile</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>';
@@ -4804,7 +4804,7 @@ function notifText(n){
           if(_pf.data && _pf.data[0] && String(_pf.data[0].name||'').indexOf('::')!==0){ LAST_ROWS.unshift(_pf.data[0]); }
         }catch(_e){}
       }
-      myFlapCount=res.data.filter(function(r){return r.name===ME.name;}).length;
+      myFlapCount=res.data.filter(function(r){return r.name===ME.name;}).length; try{ var _fc=await sb.from('flaps').select('id',{count:'exact',head:true}).eq('name',ME.name); if(_fc&&!_fc.error&&typeof _fc.count==='number') myFlapCount=_fc.count; }catch(_e){}
       document.getElementById('youCount').textContent=myFlapCount;
       /* members list — powers real photos everywhere + the banner */
       var _needU=(manual||!USERS_LOADED_AT||(Date.now()-USERS_LOADED_AT>300000)||!USERS||!Object.keys(USERS).length); if(_needU) try{
