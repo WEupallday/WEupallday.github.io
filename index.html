@@ -6553,5 +6553,62 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   }catch(e){}
 })();
 </script>
+<!-- =========================================================================
+     TheFlap — iOS App Store compliance gate (BUILD: iOS no-IAP)
+     Paste this ENTIRE block into index.html immediately BEFORE the final </body>.
+     It is ADDITIVE only — it changes no existing lines.
+     Effect: on iOS (native app / iOS standalone PWA) it removes ALL in-app
+     purchasing of digital goods (Apple IAP is NOT used; buying is web-only),
+     while KEEPING cosmetics, the earned-Feathers Store, and Google/Apple SIGN-IN.
+     Web + Android: this block is a complete no-op (purchasing unchanged).
+     Test override: append ?ios=1 to the URL to simulate iOS on any browser.
+     ========================================================================= -->
+<script>
+/* ===== iOS App Store compliance gate (additive; web + Android unchanged) =====
+   On iOS ONLY: remove all in-app PURCHASING of digital goods. Apple IAP is NOT used;
+   buying is web-only (theflap.app). Cosmetics still display/apply, the earned-Feathers
+   Store still works, and Google/Apple SIGN-IN is untouched. Web + Android: no-op. */
+(function(){
+  "use strict";
+  function iosPlatform(){
+    try{ if(window.Capacitor && typeof Capacitor.getPlatform==="function") return Capacitor.getPlatform()==="ios"; }catch(e){}
+    try{ var ua=navigator.userAgent||"";
+         var iOSUA=/iPad|iPhone|iPod/.test(ua) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+         var inApp = !!window.Capacitor || window.navigator.standalone===true || /theflap-?app|capacitor/i.test(ua);
+         return iOSUA && inApp; }catch(e){}
+    return false;
+  }
+  var forced = /[?&](ios|noiap)=1/.test(location.search||"");
+  var IS_IOS = forced || iosPlatform();
+  window.IS_IOS = IS_IOS;
+  if(!IS_IOS) return;
+  try{ document.documentElement.classList.add("ios-noiap"); }catch(e){}
+  function webNote(){ try{ alert("Premium is managed on the web. Open theflap.app in any browser to subscribe or manage your plan."); }catch(e){} }
+  function killPurchase(){ return Promise.resolve({disabled:true}); }
+  try{
+    window.openPremiumUpgrade = webNote;
+    window.openPremiumHub     = webNote;
+    window.flapStartPremium   = killPurchase;
+    window.flapRestorePremium = killPurchase;
+    window.flapIAP = { buy: killPurchase, restore: killPurchase, disabled: true };
+  }catch(e){}
+  var BUY_FNS = /openPremiumUpgrade|openPremiumHub|flapStartPremium|flapRestorePremium|flapIAP/;
+  var MONEY_TXT = /(go\s*premium|upgrade to premium|subscribe|restore purchase|\$\s*\d|\/\s*mo\b|\/\s*month|per month)/i;
+  function scrub(root){
+    try{
+      (root||document).querySelectorAll("[onclick]").forEach(function(el){
+        var oc=el.getAttribute("onclick")||""; if(BUY_FNS.test(oc)) el.style.setProperty("display","none","important");
+      });
+      (root||document).querySelectorAll("button,a,[role=button]").forEach(function(el){
+        var t=(el.textContent||"").trim(); if(t && t.length<60 && MONEY_TXT.test(t)) el.style.setProperty("display","none","important");
+      });
+    }catch(e){}
+  }
+  function run(){ scrub(document); }
+  if(document.readyState!=="loading") run(); else document.addEventListener("DOMContentLoaded",run);
+  try{ var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ (m.addedNodes||[]).forEach(function(n){ if(n && n.nodeType===1) scrub(n); }); }); }); mo.observe(document.documentElement,{childList:true,subtree:true}); }catch(e){}
+})();
+</script>
+
 </body>
 </html>
