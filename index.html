@@ -3252,7 +3252,7 @@
     verified:{ic:'blue',name:'Verified',desc:'A blue check granted by the TheFlap team to confirm a real, notable account. Admin-granted only — it can’t be earned automatically.'},
     founder:{ic:'👑',name:'Founder',desc:'The official account that runs TheFlap. Permanently reserved for the founder — nobody else can hold it.'},
     early:{ic:'🌱',name:'Early Supporter',desc:'Joined during the launch wave — before July 22, 2026. Only the earliest members qualify, and it can never be earned again.'},
-    top:{ic:'⭐',name:'Top Contributor',desc:'Posted 50+ flaps. A genuine high bar that only the most active members reach. Keep flapping to unlock it.'},
+    top:{ic:'⭐',name:'Top Contributor',desc:'Posted 1000+ flaps. A genuine high bar that only the most active members reach. Keep flapping to unlock it.'},
     streak:{ic:'🔥',name:'Streak badge',desc:'Earned for consecutive active days: 5, 10, 15, and 30-day streaks. Your profile shows the highest milestone you’ve hit, and the 🔥 chip tracks your current run.'}
   };
   function badgeDesc(id){
@@ -3422,7 +3422,7 @@
     if(lc==='lock') out.push(['👑','Founder','bd-founder','founder']);
     if(isVerified(name)) out.push(['✔','Verified','bd-verified','verified']);
     if(u&&u.created_at && new Date(u.created_at).getTime()<EARLY_CUTOFF) out.push(['🌱','Early Supporter','bd-early','early']);
-    if(flapCount>=50) out.push(['⭐','Top Contributor','bd-top','top']);
+    if(flapCount>=1000) out.push(['⭐','Top Contributor','bd-top','top']);
     var ms=[30,15,10,5]; for(var i=0;i<ms.length;i++){ if(streak>=ms[i]){ out.push(['🔥',ms[i]+'-Day Streak','bd-streak','streak']); break; } }
     var g=CUSTOM_GRANTS[lc]||[];
     g.forEach(function(bid){ var d=CUSTOM_BADGES.filter(function(b){return b.id===bid;})[0]; if(d) out.push([d.ic||'🏷', d.name, 'bd-custom', 'c:'+bid]); });
