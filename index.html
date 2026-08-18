@@ -6198,7 +6198,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   var SUBS={talent:[{u:'maya',ic:'💃',g:'#c0348f,#7a2d9c',f:214},{u:'deej',ic:'🎤',g:'#1e6fae,#0e2560',f:188},{u:'kj',ic:'🕺',g:'#e07d0a,#b45c00',f:301},{u:'nova',ic:'🎸',g:'#1e9e5a,#0c5c31',f:97}],
     duet:[{u:'bee',ic:'🎨',g:'#c0348f,#e07d0a',f:76},{u:'sky',ic:'🎧',g:'#9b6bff,#7a2d9c',f:120}],june:[]};
   var WIN={june:[{u:'trell',ic:'🏆',g:'#f5a623,#e07d0a',t:'1st — Best Dance'},{u:'sky',ic:'🥈',g:'#9b6bff,#7a2d9c',t:'2nd'}]};
-  var joined={},entered={},feat={},cur=null,csub='subs',nxScrollY=0,composing={},MYSUB={};
+  var joined={},entered={},feat={},cur=null,csub='subs',nxScrollY=0,composing={},MYSUB={},SID={},CFGLOADED=false;
   var REW=[], bal=500, owned={}, equipped={}, pending={};
   var view='chal', curG='Moods';
 
@@ -6248,7 +6248,8 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     CH.forEach(function(c){h+='<div class="nx-chcard" onclick="nxCh(\''+c.id+'\')"><div class="ban" style="background:linear-gradient(135deg,'+c.c+')">'+c.ic+'</div><div class="cb"><h4>'+c.title+'</h4><div class="cs">'+(c.status==='ended'?'✅ '+c.left:'⏳ '+c.left+' · '+c.entries+' entries · '+c.reward)+'</div></div></div>';});
     return h;
   }
-  window.nxCh=function(id){cur=id;csub='subs';render();var b=document.getElementById('nxBody');if(b)b.scrollTop=0;};
+  window.nxCh=function(id){cur=id;csub='subs';render();var b=document.getElementById('nxBody');if(b)b.scrollTop=0;nxLoadSubs(id);};
+  function nxLoadSubs(id){ try{ var me=meName(); sb.from('flap_challenge_subs').select('id,name,handle,video_url,caption,likes').eq('challenge_id',id).order('likes',{ascending:false}).limit(200).then(function(r){ var rows=(r&&r.data)||[]; var grads=['#c0348f,#7a2d9c','#1e6fae,#0e2560','#e07d0a,#b45c00','#1e9e5a,#0c5c31','#9b6bff,#7a2d9c']; var mineRow=null; var list=[]; rows.forEach(function(x){ if(me && String(x.name||'').toLowerCase()===me){ if(!mineRow) mineRow=x; return; } var handle=(x.handle||x.name||'someone'); var e={u:handle,name:x.name,ic:'🎬',g:grads[list.length%grads.length],f:x.likes||0,text:x.caption||'',vurl:x.video_url||'',sid:x.id}; SID[handle+'_'+id]=x.id; list.push(e); }); SUBS[id]=list; if(mineRow){ entered[id]=true; MYSUB[id]={text:mineRow.caption||'',vurl:mineRow.video_url||'',sid:mineRow.id,likes:mineRow.likes||0}; SID['you_'+id]=mineRow.id; } if(me){ sb.from('flap_challenge_likes').select('sub_id').eq('name',me).then(function(lr){ var mine=((lr&&lr.data)||[]).reduce(function(o,z){o[z.sub_id]=1;return o;},{}); (SUBS[id]||[]).forEach(function(e2){ if(mine[e2.sid]) feat[e2.u+'_'+id]=true; }); if(mineRow&&mine[mineRow.id]) feat['you_'+id]=true; if(cur===id)render(); }).catch(function(){ if(cur===id)render(); }); } else { if(cur===id)render(); } }).catch(function(){}); if(!CFGLOADED){ CFGLOADED=true; sb.from('flap_challenge_cfg').select('challenge_id,title,prompt').then(function(cr){ var crows=(cr&&cr.data)||[]; crows.forEach(function(row){ var c=CH.filter(function(x){return x.id===row.challenge_id;})[0]; if(c){ if(row.title)c.title=row.title; if(row.prompt)c.desc=row.prompt; } }); if(cur)render(); }).catch(function(){}); } }catch(e){} }
   window.nxChalBack=function(){cur=null;render();};
   window.nxSetSub=function(s){csub=s;render();};
   function chalDetail(){
@@ -6264,25 +6265,25 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     }
     h+='<div class="nx-sub"><div class="nx-st'+(csub==='subs'?' on':'')+'" onclick="nxSetSub(\'subs\')">Submissions</div><div class="nx-st'+(csub==='lead'?' on':'')+'" onclick="nxSetSub(\'lead\')">Leaderboard</div><div class="nx-st'+(csub==='win'?' on':'')+'" onclick="nxSetSub(\'win\')">Winners</div></div>';
     if(csub==='win'){var w=WIN[c.id]||[];h+='<div class="nx-vg">'+(w.length?w.map(function(x){return vid(c.id,x,null,true);}).join(''):'<div style="grid-column:1/-1;color:#8fa6d8;text-align:center;padding:20px;font-size:13px">Winners post when the challenge ends.</div>')+'</div>';}
-    else{var list=(SUBS[c.id]||[]).slice();if(en){var ms=MYSUB[c.id]||{};list.unshift({u:'you',ic:'⭐',g:'#f5a623,#b45c00',f:(feat['you_'+c.id]?1:0),me:true,text:ms.text||'',img:ms.img||''});}
+    else{var list=(SUBS[c.id]||[]).slice();if(en){var ms=MYSUB[c.id]||{};list.unshift({u:'you',ic:'⭐',g:'#f5a623,#b45c00',f:((MYSUB[c.id]&&MYSUB[c.id].likes)||0),me:true,text:ms.text||'',img:ms.img||'',vurl:ms.vurl||'',sid:(ms.sid||null)});}
       if(csub==='lead')list.sort(function(a,b){return (b.f+(feat[b.u+'_'+c.id]?1:0))-(a.f+(feat[a.u+'_'+c.id]?1:0));});
       h+='<div class="nx-vg">'+(list.length?list.map(function(s,i){return vid(c.id,s,csub==='lead'?(i+1):null,false);}).join(''):'<div style="grid-column:1/-1;color:#8fa6d8;text-align:center;padding:20px;font-size:13px">No entries yet — be the first!</div>')+'</div>';}
     return h;
   }
   function vid(chid,s,rank,isWin){
-    var key=s.u+'_'+chid,fon=feat[key]?' on':'',fc=(s.f||0)+(feat[key]?1:0);
+    var key=s.u+'_'+chid,fon=feat[key]?' on':'',fc=(s.f||0);
     var badge=isWin?'<span class="nx-rank">'+(s.t||'')+'</span>':s.me?'<span class="nx-rank" style="background:#1e9e5a;color:#fff">YOUR ENTRY</span>':rank?'<span class="nx-rank">#'+rank+'</span>':'';
     var rep=isWin?'':'<button class="nx-rep" onclick="nxReport(\''+s.u+'\')">⚑</button>';
     var bottom=isWin?'<div class="nx-vm"><span class="who">🏆 @'+s.u+'</span></div>':'<div class="nx-vm"><span class="who">@'+s.u+'</span><span class="nx-feat'+fon+'" onclick="nxFeat(\''+key+'\')">🪶 '+fc+'</span></div>';
-    var thumb = s.img ? '<div class="nx-th" style="background:#0b1f52;padding:0;overflow:hidden;"><img src="'+s.img+'" style="width:100%;height:100%;object-fit:cover;"></div>' : '<div class="nx-th" style="background:linear-gradient(135deg,'+s.g+')" onclick="nxPlay(\''+s.u+'\')">'+s.ic+'<span class="nx-play">▶</span></div>';
+    var thumb = s.vurl ? '<div class="nx-th" style="background:#000;padding:0;overflow:hidden;"><video src="'+s.vurl+'" controls playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000;"></video></div>' : (s.img ? '<div class="nx-th" style="background:#0b1f52;padding:0;overflow:hidden;"><img src="'+s.img+'" style="width:100%;height:100%;object-fit:cover;"></div>' : '<div class="nx-th" style="background:linear-gradient(135deg,'+s.g+')" onclick="nxPlay(\''+s.u+'\')">'+s.ic+'<span class="nx-play">▶</span></div>');
     var cap = s.text ? '<div style="padding:6px 9px 0;font-size:12px;color:#dbe6ff;line-height:1.35;">'+esc(s.text)+'</div>' : '';
     return '<div class="nx-vid">'+badge+rep+thumb+cap+bottom+'</div>';
   }
   function nxComposer(){
     return '<div class="nx-kv"><b>Your entry</b>'
       +'<textarea id="nxCapText" placeholder="Say something about your entry…" style="width:100%;margin-top:8px;min-height:56px;border-radius:10px;border:1px solid #2b57b8;background:#0b1f52;color:#fff;padding:8px;font-family:inherit;font-size:13px;box-sizing:border-box;"></textarea>'
-      +'<label style="display:block;margin:8px 0 4px;font-size:12px;color:#cfe0ff;">Add a photo (optional). Video entries need Cloudflare Stream — coming soon.</label>'
-      +'<input id="nxCapImg" type="file" accept="image/*" style="font-size:12px;color:#cfe0ff;max-width:100%;">'
+      +'<label style="display:block;margin:8px 0 4px;font-size:12px;color:#cfe0ff;">🎤 Add your talent video — mp4/mov/webm, up to 50MB. Free to enter.</label>'
+      +'<input id="nxCapImg" type="file" accept="video/*" capture style="font-size:12px;color:#cfe0ff;max-width:100%;">'
       +'<div style="margin-top:10px;display:flex;gap:8px;align-items:center;"><button class="nx-j done" style="flex:1;margin:0;width:auto;" onclick="nxDoSubmit()">Post entry</button>'
       +'<button class="nx-lin" onclick="nxCancelCompose()">Cancel</button></div></div>';
   }
@@ -6293,23 +6294,35 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     var t=document.getElementById('nxCapText'); var f=document.getElementById('nxCapImg');
     var text=t?t.value.trim():'';
     var file=f&&f.files&&f.files[0];
-    if(!text&&!file){ toast('Add a caption or a photo first.'); return; }
-    function finish(imgUrl){
-      MYSUB[id]={text:text,img:imgUrl||''};
-      entered[id]=true; composing[id]=false;
-      var c=CH.filter(function(x){return x.id===id;})[0]; if(c)c.entries++;
-      render(); toast('Entry posted! 🎬');
-      nxPersistEntry(id,text,imgUrl||'');
-    }
-    if(file){ var rd=new FileReader(); rd.onload=function(){ finish(String(rd.result)); }; rd.onerror=function(){ finish(''); }; rd.readAsDataURL(file); }
-    else finish('');
+    if(!file){ toast('Pick or record a video first \ud83c\udfac'); return; }
+    var okType=/(mp4|mov|quicktime|webm|m4v|3gpp)/i;
+    if(!okType.test(file.type||'') && !/\.(mp4|mov|webm|m4v|3gp)$/i.test(file.name||'')){ toast('Use an mp4, mov or webm video.'); return; }
+    if(file.size > 52428800){ toast('That video is over 50MB \u2014 trim it a little.'); return; }
+    var me=meName(); if(!me){ toast('Log in first to enter the challenge.'); return; }
+    var btn=document.querySelector('.nx-kv .nx-j.done'); if(btn){ btn.disabled=true; btn.textContent='Uploading\u2026'; }
+    var ext=((file.name||'').split('.').pop()||'mp4').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5)||'mp4';
+    var path=me.replace(/[^a-z0-9_\-]/g,'_')+'/'+Date.now()+'.'+ext;
+    toast('Uploading your talent\u2026 \ud83c\udfa4');
+    try{
+      sb.storage.from('challenge-videos').upload(path,file,{contentType:file.type||'video/mp4',upsert:false}).then(function(up){
+        if(up&&up.error){ toast('Upload failed \u2014 '+((up.error&&up.error.message)||'try again')); if(btn){btn.disabled=false;btn.textContent='Post entry';} return; }
+        var pub=sb.storage.from('challenge-videos').getPublicUrl(path);
+        var url=(pub&&pub.data&&pub.data.publicUrl)||'';
+        MYSUB[id]={text:text,vurl:url,likes:0};
+        entered[id]=true; composing[id]=false;
+        var c=CH.filter(function(x){return x.id===id;})[0]; if(c)c.entries++;
+        nxPersistEntry(id,text,url);
+        toast('Talent posted! \ud83c\udfa4');
+        render(); nxLoadSubs(id);
+      }).catch(function(){ toast('Upload error \u2014 try again'); if(btn){btn.disabled=false;btn.textContent='Post entry';} });
+    }catch(e){ toast('Upload error \u2014 try again'); if(btn){btn.disabled=false;btn.textContent='Post entry';} }
   };
-  function nxPersistEntry(id,text,img){ try{ sb.from('flap_challenge_entries').insert({challenge:id,name:meName(),text:text,image:img,likes:0}).then(function(){}).catch(function(){}); }catch(e){} }
+  function nxPersistEntry(id,text,vurl){ try{ var nm=(window.ME&&ME.name)||meName(); var hd=(window.ME&&(ME.handle||ME.name))||nm; sb.from('flap_challenge_subs').insert({challenge_id:id,name:nm,handle:hd,video_url:vurl,caption:text,likes:0}).then(function(){}).catch(function(){}); }catch(e){} }
   window.nxJoin=function(id){joined[id]=true;render();toast('You joined! Now add your entry ✍️');};
   window.nxSubmit=function(id){entered[id]=true;var c=CH.filter(function(x){return x.id===id;})[0];c.entries++;render();toast('Video submitted! 🎬 (demo)');};
   window.nxDelSub=function(id){if(!confirm('Delete your submission?'))return;entered[id]=false;delete MYSUB[id];var c=CH.filter(function(x){return x.id===id;})[0];c.entries--;render();toast('Submission deleted');};
   window.nxLeave=function(id){if(!confirm('Leave this challenge?'))return;joined[id]=false;entered[id]=false;render();toast('You left the challenge');};
-  window.nxFeat=function(key){feat[key]=!feat[key];render();try{ sb.from('flap_challenge_likes').upsert({entry_key:key,name:meName(),liked:!!feat[key]}).then(function(){}).catch(function(){}); }catch(e){}};
+  window.nxFeat=function(key){ if(feat[key]){ toast('You already flapped this \ud83e\udeb6'); return; } var sid=SID[key]; var me=meName(); feat[key]=true; var e=null; if(cur){ e=(SUBS[cur]||[]).filter(function(x){return x.sid&&x.sid===sid;})[0]; } if(e){ e.f=(e.f||0)+1; } if(cur&&MYSUB[cur]&&MYSUB[cur].sid===sid){ MYSUB[cur].likes=(MYSUB[cur].likes||0)+1; } render(); if(!sid||!me){ return; } try{ sb.rpc('flap_challenge_like',{p_sid:sid,p_name:me}).then(function(res){ if(res&&!res.error){ if(e){ e.f=res.data; } if(cur&&MYSUB[cur]&&MYSUB[cur].sid===sid){ MYSUB[cur].likes=res.data; } if(cur)render(); } }).catch(function(){}); }catch(e2){} };
   window.nxReport=function(u){toast('Reported @'+u+'’s video — sent to admin 🚩');};
   window.nxPlay=function(u){toast('▶ Playing @'+u+'’s clip (demo)');};
 
