@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>TheFlap — Tag picker preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#f08a1d;--orange-d:#d4740a;--ink:#2a2016;--muted:#8a795c;--line:#eadcc4;--paper:#fff;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:'Trebuchet MS','Segoe UI',Tahoma,sans-serif;color:var(--ink);
+    background:linear-gradient(180deg,#fff7ec,#ffe9c9 60%,#ffe0ad);min-height:100vh;padding:18px 0 40px}
+  .wrap{max-width:440px;margin:0 auto;padding:0 14px}
+  h1{font-family:'Fredoka';color:var(--orange-d);text-align:center;font-size:22px;margin:2px 0 2px}
+  .sub{text-align:center;color:var(--muted);font-size:13px;margin:0 0 16px}
+  .phone{background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 16px 40px rgba(150,110,30,.22)}
+  .top{background:linear-gradient(to bottom,#ffa63d,var(--orange) 55%,var(--orange-d));color:#fff;padding:11px 15px;display:flex;align-items:center;gap:9px}
+  .lotus{font-size:22px}
+  .brand{font-family:'Fredoka';font-weight:700;font-size:18px}
+  .compose{padding:14px}
+  .cbox{border:1px solid var(--line);border-radius:14px;padding:12px 13px;min-height:64px;font-size:16px;line-height:1.5;color:var(--ink)}
+  .cbox .at{color:var(--orange-d);font-weight:700;background:#fff2dc;border-radius:5px;padding:0 2px}
+  .caret{display:inline-block;width:2px;height:18px;background:var(--orange-d);vertical-align:-3px;animation:bl 1s steps(2) infinite}
+  @keyframes bl{50%{opacity:0}}
+
+  /* the mention picker */
+  .pick{margin-top:10px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fffdf8;box-shadow:0 6px 18px rgba(150,110,30,.12)}
+  .pick .hd{font-family:'Fredoka';font-weight:600;font-size:13px;color:var(--muted);padding:9px 14px;border-bottom:1px solid var(--line);background:#fff8ee;display:flex;justify-content:space-between}
+  .list{max-height:266px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
+  .row{display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:54px;cursor:pointer;border-bottom:1px solid #f4ead6;user-select:none}
+  .row:last-child{border-bottom:0}
+  .row:active{background:#fff2dc}
+  .av{flex:0 0 auto;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;font-family:'Fredoka';font-weight:700;font-size:16px}
+  .nm{font-weight:700;font-size:15px;line-height:1.15}
+  .hn{color:var(--muted);font-size:12.5px}
+  /* fatter scrollbar so it reads like a "scroll wheel" on desktop */
+  .list::-webkit-scrollbar{width:9px}
+  .list::-webkit-scrollbar-thumb{background:#e7c98c;border-radius:9px}
+
+  .note{margin:16px 2px 0;background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 15px;font-size:13.5px;color:#5f5238;line-height:1.5}
+  .note b{color:var(--ink)}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#2a2016;color:#fff;
+    padding:11px 18px;border-radius:999px;font-weight:700;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  .hint{display:flex;align-items:center;gap:6px;justify-content:center;color:var(--muted);font-size:12px;margin:9px 0 2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tagging someone — new scroll</h1>
+  <p class="sub">Drag to scroll · only a real tap picks someone</p>
+
+  <div class="phone">
+    <div class="top"><span class="lotus">🪷</span><span class="brand">TheFlap</span></div>
+    <div class="compose">
+      <div class="cbox">Shoutout to my bestie <span class="at">@</span><span class="caret"></span></div>
+
+      <div class="pick">
+        <div class="hd"><span>Tag someone</span><span id="cnt"></span></div>
+        <div class="list" id="list"></div>
+      </div>
+
+      <div class="hint">↑ flick the list — it won't select while you scroll ↑</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>What changed:</b> the tag list is now its own scroll area with taller, easier rows. On your phone you can <b>flick and scroll freely</b> — it only picks a name when you actually <b>tap and let go without moving</b>. A drag or scroll never selects anyone by accident. Same on iPhone and Android.
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var names=[
+    ["Riley","riley","#ff6aa8,#e14e8e"],["Kiara","kiara_k","#22b6d0,#128fa6"],["Maya","mayaa","#f6941d,#d4740a"],
+    ["Bri","bri","#1fb877,#0d7748"],["Jayce","jayce","#8a68e0,#4a86ff"],["Sky","skyhigh","#ff8a3d,#ff5ea8"],
+    ["Nova","nova","#22c2d6,#8a68e0"],["Layla","laylav","#e14e8e,#8a68e0"],["Dre","dre3","#4a86ff,#22b6d0"],
+    ["Zoe","zozo","#f6941d,#e14e8e"],["Cam","camm","#0d7748,#1fb877"],["Indi","indigo","#8a68e0,#e14e8e"],
+    ["Tia","tiaa","#128fa6,#22c2d6"],["Marcus","marc","#d4740a,#f6941d"],["Ella","ellatori","#ff5ea8,#ff8a3d"],
+    ["Quinn","quinnn","#4a86ff,#8a68e0"],["Aria","ariam","#e14e8e,#ff6aa8"],["Kobe","kobe24","#22b6d0,#0d7748"],
+    ["Lena","lenaa","#8a68e0,#22c2d6"],["Deja","dejavu","#f6941d,#ff5ea8"],["Sol","solaris","#1fb877,#22b6d0"],
+    ["Priya","priya","#e14e8e,#d4740a"],["Emmett","emmett","#4a86ff,#1fb877"],["Yara","yaraa","#ff8a3d,#e14e8e"],
+    ["Theo","theoo","#8a68e0,#4a86ff"],["Mila","milaa","#22c2d6,#ff6aa8"],["Rome","rome","#d4740a,#8a68e0"],
+    ["Nadia","nadia","#0d7748,#22b6d0"],["Kai","kaii","#ff6aa8,#f6941d"],["Vera","veraa","#8a68e0,#e14e8e"],
+    ["Jonah","jonah","#22b6d0,#4a86ff"],["Sana","sanaa","#e14e8e,#ff8a3d"],["Beau","beau","#1fb877,#8a68e0"]
+  ];
+  var list=document.getElementById('list'), toast=document.getElementById('toast');
+  document.getElementById('cnt').textContent=names.length+' matches';
+
+  names.forEach(function(p){
+    var row=document.createElement('div'); row.className='row';
+    row.innerHTML='<div class="av" style="background:linear-gradient(135deg,'+p[2]+')">'+p[0][0]+'</div>'+
+      '<div><div class="nm">'+p[0]+'</div><div class="hn">@'+p[1]+'</div></div>';
+    row.dataset.h=p[1];
+    list.appendChild(row);
+  });
+
+  // Tap-vs-scroll: a touch that moves more than a few px is a scroll, not a select.
+  var startY=0, moved=false;
+  list.addEventListener('touchstart',function(e){ startY=e.touches[0].clientY; moved=false; },{passive:true});
+  list.addEventListener('touchmove',function(e){ if(Math.abs(e.touches[0].clientY-startY)>8) moved=true; },{passive:true});
+
+  function pick(row){
+    var h=row.dataset.h;
+    toast.textContent='Tagged @'+h+' ✓';
+    toast.classList.add('on');
+    clearTimeout(pick._t); pick._t=setTimeout(function(){toast.classList.remove('on');},1400);
+  }
+
+  list.addEventListener('click',function(e){
+    var row=e.target.closest('.row');
+    if(!row) return;
+    if(moved){ moved=false; return; }   // was a scroll → ignore
+    pick(row);
+  });
+})();
+</script>
+</body>
+</html>
