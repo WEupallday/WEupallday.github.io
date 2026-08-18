@@ -4782,7 +4782,7 @@ function notifText(n){
       markPresentToday();
       loadMods();
       loadFeatures();
-      await Promise.all([ Promise.resolve().then(loadPinned).catch(function(_lp){try{console.error('loadPinned',_lp);}catch(e){}}), Promise.resolve().then(loadAnnounce).catch(function(_la){try{console.error('loadAnnounce',_la);}catch(e){}}) ]);
+      await Promise.resolve().then(loadPinned).catch(function(_lp){try{console.error('loadPinned',_lp);}catch(e){}}); try{ Promise.resolve().then(loadAnnounce).catch(function(_la){try{console.error('loadAnnounce',_la);}catch(e){}}); }catch(_qa){}
       /* a pinned flap can be OLDER than the newest-N window we just loaded — fetch it directly
          so it always appears (pinned at the top), instead of silently vanishing when newer flaps push it out. */
       if(PINNED_ID && !LAST_ROWS.some(function(r){return String(r.id)===String(PINNED_ID);})){
@@ -4790,6 +4790,7 @@ function notifText(n){
           if(_pf.data && _pf.data[0] && String(_pf.data[0].name||'').indexOf('::')!==0){ LAST_ROWS.unshift(_pf.data[0]); }
         }catch(_e){}
       }
+      try{ if(typeof renderLive==='function') renderLive(); }catch(_erp){}
       myFlapCount=res.data.filter(function(r){return r.name===ME.name;}).length; try{ var _fc=await sb.from('flaps').select('id',{count:'exact',head:true}).eq('name',ME.name); if(_fc&&!_fc.error&&typeof _fc.count==='number') myFlapCount=_fc.count; }catch(_e){}
       document.getElementById('youCount').textContent=myFlapCount;
       /* members list — powers real photos everywhere + the banner */
@@ -4809,6 +4810,7 @@ function notifText(n){
       }
       computeReflaps();
       renderLive();
+      try{var _snapRows=(LAST_ROWS||[]).slice(0,40);localStorage.setItem('flap_feed_snap',JSON.stringify({savedAt:Date.now(),rows:_snapRows}));}catch(_snapErr){}
       renderSidebar();
       renderBanner();
       renderFlappers();
@@ -5673,12 +5675,13 @@ function notifText(n){
   /* ================= SESSION RESTORE (keeps you logged in across refresh/restart) =================
      Runs LAST, after every var + function is defined, so nothing can throw and drop the gate. */
   try{setTimeout(inAppTip,1500);}catch(e){}
+  function renderFeedSnapshot(){ try{ if(typeof LAST_ROWS!=='undefined' && LAST_ROWS && LAST_ROWS.length) return false; var raw=localStorage.getItem('flap_feed_snap'); if(!raw) return false; var snap=JSON.parse(raw); if(!snap||!snap.rows||!snap.rows.length) return false; LAST_ROWS=snap.rows; try{renderLive();}catch(e){} return true; }catch(e){ return false; } }
   (function restoreSession(){
     var saved=readSession();
     if(!saved){
       if(typeof ONLINE!=='undefined'&&ONLINE){try{handleGoogleReturn();}catch(e){}}
       /* logged out: show the feed dimmed + locked BEHIND the login gate (read-only backdrop) */
-      try{ if(!ME||!ME.name){ ME={name:'',admin:false}; loadBlocks().then(function(){loadFeed();}).catch(function(){try{loadFeed();}catch(e){}}); } }catch(e){}
+      try{ if(!ME||!ME.name){ ME={name:'',admin:false}; try{renderFeedSnapshot();}catch(_rs){} loadBlocks().then(function(){loadFeed();}).catch(function(){try{loadFeed();}catch(e){}}); } }catch(e){}
       return;
     }
     var m;
@@ -5688,6 +5691,7 @@ function notifText(n){
     /* mark logged-in FIRST so nothing below can leave you on the sign-in screen */
     document.getElementById('gate').classList.add('hidden');
     try{initMe();}catch(e){/* profile UI failed to draw — you're still logged in */}
+    try{renderFeedSnapshot();}catch(_rs){}
     try{loadBlocks().then(function(){loadFeed();});}catch(e){try{loadFeed();}catch(e2){}}
     try{loadNotifs();}catch(e){}
     try{subscribePush();}catch(e){}
