@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>TheFlap — Account linking preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#f08a1d;--orange-d:#d4740a;--ink:#2a2016;--muted:#8a795c;--line:#eadcc4;--good:#20a760;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:'Trebuchet MS','Segoe UI',Tahoma,sans-serif;color:var(--ink);
+    background:linear-gradient(180deg,#fff7ec,#ffe9c9 60%,#ffe0ad);min-height:100vh;padding:16px 0 40px}
+  .wrap{max-width:440px;margin:0 auto;padding:0 14px}
+  h1{font-family:'Fredoka';color:var(--orange-d);text-align:center;font-size:21px;margin:2px 0}
+  .sub{text-align:center;color:var(--muted);font-size:13px;margin:0 0 12px}
+  .seg{display:flex;gap:6px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px;margin:0 auto 14px;max-width:330px}
+  .seg button{flex:1;border:0;background:transparent;font-family:'Fredoka';font-weight:600;font-size:13px;color:var(--muted);padding:8px;border-radius:999px;cursor:pointer}
+  .seg button.on{background:var(--orange);color:#fff}
+  .phone{background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 16px 40px rgba(150,110,30,.22);position:relative}
+  .top{background:linear-gradient(to bottom,#ffa63d,var(--orange) 55%,var(--orange-d));color:#fff;padding:11px 15px;display:flex;align-items:center;gap:9px}
+  .lotus{font-size:21px}.brand{font-family:'Fredoka';font-weight:700;font-size:18px}
+  .body{padding:16px;min-height:430px}
+  .scr{display:none}.scr.on{display:block}
+
+  .stitle{font-family:'Fredoka';font-weight:600;font-size:16px;margin:0 0 3px}
+  .sdesc{color:var(--muted);font-size:13px;margin:0 0 14px;line-height:1.45}
+  .acct{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:11px}
+  .ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-size:21px;flex:0 0 auto;background:#f6efe1}
+  .ico.ap{background:#000;color:#fff}.ico.gg{background:#fff;border:1px solid var(--line)}
+  .acct .m{flex:1;min-width:0}
+  .acct .m b{font-size:14.5px}.acct .m span{display:block;color:var(--muted);font-size:12px}
+  .btn{border:0;border-radius:999px;font-family:'Fredoka';font-weight:700;font-size:13px;padding:9px 16px;cursor:pointer;white-space:nowrap}
+  .btn.co{background:var(--orange);color:#fff}
+  .connd{display:flex;align-items:center;gap:6px;color:var(--good);font-weight:700;font-size:13px}
+  .disc{background:none;border:0;color:var(--muted);font-size:12px;text-decoration:underline;cursor:pointer;padding:0;margin-top:2px}
+  .tip{background:#fff8ee;border:1px dashed var(--orange);border-radius:12px;padding:11px 13px;font-size:12.5px;color:#8a5c14;margin-top:6px}
+
+  /* sign-in nudge screen */
+  .gate{text-align:center}
+  .gap{width:64px;height:64px;border-radius:18px;background:#000;color:#fff;display:grid;place-items:center;font-size:32px;margin:6px auto 12px}
+  .qh{font-family:'Fredoka';font-weight:600;font-size:17px;margin:0 0 4px}
+  .qd{color:var(--muted);font-size:13px;margin:0 0 16px;line-height:1.45}
+  .big{display:block;width:100%;border:0;border-radius:13px;font-family:'Fredoka';font-weight:700;font-size:15px;padding:13px;margin-bottom:10px;cursor:pointer}
+  .big.p{background:var(--orange);color:#fff}
+  .big.s{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+  .form{display:none;margin-top:6px;text-align:left}
+  .form.on{display:block}
+  .form input{width:100%;border:1px solid var(--line);border-radius:11px;padding:12px;font-size:15px;margin-bottom:9px}
+  .done{display:none;text-align:center;padding:8px 0}
+  .done.on{display:block}
+  .check{width:56px;height:56px;border-radius:50%;background:var(--good);color:#fff;display:grid;place-items:center;font-size:30px;margin:6px auto 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Sign in with Apple — link your account</h1>
+  <p class="sub">Two places this shows up. Tap around.</p>
+
+  <div class="seg">
+    <button id="tA" class="on" onclick="seg('A')">In your Settings</button>
+    <button id="tB" onclick="seg('B')">When signing in</button>
+  </div>
+
+  <div class="phone">
+    <div class="top"><span class="lotus">🪷</span><span class="brand">TheFlap</span></div>
+    <div class="body">
+
+      <!-- A: Settings connect -->
+      <div class="scr on" id="scrA">
+        <div class="stitle">Connected accounts</div>
+        <div class="sdesc">Connect Apple or Google to sign in faster next time — no password needed. Your account and everything in it stays exactly the same.</div>
+
+        <div class="acct">
+          <div class="ico ap"></div>
+          <div class="m"><b>Apple</b><span id="apSt">Not connected</span></div>
+          <div id="apAct"><button class="btn co" onclick="conn('ap')">Connect</button></div>
+        </div>
+
+        <div class="acct">
+          <div class="ico gg">G</div>
+          <div class="m"><b>Google</b><span id="ggSt">Not connected</span></div>
+          <div id="ggAct"><button class="btn co" onclick="conn('gg')">Connect</button></div>
+        </div>
+
+        <div class="tip">💡 Once connected, you can log out and get back in with one tap on “Sign in with Apple/Google” — straight into <b>this same account</b>.</div>
+      </div>
+
+      <!-- B: sign-in nudge -->
+      <div class="scr" id="scrB">
+        <div class="gate" id="gateAsk">
+          <div class="gap"></div>
+          <div class="qh">Already have a TheFlap account?</div>
+          <div class="qd">You just signed in with Apple, and we don’t recognize it yet. Link it to your existing account so nothing gets lost — or start fresh.</div>
+          <button class="big p" onclick="showForm()">Log in once to link it</button>
+          <button class="big s" onclick="freshAcct()">Create a new account</button>
+
+          <div class="form" id="linkForm">
+            <input placeholder="Your username" value="coolgirl123">
+            <input placeholder="Your password" type="password" value="••••••••">
+            <button class="big p" style="margin-top:2px" onclick="doLink()">Link this account</button>
+          </div>
+        </div>
+
+        <div class="done" id="gateDone">
+          <div class="check">✓</div>
+          <div class="qh">Linked!</div>
+          <div class="qd">You’re back in <b>@coolgirl123</b>. From now on, just tap <b>Sign in with Apple</b> — no password needed.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  function seg(x){
+    document.getElementById('tA').classList.toggle('on',x==='A');
+    document.getElementById('tB').classList.toggle('on',x==='B');
+    document.getElementById('scrA').classList.toggle('on',x==='A');
+    document.getElementById('scrB').classList.toggle('on',x==='B');
+  }
+  function conn(k){
+    var st=document.getElementById(k+'St'), act=document.getElementById(k+'Act');
+    act.innerHTML='<span style="color:#8a795c;font-size:12px">Connecting…</span>';
+    setTimeout(function(){
+      st.textContent = k==='ap' ? 'Connected · hides your email' : 'Connected · you@gmail.com';
+      act.innerHTML='<div style="text-align:right"><span class="connd">✓ Connected</span><br><button class="disc" onclick="disc(\''+k+'\')">Disconnect</button></div>';
+    },800);
+  }
+  function disc(k){
+    document.getElementById(k+'St').textContent='Not connected';
+    document.getElementById(k+'Act').innerHTML='<button class="btn co" onclick="conn(\''+k+'\')">Connect</button>';
+  }
+  function showForm(){ document.getElementById('linkForm').classList.add('on'); }
+  function doLink(){ document.getElementById('gateAsk').style.display='none'; document.getElementById('gateDone').classList.add('on'); }
+  function freshAcct(){ document.getElementById('gateAsk').style.display='none'; var d=document.getElementById('gateDone'); d.classList.add('on'); d.querySelector('.qh').textContent='New account created'; d.querySelector('.qd').innerHTML='Welcome to TheFlap! Your new account is signed in with Apple.'; }
+</script>
+</body>
+</html>
