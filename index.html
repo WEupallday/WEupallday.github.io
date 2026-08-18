@@ -1243,6 +1243,34 @@
 
   .announce-body .ann-link, .announce-body a.ann-link{ color:#1a5fa8; font-weight:bold; text-decoration:underline; word-break:break-word; }
   .announce-body .ann-link:active{ color:#0d3f78; }
+
+/* ===== account linking (Settings section + nudge/confirm modals) ===== */
+.cl-sec{margin-top:16px;border-top:1px solid #2c2740;padding-top:14px}
+.cl-h{font-weight:700;color:#fff;font-size:15px;margin:0 0 3px}
+.cl-d{color:#a99fc4;font-size:12.5px;margin:0 0 12px;line-height:1.45}
+.cl-row{display:flex;align-items:center;gap:12px;border:1px solid #2c2740;border-radius:12px;padding:11px 12px;margin-bottom:9px;background:#1b1830}
+.cl-ico{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:19px;flex:0 0 auto;background:#2a2540}
+.cl-ico.ap{background:#000;color:#fff}.cl-ico.gg{background:#fff;color:#4285F4;font-weight:800}
+.cl-row .m{flex:1;min-width:0}.cl-row .m b{font-size:14px;color:#fff}.cl-row .m span{display:block;color:#a99fc4;font-size:11.5px;word-break:break-all}
+.cl-btn{border:0;border-radius:999px;font-weight:700;font-size:12.5px;padding:8px 15px;cursor:pointer;white-space:nowrap}
+.cl-co{background:#f08a1d;color:#fff}
+.cl-connd{color:#7fe0a0;font-weight:700;font-size:12.5px}
+.cl-disc{background:none;border:0;color:#a99fc4;font-size:11.5px;text-decoration:underline;cursor:pointer;padding:0;margin-top:2px}
+.cl-tip{background:#241f18;border:1px dashed #f08a1d;border-radius:10px;padding:9px 11px;font-size:11.5px;color:#e7c99a;margin-top:4px}
+/* modals */
+.cl-modal{position:fixed;inset:0;z-index:200;background:rgba(10,6,20,.7);display:none;align-items:center;justify-content:center;padding:20px}
+.cl-modal.open{display:flex}
+.cl-card{background:#1b1830;border:1px solid #33304a;border-radius:18px;padding:20px;max-width:340px;width:100%;text-align:center;color:#e8e2f5}
+.cl-glyph{width:60px;height:60px;border-radius:16px;background:#000;color:#fff;display:grid;place-items:center;font-size:28px;font-weight:800;margin:2px auto 12px}
+.cl-qh{font-weight:700;font-size:17px;margin:0 0 5px;color:#fff}
+.cl-qd{color:#a99fc4;font-size:12.5px;margin:0 0 15px;line-height:1.45}
+.cl-big{display:block;width:100%;border:0;border-radius:12px;font-weight:700;font-size:14.5px;padding:12px;margin-bottom:9px;cursor:pointer}
+.cl-big.p{background:#f08a1d;color:#fff}.cl-big.s{background:#2a2540;color:#e8e2f5;border:1px solid #3a3458}
+.cl-form{display:none;margin-top:4px;text-align:left}.cl-form.on{display:block}
+.cl-form input{width:100%;border:1px solid #3a3458;background:#12101a;color:#fff;border-radius:10px;padding:11px;font-size:14px;margin-bottom:8px}
+.cl-err{color:#ff8a8a;font-size:12px;min-height:15px;margin:2px 0}
+.cl-done{display:none}.cl-done.on{display:block}
+.cl-check{width:52px;height:52px;border-radius:50%;background:#20a760;color:#fff;display:grid;place-items:center;font-size:27px;margin:2px auto 10px}
 </style>
 </head>
 <body>
@@ -1483,7 +1511,23 @@
       </div>
       <div class="set-sec">
         <div class="set-label">People you've blocked</div>
-        <div class="set-blocked" id="setBlocked"><div class="set-empty">You haven't blocked anyone.</div></div>
+        <div class="cl-sec">
+  <div class="cl-h">Connected accounts</div>
+  <div class="cl-d">Connect Apple or Google to sign in faster next time — no password needed.
+     Your account and everything in it stays exactly the same.</div>
+  <div class="cl-row">
+    <div class="cl-ico ap"></div>
+    <div class="m"><b>Apple</b><span id="apSt">Not connected</span></div>
+    <div id="apAct"><button class="cl-btn cl-co" onclick="connectProvider('apple')">Connect</button></div>
+  </div>
+  <div class="cl-row">
+    <div class="cl-ico gg">G</div>
+    <div class="m"><b>Google</b><span id="ggSt">Not connected</span></div>
+    <div id="ggAct"><button class="cl-btn cl-co" onclick="connectProvider('google')">Connect</button></div>
+  </div>
+  <div class="cl-tip">💡 Once connected, log out and get back in with one tap on "Sign in with Apple/Google" — straight into <b>this same account</b>.</div>
+</div>
+<div class="set-blocked" id="setBlocked"><div class="set-empty">You haven't blocked anyone.</div></div>
       </div>
       <div class="set-sec set-account">
         <span class="set-btn" onclick="closeSettings();logOut();">🚪 Log out</span>
@@ -2938,57 +2982,326 @@
   /* v1.0: Sign in with Apple is intentionally NOT shown in the app (no Google → not required). Re-enable in 1.1. */
   /* (Apple button stays hidden.) */
   var GRET_RUNNING=false;
-  async function handleGoogleReturn(){
-    if(!ONLINE||!sb||!sb.auth)return;
-    if(GRET_RUNNING)return;              /* don't double-run (restoreSession + onAuthStateChange both call this) */
-    if(ME&&ME.name)return;              /* already logged in */
-    GRET_RUNNING=true;
-    try{
-      /* OAuth can return either an implicit #access_token hash OR a ?code query.
-         Apply it manually so login never depends on auto-detection timing. */
-      try{
-        if(/access_token=/.test(location.hash||'')){
-          var _hp=new URLSearchParams((location.hash||'').replace(/^#/,''));
-          var _at=_hp.get('access_token'), _rt=_hp.get('refresh_token');
-          if(_at){ await sb.auth.setSession({access_token:_at, refresh_token:_rt||''}); }
-        } else if(/[?&]code=/.test(location.search||'')){
-          try{ await sb.auth.exchangeCodeForSession(location.href); }catch(_e){}
+  /* ============================================================================
+   TheFlap — Apple/Google ACCOUNT LINKING  (additive, revert-safe)
+   Paste this block inside the app's main <script> (same scope as sb, ME, CONFIG,
+   sha256, toast, esc, enterAppAfterLogin, startOnboarding, genUniqueHandle,
+   detectDevice, discordPing, notifyFlap, openSettings/closeSettings).
+
+   TWO write paths, auto-selected:
+     MODE 1 (secure, preferred): edge fn `theflap-auth` actions link/unlink/
+             link_by_email verify ownership server-side and write flap_oauth_links.
+     MODE 2 (interim fallback, zero new backend): if the edge action is absent,
+             fall back to the existing email-based mapping — ownership is ALWAYS
+             proven by the account password first, and we NEVER overwrite a
+             different email already on the row. No arbitrary-username linking
+             is possible in either mode.
+   ============================================================================ */
+
+  var OAUTH_LINK_INTENT = false;          /* set true when Connect (Settings) starts OAuth */
+  var OAUTH_PENDING_IDN = null;           /* identity captured on OAuth return, awaiting password confirm */
+
+  /* --- call the theflap-auth gatekeeper edge function --- */
+  async function flapAuthCall(action, payload){
+    var r = await fetch(CONFIG.SUPABASE_URL + '/functions/v1/theflap-auth', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + CONFIG.SUPABASE_ANON_KEY,
+        'apikey': CONFIG.SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+    });
+    var j = null; try { j = await r.json(); } catch (e) {}
+    if (!r.ok || !j || j.error) { throw new Error((j && j.error) || ('svc ' + r.status)); }
+    return j;
+  }
+
+  /* --- read the provider identity out of the Supabase OAuth session --- */
+  function oauthIdentity(u){
+    if (!u) return null;
+    var prov = (u.app_metadata && u.app_metadata.provider) ||
+               (u.identities && u.identities[0] && u.identities[0].provider) || 'oauth';
+    if (prov !== 'apple' && prov !== 'google') {
+      /* if identities has an apple/google entry, prefer that label */
+      try { for (var i=0;i<(u.identities||[]).length;i++){ var p=u.identities[i].provider; if(p==='apple'||p==='google'){prov=p;break;} } } catch(e){}
+    }
+    return { provider: prov, sub: u.id, email: (u.email || '').toLowerCase() };
+  }
+  function provLabel(p){ return p === 'apple' ? 'Apple' : (p === 'google' ? 'Google' : 'account'); }
+
+  /* --- verify a flap account password client-side (identical rule to doLogin) --- */
+  async function verifyFlapPassword(name, pass){
+    var res = await sb.from('flap_users').select('*').ilike('name', name).maybeSingle();
+    if (res.error) throw res.error;
+    if (!res.data) return { ok:false, reason:'nouser' };
+    var hash = await sha256('flapsalt:' + res.data.name.toLowerCase() + ':' + pass);
+    if (res.data.pass_hash !== hash) return { ok:false, reason:'badpass', row:res.data };
+    if (res.data.banned) return { ok:false, reason:'banned', row:res.data };
+    return { ok:true, row:res.data };
+  }
+
+  /* --- write a link. Tries MODE 1 (edge, server-verified). Falls back to MODE 2
+         (safe email mapping) only after the password was ALREADY verified. --- */
+  async function writeLink(name, pass, idn){
+    /* MODE 1: ownership verified server-side by pass_hash, writes flap_oauth_links */
+    try {
+      await flapAuthCall('link', { name:name, pass:pass, provider:idn.provider, sub:idn.sub, email:idn.email });
+      return { mode:1 };
+    } catch (e) {
+      /* MODE 2 fallback — only reached when the edge action is not deployed yet.
+         Password was already verified by the caller. Reuse the existing email
+         mapping, but NEVER clobber a different email already on the account. */
+      try {
+        var cur = await sb.from('flap_users').select('name,email').ilike('name', name).maybeSingle();
+        var curEmail = (cur && cur.data && (cur.data.email||'')).toLowerCase();
+        if (idn.email && (!curEmail || curEmail === idn.email)) {
+          /* guard: make sure this email is not already on a DIFFERENT account */
+          var other = await sb.from('flap_users').select('name').ilike('email', idn.email).neq('name', (cur&&cur.data&&cur.data.name)||name).maybeSingle();
+          if (other && other.data) { throw new Error('That ' + provLabel(idn.provider) + ' account is already linked to another TheFlap account.'); }
+          await sb.from('flap_users').update({ email: idn.email }).ilike('name', name);
         }
-      }catch(_e){}
-      var s=await sb.auth.getSession();
-      var sess=s&&s.data&&s.data.session;
-      if(!sess||!sess.user){ GRET_RUNNING=false; return; }   /* handshake not done yet — let the SIGNED_IN event retry */
-      if(ME&&ME.name){ GRET_RUNNING=false; return; }
-      /* strip the token/code out of the address bar now that we've consumed it */
-      try{ if(/access_token=|[?&]code=/.test((location.hash||'')+(location.search||''))){ history.replaceState({}, document.title, location.pathname); } }catch(_e){}
-      var u=sess.user, email=(u.email||'').toLowerCase();
-      if(!email){ GRET_RUNNING=false; return; }
-      var meta=u.user_metadata||{};
-      var gname=(meta.full_name||meta.name||'').trim();
-      var gpic=meta.avatar_url||meta.picture||'';
-      var ex=await sb.from('flap_users').select('*').ilike('email',email).maybeSingle();
-      var row=ex&&ex.data;
-      if(row&&row.banned){ try{if(sb&&sb.auth)sb.auth.signOut();}catch(e){} toast('This account has been banned.'); return; }
-      if(!row){
-        var base=(gname||email.split('@')[0]||'flapper').slice(0,20);
-        var tryName=base, k=1;
-        while(true){ var c=await sb.from('flap_users').select('name').ilike('name',tryName).maybeSingle(); if(!c||!c.data)break; k++; tryName=base.slice(0,17)+k; }
-        var handle=await genUniqueHandle(tryName);
-        var randPass=await sha256('google:'+email+':'+Math.random().toString(36));
-        var ins=await sb.from('flap_users').insert({name:tryName,pass_hash:randPass,avatar_url:gpic||null,handle:handle,email:email,device:detectDevice()}).select('*').maybeSingle();
-        row=(ins&&ins.data)?ins.data:{name:tryName,avatar_url:gpic,handle:handle,email:email};
-        try{ discordPing('join',row.name); }catch(e){}
-        try{ notifyFlap('lock',row.name+' just joined TheFlap with Google! 🎉'); }catch(e){}
-        try{ if((row.name||'').toLowerCase()!=='lock') await sb.from('flap_follows').insert({follower:row.name,following:'lock'}); }catch(e){}   /* new members auto-follow the official account */
-        row.email=email; row.avatar_url=(row.avatar_url||gpic||null);
-        startOnboarding(row);   /* new Google user: pick handle + display name + profile pic */
+        return { mode:2 };
+      } catch (e2) { throw e2; }
+    }
+  }
+
+  /* ========================= SIGN-IN RESOLUTION ============================= */
+  /* Replaces the old handleGoogleReturn(): provider-agnostic (Google + Apple).
+     1) identity already linked      -> log straight into that account
+     2) OAuth email matches an account-> log in (today's behavior) + persist link
+     3) not recognized               -> nudge modal (NO silent duplicate) */
+  async function handleGoogleReturn(){
+    if (!ONLINE || !sb || !sb.auth) return;
+    if (GRET_RUNNING) return;
+    if (ME && ME.name && !OAUTH_LINK_INTENT) return;   /* already logged in (unless mid-Connect) */
+    GRET_RUNNING = true;
+    try {
+      try {
+        if (/access_token=/.test(location.hash || '')) {
+          var _hp = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+          var _at = _hp.get('access_token'), _rt = _hp.get('refresh_token');
+          if (_at) { await sb.auth.setSession({ access_token: _at, refresh_token: _rt || '' }); }
+        } else if (/[?&]code=/.test(location.search || '')) {
+          try { await sb.auth.exchangeCodeForSession(location.href); } catch (_e) {}
+        }
+      } catch (_e) {}
+      var s = await sb.auth.getSession();
+      var sess = s && s.data && s.data.session;
+      if (!sess || !sess.user) { GRET_RUNNING = false; return; }
+      try { if (/access_token=|[?&]code=/.test((location.hash || '') + (location.search || ''))) { history.replaceState({}, document.title, location.pathname); } } catch (_e) {}
+
+      var idn = oauthIdentity(sess.user);
+      var email = idn.email;
+
+      /* (A) Connect-from-Settings: attach this identity to the logged-in account */
+      if (OAUTH_LINK_INTENT && ME && ME.name) {
+        OAUTH_LINK_INTENT = false;
+        GRET_RUNNING = false;
+        openLinkConfirm(ME.name, idn);        /* asks password, then writes link */
         return;
       }
-      toast('Welcome back, '+row.name+'!');
-      ME={name:row.name,admin:false,pic:row.avatar_url||gpic||null,handle:row.handle||'',email:email};
-      enterAppAfterLogin();
-    }catch(e){ GRET_RUNNING=false; }
+      if (ME && ME.name) { GRET_RUNNING = false; return; }
+
+      /* (1) already linked? (resolve by sub — survives Supabase identity-merge) */
+      var linkRow = null;
+      try { var lk = await sb.from('flap_oauth_links').select('*').eq('sub', idn.sub).maybeSingle(); linkRow = lk && lk.data; } catch (e) { linkRow = null; }
+      if (linkRow && linkRow.name) {
+        var ur = await sb.from('flap_users').select('*').ilike('name', linkRow.name).maybeSingle();
+        var urow = ur && ur.data;
+        if (urow) {
+          if (urow.banned) { try { sb.auth.signOut(); } catch (_) {} toast('This account has been banned.'); GRET_RUNNING = false; return; }
+          toast('Welcome back, ' + urow.name + '!');
+          ME = { name:urow.name, admin:((urow.name||'').toLowerCase()==='lock'), pic:urow.avatar_url||null, handle:urow.handle||'', email:urow.email||email };
+          enterAppAfterLogin();
+          return;
+        }
+      }
+
+      if (!email) { GRET_RUNNING = false; return; }
+
+      /* (2) email matches an existing account -> log in (unchanged behavior) + persist link */
+      var ex = await sb.from('flap_users').select('*').ilike('email', email).maybeSingle();
+      var row = ex && ex.data;
+      if (row) {
+        if (row.banned) { try { sb.auth.signOut(); } catch (_) {} toast('This account has been banned.'); GRET_RUNNING = false; return; }
+        toast('Welcome back, ' + row.name + '!');
+        ME = { name:row.name, admin:((row.name||'').toLowerCase()==='lock'), pic:row.avatar_url||null, handle:row.handle||'', email:email };
+        enterAppAfterLogin();
+        /* best-effort: server authorizes this link because the OAuth email == the
+           account's on-file email (verified inside the edge fn via access_token). */
+        try { flapAuthCall('link_by_email', { provider:idn.provider, sub:idn.sub, email:email, access_token:sess.access_token }); } catch (_) {}
+        return;
+      }
+
+      /* (3) not recognized -> nudge (prevents silent duplicates) */
+      OAUTH_PENDING_IDN = idn;
+      showOauthNudge(idn);
+      GRET_RUNNING = false;
+    } catch (e) { GRET_RUNNING = false; }
   }
+
+  /* ============================ NUDGE MODAL ================================= */
+  function showOauthNudge(idn){
+    var m = document.getElementById('oauthNudge'); if (!m) return;
+    OAUTH_PENDING_IDN = idn || OAUTH_PENDING_IDN;
+    var pl = provLabel(OAUTH_PENDING_IDN ? OAUTH_PENDING_IDN.provider : 'oauth');
+    try { document.getElementById('onProv').textContent = pl; } catch (e) {}
+    try { document.getElementById('onGlyph').textContent = pl === 'Apple' ? '' : (pl === 'Google' ? 'G' : '🔑'); } catch (e) {}
+    try { document.getElementById('onErr').textContent = ''; } catch (e) {}
+    try { document.getElementById('onForm').classList.remove('on'); } catch (e) {}
+    try { document.getElementById('onAsk').style.display = 'block'; } catch (e) {}
+    try { document.getElementById('onDone').classList.remove('on'); } catch (e) {}
+    m.classList.add('open');
+    try { document.getElementById('gate').classList.add('hidden'); } catch (e) {}
+  }
+  function hideOauthNudge(){ var m = document.getElementById('oauthNudge'); if (m) m.classList.remove('open'); }
+  function oauthNudgeShowForm(){ try { document.getElementById('onForm').classList.add('on'); document.getElementById('onName').focus(); } catch (e) {} }
+
+  /* "Log in once to link it" — verify password, write link, sign in */
+  async function oauthNudgeLink(){
+    var name = (document.getElementById('onName').value || '').trim();
+    var pass = document.getElementById('onPass').value;
+    var err = document.getElementById('onErr'); err.textContent = '';
+    if (!name) { err.textContent = 'Enter your username.'; return; }
+    if (!pass) { err.textContent = 'Enter your password.'; return; }
+    var idn = OAUTH_PENDING_IDN;
+    if (!idn) { err.textContent = 'Please try the sign-in again.'; return; }
+    err.textContent = 'checking…';
+    try {
+      var v = await verifyFlapPassword(name, pass);
+      if (!v.ok) {
+        if (v.reason === 'nouser') err.textContent = 'No account found for “' + name + '”.';
+        else if (v.reason === 'banned') err.textContent = 'This account has been banned.';
+        else err.textContent = 'Wrong password. Try again.';
+        return;
+      }
+      try { await writeLink(v.row.name, pass, idn); }
+      catch (le) { err.textContent = (le && le.message) ? le.message : 'Could not link — try again.'; return; }
+      /* sign in to the now-linked account */
+      ME = { name:v.row.name, admin:((v.row.name||'').toLowerCase()==='lock'), pic:v.row.avatar_url||null, handle:v.row.handle||'', email:v.row.email||idn.email };
+      try { document.getElementById('onAsk').style.display = 'none'; document.getElementById('onDone').classList.add('on'); document.getElementById('onDoneName').textContent = '@' + (v.row.handle || v.row.name); document.getElementById('onDoneProv').textContent = provLabel(idn.provider); } catch (e) {}
+      setTimeout(function(){ hideOauthNudge(); enterAppAfterLogin(); }, 1200);
+    } catch (e) { err.textContent = 'Could not reach the server — try again.'; }
+  }
+
+  /* "Create a new account" — keeps today's create-new behavior for OAuth users */
+  async function oauthNudgeCreateNew(){
+    var idn = OAUTH_PENDING_IDN;
+    hideOauthNudge();
+    if (!idn) return;
+    try {
+      var s = await sb.auth.getSession();
+      var u = s && s.data && s.data.session && s.data.session.user;
+      var meta = (u && u.user_metadata) || {};
+      var gname = (meta.full_name || meta.name || '').trim();
+      var gpic = meta.avatar_url || meta.picture || '';
+      var email = idn.email;
+      var base = (gname || (email ? email.split('@')[0] : '') || 'flapper').slice(0, 20);
+      var tryName = base, k = 1;
+      while (true) { var c = await sb.from('flap_users').select('name').ilike('name', tryName).maybeSingle(); if (!c || !c.data) break; k++; tryName = base.slice(0, 17) + k; }
+      var handle = await genUniqueHandle(tryName);
+      var randPass = await sha256('oauth:' + (email || idn.sub) + ':' + Math.random().toString(36));
+      var ins = await sb.from('flap_users').insert({ name:tryName, pass_hash:randPass, avatar_url:gpic||null, handle:handle, email:email||null, device:detectDevice() }).select('*').maybeSingle();
+      var row = (ins && ins.data) ? ins.data : { name:tryName, avatar_url:gpic, handle:handle, email:email };
+      try { discordPing('join', row.name); } catch (e) {}
+      try { notifyFlap('lock', row.name + ' just joined TheFlap! 🎉'); } catch (e) {}
+      try { if ((row.name || '').toLowerCase() !== 'lock') await sb.from('flap_follows').insert({ follower:row.name, following:'lock' }); } catch (e) {}
+      /* record the link for the brand-new account too */
+      try { flapAuthCall('link_by_email', { provider:idn.provider, sub:idn.sub, email:email, access_token:(s&&s.data&&s.data.session&&s.data.session.access_token) }); } catch (_) {}
+      row.email = email; row.avatar_url = (row.avatar_url || gpic || null);
+      startOnboarding(row);
+    } catch (e) { toast('Could not create your account — try again.'); }
+  }
+
+  /* ================= SETTINGS: CONNECTED ACCOUNTS ========================== */
+  async function settingsRenderConnections(){
+    var apSt = document.getElementById('apSt'), apAct = document.getElementById('apAct');
+    var ggSt = document.getElementById('ggSt'), ggAct = document.getElementById('ggAct');
+    if (!apSt || !ggSt) return;
+    var links = {};
+    try {
+      var r = await sb.from('flap_oauth_links').select('provider,email').ilike('name', ME.name);
+      if (r && r.data) { r.data.forEach(function(x){ links[x.provider] = x.email || ''; }); }
+    } catch (e) {
+      /* MODE 2 (no table yet): infer from the account email */
+      try { var u = await sb.from('flap_users').select('email').ilike('name', ME.name).maybeSingle(); if (u && u.data && u.data.email) { links._email = u.data.email; } } catch (e2) {}
+    }
+    function paint(prov, stEl, actEl){
+      var e = links[prov];
+      var connected = !!e || (prov === 'google' && links._email);
+      if (connected) {
+        stEl.textContent = 'Connected' + (e || links._email ? ' · ' + (e || links._email) : '');
+        actEl.innerHTML = '<div style="text-align:right"><span class="cl-connd">✓ Connected</span><br><button class="cl-disc" onclick="disconnectProvider(\'' + prov + '\')">Disconnect</button></div>';
+      } else {
+        stEl.textContent = 'Not connected';
+        actEl.innerHTML = '<button class="cl-btn cl-co" onclick="connectProvider(\'' + prov + '\')">Connect</button>';
+      }
+    }
+    paint('apple', apSt, apAct);
+    paint('google', ggSt, ggAct);
+  }
+
+  /* Connect: start OAuth with a "link to current account" intent */
+  function connectProvider(prov){
+    if (!ONLINE || !sb || !sb.auth || !ME.name) { toast('Connecting needs the server.'); return; }
+    OAUTH_LINK_INTENT = true;
+    try { sessionStorage.setItem('flap_link_intent', ME.name); } catch (e) {}
+    var redir = location.origin + location.pathname;
+    try {
+      sb.auth.signInWithOAuth({ provider: prov, options: { redirectTo: redir } }).then(function(r){
+        if (r && r.error) { OAUTH_LINK_INTENT = false; toast(provLabel(prov) + ' sign-in error — try again.'); }
+      });
+    } catch (e) { OAUTH_LINK_INTENT = false; toast('Could not start ' + provLabel(prov) + ' sign-in.'); }
+  }
+
+  /* password-confirm modal for Connect (proves ownership of the current account) */
+  function openLinkConfirm(name, idn){
+    OAUTH_PENDING_IDN = idn;
+    var m = document.getElementById('linkConfirm');
+    try { document.getElementById('lcProv').textContent = provLabel(idn.provider); } catch (e) {}
+    try { document.getElementById('lcName').textContent = name; } catch (e) {}
+    try { document.getElementById('lcPass').value = ''; document.getElementById('lcErr').textContent = ''; } catch (e) {}
+    if (m) m.classList.add('open');
+  }
+  function closeLinkConfirm(){ var m = document.getElementById('linkConfirm'); if (m) m.classList.remove('open'); }
+  async function doLinkConfirm(){
+    var pass = document.getElementById('lcPass').value;
+    var err = document.getElementById('lcErr'); err.textContent = '';
+    var idn = OAUTH_PENDING_IDN;
+    if (!idn || !ME.name) { err.textContent = 'Please try again.'; return; }
+    if (!pass) { err.textContent = 'Enter your password.'; return; }
+    err.textContent = 'linking…';
+    try {
+      var v = await verifyFlapPassword(ME.name, pass);
+      if (!v.ok) { err.textContent = (v.reason === 'badpass') ? 'Wrong password.' : 'Could not verify — try again.'; return; }
+      await writeLink(ME.name, pass, idn);
+      closeLinkConfirm();
+      toast(provLabel(idn.provider) + ' connected ✓');
+      try { sessionStorage.removeItem('flap_link_intent'); } catch (e) {}
+      settingsRenderConnections();
+    } catch (e) { err.textContent = (e && e.message) ? e.message : 'Could not link — try again.'; }
+  }
+
+  /* Disconnect: remove the link (ownership proven by being the logged-in owner;
+     server re-checks in MODE 1). Requires password re-confirm for safety. */
+  async function disconnectProvider(prov){
+    if (!ME.name) return;
+    var pass = window.prompt('Confirm your password to disconnect ' + provLabel(prov) + ':');
+    if (pass === null) return;
+    try {
+      var v = await verifyFlapPassword(ME.name, pass || '');
+      if (!v.ok) { toast('Wrong password.'); return; }
+      try { await flapAuthCall('unlink', { name: ME.name, pass: pass, provider: prov }); }
+      catch (e) {
+        /* MODE 2: clear the email mapping only if it belongs to this provider's identity */
+        try { await sb.from('flap_users').update({ email: null }).ilike('name', ME.name); } catch (e2) {}
+      }
+      toast(provLabel(prov) + ' disconnected');
+      settingsRenderConnections();
+    } catch (e) { toast('Could not disconnect — try again.'); }
+  }
+
   function browseGuest(){
     document.getElementById('gate').classList.add('hidden');
     ME={name:'',admin:false};
@@ -3116,7 +3429,7 @@
       renderBannerPicker(SET.row.banner||'cosmic');
     }catch(e){}
     settingsUpdateCounts();
-    settingsRenderBlocked();
+    settingsRenderBlocked(); settingsRenderConnections();
   }
   function renderBannerPicker(sel){
     var el=document.getElementById('setBanners'); if(!el) return;
@@ -6767,5 +7080,43 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   try { setInterval(ensure, 1500); } catch(e){}
 })();
 </script>
+<!-- OAuth sign-in nudge (unknown identity) -->
+<div id="oauthNudge" class="cl-modal">
+  <div class="cl-card">
+    <div id="onAsk">
+      <div class="cl-glyph" id="onGlyph"></div>
+      <div class="cl-qh">Already have a TheFlap account?</div>
+      <div class="cl-qd">You just signed in with <b id="onProv">Apple</b>, and we don't recognize it yet.
+        Link it to your existing account so nothing gets lost — or start fresh.</div>
+      <button class="cl-big p" onclick="oauthNudgeShowForm()">Log in once to link it</button>
+      <button class="cl-big s" onclick="oauthNudgeCreateNew()">Create a new account</button>
+      <div class="cl-form" id="onForm">
+        <input id="onName" placeholder="Your username" autocomplete="username">
+        <input id="onPass" placeholder="Your password" type="password" autocomplete="current-password">
+        <div class="cl-err" id="onErr"></div>
+        <button class="cl-big p" style="margin-top:2px" onclick="oauthNudgeLink()">Link this account</button>
+      </div>
+    </div>
+    <div class="cl-done" id="onDone">
+      <div class="cl-check">✓</div>
+      <div class="cl-qh">Linked!</div>
+      <div class="cl-qd">You're back in <b id="onDoneName"></b>. From now on, just tap
+        <b>Sign in with <span id="onDoneProv">Apple</span></b> — no password needed.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Connect password-confirm (Settings) -->
+<div id="linkConfirm" class="cl-modal">
+  <div class="cl-card">
+    <div class="cl-qh">Confirm it's you</div>
+    <div class="cl-qd">Enter the password for <b id="lcName"></b> to connect <b id="lcProv">Apple</b>.</div>
+    <input id="lcPass" class="" type="password" placeholder="Your password"
+       style="width:100%;border:1px solid #3a3458;background:#12101a;color:#fff;border-radius:10px;padding:11px;font-size:14px;margin-bottom:8px">
+    <div class="cl-err" id="lcErr"></div>
+    <button class="cl-big p" onclick="doLinkConfirm()">Connect</button>
+    <button class="cl-big s" onclick="closeLinkConfirm()">Cancel</button>
+  </div>
+</div>
 </body>
 </html>
