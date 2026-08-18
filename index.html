@@ -2238,6 +2238,7 @@
     if(token.charAt(0)==='~')return ' <span class="remoji remoji-anim">'+emoHTML(token.slice(1),true)+'</span>';
     return ' <span class="remoji">'+esc(token)+'</span>';
   }
+  function rnLink(name){return '<span class="rn-link" style="cursor:pointer" onclick="showUserProfile(\''+esc(name).replace(/'/g,'')+'\')">'+esc(name)+'</span>'+vbadge(name);}
   function replyRtxt(whoHTML,token,textHTML){
     return '<div class="rtxt"><span class="rn">'+whoHTML+'</span>'+reactionHTML(token)+' '+textHTML+'</div>';
   }
@@ -3957,7 +3958,7 @@ function flapCelebrate(icon,title,sub){ try{ var w=document.getElementById('cele
       var canDel=r.id && ((ME.admin||ME.mod) || (mineR && withinDelWindow(rMs)));   /* your OWN reply for '+DELETE_WINDOW_MIN+' min; admins & mods can remove any reply */
       var delLink=canDel?'<a class="reply-del" title="Delete this reply (yours, within '+DELETE_WINDOW_MIN+' min)" onclick="delReply('+r.id+','+row.id+')">🗑</a>':'';
       return '<div class="reply"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/'/g,'')+'\')">'+avatarFor(r.name)+'</div>'+
-        replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+delLink+'</div>';
+        replyRtxt(rnLink(r.name),p.emoji,parseTags(p.text||'').html)+delLink+'</div>';
     });
     reps.push('<div class="reply reply-compose"><div class="rava">'+myAva()+'</div>'+
       '<div class="rcol">'+
@@ -4809,6 +4810,7 @@ function notifText(n){
         if(!rr.error&&rr.data)rr.data.forEach(function(r){(REPLIES[r.flap_id]=REPLIES[r.flap_id]||[]).push(r);});
       }
       computeReflaps();
+      try{__deferNewReplies();}catch(_dnr){}
       renderLive();
       try{var _snapRows=(LAST_ROWS||[]).slice(0,40);localStorage.setItem('flap_feed_snap',JSON.stringify({savedAt:Date.now(),rows:_snapRows}));}catch(_snapErr){}
       renderSidebar();
@@ -4890,12 +4892,62 @@ function notifText(n){
     var mineR=((r.name||'').toLowerCase()===(ME.name||'').toLowerCase());
     var canDel=r.id && ((ME.admin||ME.mod) || (mineR && withinDelWindow(rMs)));
     var delLink=canDel?'<a class="reply-del" title="Delete this reply (yours, within '+DELETE_WINDOW_MIN+' min)" onclick="delReply('+r.id+','+flapId+')">🗑</a>':'';
-    var html='<div class="reply reply-new"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/\x27/g,'')+'\')">'+avatarFor(r.name)+'</div>'+replyRtxt(esc(r.name)+vbadge(r.name),p.emoji,parseTags(p.text||'').html)+delLink+'</div>';
+    var html='<div class="reply reply-new"><div class="rava" style="cursor:pointer" onclick="showUserProfile(\''+esc(r.name).replace(/\x27/g,'')+'\')">'+avatarFor(r.name)+'</div>'+replyRtxt(rnLink(r.name),p.emoji,parseTags(p.text||'').html)+delLink+'</div>';
     var comp=rb.querySelector('.reply-compose');
     if(comp) comp.insertAdjacentHTML('beforebegin',html);
     else rb.insertAdjacentHTML('beforeend',html);
   }
 
+  /* ===== smooth live replies: buffer newly-arrived replies briefly, then ease them in (soft fade/slide),
+     preserve scroll so incoming replies never hard-jump the feed while you read. Additive + reversible. ===== */
+  var SEEN_REPLY_IDS={}, PENDING_REPLIES={}, PENDING_IDS={}, REPLY_SEEN_INIT=false;
+  var REPLY_FLUSH_TIMER=null, REPLY_BUFFER_MS=2500, REPLY_BUFFER_MAX_MS=12000, REPLY_BUFFER_FIRST_TS=0, LAST_SCROLL_TS=0;
+  try{ window.addEventListener('scroll',function(){ LAST_SCROLL_TS=Date.now(); },{passive:true}); }catch(_sl){}
+  function __deferNewReplies(){
+    try{
+      if(!REPLY_SEEN_INIT){ REPLY_SEEN_INIT=true; Object.keys(REPLIES).forEach(function(fid){ (REPLIES[fid]||[]).forEach(function(r){ if(r&&r.id!=null) SEEN_REPLY_IDS[r.id]=1; }); }); return; }
+      Object.keys(REPLIES).forEach(function(fid){
+        var arr=REPLIES[fid]||[], keep=[];
+        for(var i=0;i<arr.length;i++){ var r=arr[i];
+          if(!r||r.id==null){ keep.push(r); continue; }
+          if(SEEN_REPLY_IDS[r.id]){ keep.push(r); continue; }
+          if(PENDING_IDS[r.id]){ continue; }
+          var mineR=((r.name||'').toLowerCase()===(ME.name||'').toLowerCase());
+          if(mineR){ SEEN_REPLY_IDS[r.id]=1; keep.push(r); continue; }
+          PENDING_IDS[r.id]=1; if(!REPLY_BUFFER_FIRST_TS) REPLY_BUFFER_FIRST_TS=Date.now();
+          (PENDING_REPLIES[fid]=PENDING_REPLIES[fid]||[]).push(r);
+        }
+        REPLIES[fid]=keep;
+      });
+      if(Object.keys(PENDING_REPLIES).length) __scheduleReplyFlush();
+    }catch(_dn){}
+  }
+  function __scheduleReplyFlush(){ if(REPLY_FLUSH_TIMER)return; REPLY_FLUSH_TIMER=setTimeout(__flushReplies,REPLY_BUFFER_MS); }
+  function __flushReplies(){
+    REPLY_FLUSH_TIMER=null;
+    var fids=Object.keys(PENDING_REPLIES); if(!fids.length){ REPLY_BUFFER_FIRST_TS=0; return; }
+    var now=Date.now();
+    if(((now-LAST_SCROLL_TS)<650 || isTyping()) && (now-REPLY_BUFFER_FIRST_TS)<REPLY_BUFFER_MAX_MS){ REPLY_FLUSH_TIMER=setTimeout(__flushReplies,700); return; }
+    var box=document.getElementById('liveFeed'), aId=null, aTop=0;
+    if(box){ var cs=box.querySelectorAll('.card[id^="flap-"]'); for(var i=0;i<cs.length;i++){ var rc=cs[i].getBoundingClientRect(); if(rc.bottom>4){ aId=cs[i].id; aTop=rc.top; break; } } }
+    fids.forEach(function(fid){
+      var arr=PENDING_REPLIES[fid]||[];
+      arr.forEach(function(r){
+        if(!r||r.id==null)return;
+        delete PENDING_IDS[r.id];
+        if(SEEN_REPLY_IDS[r.id])return;
+        if(isBlocked(r.name)){ SEEN_REPLY_IDS[r.id]=1; return; }
+        var list=(REPLIES[fid]=REPLIES[fid]||[]), exists=false;
+        for(var k=0;k<list.length;k++){ if(list[k]&&list[k].id===r.id){exists=true;break;} }
+        if(!exists) list.push(r);
+        SEEN_REPLY_IDS[r.id]=1;
+        try{ insertReplyBubble(fid,r); }catch(_ib){}
+      });
+      delete PENDING_REPLIES[fid];
+    });
+    if(aId){ var el=document.getElementById(aId); if(el){ var d=el.getBoundingClientRect().top-aTop; if(Math.abs(d)>0.5){ try{window.scrollBy(0,d);}catch(_sb){} } } }
+    REPLY_BUFFER_FIRST_TS=0;
+  }
   /* remember which flaps you've already liked (per device) so reloading can't re-like the same post */
   var MY_LIKES=(function(){try{return JSON.parse(localStorage.getItem('flap_likes')||'{}');}catch(e){return {};}})();
   function hasLiked(id){return !!MY_LIKES[id];}
