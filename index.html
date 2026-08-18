@@ -6640,81 +6640,79 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
 <script>
 (function(){
   if (window.__flapUXpack) return; window.__flapUXpack = true;
-  /* FEATURE 1: tapping any name/@handle opens the CORRECT user's profile; graceful no-op for non-existent handles (no ghost modal) */
-  try {
-    var _sup = window.showUserProfile;
-    if (typeof _sup === 'function' && !_sup.__wrapped) {
-      var resolveUser = function(raw){
-        if (raw == null) return null;
-        var s = ('' + raw).trim();
-        if (!s) return null;
-        if (s.charAt(0) === '@') s = s.slice(1);
-        if (!s) return null;
-        var U = window.USERS || {};
-        if (U[s] && U[s].name) return U[s].name;
-        var keys = Object.keys(U), i, u;
-        for (i=0;i<keys.length;i++){ u=U[keys[i]]; if(u && u.name===s) return u.name; }
-        for (i=0;i<keys.length;i++){ u=U[keys[i]]; if(u && u.handle && u.handle===s) return u.name||keys[i]; }
-        var low = s.toLowerCase();
-        for (i=0;i<keys.length;i++){ u=U[keys[i]]; if(u && ((u.name&&(''+u.name).toLowerCase()===low)||(u.handle&&(''+u.handle).toLowerCase()===low))) return u.name||keys[i]; }
-        if (window.ME && window.ME.name && ((''+window.ME.name)===s || (''+window.ME.name).toLowerCase()===low)) return window.ME.name;
-        return null;
-      };
-      var wrapped = function(name){
-        var canon = resolveUser(name);
-        if (canon == null) return;
-        var args = Array.prototype.slice.call(arguments);
-        args[0] = canon;
-        return _sup.apply(this, args);
-      };
-      wrapped.__wrapped = true; wrapped.__resolveUser = resolveUser;
-      window.showUserProfile = wrapped;
-    }
-  } catch(e){}
-  /* FEATURE 2: smooth live replies -- hold refresh while actively scrolling, preserve read position, keep own reply instant */
-  try {
-    var lastScroll = 0;
-    window.addEventListener('scroll', function(){ lastScroll = Date.now(); }, {passive:true});
-    var isScrolling = function(){ return (Date.now() - lastScroll) < 1400; };
-    var scroller = document.scrollingElement || document.documentElement;
-    var pickAnchor = function(){
-      var cards = document.querySelectorAll('#liveFeed .card[id]'), best=null, bestTop=-1e9, i, t;
-      for (i=0;i<cards.length;i++){ t=cards[i].getBoundingClientRect().top; if (t<=8 && t>bestTop){ bestTop=t; best=cards[i]; } }
-      if (!best && cards.length) best=cards[0];
-      return best ? {el:best, top:best.getBoundingClientRect().top} : null;
+  /* FEATURE 1: tapping any name/@handle opens the CORRECT user's profile; graceful no-op for non-existent handles (no ghost modal). Self-healing wrap survives late reassignment of showUserProfile during init. */
+  var resolveUser = function(raw){
+    if (raw == null) return null;
+    var s = ('' + raw).trim();
+    if (!s) return null;
+    if (s.charAt(0) === '@') s = s.slice(1);
+    if (!s) return null;
+    var U = window.USERS || {};
+    if (U[s] && U[s].name) return U[s].name;
+    var keys = Object.keys(U), i, u;
+    for (i=0;i<keys.length;i++){ u=U[keys[i]]; if(u && u.name===s) return u.name; }
+    for (i=0;i<keys.length;i++){ u=U[keys[i]]; if(u && u.handle && u.handle===s) return u.name||keys[i]; }
+    var low = s.toLowerCase();
+    for (i=0;i<keys.length;i++){ u=U[keys[i]]; if(u && ((u.name&&(''+u.name).toLowerCase()===low)||(u.handle&&(''+u.handle).toLowerCase()===low))) return u.name||keys[i]; }
+    if (window.ME && window.ME.name && ((''+window.ME.name)===s || (''+window.ME.name).toLowerCase()===low)) return window.ME.name;
+    return null;
+  };
+  function wrapSUP(){
+    var cur = window.showUserProfile;
+    if (typeof cur !== 'function' || cur.__wrapped) return;
+    var _sup = cur;
+    var wrapped = function(name){
+      var canon = resolveUser(name);
+      if (canon == null) return;
+      var args = Array.prototype.slice.call(arguments); args[0] = canon;
+      return _sup.apply(this, args);
     };
-    var restoreAnchor = function(a){
-      if (!a || !a.el || !a.el.isConnected) return;
-      var delta = a.el.getBoundingClientRect().top - a.top;
-      if (Math.abs(delta) > 0.5) scroller.scrollTop += delta;
+    wrapped.__wrapped = true; wrapped.__resolveUser = resolveUser; wrapped.__orig = _sup;
+    window.showUserProfile = wrapped;
+  }
+  /* FEATURE 2: smooth live replies -- hold refresh while actively scrolling, preserve read position; own reply stays instant (separate sendReply path). */
+  var lastScroll = 0, pending = false;
+  try { window.addEventListener('scroll', function(){ lastScroll = Date.now(); }, {passive:true}); } catch(e){}
+  var isScrolling = function(){ return (Date.now() - lastScroll) < 1400; };
+  var pickAnchor = function(){
+    var cards = document.querySelectorAll('#liveFeed .card[id]'), best=null, bestTop=-1e9, i, t;
+    for (i=0;i<cards.length;i++){ t=cards[i].getBoundingClientRect().top; if (t<=8 && t>bestTop){ bestTop=t; best=cards[i]; } }
+    if (!best && cards.length) best=cards[0];
+    return best ? {el:best, top:best.getBoundingClientRect().top} : null;
+  };
+  var restoreAnchor = function(a){
+    if (!a || !a.el || !a.el.isConnected) return;
+    var sc = document.scrollingElement || document.documentElement;
+    var delta = a.el.getBoundingClientRect().top - a.top;
+    if (Math.abs(delta) > 0.5) sc.scrollTop += delta;
+  };
+  function wrapROF(){
+    var cur = window.refreshOpenFlap;
+    if (typeof cur !== 'function' || cur.__wrapped) return;
+    var _rof = cur;
+    var run = function(self,args){
+      pending=false; var anchor = pickAnchor(), r;
+      try { r=_rof.apply(self,args); } catch(e){ r=undefined; }
+      requestAnimationFrame(function(){ restoreAnchor(anchor); });
+      setTimeout(function(){ restoreAnchor(anchor); }, 160);
+      setTimeout(function(){ restoreAnchor(anchor); }, 360);
+      return r;
     };
-    if (typeof window.refreshOpenFlap === 'function' && !window.refreshOpenFlap.__wrapped){
-      var _rof = window.refreshOpenFlap, pending=false;
-      var run = function(self,args){
-        pending=false;
-        var anchor = pickAnchor(), r;
-        try { r=_rof.apply(self,args); } catch(e){ r=undefined; }
-        requestAnimationFrame(function(){ restoreAnchor(anchor); });
-        setTimeout(function(){ restoreAnchor(anchor); }, 160);
-        setTimeout(function(){ restoreAnchor(anchor); }, 360);
-        return r;
-      };
-      var wrappedRof = function(){
-        var self=this, args=arguments;
-        if (isScrolling()){
-          if (!pending){
-            pending=true;
-            var retry=function(){ if(isScrolling()){ setTimeout(retry,400); return; } run(self,args); };
-            setTimeout(retry,500);
-          }
-          return;
-        }
-        return run(self,args);
-      };
-      wrappedRof.__wrapped=true;
-      window.refreshOpenFlap = wrappedRof;
-    }
-  } catch(e){}
+    var wrappedRof = function(){
+      var self=this, args=arguments;
+      if (isScrolling()){
+        if (!pending){ pending=true; var retry=function(){ if(isScrolling()){ setTimeout(retry,400); return; } run(self,args); }; setTimeout(retry,500); }
+        return;
+      }
+      return run(self,args);
+    };
+    wrappedRof.__wrapped = true; window.refreshOpenFlap = wrappedRof;
+  }
+  var ensure = function(){ try{ wrapSUP(); }catch(e){} try{ wrapROF(); }catch(e){} };
+  ensure();
+  try { document.addEventListener('DOMContentLoaded', ensure); } catch(e){}
+  try { window.addEventListener('load', ensure); } catch(e){}
+  try { setInterval(ensure, 1500); } catch(e){}
 })();
 </script>
 </body>
