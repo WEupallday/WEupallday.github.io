@@ -1061,9 +1061,10 @@
   .feed-end{color:#9fb0e0;font-size:11px;letter-spacing:.04em;}
   .reply.reply-new{animation:replyIn .28s ease;}
   @keyframes replyIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
-  .mention-box{position:fixed;z-index:99999;background:#fff;border:2px solid var(--orange,#f7941e);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.28);overflow-y:auto;max-height:232px;}
+  .mention-box{position:fixed;z-index:99999;background:#fff;border:2px solid var(--orange,#f7941e);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.28);overflow:hidden;}
+  .mention-list{max-height:260px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;}
   .mention-hint{font-size:10px;color:#a06a10;background:#fff6e2;padding:4px 10px;border-bottom:1px solid #ffe3ad;}
-  .mention-item{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f0f4;}
+  .mention-item{display:flex;align-items:center;gap:8px;padding:10px 12px;min-height:54px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f0f4;user-select:none;-webkit-user-select:none;}
   .mention-item:last-child{border-bottom:none;}
   .mention-item:hover,.mention-item.on{background:#fff2d6;}
   .mention-item .m-ava{width:26px;height:26px;border-radius:50%;overflow:hidden;flex:0 0 auto;background:#eee;}
@@ -2173,12 +2174,16 @@
   function dmText(t){ return esc(t||'').replace(/⟨mood:([a-z0-9_]+)⟩/g,function(m,name){ return '<span class="remoji remoji-anim">'+emoHTML(name,true)+'</span>'; }); }
 
   /* ===== @mention autocomplete: type @ and tap a name to tag them ===== */
-  var MENTION_EL=null, MENTION_TOKEN=null;
+  var MENTION_EL=null, MENTION_TOKEN=null, MENTION_TOUCHING=false;
   function mentionBox(){
     var b=document.getElementById('mentionBox');
     if(!b){ b=document.createElement('div'); b.id='mentionBox'; b.className='mention-box'; b.style.display='none';
-      /* pointerdown handles mouse + touch reliably; preventDefault keeps the input focused so the tag inserts */
-      b.addEventListener('pointerdown',function(e){ var it=e.target.closest&&e.target.closest('.mention-item'); if(it){ e.preventDefault(); pickMention(it.getAttribute('data-name')); } });
+      /* tap-vs-scroll: a touch that MOVES >8px is a scroll (never selects); only a clean tap picks a name. Desktop click still works. */
+      var mStartY=0, mMoved=false;
+      b.addEventListener('touchstart',function(e){ MENTION_TOUCHING=true; mStartY=(e.touches[0]||{}).clientY||0; mMoved=false; },{passive:true});
+      b.addEventListener('touchmove',function(e){ if(Math.abs(((e.touches[0]||{}).clientY||0)-mStartY)>8) mMoved=true; },{passive:true});
+      b.addEventListener('touchend',function(){ setTimeout(function(){ MENTION_TOUCHING=false; },300); },{passive:true});
+      b.addEventListener('click',function(e){ var it=e.target.closest&&e.target.closest('.mention-item'); if(!it)return; if(mMoved){ mMoved=false; return; } pickMention(it.getAttribute('data-name')); });
       document.body.appendChild(b);
     }
     return b;
@@ -2200,13 +2205,13 @@
       .sort(function(a,b){return a.toLowerCase()<b.toLowerCase()?-1:1;}).slice(0,6);
     if(!names.length){ box.style.display='none'; MENTION_EL=null; MENTION_TOKEN=null; return; }
     MENTION_EL=el; MENTION_TOKEN=tok;   /* lock in the @token position NOW, so tapping a name later inserts correctly even after the input blurs */
-    box.innerHTML='<div class="mention-hint">tap a name to tag them</div>'+names.map(function(n){
+    box.innerHTML='<div class="mention-hint">tap a name to tag them</div><div class="mention-list">'+names.map(function(n){
       return '<div class="mention-item" data-name="'+esc(n)+'"><span class="m-ava">'+avatarFor(n)+'</span><b>'+esc(n)+'</b></div>';
-    }).join('');
+    }).join('')+'</div>';
     var r=el.getBoundingClientRect();
     box.style.width=Math.min(280,Math.max(170,r.width))+'px';
     box.style.left=Math.max(8,Math.min(r.left,window.innerWidth-Math.min(280,Math.max(170,r.width))-8))+'px';
-    var below=r.bottom+4, boxH=Math.min(232,(names.length*42)+24);
+    var below=r.bottom+4, boxH=Math.min(288,(names.length*54)+30);
     box.style.top=((below+boxH>window.innerHeight)?Math.max(8,r.top-boxH-4):below)+'px';   /* flip above if no room below */
     box.style.display='block';
   }
@@ -2223,11 +2228,11 @@
   document.addEventListener('keyup',function(e){ if(isMentionTarget(e.target)&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))showMentions(e.target); },true);
   document.addEventListener('keydown',function(e){ if(e.key==='Escape')hideMentions(); },true);
   /* close the suggestion box when the input loses focus (short delay lets a tap on a suggestion register first) */
-  document.addEventListener('focusout',function(e){ if(isMentionTarget(e.target)) setTimeout(function(){ var a=document.activeElement; if(!a||!a.closest||!a.closest('#mentionBox')) hideMentions(); },150); },true);
+  document.addEventListener('focusout',function(e){ if(isMentionTarget(e.target)) setTimeout(function(){ if(MENTION_TOUCHING)return; var a=document.activeElement; if(!a||!a.closest||!a.closest('#mentionBox')) hideMentions(); },150); },true);
   /* close on any tap/click anywhere outside the box + its input */
   document.addEventListener('pointerdown',function(e){ var box=document.getElementById('mentionBox'); if(!box||box.style.display==='none')return; if(box.contains(e.target)||e.target===MENTION_EL)return; hideMentions(); },true);
   /* on scroll: reposition only while the input is still focused, otherwise close */
-  document.addEventListener('scroll',function(){ if(!MENTION_EL)return; if(document.activeElement===MENTION_EL)showMentions(MENTION_EL); else hideMentions(); },true);
+  document.addEventListener('scroll',function(e){ if(MENTION_TOUCHING)return; if(e&&e.target&&e.target.nodeType===1&&e.target.closest&&e.target.closest('#mentionBox'))return; if(!MENTION_EL)return; if(document.activeElement===MENTION_EL)showMentions(MENTION_EL); else hideMentions(); },true);
   function reactionHTML(token){
     if(!token)return '';
     if(token.charAt(0)==='~')return ' <span class="remoji remoji-anim">'+emoHTML(token.slice(1),true)+'</span>';
@@ -5110,7 +5115,7 @@ function notifText(n){
     document.getElementById('attachPreview').style.display='none';
   }
 
-  var posting=false;
+  var posting=false, lastPostAt=0;
   function setFlapButtons(txt,disabled){
     document.querySelectorAll('.comp-btn.go').forEach(function(b){
       if(!b.dataset.orig)b.dataset.orig=b.textContent;
@@ -5120,6 +5125,7 @@ function notifText(n){
   }
   async function postFlap(){
     if(posting)return;
+    if(lastPostAt&&(Date.now()-lastPostAt)<3000)return;   /* silent anti-spam: ignore a repeat post within ~3s of the last successful one — no message shown */
     var ta=document.getElementById('composeText');
     var text=ta.value.trim();
     if(!text&&!attachBlob){toast('Type something (or add a pic) first!');return;}
@@ -5130,6 +5136,7 @@ function notifText(n){
     if(ME.admin && text){ var _gt=transformGroupTags(text); text=_gt.body; groupHits=_gt.hits; }   /* admin-only: badge-group tags become chips + pings */
     if(!ONLINE){
       localPosts.unshift({id:Date.now(),name:ME.name,avatar_url:ME.pic||null,mood:mood,body:text,pic_url:attachURL,likes:0,created_at:new Date().toISOString()});
+      lastPostAt=Date.now();
       finishPost(ta);loadFeed();
       toast('Posted (demo mode — only you can see it)');
       return;
@@ -5168,6 +5175,7 @@ function notifText(n){
           });
         });
       }
+      lastPostAt=Date.now();
       posting=false;setFlapButtons(null,false);
       finishPost(ta);
       await loadFeed();
