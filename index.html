@@ -32,6 +32,27 @@
   if(sm) document.documentElement.style.setProperty('--demo-safe', sm[1]+'px');
 }catch(e){}})();
 </script>
+<script>
+/* TheFlap backend-load reduction: managed polling + pause-when-hidden + idle back-off. Additive & reversible. */
+(function(){
+  if(window.__FLAPPOLL) return;
+  var P = window.__FLAPPOLL = { polls:{}, idleMult:1, lastAct:Date.now(), IDLE_MS:180000 };
+  function start(name){ var p=P.polls[name]; if(!p) return; if(p.id){ clearInterval(p.id); p.id=null; } var d=p.base*(name==='feed'?P.idleMult:1); p.id=setInterval(p.fn, d); }
+  function stop(name){ var p=P.polls[name]; if(p&&p.id){ clearInterval(p.id); p.id=null; } }
+  function startAll(){ for(var k in P.polls) start(k); }
+  function stopAll(){ for(var k in P.polls) stop(k); }
+  window.__flapStart=start; window.__flapStop=stop; window.__flapStartAll=startAll; window.__flapStopAll=stopAll;
+  window.__flapReg=function(name, fn, delay){ if(typeof fn!=='function' || !delay){ return setInterval(fn, delay); } P.polls[name]={fn:fn, base:delay, id:null}; if(!document.hidden){ start(name); } return P.polls[name].id; };
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden){ stopAll(); }
+    else { P.idleMult=1; P.lastAct=Date.now(); startAll(); try{ var f=P.polls.feed; if(f&&f.fn) f.fn(); }catch(e){} try{ var pr=P.polls.presence; if(pr&&pr.fn) pr.fn(); }catch(e){} }
+  });
+  function bump(){ P.lastAct=Date.now(); if(P.idleMult!==1 && !document.hidden){ P.idleMult=1; start('feed'); } }
+  ['pointerdown','keydown','touchstart','scroll','mousemove'].forEach(function(ev){ try{ window.addEventListener(ev, bump, {passive:true, capture:true}); }catch(e){ window.addEventListener(ev, bump, true); } });
+  setInterval(function(){ if(document.hidden) return; var want=(Date.now()-P.lastAct > P.IDLE_MS)?2:1; if(want!==P.idleMult){ P.idleMult=want; start('feed'); } }, 30000);
+})();
+</script>
+
 <title>TheFlap</title>
 <!-- PWA: installable, standalone, themed -->
 <link rel="manifest" href="/manifest.webmanifest">
@@ -3328,7 +3349,7 @@
       markPresentToday();
     }
   }
-  setInterval(heartbeat,60000);
+  __flapReg('presence', heartbeat,90000);
 
   /* ============ daily presence → streaks (any app-open = an active day) ============ */
   var MY_PRESENCE_DATE=null, MY_ACTIVE_DAYS=null;
@@ -5136,9 +5157,9 @@ function notifText(n){
       var _fe=flapErr(e,'Feed load');try{if(typeof LAST_ROWS!=='undefined'&&LAST_ROWS&&LAST_ROWS.length){renderLive();try{toast(_fe);}catch(_t){}}else{document.getElementById('liveFeed').innerHTML='<div class="card"><div class="card-body" style="text-align:center;font-size:11px;color:#8f1408;">'+esc(_fe)+'<br><span style="opacity:.75;">Tap refresh to try again.</span></div></div>';}}catch(_r){document.getElementById('liveFeed').innerHTML='<div class="card"><div class="card-body" style="text-align:center;font-size:11px;color:#8f1408;">'+esc(_fe)+'</div></div>';}
     }
   }
-  if(ONLINE)setInterval(function(){if(ME.name){ if(!isTyping())loadFeed(); loadNotifs(); }},20000);   /* don't refresh the feed while you're mid-reply — it'd wipe your open box */
-  if(ONLINE)setInterval(function(){ loadPoll(); },300000);   /* every 5 min: refresh poll vote COUNTS only — never changes the poll */
-  if(ONLINE)setInterval(function(){ if(ME.name && DM_OPEN && document.getElementById('dmThread')){ refreshDMThread(DM_OPEN); } },4000);   /* live-refresh the open DM thread so replies arrive; safe while typing (only swaps bubbles, not your box) */
+  if(ONLINE)__flapReg('feed', function(){if(ME.name){ if(!isTyping())loadFeed(); loadNotifs(); }},45000);   /* don't refresh the feed while you're mid-reply — it'd wipe your open box */
+  if(ONLINE)__flapReg('poll', function(){ loadPoll(); },600000);   /* every 5 min: refresh poll vote COUNTS only — never changes the poll */
+  if(ONLINE)__flapReg('dm', function(){ if(ME.name && DM_OPEN && document.getElementById('dmThread')){ refreshDMThread(DM_OPEN); } },8000);   /* live-refresh the open DM thread so replies arrive; safe while typing (only swaps bubbles, not your box) */
   /* auto-load older flaps as you near the bottom, so the feed keeps flowing */
   window.addEventListener('scroll',function(){
     if(FEED_FILTER||FEED_LOADING_MORE||!FEED_HAS_MORE)return;
@@ -6938,7 +6959,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
       var tries=0;
       var iv=setInterval(function(){ tries++; if(db()){ load(); clearInterval(iv); } else if(tries>40){ clearInterval(iv); } },500);
     })();
-    setInterval(load,30000);
+    __flapReg('emojis', load,120000);
     syncEmojis();
   }catch(e){}
 })();
