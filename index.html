@@ -5108,7 +5108,7 @@ function notifText(n){
     }
     try{
       var res=await sb.from('flaps').select('*').order('id',{ascending:false}).limit(FEED_LIMIT);
-      if(res.error)throw res.error;
+      if(res.error)throw res.error;try{window.__FLAPNET&&window.__FLAPNET.ok();}catch(_){}
       FEED_HAS_MORE=((res.data||[]).length>=FEED_LIMIT);   /* a full page came back → there are probably older flaps */
       LAST_ROWS=(res.data||[]).filter(function(r){return String(r.name||'').indexOf('::')!==0;}); /* keep ALL hidden ::sentinel:: rows (ticker, poll, friend, dm, features…) out of the feed */
       loadTicker();
@@ -5154,7 +5154,18 @@ function notifText(n){
       checkNotifications();
       if(manual)toast('Feed refreshed!');
     }catch(e){
-      var _fe=flapErr(e,'Feed load');try{if(typeof LAST_ROWS!=='undefined'&&LAST_ROWS&&LAST_ROWS.length){renderLive();try{toast(_fe);}catch(_t){}}else{document.getElementById('liveFeed').innerHTML='<div class="card"><div class="card-body" style="text-align:center;font-size:11px;color:#8f1408;">'+esc(_fe)+'<br><span style="opacity:.75;">Tap refresh to try again.</span></div></div>';}}catch(_r){document.getElementById('liveFeed').innerHTML='<div class="card"><div class="card-body" style="text-align:center;font-size:11px;color:#8f1408;">'+esc(_fe)+'</div></div>';}
+      /* CRASH-PROOF graceful degradation: never blank the feed on a failed refresh.
+         Keep the last-good feed (or the cached snapshot), show a subtle reconnecting
+         pill and retry with backoff — never a full-screen error / white screen. */
+      try{
+        if(typeof LAST_ROWS!=='undefined' && LAST_ROWS && LAST_ROWS.length){
+          try{ renderLive(); }catch(_rl){}
+        } else {
+          try{ if(typeof renderFeedSnapshot==='function') renderFeedSnapshot(); }catch(_rs){}
+        }
+      }catch(_keep){}
+      try{ if(manual){ var _fe=flapErr(e,'Feed load'); toast(_fe); } }catch(_tm){}
+      try{ if(window.__FLAPNET) window.__FLAPNET.fail(); }catch(_fn){}
     }
   }
   if(ONLINE)__flapReg('feed', function(){if(ME.name){ if(!isTyping())loadFeed(); loadNotifs(); }},45000);   /* don't refresh the feed while you're mid-reply — it'd wipe your open box */
@@ -7139,5 +7150,34 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     <button class="cl-big s" onclick="closeLinkConfirm()">Cancel</button>
   </div>
 </div>
+
+<script>
+/* ===== TheFlap crash-proof net layer: graceful degradation + retry/backoff + reconnecting pill + scroll throttle ===== */
+(function(){
+  if(window.__FLAPNET) return;
+  try{
+    window.addEventListener('error', function(ev){ try{ console.warn('[FLAP] handled error:', (ev&&(ev.message||ev.error))||ev); }catch(_){} });
+    window.addEventListener('unhandledrejection', function(ev){ try{ console.warn('[FLAP] handled rejection:', ev&&ev.reason); }catch(_){} try{ ev&&ev.preventDefault&&ev.preventDefault(); }catch(_){} });
+  }catch(_e){}
+  var pill=null;
+  function ensurePill(){ if(pill) return pill; try{ pill=document.createElement('div'); pill.id='flapReconnect'; pill.textContent='Reconnecting\u2026'; pill.setAttribute('role','status'); pill.style.cssText='position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:2147483000;background:rgba(20,26,54,.92);color:#fff;font:600 12px/1 -apple-system,Segoe UI,Roboto,sans-serif;padding:8px 14px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.28);display:none;pointer-events:none;letter-spacing:.2px;'; (document.body||document.documentElement).appendChild(pill); }catch(_e){} return pill; }
+  function showPill(){ try{ var p=ensurePill(); if(p) p.style.display='block'; }catch(_e){} }
+  function hidePill(){ try{ if(pill) pill.style.display='none'; }catch(_e){} }
+  var attempt=0, timer=null, failing=false;
+  function clearTimer(){ if(timer){ clearTimeout(timer); timer=null; } }
+  function fire(){ try{ if(typeof window.loadFeed==='function'){ Promise.resolve().then(function(){ return window.loadFeed(); }).catch(function(){}); } }catch(_e){} }
+  function schedule(){ clearTimer(); var delay=Math.min(30000, 3000*Math.pow(2, attempt)); attempt++; timer=setTimeout(function(){ timer=null; fire(); }, delay); }
+  window.__FLAPNET={ ok:function(){ attempt=0; failing=false; clearTimer(); hidePill(); }, fail:function(){ failing=true; showPill(); schedule(); }, reconnecting:function(){ return failing; } };
+  try{ document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible'){ attempt=0; clearTimer(); if(failing) fire(); } }); }catch(_e){}
+  try{ window.addEventListener('online', function(){ attempt=0; clearTimer(); fire(); }); }catch(_e){}
+  try{
+    if(typeof window.loadOlderFlaps==='function' && !window.loadOlderFlaps.__throttled){
+      var _orig=window.loadOlderFlaps, _last=0, _busy=false;
+      var wrapped=function(){ var now=Date.now(); if(_busy) return; if(now-_last<1000) return; _last=now; _busy=true; var self=this, args=arguments; requestAnimationFrame(function(){ Promise.resolve().then(function(){ return _orig.apply(self,args); }).catch(function(){}).then(function(){ _busy=false; _last=Date.now(); }); }); };
+      wrapped.__throttled=true; window.loadOlderFlaps=wrapped;
+    }
+  }catch(_e){}
+})();
+</script>
 </body>
 </html>
