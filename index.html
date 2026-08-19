@@ -7207,5 +7207,66 @@ if(document.body)mount();else document.addEventListener('DOMContentLoaded',mount
 window.flapGetFeathers=function(){b.click();};
 })();
 </script>
+
+<!-- Real Video Challenges (Supabase Storage) -->
+<script>(function(){
+if(window.__chal)return;window.__chal=1;
+function u(){try{if(window.ME&&ME.name)return ME.name;}catch(e){}try{var m=JSON.parse(localStorage.getItem('flap_me')||'{}');if(m&&m.name)return m.name;}catch(e){}return localStorage.getItem('flap_lastname')||'';}
+function sbc(){return window.sb;}
+var CUR=null,SUBS=[],LIKES={},MINE={};
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+var btn=document.createElement('button');btn.type='button';btn.innerHTML='&#127942; Challenge';
+btn.style.cssText='position:fixed;right:14px;bottom:210px;z-index:99990;border:0;border-radius:999px;background:linear-gradient(135deg,#8a5cff,#5a2ee0);color:#fff;font-family:inherit;font-weight:800;font-size:14px;padding:11px 16px;box-shadow:0 6px 18px rgba(90,46,224,.4)';
+var ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:99991;background:rgba(0,0,0,.82);display:none;overflow:auto';
+function close(){ov.style.display='none';}
+function lc(id){return LIKES[id]||0;}
+function render(){
+ var sorted=SUBS.slice().sort(function(a,b){return lc(b.id)-lc(a.id);});
+ var h='<div style="max-width:520px;margin:0 auto;padding:16px 14px 60px;font-family:inherit;color:#eee">';
+ h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><b style="font-size:19px;color:#fff">&#127942; '+(CUR?esc(CUR.title):'Challenge')+'</b><button id="chx" type="button" style="margin-left:auto;background:0;border:0;color:#cbb98f;font-size:26px;line-height:1">&times;</button></div>';
+ if(CUR){h+='<div style="background:#241a10;border:1px solid #3a2c18;border-radius:14px;padding:12px 14px;margin-bottom:14px"><div style="color:#e7c98c;font-size:13.5px;line-height:1.5">'+esc(CUR.prompt)+'</div><div style="margin-top:8px;color:#ffcf5a;font-weight:800;font-size:13px">Winner gets '+CUR.reward+' &#129718; Feathers</div></div>';
+  h+='<label style="display:block;background:linear-gradient(135deg,#8a5cff,#5a2ee0);color:#fff;text-align:center;font-weight:800;border-radius:12px;padding:13px;cursor:pointer;margin-bottom:6px">&#128247; Upload your video<input id="chfile" type="file" accept="video/*" style="display:none"></label>';
+  h+='<div id="chstat" style="text-align:center;color:#b9a88a;font-size:12px;min-height:16px;margin-bottom:12px"></div>';
+  h+='<div style="color:#fff;font-weight:800;font-size:14px;margin:4px 2px 10px">Entries ('+SUBS.length+')</div>';
+  if(!SUBS.length){h+='<div style="color:#8a795c;text-align:center;padding:16px 0">Be the first to enter!</div>';}
+  h+=sorted.map(function(s,i){var liked=MINE[s.id];return '<div style="background:#141017;border:1px solid #2a2233;border-radius:14px;overflow:hidden;margin-bottom:12px">'+(i<3?'<div style="background:#2a1f00;color:#ffcf5a;font-size:11px;font-weight:800;padding:4px 10px">Leaderboard #'+(i+1)+'</div>':'')+'<video src="'+esc(s.video_url)+'" controls playsinline preload="metadata" style="width:100%;max-height:60vh;background:#000;display:block"></video><div style="padding:10px 12px"><div style="font-weight:700;color:#fff;font-size:13px">@'+esc(s.name)+'</div>'+(s.caption?'<div style="color:#cbb9a0;font-size:12.5px;margin-top:2px">'+esc(s.caption)+'</div>':'')+'<button class="chlike" data-id="'+s.id+'" type="button" style="margin-top:8px;background:'+(liked?'#e0245e':'#241a2a')+';color:#fff;border:0;border-radius:999px;font-weight:800;font-size:13px;padding:7px 14px">&#10084; '+lc(s.id)+'</button></div></div>';}).join('');
+ }else{h+='<div style="color:#b9a88a;text-align:center;padding:30px">No active challenge right now. Check back soon!</div>';}
+ h+='</div>';
+ ov.innerHTML=h;
+ var x=document.getElementById('chx');if(x)x.onclick=close;
+ var f=document.getElementById('chfile');if(f)f.onchange=function(){doUpload(f.files[0]);};
+ [].forEach.call(ov.querySelectorAll('.chlike'),function(b){b.onclick=function(){doLike(+b.getAttribute('data-id'));};});
+}
+function stat(t){var s=document.getElementById('chstat');if(s)s.textContent=t;}
+function doUpload(file){
+ if(!file||!CUR)return;
+ if(file.size>78643200){stat('Video too big (max 75MB).');return;}
+ var uu=u();if(!uu){stat('Please log in first.');return;}
+ var cap=prompt('Add a caption (optional):')||'';
+ stat('Uploading...');
+ var ext=(file.name.split('.').pop()||'mp4').toLowerCase();
+ var path=CUR.id+'/'+uu+'-'+Date.now()+'.'+ext;
+ sbc().storage.from('challenges').upload(path,file,{contentType:file.type,upsert:false}).then(function(r){
+  if(r.error){stat('Upload failed: '+r.error.message);return;}
+  var url=sbc().storage.from('challenges').getPublicUrl(path).data.publicUrl;
+  return sbc().from('flap_challenge_subs').insert({challenge_id:CUR.id,name:uu,video_url:url,caption:cap}).then(function(r2){
+   if(r2.error){stat('Save failed: '+r2.error.message);return;}
+   stat('Posted! Good luck.');load();
+  });
+ }).catch(function(e){stat('Error: '+e);});
+}
+function doLike(id){var uu=u();if(!uu||MINE[id])return;MINE[id]=true;LIKES[id]=(LIKES[id]||0)+1;render();sbc().from('flap_challenge_likes').insert({sub_id:id,name:uu}).then(function(){});}
+function load(){var c=sbc();if(!c)return;c.from('flap_challenges').select('*').eq('status','open').order('id',{ascending:false}).limit(1).then(function(r){CUR=(r.data&&r.data[0])||null;if(!CUR){render();return;}c.from('flap_challenge_subs').select('*').eq('challenge_id',CUR.id).then(function(r2){SUBS=r2.data||[];var ids=SUBS.map(function(s){return s.id;});LIKES={};MINE={};if(!ids.length){render();return;}c.from('flap_challenge_likes').select('sub_id,name').in('sub_id',ids).then(function(r3){var uu=u();(r3.data||[]).forEach(function(l){LIKES[l.sub_id]=(LIKES[l.sub_id]||0)+1;if(l.name===uu)MINE[l.sub_id]=true;});render();});});});}
+function open(){ov.style.display='block';render();load();}
+btn.onclick=open;
+ov.onclick=function(e){if(e.target===ov)close();};
+function findOld(){var T=String.fromCharCode(55356,57286);var bs=[].slice.call(document.querySelectorAll('button'));for(var i=0;i<bs.length;i++){var b=bs[i];if(getComputedStyle(b).position!=='fixed')continue;var t=(b.textContent||'').trim();if(t.indexOf(T)>-1&&t.length<=3&&b!==btn){return b;}}return null;}
+function mount(){if(!document.body)return;var old=findOld();if(old){old.addEventListener('click',function(e){e.stopImmediatePropagation();e.preventDefault();open();},true);old.setAttribute('data-rc','1');}else{document.body.appendChild(btn);}document.body.appendChild(ov);}
+if(document.body)mount();else document.addEventListener('DOMContentLoaded',mount);
+setTimeout(function(){if(!document.querySelector('[data-rc]')&&!btn.parentNode){mount();}},1600);
+window.flapChallenge=open;
+try{if(/[?&]go=challenge/.test(location.search)||location.hash==='#challenge'){setTimeout(open,900);}}catch(e){}
+})();
+</script>
 </body>
 </html>
