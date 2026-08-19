@@ -7189,7 +7189,7 @@ function sbc(){return window.sb;}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function gfLink(slug){return 'https://whop.com/theflap/'+slug+'?metadata[theflap_username]='+encodeURIComponent(u());}
 var gfOv=document.createElement('div');
-gfOv.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center';
+gfOv.style.cssText='position:fixed;inset:0;z-index:2147483646;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center';
 function gfPack(amt,bonus,tag,price,slug){
  var best=tag==='deal';
  var t=tag==='pop'?'<span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#f0891c;color:#fff;font-weight:800;font-size:9.5px;padding:2px 9px;border-radius:999px;white-space:nowrap">&#11088; POPULAR</span>':(tag==='deal'?'<span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#ffc53a;color:#3a2600;font-weight:800;font-size:9.5px;padding:2px 9px;border-radius:999px;white-space:nowrap">&#128293; BEST DEAL</span>':'');
