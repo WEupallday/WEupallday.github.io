@@ -7180,92 +7180,44 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
 })();
 </script>
 
-<!-- Get Feathers (Whop, web+Android) -->
-<script>(function(){
-if(window.__gf)return;window.__gf=1;
-try{var p=(window.Capacitor&&Capacitor.getPlatform&&Capacitor.getPlatform())||'web';if(p==='ios')return;}catch(e){}
-function u(){try{if(window.ME&&ME.name)return ME.name;}catch(e){}try{var m=JSON.parse(localStorage.getItem('flap_me')||'{}');if(m&&m.name)return m.name;}catch(e){}return localStorage.getItem('flap_lastname')||'';}
-function L(s){return 'https://whop.com/theflap/'+s+'?metadata[theflap_username]='+encodeURIComponent(u());}
-var P=[['500-feathers','500','$1.99',''],['1500-feathers','1,500','$4.99','+7% more'],['4-000-feathers','4,000','$9.99','+15% more'],['12-000-feathers','12,000','$24.99','+25% more']];
-var b=document.createElement('button');b.type='button';b.innerHTML='&#129718; Get Feathers';
-b.style.cssText='position:fixed;left:14px;bottom:150px;z-index:99990;border:0;border-radius:999px;background:linear-gradient(135deg,#ffb44a,#f0891c);color:#fff;font-family:inherit;font-weight:800;font-size:14px;padding:11px 16px;box-shadow:0 6px 18px rgba(200,120,0,.45)';
-var o=document.createElement('div');
-o.style.cssText='position:fixed;inset:0;z-index:99991;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center';
-function rows(){return P.map(function(x){return '<a href="'+L(x[0])+'" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;text-decoration:none;background:#fffdf8;border:1px solid #eadcc4;border-radius:13px;padding:11px 13px;margin-bottom:9px;color:#2a2016"><span style="font-size:24px">&#129689;</span><span style="flex:1;font-weight:800">'+x[1]+' <small style="color:#8a795c;font-weight:600">Feathers</small>'+(x[3]?' <span style="color:#20a760;font-size:11px">'+x[3]+'</span>':'')+'</span><span style="background:#f0891c;color:#fff;font-weight:800;border-radius:8px;padding:7px 12px">'+x[2]+'</span></a>';}).join('');}
-function html(){var uu=u()||'you';return '<div style="width:100%;max-width:460px;max-height:92vh;overflow:auto;background:#1c150c;border-top-left-radius:20px;border-top-right-radius:20px;color:#eee;font-family:inherit;padding:0 0 18px">'
-+'<div style="display:flex;align-items:center;gap:10px;padding:15px 16px;border-bottom:1px solid #3a2c18;position:sticky;top:0;background:#2a2016"><b style="font-size:17px;color:#fff">&#129718; Get Feathers</b><button id="gfx" type="button" style="margin-left:auto;background:0;border:0;color:#cbb98f;font-size:22px">&times;</button></div>'
-+'<div style="padding:14px">'
-+'<div style="background:#2a2016;border:1px dashed #6b5222;border-radius:12px;padding:9px 12px;font-size:12.5px;color:#e7c98c;margin-bottom:13px">Buying as <b style="color:#fff">@'+uu+'</b> &#8212; Feathers land on this account automatically. You confirm email + payment at checkout.</div>'
-+rows()
-+'<a href="'+L('theflap-premium')+'" target="_blank" rel="noopener" style="display:block;text-decoration:none;margin-top:14px;background:linear-gradient(135deg,#3a2b6e,#7a52c8);border-radius:14px;padding:14px;color:#fff"><div style="font-weight:800;font-size:15px">&#128081; TheFlap Premium &#8212; $4.99/mo</div><div style="font-size:12px;color:#e5dbff;margin-top:4px">Name effects, Supporter badge, priority chat, custom banner, early access + 500 Feathers to start.</div></a>'
-+'<div style="padding:12px 2px 0;color:#b9a88a;font-size:11.5px;text-align:center">&#128274; Secure checkout by <b style="color:#fff">Whop</b>. Feathers appear within a minute of paying.</div>'
-+'</div></div>';}
-b.onclick=function(){o.innerHTML=html();o.style.display='flex';var x=document.getElementById('gfx');if(x)x.onclick=function(){o.style.display='none';};};
-o.onclick=function(e){if(e.target===o)o.style.display='none';};
-function mount(){if(!document.body)return;document.body.appendChild(b);document.body.appendChild(o);}
-if(document.body)mount();else document.addEventListener('DOMContentLoaded',mount);
-window.flapGetFeathers=function(){b.click();};
-})();
-</script>
 
-<!-- Real Video Challenges (Supabase Storage) -->
+<!-- Feathers + Challenges (unified) -->
 <script>(function(){
-if(window.__chal)return;window.__chal=1;
+if(window.__flapCS)return;window.__flapCS=1;
 function u(){try{if(window.ME&&ME.name)return ME.name;}catch(e){}try{var m=JSON.parse(localStorage.getItem('flap_me')||'{}');if(m&&m.name)return m.name;}catch(e){}return localStorage.getItem('flap_lastname')||'';}
 function sbc(){return window.sb;}
-var CUR=null,SUBS=[],LIKES={},MINE={};
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-var btn=document.createElement('button');btn.type='button';btn.innerHTML='&#127942; Challenge';
-btn.style.cssText='position:fixed;right:14px;bottom:210px;z-index:99990;border:0;border-radius:999px;background:linear-gradient(135deg,#8a5cff,#5a2ee0);color:#fff;font-family:inherit;font-weight:800;font-size:14px;padding:11px 16px;box-shadow:0 6px 18px rgba(90,46,224,.4)';
-var ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:99991;background:rgba(0,0,0,.82);display:none;overflow:auto';
-function close(){ov.style.display='none';}
+function gfLink(slug){return 'https://whop.com/theflap/'+slug+'?metadata[theflap_username]='+encodeURIComponent(u());}
+var gfOv=document.createElement('div');
+gfOv.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center';
+function gfPack(amt,bonus,tag,price,slug){
+ var best=tag==='deal';
+ var t=tag==='pop'?'<span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#f0891c;color:#fff;font-weight:800;font-size:9.5px;padding:2px 9px;border-radius:999px;white-space:nowrap">&#11088; POPULAR</span>':(tag==='deal'?'<span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#ffc53a;color:#3a2600;font-weight:800;font-size:9.5px;padding:2px 9px;border-radius:999px;white-space:nowrap">&#128293; BEST DEAL</span>':'');
+ return '<div style="background:#fffdf8;border:'+(best?'2px solid #ffc53a':'1px solid #eadcc4')+';border-radius:15px;padding:13px 10px 11px;text-align:center;position:relative;color:#2a2016">'+t+'<div style="font-size:26px;line-height:1">&#129718;</div><div style="font-weight:800;font-size:18px;margin-top:3px">'+amt+'<small style="display:block;font-size:10px;color:#8a795c;font-weight:700;letter-spacing:.3px">FEATHERS</small></div><div style="display:inline-block;background:#e9faef;color:#20a760;border:1px solid #b6e8c6;border-radius:999px;font-size:10px;font-weight:700;padding:1px 7px;margin:5px 0 7px;'+(bonus?'':'visibility:hidden')+'">'+(bonus||'.')+'</div><a href="'+gfLink(slug)+'" target="_blank" rel="noopener" style="display:block;border-radius:10px;background:#f0891c;color:#fff;font-weight:800;font-size:14px;padding:9px;text-decoration:none;box-shadow:0 3px 0 #c9740a">'+price+'</a></div>';
+}
+function gfHtml(){var uu=u()||'you';return '<div style="width:100%;max-width:460px;max-height:94vh;overflow:auto;background:linear-gradient(180deg,#241a10,#191009);border:1px solid #3a2c18;border-top-left-radius:22px;border-top-right-radius:22px;color:#eee;font-family:inherit;box-shadow:0 -12px 40px rgba(0,0,0,.5)"><div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #3a2c18;background:linear-gradient(90deg,#2a2016,#1d140b);position:sticky;top:0"><span style="width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff2c0,#f0b400 60%,#c98a00);display:grid;place-items:center;font-size:18px">&#129718;</span><b style="font-size:17px;color:#fff">Get Feathers</b><button id="gfClose" style="margin-left:auto;background:0;border:0;color:#cbb98f;font-size:24px;line-height:1">&times;</button></div><div style="padding:14px"><div style="background:#2a2016;border:1px dashed #6b5222;border-radius:12px;padding:9px 12px;font-size:12.5px;color:#e7c98c;margin-bottom:14px">Buying as <b style="color:#fff">@'+esc(uu)+'</b> &#8212; Feathers land on this account automatically. You confirm email + payment at checkout.</div><div style="font-weight:800;color:#fff;font-size:14px;margin:2px 2px 9px">&#129718; Feather Packs</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+gfPack('500','',null,'$1.99','500-feathers')+gfPack('1,500','+7% more','pop','$4.99','1500-feathers')+gfPack('4,000','+15% more','deal','$9.99','4-000-feathers')+gfPack('12,000','+25% more',null,'$24.99','12-000-feathers')+'</div><a href="'+gfLink('theflap-premium')+'" target="_blank" rel="noopener" style="display:block;text-decoration:none;margin-top:16px;background:linear-gradient(135deg,#3a2b6e,#5a3ea0 60%,#7a52c8);border:1px solid #6b4fb0;border-radius:16px;padding:15px;color:#fff"><div style="font-weight:800;font-size:16px">&#128081; TheFlap Premium</div><div style="font-weight:800;font-size:22px;margin:4px 0">$4.99<span style="font-size:13px;font-weight:400;color:#e5dbff"> /month</span></div><div style="font-size:12px;color:#e5dbff;margin-bottom:6px">Name effects, Supporter badge, priority chat, custom banner, early access + 500 Feathers to start.</div><div style="background:#ffc53a;color:#3a2600;text-align:center;font-weight:800;border-radius:12px;padding:11px">Go Premium &#8212; $4.99/mo</div></a><div style="padding:12px 4px 4px;color:#b9a88a;font-size:11.5px;text-align:center">&#128274; Secure checkout by <b style="color:#fff">Whop</b> &#183; Feathers appear within a minute of paying.</div></div></div>';}
+function gfOpen(){gfOv.innerHTML=gfHtml();gfOv.style.display='flex';var c=document.getElementById('gfClose');if(c)c.onclick=gfClose;}
+function gfClose(){gfOv.style.display='none';}
+gfOv.onclick=function(e){if(e.target===gfOv)gfClose();};
+window.flapGetFeathers=gfOpen;
+var CUR=null,SUBS=[],LIKES={},MINE={},MAXLEN=30;
 function lc(id){return LIKES[id]||0;}
-function render(){
- var sorted=SUBS.slice().sort(function(a,b){return lc(b.id)-lc(a.id);});
- var h='<div style="max-width:520px;margin:0 auto;padding:16px 14px 60px;font-family:inherit;color:#eee">';
- h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><b style="font-size:19px;color:#fff">&#127942; '+(CUR?esc(CUR.title):'Challenge')+'</b><button id="chx" type="button" style="margin-left:auto;background:0;border:0;color:#cbb98f;font-size:26px;line-height:1">&times;</button></div>';
- if(CUR){h+='<div style="background:#241a10;border:1px solid #3a2c18;border-radius:14px;padding:12px 14px;margin-bottom:14px"><div style="color:#e7c98c;font-size:13.5px;line-height:1.5">'+esc(CUR.prompt)+'</div><div style="margin-top:8px;color:#ffcf5a;font-weight:800;font-size:13px">Winner gets '+CUR.reward+' &#129718; Feathers</div></div>';
-  h+='<label style="display:block;background:linear-gradient(135deg,#8a5cff,#5a2ee0);color:#fff;text-align:center;font-weight:800;border-radius:12px;padding:13px;cursor:pointer;margin-bottom:6px">&#128247; Upload your video<input id="chfile" type="file" accept="video/*" style="display:none"></label>';
-  h+='<div id="chstat" style="text-align:center;color:#b9a88a;font-size:12px;min-height:16px;margin-bottom:12px"></div>';
-  h+='<div style="color:#fff;font-weight:800;font-size:14px;margin:4px 2px 10px">Entries ('+SUBS.length+')</div>';
-  if(!SUBS.length){h+='<div style="color:#8a795c;text-align:center;padding:16px 0">Be the first to enter!</div>';}
-  h+=sorted.map(function(s,i){var liked=MINE[s.id];return '<div style="background:#141017;border:1px solid #2a2233;border-radius:14px;overflow:hidden;margin-bottom:12px">'+(i<3?'<div style="background:#2a1f00;color:#ffcf5a;font-size:11px;font-weight:800;padding:4px 10px">Leaderboard #'+(i+1)+'</div>':'')+'<video src="'+esc(s.video_url)+'" controls playsinline preload="metadata" style="width:100%;max-height:60vh;background:#000;display:block"></video><div style="padding:10px 12px"><div style="font-weight:700;color:#fff;font-size:13px">@'+esc(s.name)+'</div>'+(s.caption?'<div style="color:#cbb9a0;font-size:12.5px;margin-top:2px">'+esc(s.caption)+'</div>':'')+'<button class="chlike" data-id="'+s.id+'" type="button" style="margin-top:8px;background:'+(liked?'#e0245e':'#241a2a')+';color:#fff;border:0;border-radius:999px;font-weight:800;font-size:13px;padding:7px 14px">&#10084; '+lc(s.id)+'</button></div></div>';}).join('');
- }else{h+='<div style="color:#b9a88a;text-align:center;padding:30px">No active challenge right now. Check back soon!</div>';}
- h+='</div>';
- ov.innerHTML=h;
- var x=document.getElementById('chx');if(x)x.onclick=close;
- var f=document.getElementById('chfile');if(f)f.onchange=function(){doUpload(f.files[0]);};
- [].forEach.call(ov.querySelectorAll('.chlike'),function(b){b.onclick=function(){doLike(+b.getAttribute('data-id'));};});
-}
-function stat(t){var s=document.getElementById('chstat');if(s)s.textContent=t;}
-function doUpload(file){
- if(!file||!CUR)return;
- if(file.size>78643200){stat('Video too big (max 75MB).');return;}
- var uu=u();if(!uu){stat('Please log in first.');return;}
- var cap=prompt('Add a caption (optional):')||'';
- stat('Uploading...');
- var ext=(file.name.split('.').pop()||'mp4').toLowerCase();
- var path=CUR.id+'/'+uu+'-'+Date.now()+'.'+ext;
- sbc().storage.from('challenges').upload(path,file,{contentType:file.type,upsert:false}).then(function(r){
-  if(r.error){stat('Upload failed: '+r.error.message);return;}
-  var url=sbc().storage.from('challenges').getPublicUrl(path).data.publicUrl;
-  return sbc().from('flap_challenge_subs').insert({challenge_id:CUR.id,name:uu,video_url:url,caption:cap}).then(function(r2){
-   if(r2.error){stat('Save failed: '+r2.error.message);return;}
-   stat('Posted! Good luck.');load();
-  });
- }).catch(function(e){stat('Error: '+e);});
-}
-function doLike(id){var uu=u();if(!uu||MINE[id])return;MINE[id]=true;LIKES[id]=(LIKES[id]||0)+1;render();sbc().from('flap_challenge_likes').insert({sub_id:id,name:uu}).then(function(){});}
-function load(){var c=sbc();if(!c)return;c.from('flap_challenges').select('*').eq('status','open').order('id',{ascending:false}).limit(1).then(function(r){CUR=(r.data&&r.data[0])||null;if(!CUR){render();return;}c.from('flap_challenge_subs').select('*').eq('challenge_id',CUR.id).then(function(r2){SUBS=r2.data||[];var ids=SUBS.map(function(s){return s.id;});LIKES={};MINE={};if(!ids.length){render();return;}c.from('flap_challenge_likes').select('sub_id,name').in('sub_id',ids).then(function(r3){var uu=u();(r3.data||[]).forEach(function(l){LIKES[l.sub_id]=(LIKES[l.sub_id]||0)+1;if(l.name===uu)MINE[l.sub_id]=true;});render();});});});}
-function open(){ov.style.display='block';render();load();}
-btn.onclick=open;
-ov.onclick=function(e){if(e.target===ov)close();};
-function findOld(){var T=String.fromCharCode(55356,57286);var bs=[].slice.call(document.querySelectorAll('button'));for(var i=0;i<bs.length;i++){var b=bs[i];if(getComputedStyle(b).position!=='fixed')continue;var t=(b.textContent||'').trim();if(t.indexOf(T)>-1&&t.length<=3&&b!==btn){return b;}}return null;}
-function mount(){if(!document.body)return;var old=findOld();if(old){old.addEventListener('click',function(e){e.stopImmediatePropagation();e.preventDefault();open();},true);old.setAttribute('data-rc','1');}else{document.body.appendChild(btn);}document.body.appendChild(ov);}
+function chalHtml(){if(!CUR)return '<div style="color:#b9a88a;text-align:center;padding:30px">No active challenge right now. Check back soon!</div>';var sorted=SUBS.slice().sort(function(a,b){return lc(b.id)-lc(a.id);});var h='<div style="padding:4px 2px 30px">';h+='<div style="background:#241a10;border:1px solid #3a2c18;border-radius:14px;padding:12px 14px;margin-bottom:12px"><div style="font-weight:800;color:#fff;font-size:16px">&#127942; '+esc(CUR.title)+'</div><div style="color:#e7c98c;font-size:13px;line-height:1.5;margin-top:4px">'+esc(CUR.prompt)+'</div><div style="margin-top:8px;color:#ffcf5a;font-weight:800;font-size:13px">Winner gets '+CUR.reward+' &#129718; Feathers</div></div>';h+='<label style="display:block;background:linear-gradient(135deg,#8a5cff,#5a2ee0);color:#fff;text-align:center;font-weight:800;border-radius:12px;padding:13px;cursor:pointer">&#128247; Upload a clip (max '+MAXLEN+'s)<input id="chFile" type="file" accept="video/*" style="display:none"></label><div id="chTrim"></div><div id="chStat" style="text-align:center;color:#b9a88a;font-size:12px;min-height:16px;margin:8px 0 12px"></div><div style="color:#fff;font-weight:800;font-size:14px;margin:4px 2px 10px">Entries ('+SUBS.length+')</div>';if(!SUBS.length)h+='<div style="color:#8a795c;text-align:center;padding:14px 0">Be the first to enter!</div>';h+=sorted.map(function(s,i){var liked=MINE[s.id];return '<div style="background:#141017;border:1px solid #2a2233;border-radius:14px;overflow:hidden;margin-bottom:12px">'+(i<3?'<div style="background:#2a1f00;color:#ffcf5a;font-size:11px;font-weight:800;padding:4px 10px">Leaderboard #'+(i+1)+'</div>':'')+'<video src="'+esc(s.video_url)+'" controls playsinline preload="metadata" style="width:100%;max-height:56vh;background:#000;display:block"></video><div style="padding:10px 12px"><div style="font-weight:700;color:#fff;font-size:13px">@'+esc(s.name)+'</div>'+(s.caption?'<div style="color:#cbb9a0;font-size:12.5px;margin-top:2px">'+esc(s.caption)+'</div>':'')+'<button class="chLike" data-id="'+s.id+'" style="margin-top:8px;background:'+(liked?'#e0245e':'#241a2a')+';color:#fff;border:0;border-radius:999px;font-weight:800;font-size:13px;padding:7px 14px">&#10084; '+lc(s.id)+'</button></div></div>';}).join('');h+='</div>';return h;}
+function chalBind(body){var f=body.querySelector('#chFile');if(f)f.onchange=function(){chalTrim(f.files[0],body);};[].forEach.call(body.querySelectorAll('.chLike'),function(b){b.onclick=function(){chalLike(+b.getAttribute('data-id'),body);};});}
+function chalStat(t){var s=document.getElementById('chStat');if(s)s.textContent=t;}
+function chalTrim(file,body){if(!file||!CUR)return;var box=document.getElementById('chTrim');if(!box)return;var v=document.createElement('video');v.src=URL.createObjectURL(file);v.playsInline=true;v.style.cssText='width:100%;max-height:40vh;background:#000;border-radius:10px;margin-top:10px';box.innerHTML='';box.appendChild(v);var ui=document.createElement('div');ui.style.cssText='margin-top:8px';box.appendChild(ui);v.onloadedmetadata=function(){var dur=v.duration||0;var start=0;var len=Math.min(MAXLEN,Math.max(1,Math.floor(dur)));ui.innerHTML='<div style="color:#cbb9a0;font-size:12px;margin-bottom:4px">Start: <span id="chS">0</span>s &#183; Length: <span id="chL">'+len+'</span>s (max '+MAXLEN+')</div><input id="chStart" type="range" min="0" max="'+Math.max(0,Math.floor(dur-1))+'" value="0" step="1" style="width:100%"><input id="chLen" type="range" min="1" max="'+MAXLEN+'" value="'+len+'" step="1" style="width:100%"><button id="chGo" style="margin-top:8px;width:100%;background:#20a760;color:#fff;border:0;border-radius:10px;font-weight:800;padding:11px">Use this clip</button>';var sEl=ui.querySelector('#chStart'),lEl=ui.querySelector('#chLen');function upd(){start=+sEl.value;len=Math.min(+lEl.value,Math.max(1,Math.floor(dur-start)));document.getElementById('chS').textContent=start;document.getElementById('chL').textContent=len;try{v.currentTime=start;}catch(e){}}sEl.oninput=upd;lEl.oninput=upd;upd();v.onclick=function(){v.currentTime=start;v.play();setTimeout(function(){v.pause();},len*1000);};ui.querySelector('#chGo').onclick=function(){chalRecord(file,v,start,len,dur,body);};};}
+function chalExt(file){return (file.name&&file.name.split('.').pop()||'mp4').toLowerCase();}
+function chalRecord(file,v,start,len,dur,body){var uu=u();if(!uu){chalStat('Please log in first.');return;}var cap=prompt('Add a caption (optional):')||'';chalStat('Processing clip...');var full=(start<=0&&len>=Math.floor(dur));if(full&&file.size<=78643200){chalUpload(file,chalExt(file),cap,body);return;}try{v.currentTime=start;v.onseeked=function(){v.onseeked=null;var stream=v.captureStream?v.captureStream():(v.mozCaptureStream?v.mozCaptureStream():null);if(!stream){chalStat('Trim not supported here; uploading full clip.');chalUpload(file,chalExt(file),cap,body);return;}var chunks=[];var rec;try{rec=new MediaRecorder(stream,{mimeType:'video/webm'});}catch(e){try{rec=new MediaRecorder(stream);}catch(e2){chalStat('Trim not supported; uploading full clip.');chalUpload(file,chalExt(file),cap,body);return;}}rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data);};rec.onstop=function(){var blob=new Blob(chunks,{type:'video/webm'});chalUpload(blob,'webm',cap,body);};v.muted=false;v.play();rec.start();setTimeout(function(){try{rec.stop();}catch(e){}v.pause();},len*1000);};}catch(e){chalStat('Trim error; uploading full clip.');chalUpload(file,chalExt(file),cap,body);}}
+function chalUpload(fb,ext,cap,body){if(fb.size>78643200){chalStat('Clip too big (max 75MB).');return;}var uu=u();var path=CUR.id+'/'+uu+'-'+Date.now()+'.'+ext;chalStat('Uploading...');sbc().storage.from('challenges').upload(path,fb,{contentType:ext==='webm'?'video/webm':(fb.type||'video/mp4'),upsert:false}).then(function(r){if(r.error){chalStat('Upload failed: '+r.error.message);return;}var url=sbc().storage.from('challenges').getPublicUrl(path).data.publicUrl;return sbc().from('flap_challenge_subs').insert({challenge_id:CUR.id,name:uu,video_url:url,caption:cap}).then(function(r2){if(r2.error){chalStat('Save failed: '+r2.error.message);return;}chalStat('Posted! Good luck.');chalLoad(body);});}).catch(function(e){chalStat('Error: '+e);});}
+function chalLike(id,body){var uu=u();if(!uu||MINE[id])return;MINE[id]=true;LIKES[id]=(LIKES[id]||0)+1;renderChal(body);sbc().from('flap_challenge_likes').insert({sub_id:id,name:uu}).then(function(){});}
+function chalLoad(body){var c=sbc();if(!c)return;c.from('flap_challenges').select('*').eq('status','open').order('id',{ascending:false}).limit(1).then(function(r){CUR=(r.data&&r.data[0])||null;if(!CUR){renderChal(body);return;}c.from('flap_challenge_subs').select('*').eq('challenge_id',CUR.id).then(function(r2){SUBS=r2.data||[];var ids=SUBS.map(function(s){return s.id;});LIKES={};MINE={};if(!ids.length){renderChal(body);return;}c.from('flap_challenge_likes').select('sub_id,name').in('sub_id',ids).then(function(r3){var uu=u();(r3.data||[]).forEach(function(l){LIKES[l.sub_id]=(LIKES[l.sub_id]||0)+1;if(l.name===uu)MINE[l.sub_id]=true;});renderChal(body);});});});}
+function renderChal(body){if(!body)return;body.innerHTML=chalHtml();chalBind(body);}
+function injectGF(body){if(!body||body.querySelector('#gfStoreBtn'))return;var d=document.createElement('div');d.innerHTML='<button id="gfStoreBtn" style="width:100%;margin:0 0 12px;background:linear-gradient(135deg,#ffb44a,#f0891c);color:#fff;border:0;border-radius:12px;font-weight:800;font-size:15px;padding:13px;box-shadow:0 3px 0 #c9740a">&#129718; Get Feathers &#8212; buy a pack</button>';body.insertBefore(d.firstChild,body.firstChild);var b=document.getElementById('gfStoreBtn');if(b)b.onclick=gfOpen;}
+function hook(){if(typeof window.nxTab==='function'&&!window.nxTab.__w){var _t=window.nxTab;window.nxTab=function(t){_t.apply(this,arguments);var body=document.getElementById('nxBody');if(!body)return;if(t==='chal'){renderChal(body);chalLoad(body);}else if(t==='store'){injectGF(body);}};window.nxTab.__w=1;}if(typeof window.nxOpen==='function'&&!window.nxOpen.__w){var _o=window.nxOpen;window.nxOpen=function(){_o.apply(this,arguments);setTimeout(function(){var body=document.getElementById('nxBody');if(body){renderChal(body);chalLoad(body);}},40);};window.nxOpen.__w=1;}}
+function mount(){if(document.body)document.body.appendChild(gfOv);hook();}
 if(document.body)mount();else document.addEventListener('DOMContentLoaded',mount);
-setTimeout(function(){if(!document.querySelector('[data-rc]')&&!btn.parentNode){mount();}},1600);
-window.flapChallenge=open;
-try{if(/[?&]go=challenge/.test(location.search)||location.hash==='#challenge'){setTimeout(open,900);}}catch(e){}
+var tries=0;var iv=setInterval(function(){tries++;hook();if(tries>25||(window.nxTab&&window.nxTab.__w))clearInterval(iv);},400);
+try{if(/[?&]go=challenge/.test(location.search)||location.hash==='#challenge'){setTimeout(function(){if(window.nxOpen)window.nxOpen();},900);}}catch(e){}
 })();
 </script>
 </body>
