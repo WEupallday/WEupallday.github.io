@@ -109,5 +109,7 @@
   // demo: show the "added" pop, like the app will after returning from checkout
   setTimeout(function(){var t=document.getElementById('toast');t.classList.add('on');setTimeout(function(){t.classList.remove('on');},2600);},1200);
 </script>
+
+<script>(function(){function u(){try{if(window.ME&&ME.name)return ME.name}catch(e){}try{var m=JSON.parse(localStorage.getItem('flap_me')||'{}');if(m.name)return m.name}catch(e){}return localStorage.getItem('flap_lastname')||'lock'}var n=u(),e=encodeURIComponent(n),a=document.querySelectorAll('a[href*="theflap_username"]');for(var i=0;i<a.length;i++){var h=a[i].href,k=h.indexOf('theflap_username');if(k<0)continue;var eq=h.indexOf('=',k);if(eq<0)continue;var amp=h.indexOf('&',eq);var tail=amp<0?'':h.substring(amp);a[i].href=h.substring(0,eq+1)+e+tail}var w=document.querySelector('.who b');if(w)w.textContent='@'+n})();</script>
 </body>
 </html>
