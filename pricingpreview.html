@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>TheFlap — Premium & Feathers</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#f08a1d;--orange-d:#d4740a;--ink:#2a2016;--muted:#8a795c;--line:#eadcc4;--good:#20a760;--gold:#ffc53a;--gold-d:#e0a300;--purple:#8a68e0;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:'Trebuchet MS','Segoe UI',Tahoma,sans-serif;color:var(--ink);
+    background:linear-gradient(180deg,#2a2016,#3a2c18 30%,#241a10);min-height:100vh;padding:16px 0 44px}
+  .wrap{max-width:460px;margin:0 auto;padding:0 14px}
+  h1{font-family:'Fredoka';color:#fff;text-align:center;font-size:23px;margin:2px 0 2px}
+  .sub{text-align:center;color:#e7c98c;font-size:13px;margin:0 0 6px}
+  .note{text-align:center;color:#b9a88a;font-size:11.5px;margin:0 0 18px}
+  h2{font-family:'Fredoka';color:#fff;font-size:16px;margin:22px 4px 10px;display:flex;align-items:center;gap:7px}
+
+  /* Premium card */
+  .prem{background:linear-gradient(135deg,#3a2b6e,#5a3ea0 55%,#7a52c8);border:1px solid #6b4fb0;border-radius:20px;padding:18px 17px;color:#fff;box-shadow:0 12px 30px rgba(90,60,160,.4);position:relative;overflow:hidden}
+  .prem .crown{position:absolute;top:-14px;right:-8px;font-size:80px;opacity:.14;transform:rotate(15deg)}
+  .prem .pt{font-family:'Fredoka';font-weight:700;font-size:21px;display:flex;align-items:center;gap:8px}
+  .prem .price{font-family:'Fredoka';font-weight:700;font-size:30px;margin:6px 0 2px}
+  .prem .price s{font-size:16px;color:#d7c8ff;font-weight:400;margin-left:6px}
+  .prem .per{font-size:13px;color:#e5dbff}
+  .perks{list-style:none;padding:0;margin:13px 0 15px}
+  .perks li{display:flex;gap:9px;align-items:flex-start;font-size:14px;margin:8px 0;line-height:1.35}
+  .perks li b{font-weight:700}
+  .cta{display:block;width:100%;text-align:center;border:0;border-radius:13px;font-family:'Fredoka';font-weight:700;font-size:16px;padding:13px;cursor:pointer}
+  .cta.gold{background:var(--gold);color:#3a2600;box-shadow:0 4px 0 var(--gold-d)}
+
+  /* Feather packs */
+  .packs{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .pack{background:#fffdf8;border:1px solid var(--line);border-radius:16px;padding:15px 12px 13px;text-align:center;position:relative;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+  .pack.best{border:2px solid var(--gold);box-shadow:0 8px 22px rgba(255,197,58,.3)}
+  .coin{font-size:34px;line-height:1;filter:drop-shadow(0 2px 2px rgba(180,120,0,.4))}
+  .amt{font-family:'Fredoka';font-weight:700;font-size:20px;margin:5px 0 0;color:var(--ink)}
+  .amt small{display:block;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px}
+  .bonus{display:inline-block;background:#e9faef;color:var(--good);border:1px solid #b6e8c6;border-radius:999px;font-size:11px;font-weight:700;padding:2px 8px;margin:6px 0 8px}
+  .buy{display:block;width:100%;border:0;border-radius:10px;background:var(--orange);color:#fff;font-family:'Fredoka';font-weight:700;font-size:15px;padding:10px;cursor:pointer;box-shadow:0 3px 0 var(--orange-d)}
+  .tag{position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-family:'Fredoka';font-weight:700;font-size:10.5px;padding:3px 10px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+  .tag.pop{background:var(--orange);color:#fff}
+  .tag.deal{background:var(--gold);color:#3a2600}
+
+  .whop{display:flex;align-items:center;justify-content:center;gap:7px;margin:16px 2px 0;color:#e7c98c;font-size:12px;text-align:center}
+  .foot{margin-top:20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px 14px;color:#cbb98f;font-size:12px;line-height:1.5}
+  .foot b{color:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Get Premium & Feathers 🪶</h1>
+  <p class="sub">Recommended pricing — tweakable anytime</p>
+  <p class="note">Mockup for review · buys happen securely through Whop · web &amp; Android only</p>
+
+  <h2>👑 TheFlap Premium</h2>
+  <div class="prem">
+    <span class="crown">👑</span>
+    <div class="pt">👑 Premium</div>
+    <div class="price">$4.99<s>$6.99</s></div>
+    <div class="per">per month · cancel anytime</div>
+    <ul class="perks">
+      <li>✨ <span><b>Exclusive frames &amp; name effects</b> — neon, sparkle, gold, animated</span></li>
+      <li>🪶 <span><b>500 Feathers every month</b>, on the house</span></li>
+      <li>💬 <span><b>Priority in Party Chats</b> + a Supporter badge on your name</span></li>
+      <li>🎨 <span>Custom profile banner + more customization</span></li>
+      <li>⚡ <span>Early access to new features &amp; drops</span></li>
+    </ul>
+    <button class="cta gold">Go Premium — $4.99/mo</button>
+  </div>
+
+  <h2>🪶 Feather Packs</h2>
+  <div class="packs">
+    <div class="pack">
+      <div class="coin">🪙</div>
+      <div class="amt">500<small>FEATHERS</small></div>
+      <div class="bonus" style="visibility:hidden">.</div>
+      <button class="buy">$1.99</button>
+    </div>
+    <div class="pack">
+      <span class="tag pop">⭐ POPULAR</span>
+      <div class="coin">🪙</div>
+      <div class="amt">1,500<small>FEATHERS</small></div>
+      <div class="bonus">+7% more</div>
+      <button class="buy">$4.99</button>
+    </div>
+    <div class="pack best">
+      <span class="tag deal">🔥 BEST DEAL</span>
+      <div class="coin">🪙</div>
+      <div class="amt">4,000<small>FEATHERS</small></div>
+      <div class="bonus">+15% more</div>
+      <button class="buy">$9.99</button>
+    </div>
+    <div class="pack">
+      <div class="coin">🪙</div>
+      <div class="amt">12,000<small>FEATHERS</small></div>
+      <div class="bonus">+25% more</div>
+      <button class="buy">$24.99</button>
+    </div>
+  </div>
+
+  <div class="whop">🔒 Secure checkout by <b style="color:#fff;font-family:'Fredoka'">Whop</b> · lands on your account instantly</div>
+
+  <div class="foot">
+    <b>The money logic:</b> keep free Feathers scarce so packs feel worth it, use the cheap $1.99 pack to get the first purchase, and let the gold “Best Deal” pull the bigger spenders. Premium is your steady monthly income. All numbers here are one-edit changes — tell me to go higher/lower and I’ll adjust.
+  </div>
+</div>
+</body>
+</html>
