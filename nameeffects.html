@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>TheFlap — New Name Effects (store preview)</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:'Trebuchet MS','Segoe UI',Tahoma,sans-serif;background:#12100c;color:#eee;padding:16px 0 46px}
+  .wrap{max-width:460px;margin:0 auto;padding:0 14px}
+  h1{font-family:'Fredoka';color:#fff;text-align:center;font-size:20px;margin:2px 0 2px}
+  .sub{text-align:center;color:#b9a88a;font-size:12.5px;margin:0 0 16px}
+  .card{display:flex;align-items:center;gap:12px;background:#1c160e;border:1px solid #34281a;border-radius:14px;padding:13px 14px;margin-bottom:11px}
+  .nm{flex:1;min-width:0}
+  .demo{font-family:'Fredoka';font-weight:700;font-size:22px;line-height:1.2}
+  .lbl{color:#8a795c;font-size:11.5px;margin-top:2px}
+  .buy{border:0;border-radius:999px;background:#f08a1d;color:#fff;font-family:'Fredoka';font-weight:700;font-size:13px;padding:8px 14px;white-space:nowrap;box-shadow:0 3px 0 #c9740a}
+  .buy small{display:block;font-size:9px;font-weight:600;opacity:.85;letter-spacing:.3px}
+
+  /* ===== the actual name-effect CSS (this is what ships into the app) ===== */
+  .fx-rainbow{background:linear-gradient(90deg,#ff5e5e,#ffb14e,#ffee56,#5efc82,#5ec8ff,#b18cff,#ff5e5e);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:fxflow 4s linear infinite}
+  @keyframes fxflow{to{background-position:300% 0}}
+  .fx-neon{color:#39ff14;text-shadow:0 0 4px #39ff14,0 0 10px #39ff14;animation:fxpulse 1.4s ease-in-out infinite}
+  @keyframes fxpulse{50%{text-shadow:0 0 8px #39ff14,0 0 20px #39ff14,0 0 30px #39ff14}}
+  .fx-fire{background:linear-gradient(0deg,#ff3d00,#ff9e00,#ffd000);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 3px rgba(255,90,0,.6));animation:fxflick 1.6s ease-in-out infinite}
+  @keyframes fxflick{50%{filter:drop-shadow(0 0 7px rgba(255,140,0,.9))}}
+  .fx-galaxy{background:linear-gradient(90deg,#7b2ff7,#4a86ff,#b06ab3,#7b2ff7);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:fxflow 5s linear infinite}
+  .fx-gold{background:linear-gradient(90deg,#a67c00,#ffd75e,#fff3b0,#ffd75e,#a67c00);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:fxflow 3.2s linear infinite}
+  .fx-ice{background:linear-gradient(90deg,#7fdbff,#e0fbff,#9ad0ff);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 6px rgba(150,220,255,.4);animation:fxflow 4.5s linear infinite}
+  .fx-sunset{background:linear-gradient(90deg,#ff6a3d,#ff2e8b,#ffb14e);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .fx-toxic{color:#aaff00;text-shadow:0 0 6px rgba(140,255,0,.7);animation:fxpulse2 1.8s ease-in-out infinite}
+  @keyframes fxpulse2{50%{text-shadow:0 0 12px rgba(140,255,0,.95)}}
+  .fx-bubble{background:linear-gradient(90deg,#ff8fd6,#ff5ea8,#ffa6e0);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .fx-chrome{background:linear-gradient(90deg,#8a8a8a,#f5f5f5,#c0c0c0,#f5f5f5,#8a8a8a);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:fxflow 3s linear infinite}
+  .fx-ocean{background:linear-gradient(90deg,#00c6ff,#0072ff,#00e5c0,#00c6ff);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:fxflow 5s linear infinite}
+  .fx-lava{background:linear-gradient(90deg,#3a0ca3,#f72585,#ff9e00);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:fxflow 4s linear infinite}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>New Name Effects — preview</h1>
+  <p class="sub">Animated &amp; gradient username styles for the Store. Prices in 🪶.</p>
+
+  <div class="card"><div class="nm"><div class="demo fx-rainbow">YourName</div><div class="lbl">Rainbow Flow · animated</div></div><button class="buy">700<small>FEATHERS</small></button></div>
+  <div class="card"><div class="nm"><div class="demo fx-chrome">YourName</div><div class="lbl">Chrome · animated metal</div></div><button class="buy">900<small>FEATHERS</small></button></div>
+  <div class="card"><div class="nm"><div class="demo fx-gold">YourName</div><div class="lbl">Gold Shine · animated</div></div><button class="buy">850<small>FEATHERS</small></button></div>
+  <div class="card"><div class="nm"><div class="demo fx-galaxy">YourName</div><div class="lbl">Galaxy · animated</div></div><button class="buy">800<small>FEATHERS</small></button></div>
+  <div class="card"><div class="nm"><div class="demo fx-fire">YourName</div><div class="lbl">Fire · flicker</div></div><button class="buy">750<small>FEATHERS</small></button></div>
+  <div class="card"><div class="nm"><div class="demo fx-lava">YourName</div><div class="lbl">Lava · animated</div></div><button class="buy">750<small>FEATHERS</small></button></div>
+  <div class="card"><div class="nm"><div class="demo fx-neon">YourName</div><div class="lbl">Neon Pulse · glow</div></div><button class="buy">650<small>FEATHERS</small></button></div>
+  <div class="card"><div class="nm"><div class="demo fx-ocean">YourName</div><div class="lbl">Ocean · animated</div></div><button class="buy">650<small>FEATHERS</small></button></div>
+  <div class="card"><div class="nm"><div class="demo fx-ice">YourName</div><div class="lbl">Ice Frost · shimmer</div></div><button class="buy">600<small>FEATHERS</small></button></div>
+  <div class="card"><div class="nm"><div class="demo fx-toxic">YourName</div><div class="lbl">Toxic · glow</div></div><button class="buy">600<small>FEATHERS</small></button></div>
+  <div class="card"><div class="nm"><div class="demo fx-sunset">YourName</div><div class="lbl">Sunset Fade</div></div><button class="buy">550<small>FEATHERS</small></button></div>
+  <div class="card"><div class="nm"><div class="demo fx-bubble">YourName</div><div class="lbl">Bubblegum</div></div><button class="buy">550<small>FEATHERS</small></button></div>
+
+  <p class="sub" style="margin-top:16px">12 new effects · 550–900 🪶 each. Say the word and I wire them into the live Store.</p>
+</div>
+</body>
+</html>
