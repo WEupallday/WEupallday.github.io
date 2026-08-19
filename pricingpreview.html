@@ -2,108 +2,289 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>TheFlap — Premium & Feathers</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TheFlap — Feather Shop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{--orange:#f08a1d;--orange-d:#d4740a;--ink:#2a2016;--muted:#8a795c;--line:#eadcc4;--good:#20a760;--gold:#ffc53a;--gold-d:#e0a300;--purple:#8a68e0;}
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  body{margin:0;font-family:'Trebuchet MS','Segoe UI',Tahoma,sans-serif;color:var(--ink);
-    background:linear-gradient(180deg,#2a2016,#3a2c18 30%,#241a10);min-height:100vh;padding:16px 0 44px}
-  .wrap{max-width:460px;margin:0 auto;padding:0 14px}
-  h1{font-family:'Fredoka';color:#fff;text-align:center;font-size:23px;margin:2px 0 2px}
-  .sub{text-align:center;color:#e7c98c;font-size:13px;margin:0 0 6px}
-  .note{text-align:center;color:#b9a88a;font-size:11.5px;margin:0 0 18px}
-  h2{font-family:'Fredoka';color:#fff;font-size:16px;margin:22px 4px 10px;display:flex;align-items:center;gap:7px}
+  :root{
+    /* themeable accent (set by JS) — default = Amber */
+    --bgA:#fff7ec; --bgB:#ffe6c9; --glow:rgba(246,148,29,.16);
+    --p1:#ffb454; --p2:#f6941d; --p3:#e07d0a; --p4:#c96f08; --pshadow:#b96406; --title:#c96f08;
+    /* fixed light surfaces */
+    --ink:#2a2016; --muted:#8a795c; --line:#ead9bd; --paper:#ffffff; --gold:#ffcf3a;
+    --teal:#22b6d0; --teal-d:#128fa6; --pink:#ff5ea8; --pink-d:#e14e8e; --good:#1a9e5f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--ink);font-family:'Trebuchet MS','Segoe UI',Tahoma,Verdana,sans-serif;font-size:16px;line-height:1.45;
+    background:
+      radial-gradient(circle at 88% 6%, var(--glow), transparent 44%),
+      radial-gradient(circle at 6% 20%, var(--glow), transparent 40%),
+      linear-gradient(180deg,var(--bgA) 0%,var(--bgB) 60%,#fff 100%);
+    background-attachment:fixed;transition:background .35s ease}
+  h1,h2,h3,.round{font-family:'Fredoka',sans-serif}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 18px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:18px;box-shadow:0 7px 18px rgba(150,120,60,.14)}
+  .sheen{position:relative;overflow:hidden}
+  .sheen::after{content:"";position:absolute;left:0;right:0;top:0;height:42%;background:linear-gradient(to bottom,rgba(255,255,255,.5),rgba(255,255,255,0));pointer-events:none;border-radius:18px 18px 40px 40px}
 
-  /* Premium card */
-  .prem{background:linear-gradient(135deg,#3a2b6e,#5a3ea0 55%,#7a52c8);border:1px solid #6b4fb0;border-radius:20px;padding:18px 17px;color:#fff;box-shadow:0 12px 30px rgba(90,60,160,.4);position:relative;overflow:hidden}
-  .prem .crown{position:absolute;top:-14px;right:-8px;font-size:80px;opacity:.14;transform:rotate(15deg)}
-  .prem .pt{font-family:'Fredoka';font-weight:700;font-size:21px;display:flex;align-items:center;gap:8px}
-  .prem .price{font-family:'Fredoka';font-weight:700;font-size:30px;margin:6px 0 2px}
-  .prem .price s{font-size:16px;color:#d7c8ff;font-weight:400;margin-left:6px}
-  .prem .per{font-size:13px;color:#e5dbff}
-  .perks{list-style:none;padding:0;margin:13px 0 15px}
-  .perks li{display:flex;gap:9px;align-items:flex-start;font-size:14px;margin:8px 0;line-height:1.35}
-  .perks li b{font-weight:700}
-  .cta{display:block;width:100%;text-align:center;border:0;border-radius:13px;font-family:'Fredoka';font-weight:700;font-size:16px;padding:13px;cursor:pointer}
-  .cta.gold{background:var(--gold);color:#3a2600;box-shadow:0 4px 0 var(--gold-d)}
+  .btn{font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;color:#fff;cursor:pointer;border:1px solid rgba(0,0,0,.14);border-radius:999px;padding:12px 20px;position:relative;
+    background:linear-gradient(to bottom,var(--p1),var(--p2) 48%,var(--p3) 52%,var(--p4));
+    box-shadow:0 3px 0 var(--pshadow),0 7px 14px rgba(120,90,30,.28),inset 0 1px 0 rgba(255,255,255,.6);text-shadow:0 1px 1px rgba(0,0,0,.22)}
+  .btn::before{content:"";position:absolute;left:7px;right:7px;top:4px;height:42%;border-radius:999px;background:linear-gradient(to bottom,rgba(255,255,255,.6),rgba(255,255,255,0))}
+  .btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--pshadow),inset 0 1px 0 rgba(255,255,255,.5)}
+  .btn.wide{display:block;width:100%;text-align:center}
+  .btn.teal{background:linear-gradient(to bottom,#7fe0ec,var(--teal) 48%,var(--teal-d) 52%,#0b8090);box-shadow:0 3px 0 #0b7c8c,0 7px 14px rgba(120,90,30,.28),inset 0 1px 0 rgba(255,255,255,.6)}
+  .btn.pink{background:linear-gradient(to bottom,#ffa6cd,var(--pink) 48%,var(--pink-d) 52%,#cf4680);box-shadow:0 3px 0 #c23f78,0 7px 14px rgba(120,90,30,.28),inset 0 1px 0 rgba(255,255,255,.6)}
+  .btn.gold{background:linear-gradient(to bottom,#fff0b0,var(--gold) 48%,#f2b400 52%,#d99b00);color:#5a4200;text-shadow:0 1px 0 rgba(255,255,255,.5);box-shadow:0 3px 0 #cc9200,0 7px 14px rgba(220,170,30,.35),inset 0 1px 0 rgba(255,255,255,.7)}
 
-  /* Feather packs */
-  .packs{display:grid;grid-template-columns:1fr 1fr;gap:11px}
-  .pack{background:#fffdf8;border:1px solid var(--line);border-radius:16px;padding:15px 12px 13px;text-align:center;position:relative;box-shadow:0 6px 16px rgba(0,0,0,.25)}
-  .pack.best{border:2px solid var(--gold);box-shadow:0 8px 22px rgba(255,197,58,.3)}
-  .coin{font-size:34px;line-height:1;filter:drop-shadow(0 2px 2px rgba(180,120,0,.4))}
-  .amt{font-family:'Fredoka';font-weight:700;font-size:20px;margin:5px 0 0;color:var(--ink)}
-  .amt small{display:block;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px}
-  .bonus{display:inline-block;background:#e9faef;color:var(--good);border:1px solid #b6e8c6;border-radius:999px;font-size:11px;font-weight:700;padding:2px 8px;margin:6px 0 8px}
-  .buy{display:block;width:100%;border:0;border-radius:10px;background:var(--orange);color:#fff;font-family:'Fredoka';font-weight:700;font-size:15px;padding:10px;cursor:pointer;box-shadow:0 3px 0 var(--orange-d)}
-  .tag{position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-family:'Fredoka';font-weight:700;font-size:10.5px;padding:3px 10px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3)}
-  .tag.pop{background:var(--orange);color:#fff}
-  .tag.deal{background:var(--gold);color:#3a2600}
+  header{background:linear-gradient(to bottom,var(--p1),var(--p3) 55%,var(--p4));border-bottom:1px solid rgba(0,0,0,.12);box-shadow:0 3px 12px rgba(120,90,30,.25)}
+  .bar{display:flex;align-items:center;gap:12px;padding:12px 0}
+  .logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#fff2c0,var(--gold));border:1px solid rgba(0,0,0,.18);display:grid;place-items:center;font-size:20px;box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 2px 5px rgba(0,0,0,.2)}
+  .lg{font-family:'Fredoka';font-weight:700;font-size:24px;color:#fff;text-shadow:0 2px 2px rgba(0,0,0,.3)}
+  .lg b{color:#fff6d8}
+  .badge-s{font-family:'Fredoka';font-weight:600;color:#fff;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.45);padding:4px 12px;border-radius:999px;font-size:14px}
+  .spacer{flex:1}
+  .coin{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:999px;padding:5px 14px 5px 6px;font-weight:700;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.15),inset 0 1px 0 #fff}
+  .ava{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#8a68e0,#6e4fc4);color:#fff;display:grid;place-items:center;font-family:'Fredoka';font-weight:700;font-size:14px}
+  .tok{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 34% 28%,#fff7c8,var(--gold) 55%,#dd9f00);border:1px solid rgba(0,0,0,.2);display:inline-grid;place-items:center;font-size:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.85)}
+  .coin .amt{color:var(--p3)}
 
-  .whop{display:flex;align-items:center;justify-content:center;gap:7px;margin:16px 2px 0;color:#e7c98c;font-size:12px;text-align:center}
-  .foot{margin-top:20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px 14px;color:#cbb98f;font-size:12px;line-height:1.5}
-  .foot b{color:#fff}
+  .themebar{background:rgba(255,255,255,.7);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+  .themebar .in{display:flex;align-items:center;gap:10px;padding:9px 0;flex-wrap:wrap}
+  .themebar .lbl{font-family:'Fredoka';font-weight:600;color:var(--ink);opacity:.8}
+  .sw{width:28px;height:28px;border-radius:50%;border:2px solid rgba(0,0,0,.15);cursor:pointer;box-shadow:0 2px 5px rgba(0,0,0,.2);transition:transform .1s}
+  .sw:hover{transform:scale(1.12)}
+  .sw.on{border-color:var(--ink);box-shadow:0 0 0 3px rgba(0,0,0,.12),0 2px 5px rgba(0,0,0,.2)}
+  .swname{font-family:'Fredoka';color:var(--ink);opacity:.7;margin-left:6px;min-width:74px}
+
+  .ticker{background:linear-gradient(to bottom,#ffe08a,var(--gold) 60%,#eeb400);color:#6a4b00;overflow:hidden;white-space:nowrap;border-bottom:1px solid rgba(0,0,0,.12);font-weight:700;font-family:'Fredoka';box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+  .ticker div{display:inline-block;padding:6px 0;animation:scroll 22s linear infinite}
+  @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  .hero{text-align:center;padding:38px 0 6px}
+  .hero h1{font-size:40px;font-weight:700;margin:0 0 8px;color:var(--title);text-shadow:0 2px 0 #fff,0 3px 10px var(--glow)}
+  .hero .sub{font-size:19px;color:var(--muted);max-width:560px;margin:0 auto}
+  .signin{display:inline-flex;align-items:center;gap:8px;margin-top:16px;background:linear-gradient(to bottom,#eafaf0,#d5f5e0);border:1px solid #b6e8c6;border-radius:999px;padding:8px 16px;color:var(--good);font-weight:700;box-shadow:inset 0 1px 0 #fff,0 3px 8px rgba(30,150,80,.14)}
+
+  .sec{margin:32px 0}
+  .head{display:inline-flex;align-items:center;gap:8px;font-family:'Fredoka';font-weight:700;font-size:22px;color:#fff;
+    background:linear-gradient(to bottom,var(--p1),var(--p3) 55%,var(--p4));border:1px solid rgba(0,0,0,.12);padding:9px 18px;border-radius:14px;
+    box-shadow:0 4px 10px rgba(120,90,30,.22),inset 0 1px 0 rgba(255,255,255,.5);text-shadow:0 1px 2px rgba(0,0,0,.3)}
+  .subline{font-size:17px;color:var(--muted);margin:10px 2px 18px}
+  .star{color:var(--pink);font-weight:700}
+
+  .packs{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .pack{display:flex;flex-direction:column;align-items:center;text-align:center;padding:16px 12px}
+  .pack.hot{border:2px solid var(--gold);box-shadow:0 10px 24px rgba(220,170,30,.35),0 0 0 4px rgba(255,207,58,.18)}
+  .tag{font-family:'Fredoka';font-weight:700;font-size:12.5px;line-height:16px;color:#fff;border-radius:999px;padding:5px 14px;margin-bottom:9px;
+    text-transform:uppercase;letter-spacing:.6px;box-shadow:0 2px 6px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.5);animation:tagpulse 1.8s ease-in-out infinite}
+  .tag.empty{visibility:hidden;animation:none}
+  .tag.pop{background:linear-gradient(to bottom,#ffb3d8,#ff4f9f 60%,#e83a86);box-shadow:0 2px 12px rgba(255,90,165,.55),inset 0 1px 0 rgba(255,255,255,.6)}
+  .tag.best{background:linear-gradient(to bottom,#fff0a0,#ffca1e 55%,#eaa800);color:#5a3d00;text-shadow:0 1px 0 rgba(255,255,255,.4);box-shadow:0 2px 12px rgba(255,200,45,.55),inset 0 1px 0 rgba(255,255,255,.85)}
+  @keyframes tagpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+  .coinlg{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:27px;
+    background:radial-gradient(circle at 36% 30%,#fff6c8,var(--gold) 58%,#d99b00);border:2px solid rgba(0,0,0,.18);
+    box-shadow:inset 0 2px 3px rgba(255,255,255,.85),inset 0 -3px 6px rgba(180,130,0,.35),0 4px 9px rgba(0,0,0,.2)}
+  .pkamt{font-family:'Fredoka';font-weight:700;font-size:23px;margin:11px 0 0;color:var(--p3)}
+  .pkbonus{display:inline-block;font-family:'Fredoka';font-weight:700;font-size:12.5px;color:#04241a;background:linear-gradient(to bottom,#8dffc9,#2fce8e 60%,#15a068);border-radius:999px;padding:3px 12px;box-shadow:0 2px 6px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.55)}
+  .pkbonus.empty{visibility:hidden}
+  .pkcost{font-family:'Fredoka';font-weight:700;font-size:20px;margin:6px 0 12px;color:var(--ink)}
+
+  .prem{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;align-items:stretch}
+  .prembox{padding:24px}
+  .prembox h2{font-size:24px;margin:0;color:var(--title)}
+  .partytag{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(to bottom,#ff9ec8,var(--pink) 55%,var(--pink-d));color:#fff;font-family:'Fredoka';font-weight:700;font-size:15px;padding:9px 15px;border-radius:12px;margin:12px 0 14px;box-shadow:0 4px 10px rgba(230,90,150,.28),inset 0 1px 0 rgba(255,255,255,.5)}
+  .price{font-family:'Fredoka';font-weight:700;font-size:34px;color:var(--ink);margin:4px 0}
+  .price small{font-size:18px;color:var(--muted);font-weight:500}
+  .price .was{font-size:18px;color:var(--muted);font-weight:500;text-decoration:line-through;margin-right:6px}
+  ul.perk{list-style:none;padding:0;margin:6px 0 18px}
+  ul.perk li{padding:8px 0;display:flex;gap:10px;border-bottom:1px solid #f2ead9;font-size:15.5px}
+  ul.perk li b{color:var(--p3)}
+  .infobox{padding:22px;background:linear-gradient(180deg,#fffdf8,#fff5e6)}
+  .infobox h3{font-size:18px;margin:0 0 4px;color:var(--ink)}
+  .irow{display:flex;align-items:flex-start;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 14px;box-shadow:0 3px 8px rgba(150,120,60,.1);margin-top:10px;font-size:15px}
+  .irow .ii{font-size:20px}
+
+  .grp{font-family:'Fredoka';font-weight:600;color:var(--muted);margin:18px 0 8px;font-size:15px}
+  .cat{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .item{padding:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+  .item .ic{font-size:28px;filter:drop-shadow(0 2px 2px rgba(150,110,20,.25))}
+  .item .nm{font-family:'Fredoka';font-weight:600;font-size:17px}
+  .item .pr{margin-top:auto;display:inline-flex;align-items:center;gap:6px;background:linear-gradient(to bottom,#fffaf0,#ffefd4);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:700;color:#c96f08;box-shadow:inset 0 1px 0 #fff}
+  .rainbow{background:linear-gradient(90deg,#ff5f6d,#ffce3a,#22b6d0,#8a68e0,#ff5f6d);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700}
+  .glowtx{color:#ff8a00;text-shadow:0 0 8px #ffcf6a}
+
+  .whop{display:inline-flex;align-items:center;gap:7px;justify-content:center;width:100%;margin-top:9px;font-size:12.5px;color:var(--muted);font-weight:600}
+  .whop b{color:var(--good)}
+
+  footer{margin:36px 0;text-align:center}
+  .trust{display:inline-flex;flex-wrap:wrap;gap:16px;justify-content:center;background:#fff;border:1px solid var(--line);border-radius:999px;padding:12px 22px;font-weight:700;color:#6a5a40;box-shadow:0 6px 16px rgba(150,120,60,.14),inset 0 1px 0 #fff}
+  .note{display:inline-block;margin-top:14px;background:#fff;border:1px dashed var(--p2);color:#9a5c0e;padding:8px 16px;border-radius:12px;font-weight:700}
+
+  .ov{position:fixed;inset:0;background:rgba(60,45,20,.5);display:none;place-items:center;z-index:60;padding:16px;backdrop-filter:blur(3px)}
+  .ov.on{display:grid}
+  .modal{background:#fff;border-radius:20px;max-width:420px;width:100%;padding:24px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+  .modal .mt{font-family:'Fredoka';font-weight:700;font-size:22px;margin:8px 0}
+  .rowm{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f2ead9;font-weight:600}
+  .rowm.tot{font-family:'Fredoka';font-size:20px;border-bottom:0;color:var(--p3)}
+  .x{float:right;cursor:pointer;background:#f0e2cd;color:#7a6a48;border:0;border-radius:999px;width:30px;height:30px;font-weight:700}
+  .done{display:none;margin-top:14px;color:var(--good);font-weight:700}
+  @media(max-width:860px){.packs{grid-template-columns:repeat(2,1fr)}.prem{grid-template-columns:1fr}.cat{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Get Premium & Feathers 🪶</h1>
-  <p class="sub">Recommended pricing — tweakable anytime</p>
-  <p class="note">Mockup for review · buys happen securely through Whop · web &amp; Android only</p>
 
-  <h2>👑 TheFlap Premium</h2>
-  <div class="prem">
-    <span class="crown">👑</span>
-    <div class="pt">👑 Premium</div>
-    <div class="price">$4.99<s>$6.99</s></div>
-    <div class="per">per month · cancel anytime</div>
-    <ul class="perks">
-      <li>✨ <span><b>Exclusive frames &amp; name effects</b> — neon, sparkle, gold, animated</span></li>
-      <li>🪶 <span><b>500 Feathers every month</b>, on the house</span></li>
-      <li>💬 <span><b>Priority in Party Chats</b> + a Supporter badge on your name</span></li>
-      <li>🎨 <span>Custom profile banner + more customization</span></li>
-      <li>⚡ <span>Early access to new features &amp; drops</span></li>
-    </ul>
-    <button class="cta gold">Go Premium — $4.99/mo</button>
-  </div>
-
-  <h2>🪶 Feather Packs</h2>
-  <div class="packs">
-    <div class="pack">
-      <div class="coin">🪙</div>
-      <div class="amt">500<small>FEATHERS</small></div>
-      <div class="bonus" style="visibility:hidden">.</div>
-      <button class="buy">$1.99</button>
-    </div>
-    <div class="pack">
-      <span class="tag pop">⭐ POPULAR</span>
-      <div class="coin">🪙</div>
-      <div class="amt">1,500<small>FEATHERS</small></div>
-      <div class="bonus">+7% more</div>
-      <button class="buy">$4.99</button>
-    </div>
-    <div class="pack best">
-      <span class="tag deal">🔥 BEST DEAL</span>
-      <div class="coin">🪙</div>
-      <div class="amt">4,000<small>FEATHERS</small></div>
-      <div class="bonus">+15% more</div>
-      <button class="buy">$9.99</button>
-    </div>
-    <div class="pack">
-      <div class="coin">🪙</div>
-      <div class="amt">12,000<small>FEATHERS</small></div>
-      <div class="bonus">+25% more</div>
-      <button class="buy">$24.99</button>
-    </div>
-  </div>
-
-  <div class="whop">🔒 Secure checkout by <b style="color:#fff;font-family:'Fredoka'">Whop</b> · lands on your account instantly</div>
-
-  <div class="foot">
-    <b>The money logic:</b> keep free Feathers scarce so packs feel worth it, use the cheap $1.99 pack to get the first purchase, and let the gold “Best Deal” pull the bigger spenders. Premium is your steady monthly income. All numbers here are one-edit changes — tell me to go higher/lower and I’ll adjust.
+<div class="themebar">
+  <div class="wrap in">
+    <span class="lbl">🎨 Color wave:</span>
+    <span class="sw on" style="background:#f6941d" onclick="setT('amber',this)" title="Amber"></span>
+    <span class="sw" style="background:#22b6d0" onclick="setT('ocean',this)" title="Ocean"></span>
+    <span class="sw" style="background:#9a63e0" onclick="setT('grape',this)" title="Grape"></span>
+    <span class="sw" style="background:#1fb877" onclick="setT('emerald',this)" title="Emerald"></span>
+    <span class="sw" style="background:#ff6aa8" onclick="setT('rose',this)" title="Rose"></span>
+    <span class="sw" style="background:#4a86ff" onclick="setT('blue',this)" title="Blue"></span>
+    <span class="swname" id="swName">Amber</span>
   </div>
 </div>
+
+<header>
+  <div class="wrap bar">
+    <div class="logo">🪶</div>
+    <div class="lg">The<b>Flap</b></div>
+    <span class="badge-s">Feather Shop</span>
+    <div class="spacer"></div>
+    <div class="coin"><span class="ava">L</span> @lock <span class="tok">🪶</span> <span class="amt">4,305</span></div>
+  </div>
+</header>
+<div class="ticker"><div>✦ More Feathers for your $ ✦ Instant delivery to your account ✦ Cancel anytime ✦ Available on web &amp; Android ✦ More Feathers for your $ ✦ Instant delivery to your account ✦ Cancel anytime ✦ Available on web &amp; Android ✦&nbsp;</div></div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <h1>Feather Shop</h1>
+    <div class="sub">Load up on Feathers, then spend 'em on cosmetics inside TheFlap.</div>
+    <div class="signin">🔒 Signed in as&nbsp;<b>@lock</b>&nbsp;— your buys drop into the app instantly ✨</div>
+  </div>
+
+  <div class="sec">
+    <div class="head">🪙 Feather Packs</div>
+    <div class="subline">One-time top-ups — bigger packs give <span class="star">bonus Feathers</span>.</div>
+    <div class="packs">
+      <div class="pack card sheen"><div class="tag empty">•</div><div class="coinlg">🪶</div><div class="pkamt">500</div><div class="pkbonus empty">+0%</div><div class="pkcost">$1.99</div><button class="btn wide" onclick="ck('500 Feathers',1.99)">Get</button></div>
+      <div class="pack card sheen"><div class="tag pop">⭐ Popular</div><div class="coinlg">🪶</div><div class="pkamt">1,500</div><div class="pkbonus">+7% more</div><div class="pkcost">$4.99</div><button class="btn wide teal" onclick="ck('1,500 Feathers',4.99)">Get</button></div>
+      <div class="pack card sheen hot"><div class="tag best">🔥 Best Deal</div><div class="coinlg">🪶</div><div class="pkamt">4,000</div><div class="pkbonus">+15% more</div><div class="pkcost">$9.99</div><button class="btn wide gold" onclick="ck('4,000 Feathers',9.99)">Get</button></div>
+      <div class="pack card sheen"><div class="tag empty">•</div><div class="coinlg">🪶</div><div class="pkamt">12,000</div><div class="pkbonus">+25% more</div><div class="pkcost">$24.99</div><button class="btn wide pink" onclick="ck('12,000 Feathers',24.99)">Get</button></div>
+    </div>
+    <div class="whop">🔒 <span>Secure checkout by <b>Whop</b> · lands on your account instantly</span></div>
+  </div>
+
+  <div class="sec">
+    <div class="head">⭐ TheFlap Premium</div>
+    <div class="subline">The all-in supporter pass. Headliner: <span class="star">Party Chats</span>.</div>
+    <div class="prem">
+      <div class="prembox card sheen">
+        <h2>⭐ Premium</h2>
+        <div class="partytag">🎉 Priority in Party Chats — group rooms with your friends</div>
+        <div class="price"><span class="was">$6.99</span>$4.99 <small>/ month</small></div>
+        <ul class="perk">
+          <li>🖼️ <span><b>Exclusive frames &amp; name effects</b> — neon, sparkle, gold &amp; animated</span></li>
+          <li>🪶 <span><b>500 Feathers</b> dropped every month</span></li>
+          <li>🎉 <span><b>Priority in Party Chats</b> + Supporter badge</span></li>
+          <li>🎨 <span><b>Custom profile banner</b></span></li>
+          <li>🚀 <span><b>Early access</b> to new features &amp; drops</span></li>
+        </ul>
+        <button class="btn wide" onclick="ck('TheFlap Premium — monthly',4.99)">Go Premium · $4.99/mo</button>
+        <div class="whop">🔒 <span>Secure checkout by <b>Whop</b> · lands on your account instantly</span></div>
+      </div>
+      <div class="infobox card sheen">
+        <h3>✨ What you get</h3>
+        <div style="color:var(--muted);font-size:15px">Everything unlocks the moment your payment clears — synced straight to your account.</div>
+        <div class="irow"><span class="ii">🖼️</span><span>Dress up your profile with <b>neon, sparkle, gold &amp; animated</b> frames and name effects.</span></div>
+        <div class="irow"><span class="ii">🪶</span><span><b>500 Feathers</b> land in your balance every single month.</span></div>
+        <div class="irow"><span class="ii">🎉</span><span>Skip the line with <b>priority in Party Chats</b> and wear your <b>Supporter badge</b>.</span></div>
+        <div class="irow"><span class="ii">🚀</span><span>Be first with <b>early access</b> to new features and limited drops.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="head">🪶 Spend Your Feathers</div>
+    <div class="subline">Everything here is bought <b>with Feathers</b> inside the app.</div>
+
+    <div class="grp">— Name Effects —</div>
+    <div class="cat">
+      <div class="item card sheen"><div class="ic">🌈</div><div class="nm rainbow">Rainbow Name</div><div class="pr"><span class="tok">🪶</span> 400</div></div>
+      <div class="item card sheen"><div class="ic">✨</div><div class="nm glowtx">Name Glow</div><div class="pr"><span class="tok">🪶</span> 250</div></div>
+      <div class="item card sheen"><div class="ic">🌑</div><div class="nm">Shadow Name</div><div class="pr"><span class="tok">🪶</span> 300</div></div>
+      <div class="item card sheen"><div class="ic">🌅</div><div class="nm">Sunset Name</div><div class="pr"><span class="tok">🪶</span> 300</div></div>
+    </div>
+
+    <div class="grp">— Animated Emoji-Moods —</div>
+    <div class="cat">
+      <div class="item card sheen"><div class="ic">😉</div><div class="nm">Wink</div><div class="pr"><span class="tok">🪶</span> 150</div></div>
+      <div class="item card sheen"><div class="ic">😂</div><div class="nm">Laughing</div><div class="pr"><span class="tok">🪶</span> 150</div></div>
+      <div class="item card sheen"><div class="ic">🔥</div><div class="nm">Fire</div><div class="pr"><span class="tok">🪶</span> 150</div></div>
+      <div class="item card sheen"><div class="ic">💀</div><div class="nm">Skull</div><div class="pr"><span class="tok">🪶</span> 150</div></div>
+    </div>
+
+    <div class="grp">— Avatar Frames —</div>
+    <div class="cat">
+      <div class="item card sheen"><div class="ic">🟡</div><div class="nm">Gold Frame</div><div class="pr"><span class="tok">🪶</span> 300</div></div>
+      <div class="item card sheen"><div class="ic">🟣</div><div class="nm">Neon Frame</div><div class="pr"><span class="tok">🪶</span> 350</div></div>
+      <div class="item card sheen"><div class="ic">🌌</div><div class="nm">Galaxy Frame</div><div class="pr"><span class="tok">🪶</span> 500</div></div>
+      <div class="item card sheen"><div class="ic">💎</div><div class="nm">Diamond Frame</div><div class="pr"><span class="tok">🪶</span> 800</div></div>
+    </div>
+
+    <div class="grp">— Badges &amp; Colors —</div>
+    <div class="cat">
+      <div class="item card sheen"><div class="ic">🏅</div><div class="nm">OG Badge</div><div class="pr"><span class="tok">🪶</span> 500</div></div>
+      <div class="item card sheen"><div class="ic">⭐</div><div class="nm">Star Badge</div><div class="pr"><span class="tok">🪶</span> 400</div></div>
+      <div class="item card sheen"><div class="ic">🎨</div><div class="nm">Name Color</div><div class="pr"><span class="tok">🪶</span> 200</div></div>
+      <div class="item card sheen"><div class="ic">🏆</div><div class="nm">Trophy Badge</div><div class="pr"><span class="tok">🪶</span> 600</div></div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="trust"><span>🔒 Secure checkout by Whop</span><span>🪶 Syncs to your account instantly</span><span>↩ Cancel anytime</span></div>
+    <div class="note">✦ Available on web &amp; Android. Click the color swatches up top to try different waves. ✦</div>
+  </footer>
+</div>
+
+<div class="ov" id="ov">
+  <div class="modal">
+    <button class="x" onclick="close_()">✕</button>
+    <div style="font-size:36px">🪶</div>
+    <div class="mt" id="ckN">—</div>
+    <div class="rowm"><span id="ckD">Item</span><b id="ckP">$0</b></div>
+    <div class="rowm"><span>Deliver to</span><b>@lock</b></div>
+    <div class="rowm tot"><span>Total</span><b id="ckT">$0</b></div>
+    <div style="font-size:14px;margin:10px 0;color:var(--muted)">🔒 Secure checkout by Whop · lands on your account instantly</div>
+    <button class="btn wide" onclick="pay()">Continue to secure checkout →</button>
+    <div class="done" id="ckDone">✅ Purchased! In the real flow this lands on <b>@lock</b> the second you open the app.</div>
+  </div>
+</div>
+
+<script>
+  var THEMES={
+    amber:{bgA:'#fff7ec',bgB:'#ffe6c9',glow:'rgba(246,148,29,.16)',p1:'#ffb454',p2:'#f6941d',p3:'#e07d0a',p4:'#c96f08',pshadow:'#b96406',title:'#c96f08',name:'Amber'},
+    ocean:{bgA:'#f0fafe',bgB:'#dcf0fa',glow:'rgba(34,182,214,.16)',p1:'#6fd8ec',p2:'#22b6d0',p3:'#128fa6',p4:'#0b7789',pshadow:'#0a6c7c',title:'#0e8fa4',name:'Ocean'},
+    grape:{bgA:'#f7f1fe',bgB:'#ece0fb',glow:'rgba(154,99,224,.16)',p1:'#c3a2f5',p2:'#9a63e0',p3:'#7c46c8',p4:'#5f33a8',pshadow:'#522c92',title:'#7c46c8',name:'Grape'},
+    emerald:{bgA:'#eefcf4',bgB:'#d7f5e4',glow:'rgba(31,184,119,.16)',p1:'#5fe0a6',p2:'#1fb877',p3:'#159a5f',p4:'#0d7748',pshadow:'#0a663d',title:'#159a5f',name:'Emerald'},
+    rose:{bgA:'#fff0f6',bgB:'#ffdcea',glow:'rgba(255,106,168,.16)',p1:'#ffa6cd',p2:'#ff6aa8',p3:'#e14e8e',p4:'#c23f78',pshadow:'#a83567',title:'#e14e8e',name:'Rose'},
+    blue:{bgA:'#eff4ff',bgB:'#dbe6ff',glow:'rgba(74,134,255,.16)',p1:'#8fb2ff',p2:'#4a86ff',p3:'#2f65e0',p4:'#204fc0',pshadow:'#1c45a6',title:'#2f65e0',name:'Blue'}
+  };
+  function setT(k,el){var t=THEMES[k],r=document.documentElement.style;
+    ['bgA','bgB','glow','p1','p2','p3','p4','pshadow','title'].forEach(function(v){r.setProperty('--'+v,t[v]);});
+    document.getElementById('swName').textContent=t.name;
+    document.querySelectorAll('.sw').forEach(function(s){s.classList.remove('on');});
+    if(el)el.classList.add('on');
+  }
+  function ck(n,p){var f='$'+p.toFixed(2);ckN.textContent=n;ckD.textContent=n;ckP.textContent=f;ckT.textContent=f;ckDone.style.display='none';ov.classList.add('on');}
+  function pay(){ckDone.style.display='block';}
+  function close_(){ov.classList.remove('on');}
+  ov.addEventListener('click',e=>{if(e.target===ov)close_();});
+</script>
 </body>
 </html>
