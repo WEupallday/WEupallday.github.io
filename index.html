@@ -7183,5 +7183,28 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
 
 <!-- Challenges + Store (external) -->
 <script defer src="challenges.js?v=16"></script>
+<script>
+/* flapReplyMentions: @tagging in reply boxes + protect in-progress replies from auto-refresh */
+(function(){
+  function isReply(el){return el&&el.tagName==='INPUT'&&/^ri-/.test(el.id||'');}
+  function trig(e){ if(isReply(e.target)){ try{ if(typeof showMentions==='function') showMentions(e.target); }catch(_){} } }
+  document.addEventListener('input',trig,true);
+  document.addEventListener('keyup',trig,true);
+  document.addEventListener('blur',function(e){ if(isReply(e.target)){ setTimeout(function(){ try{ if(typeof hideMentions==='function') hideMentions(); }catch(_){} },250); } },true);
+  try{
+    var _it=window.isTyping;
+    if(typeof _it==='function' && !_it.__wrapped){
+      var w=function(){
+        try{ if(_it())return true; }catch(_){}
+        var ae=document.activeElement; if(isReply(ae))return true;
+        var ins=document.querySelectorAll('input[id^="ri-"]');
+        for(var i=0;i<ins.length;i++){ if((ins[i].value||'').trim())return true; }
+        return false;
+      };
+      w.__wrapped=true; window.isTyping=w;
+    }
+  }catch(_){}
+})();
+</script>
 </body>
 </html>
