@@ -74,8 +74,9 @@ gf.onclick=function(e){if(e.target===gf)gf.style.display='none';};
 window.flapGetFeathers=gfOpen;
 function takeover(){try{window.nxOpen=function(){open();};}catch(e){}var T=String.fromCharCode(55356,57286);var bs=[].slice.call(document.querySelectorAll('button'));for(var i=0;i<bs.length;i++){var b=bs[i];try{if(getComputedStyle(b).position==='fixed'){var t=(b.textContent||'').trim();if(t.indexOf(T)>-1&&t.length<=3&&!b.__fc){b.__fc=1;b.addEventListener('click',function(e){e.stopImmediatePropagation();e.preventDefault();open();},true);}}}catch(e){}}}
 function wrapNx(){try{if(typeof window.nxApplyCosmetics==='function'&&!window.nxApplyCosmetics.__wrapped){var _o=window.nxApplyCosmetics;var w=function(){var r=_o.apply(this,arguments);try{applyCos();}catch(e){}return r;};w.__wrapped=1;window.nxApplyCosmetics=w;}}catch(e){}}
-function mount(){if(document.body){document.body.appendChild(ov);document.body.appendChild(gf);}takeover();wrapNx();loadAll(function(){applyCos();});}
+function ensureFab(){try{var ex=document.getElementById('nxFabCh');if(ex){ex.style.display='none';}if(document.getElementById('csFab'))return;if(!document.body)return;var b=document.createElement('button');b.id='csFab';b.setAttribute('aria-label','Challenges');b.innerHTML='&#127942;';b.style.cssText='position:fixed;right:16px;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:2147482000;width:56px;height:56px;border-radius:50%;border:0;background:linear-gradient(135deg,#ffcf5a,#f0a91c);color:#3a2600;font-size:26px;box-shadow:0 6px 16px rgba(0,0,0,.35);cursor:pointer;display:flex;align-items:center;justify-content:center';b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();open();},true);document.body.appendChild(b);}catch(e){}}
+function mount(){if(document.body){document.body.appendChild(ov);document.body.appendChild(gf);}takeover();wrapNx();ensureFab();loadAll(function(){applyCos();});}
 if(document.body)mount();else document.addEventListener('DOMContentLoaded',mount);
-var tr=0;var iv=setInterval(function(){tr++;takeover();wrapNx();if(tr>25)clearInterval(iv);},500);
+var tr=0;var iv=setInterval(function(){tr++;takeover();wrapNx();ensureFab();if(tr>25)clearInterval(iv);},500);
 try{if(/[?&]go=challenge/.test(location.search)||location.hash==='#challenge'){setTimeout(open,900);}}catch(e){}
 })();
