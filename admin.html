@@ -203,7 +203,7 @@
   var ADMIN_ACCOUNT="lock";
   var PSEP="␟";
   var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,detectSessionInUrl:true,autoRefreshToken:true,storageKey:'flap-admin-auth'}});
-  var ADMIN_NAME="", DATA=null, TAB="controls", MSG_SEARCH="", MSG_OPEN=null;
+  var ADMIN_NAME="", ADMIN_HASH="", DATA=null, TAB="controls", MSG_SEARCH="", MSG_OPEN=null;
   var ROLE="", SECTIONS=[], DELREQS=[], STAFF=[];
   function isOwner(){ return ROLE==="owner"; }
   function can(sec){ return isOwner() || SECTIONS.indexOf(sec)>-1; }
@@ -291,7 +291,7 @@
       if(!res.data){err.textContent='No such account.';return;}
       if(res.data.pass_hash!==hash){err.textContent='Wrong password.';return;}
       if((res.data.name||'').toLowerCase()!==ADMIN_ACCOUNT){err.textContent='That account is not an administrator.';return;}
-      ADMIN_NAME=res.data.name; ROLE='owner'; SECTIONS=['*'];window.__ADMINPW=pass;window.__OWNERHASH=hash;try{sessionStorage.setItem('flap_modpw',pass);}catch(e){}
+      ADMIN_NAME=res.data.name;ADMIN_HASH=hash; ROLE='owner'; SECTIONS=['*'];window.__ADMINPW=pass;window.__OWNERHASH=hash;try{sessionStorage.setItem('flap_modpw',pass);}catch(e){}
       enterApp();
     }catch(e){err.textContent='Could not reach the server — try again.';}
   }
@@ -399,7 +399,7 @@
   function strip(n,label,cls){return '<span class="s'+(cls?' '+cls:'')+'"><b>'+fmtN(n)+'</b> '+label+'</span>';}
 
   /* ---------- tab nav ---------- */
-  var TABS=[['controls','⚙️ Controls'],['broadcast','📣 Broadcast'],['members','👥 Members'],['badges','🏅 Badges'],['moderation','🛡️ Moderation'],['messages','💬 Messages'],['support','🎫 Support'],['stats','📊 Stats'],['staff','👤 Staff']];
+  var TABS=[['controls','⚙️ Controls'],['broadcast','📣 Broadcast'],['members','👥 Members'],['badges','🏅 Badges'],['store','&#129718; Store'],['moderation','🛡️ Moderation'],['messages','💬 Messages'],['support','🎫 Support'],['stats','📊 Stats'],['staff','👤 Staff']];
   var TAB_SEC={controls:'__owner__',broadcast:'__owner__',members:'__owner__',badges:'__owner__',messages:'__owner__',stats:'__owner__',staff:'__owner__',moderation:'moderation',support:'support'};
   function tabAllowed(k){ if(isOwner())return true; var need=TAB_SEC[k]; if(!need||need==='__owner__')return false; return can(need); }
   function renderTabs(){
@@ -413,16 +413,38 @@
     else if(TAB==='broadcast')h=secBroadcast();
     else if(TAB==='members')h=secMembers();
     else if(TAB==='badges')h=secBadges();
+    else if(TAB==='store')h=secStore();
     else if(TAB==='moderation')h=secModeration();
     else if(TAB==='messages')h=secMessages();
     else if(TAB==='support')h=secSupport();
     else h=secStats();
     $('panel').innerHTML=h;
     if(TAB==='broadcast'){ try{ ADMIN.loadBroadcastLog(); }catch(e){} }
+    if(TAB==='store'){ try{ ADMIN.loadStore(); }catch(e){} }
     window.scrollTo(0,0);
   }
 
   /* ---------- BROADCAST ---------- */
+  function secStore(){
+    var h='<div class="sec"><h2>&#129718; Store items</h2>';
+    h+='<div class="hint">Edit prices (in Feathers), rename, add or remove items. Changes go live instantly. Writes are locked to your admin account.</div>';
+    h+='<div id="stoItems" class="hint">loading&#8230;</div>';
+    h+='<div class="subhead" style="margin-top:18px">&#10133; Add / update an item</div>';
+    h+='<input class="inp" id="stoItem" placeholder="item id (e.g. name_lava) - reusing an id updates it">';
+    h+='<input class="inp" id="stoCat" placeholder="category (Moods, Names, Frames, Badges, Boosts)">';
+    h+='<input class="inp" id="stoLabel" placeholder="label shown to users (e.g. Lava Name)">';
+    h+='<input class="inp" id="stoPrice" type="number" placeholder="price in Feathers (e.g. 900)">';
+    h+='<input class="inp" id="stoSort" type="number" placeholder="sort order (lower shows first)">';
+    h+='<button class="btn" style="background:#1f8f4d" onclick="ADMIN.storeSave()">Save item</button></div>';
+    h+='<div class="sec"><h2>&#127942; Challenges</h2><div id="stoChal" class="hint">loading&#8230;</div>';
+    h+='<div class="subhead" style="margin-top:18px">&#10133; Create / swap challenge</div>';
+    h+='<input class="inp" id="chTitle" placeholder="Title (e.g. Best Trick Shot)">';
+    h+='<textarea class="inp" id="chPrompt" placeholder="Prompt shown to users" style="min-height:70px"></textarea>';
+    h+='<input class="inp" id="chReward" type="number" placeholder="Winner reward in Feathers (e.g. 25)">';
+    h+='<label class="hint" style="display:block;margin-top:6px"><input type="checkbox" id="chSwap" checked> Close current challenge and make this the active one</label>';
+    h+='<button class="btn" style="background:#1f8f4d" onclick="ADMIN.chalCreate()">Create challenge</button></div>';
+    return h;
+  }
   function secBroadcast(){
     var h='<div class="sec"><h2>📣 Send an update to members</h2>';
     h+='<div class="hint">Composes an announcement that goes out as a 🔔 bell notification <b>and</b> a 📱 phone push to everyone who has the app installed. You\'ll see the exact recipient count and confirm before anything sends.</div>';
@@ -782,6 +804,35 @@
   var ADMIN={
     tab:function(t){ TAB=t; if(t!=='messages')MSG_OPEN=null; renderTabs(); renderTab(); },
     reload:function(){ loadAll(); },
+    loadStore:async function(){
+      var box=$('stoItems'), cbox=$('stoChal');
+      try{
+        var it=(await sb.from('flap_store_items').select('*').order('category').order('sort')).data||[];
+        var byCat={}; it.forEach(function(x){(byCat[x.category]=byCat[x.category]||[]).push(x);});
+        var h='';
+        Object.keys(byCat).forEach(function(cat){
+          h+='<div class="subhead">'+esc(cat)+'</div>';
+          byCat[cat].forEach(function(x){
+            h+='<div class="row"><div class="r-top">'+esc(x.label)+' <span class="muted">('+esc(x.item)+')</span></div><div class="acts"><input id="p_'+x.item+'" type="number" value="'+x.price+'" class="inp" style="width:110px"> &#129718; <button class="btn" onclick="ADMIN.storePrice('+"'"+x.item+"'"+')">Save price</button><button class="btn red" onclick="ADMIN.storeDel('+"'"+x.item+"'"+')">Delete</button></div></div>';
+          });
+        });
+        if(box)box.innerHTML=h||'No items yet.';
+      }catch(e){ if(box)box.innerHTML='Could not load items.'; }
+      try{
+        var ch=(await sb.from('flap_challenges').select('*').order('id',{ascending:false}).limit(12)).data||[];
+        var h2=ch.map(function(c){ var open=c.status==='open';
+          return '<div class="row"><div class="r-top">'+(open?'&#128994; OPEN':'&#9898; '+esc(c.status))+' &#183; '+esc(c.title)+'</div><div class="r-body">'+esc(c.prompt||'')+'<br>Reward: '+c.reward+' &#129718;'+(c.winner?(' &#183; Winner: @'+esc(c.winner)):'')+'</div>'+(open?'<div class="acts"><button class="btn" style="background:#5f2ea0" onclick="ADMIN.chalAward('+c.id+')">Pick winner + close</button><button class="btn red" onclick="ADMIN.chalClose('+c.id+')">Close, no winner</button></div>':'')+'</div>';
+        }).join('');
+        if(cbox)cbox.innerHTML=h2||'No challenges yet.';
+      }catch(e){ if(cbox)cbox.innerHTML='Could not load challenges.'; }
+    },
+    _adminAuth:function(){ if(!ADMIN_HASH){ toast('Please sign out and back in first.'); return null; } return {a:ADMIN_NAME,h:ADMIN_HASH}; },
+    storePrice:async function(item){ var au=ADMIN._adminAuth(); if(!au)return; var el=$('p_'+item); var price=parseInt(el&&el.value,10); if(isNaN(price)||price<0){toast('Enter a valid price.');return;} var cur=(await sb.from('flap_store_items').select('*').eq('item',item).maybeSingle()).data; if(!cur){toast('Item not found.');return;} var r=await sb.rpc('admin_store_save',{p_admin:au.a,p_pass_hash:au.h,p_item:item,p_category:cur.category,p_label:cur.label,p_price:price,p_sort:cur.sort}); if(r.data&&r.data.ok){toast('Price updated.');}else{toast('Failed: '+((r.data&&r.data.error)||(r.error&&r.error.message)||'error'));} ADMIN.loadStore(); },
+    storeSave:async function(){ var au=ADMIN._adminAuth(); if(!au)return; var item=($('stoItem').value||'').trim(); var cat=($('stoCat').value||'').trim(); var label=($('stoLabel').value||'').trim(); var price=parseInt($('stoPrice').value,10); var sort=parseInt($('stoSort').value,10); if(!item||!cat||!label||isNaN(price)){toast('Fill item, category, label and price.');return;} if(isNaN(sort))sort=100; var r=await sb.rpc('admin_store_save',{p_admin:au.a,p_pass_hash:au.h,p_item:item,p_category:cat,p_label:label,p_price:price,p_sort:sort}); if(r.data&&r.data.ok){toast('Saved.'); ['stoItem','stoCat','stoLabel','stoPrice','stoSort'].forEach(function(id){var e=$(id); if(e)e.value='';});}else{toast('Failed: '+((r.data&&r.data.error)||'error'));} ADMIN.loadStore(); },
+    storeDel:async function(item){ if(!confirm('Delete this item from the store? Users who already own it keep it.'))return; var au=ADMIN._adminAuth(); if(!au)return; var r=await sb.rpc('admin_store_delete',{p_admin:au.a,p_pass_hash:au.h,p_item:item}); if(r.data&&r.data.ok){toast('Deleted.');}else{toast('Failed.');} ADMIN.loadStore(); },
+    chalCreate:async function(){ var au=ADMIN._adminAuth(); if(!au)return; var title=($('chTitle').value||'').trim(); var pr=($('chPrompt').value||'').trim(); var reward=parseInt($('chReward').value,10); var swap=$('chSwap').checked; if(!title||!pr||isNaN(reward)){toast('Fill title, prompt and reward.');return;} var r=await sb.rpc('admin_challenge_create',{p_admin:au.a,p_pass_hash:au.h,p_title:title,p_prompt:pr,p_reward:reward,p_swap:swap}); if(r.data&&r.data.ok){toast('Challenge is live!'); ['chTitle','chPrompt','chReward'].forEach(function(id){var e=$(id); if(e)e.value='';});}else{toast('Failed: '+((r.data&&r.data.error)||'error'));} ADMIN.loadStore(); },
+    chalClose:async function(id){ if(!confirm('Close this challenge with no winner?'))return; var au=ADMIN._adminAuth(); if(!au)return; var r=await sb.rpc('admin_challenge_close',{p_admin:au.a,p_pass_hash:au.h,p_cid:id}); if(r.data&&r.data.ok){toast('Closed.');}else{toast('Failed.');} ADMIN.loadStore(); },
+    chalAward:async function(id){ if(!confirm('Award the top-liked entry and close this challenge?'))return; var au=ADMIN._adminAuth(); if(!au)return; var r=await sb.rpc('admin_challenge_award',{p_admin:au.a,p_pass_hash:au.h,p_cid:id}); if(r.data&&r.data.ok){toast(r.data.winner?('Winner @'+r.data.winner+' got '+r.data.reward+' feathers.'):'Closed - no entries.');}else{toast('Failed: '+((r.data&&r.data.error)||'error'));} ADMIN.loadStore(); },
     _ensureDMs:function(){ if(!DATA)return; if(DATA.dms){ if(TAB==='messages')renderTab(); return; } sb.from('flaps').select('id,body,created_at').eq('name','::dm::').order('id',{ascending:false}).limit(600).then(function(r){ DATA.dms=(r&&r.data)||[]; if(TAB==='messages')renderTab(); }); },
     _memberNames:async function(){ if(window.__memberNames)return window.__memberNames; var names=[],off=0,pg=1000; try{ while(true){ var r=await sb.from('flap_users').select('name').order('created_at',{ascending:false}).range(off,off+pg-1); var d=(r&&r.data)||[]; d.forEach(function(u){ if(isRealMember(u&&u.name))names.push(u.name); }); if(d.length<pg)break; off+=pg; if(off>20000)break; } }catch(e){} window.__memberNames=names; return names; },
     _refreshCounts:async function(){ if(!DATA||!DATA.counts)return; try{ var NM=['moonchild','the plug','sunny','lowkey','dramaqueen','bestie','lock','theflap','flapbot']; var _n=Date.now(); var R=await Promise.all([ sb.from('flap_users').select('*',{count:'estimated',head:true}), sb.from('flap_users').select('name').in('name',NM), sb.from('flap_users').select('*',{count:'exact',head:true}).gte('last_seen',new Date(_n-12e4).toISOString()), sb.from('flap_users').select('*',{count:'exact',head:true}).eq('banned',true), sb.from('flap_users').select('*',{count:'exact',head:true}).gt('muted_until',new Date(_n).toISOString()) ]); var a=(R[0]&&R[0].count)||0,p=((R[1]&&R[1].data)||[]).length; DATA.counts.accounts=a; DATA.counts.members=Math.max(0,a-p); DATA.counts.online=(R[2]&&R[2].count)||0; DATA.counts.banned=(R[3]&&R[3].count)||0; DATA.counts.muted=(R[4]&&R[4].count)||0; }catch(e){} renderStrip(); renderTab(); },
