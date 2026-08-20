@@ -1,6 +1,6 @@
 /* TheFlap service worker — network-first so site/app updates show up immediately.
    Bump CACHE to force old caches out. */
-const CACHE = 'theflap-v70';
+const CACHE = 'theflap-v71';
 const PRECACHE = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (e) => {
