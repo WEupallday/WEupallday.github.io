@@ -203,6 +203,8 @@
   var ADMIN_ACCOUNT="lock";
   var PSEP="␟";
   var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,detectSessionInUrl:true,autoRefreshToken:true,storageKey:'flap-admin-auth'}});
+try{window.sb=sb;}catch(_){}
+try{window.__adminHash=function(){try{return ADMIN_HASH;}catch(e){return null;}};}catch(_){}
   var ADMIN_NAME="", ADMIN_HASH="", DATA=null, TAB="controls", MSG_SEARCH="", MSG_OPEN=null;
   var ROLE="", SECTIONS=[], DELREQS=[], STAFF=[];
   function isOwner(){ return ROLE==="owner"; }
@@ -1212,6 +1214,36 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
   $('logoutBtn').addEventListener('click',logout);
   $('reloadAll').addEventListener('click',function(){loadAll();});
   /* no session persistence — the admin password is required on every visit */
+})();
+</script>
+<script>
+/* flapBanDeviceTool: ban a repeat offender device by username */
+(function(){
+  function build(){
+    if(document.getElementById('banDevTool'))return;
+    var box=document.createElement('div'); box.id='banDevTool';
+    box.style.cssText='position:fixed;right:14px;bottom:14px;z-index:99999;background:#1b1830;border:1px solid #3a3560;border-radius:12px;padding:10px;width:230px;font-family:sans-serif;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.4)';
+    box.innerHTML='<div style="font-weight:800;font-size:13px;margin-bottom:6px">\ud83d\udeab Ban Device</div><input id="banDevName" placeholder="username" style="width:100%;box-sizing:border-box;padding:7px;border-radius:8px;border:1px solid #444;background:#12101c;color:#fff;margin-bottom:6px;font-size:13px"><button id="banDevGo" style="width:100%;padding:8px;border:none;border-radius:8px;background:#e0245e;color:#fff;font-weight:800;cursor:pointer;font-size:13px">Ban their device</button><div id="banDevMsg" style="font-size:11px;opacity:.8;margin-top:6px"></div>';
+    document.body.appendChild(box); document.getElementById('banDevGo').onclick=go;
+  }
+  function go(){
+    var msg=document.getElementById('banDevMsg');
+    var name=(document.getElementById('banDevName').value||'').trim();
+    if(!name){msg.textContent='Enter a username.';return;}
+    var h=(window.__adminHash&&window.__adminHash())||null; var c=window.sb;
+    if(!h){msg.textContent='Log in as admin first.';return;}
+    if(!c){msg.textContent='Not ready.';return;}
+    msg.textContent='Looking up device\u2026';
+    c.rpc('admin_member_devices',{p_admin:'lock',p_pass_hash:h,p_name:name}).then(function(r){
+      var d=r&&r.data; if(!d||!d.ok){msg.textContent='Not authorized or error.';return;}
+      var devs=d.devices||[]; if(!devs.length){msg.textContent='No device recorded for '+name+' yet \u2014 they must open the app once.';return;}
+      var toBan=devs.filter(function(x){return !x.banned;});
+      if(!toBan.length){msg.textContent='Already banned ('+devs.length+' device(s)).';return;}
+      var done=0;
+      toBan.forEach(function(x){ c.rpc('admin_ban_device',{p_admin:'lock',p_pass_hash:h,p_device:x.devid,p_reason:'admin: '+name}).then(function(){ done++; if(done===toBan.length){ msg.textContent='\u2705 Banned '+toBan.length+' device(s) for '+name; } }); });
+    },function(){msg.textContent='Server error.';});
+  }
+  var n=0; var iv=setInterval(function(){n++; if(document.body){build(); if(n>3)clearInterval(iv);} else if(n>40)clearInterval(iv);},400);
 })();
 </script>
 </body>
