@@ -7247,5 +7247,15 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   var tries=0; var iv=setInterval(function(){ tries++; if(window.sb){ clearInterval(iv); run(); } else if(tries>40){ clearInterval(iv); } },250);
 })();
 </script>
+<script>
+/* flapHideGoogleIOS: hide Google sign-in inside the iOS app (Apple compliance for live-loading) */
+(function(){
+  function isIOSApp(){ try{ return !!(window.Capacitor && Capacitor.getPlatform && Capacitor.getPlatform()==='ios'); }catch(e){ return false; } }
+  var st=document.createElement('style'); st.textContent='.flap-ios-app .gate-google{display:none!important}'; document.head.appendChild(st);
+  function apply(){ try{ if(isIOSApp()) document.documentElement.classList.add('flap-ios-app'); }catch(e){} }
+  apply();
+  var n=0; var iv=setInterval(function(){ n++; apply(); if(document.documentElement.classList.contains('flap-ios-app')||n>20) clearInterval(iv); },200);
+})();
+</script>
 </body>
 </html>
