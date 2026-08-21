@@ -1293,6 +1293,69 @@
 .cl-done{display:none}.cl-done.on{display:block}
 .cl-check{width:52px;height:52px;border-radius:50%;background:#20a760;color:#fff;display:grid;place-items:center;font-size:27px;margin:2px auto 10px}
 </style>
+<style id="flap-smooth">
+/* --- TheFlap native-feel pass (Build 14). Additive, reversible. --- */
+html{background:#241035;}                          /* dark shell = no white flash on cold open */
+html,body{overscroll-behavior-y:contain;}          /* kill rubber-band reveal / bounce weirdness */
+*{-webkit-tap-highlight-color:transparent;}        /* no ugly grey tap flash */
+a,button,.fcTab,.moodbtn,.likebtn,.replybtn,.comp-btn,.reflapbtn{transition:filter .14s ease,background-color .15s ease,transform .12s cubic-bezier(.2,.7,.3,1);}
+a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
+#feed,#fcs2,.drawer,.sheet,.modal{-webkit-overflow-scrolling:touch;} /* iOS momentum scroll */
+@media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+<script id="flap-instant">
+/* Instant cached-feed (paint last feed immediately, real render replaces it) + lazy images.
+   Logged-in only; logged-out gate & desktop untouched. Self-contained, guarded. */
+(function(){
+  if(window.__flapInstant)return;window.__flapInstant=1;
+  var LS; try{LS=window.localStorage;}catch(e){return;}
+  function loggedIn(){try{var m=JSON.parse(LS.getItem('flap_me')||'{}');return !!(m&&m.name);}catch(e){return false;}}
+  var ghostPainted=false;
+  function paintGhost(){
+    try{
+      if(ghostPainted)return;
+      if(!loggedIn())return;
+      var feed=document.getElementById('feed');if(!feed)return;
+      if(feed.querySelector('.card')){ghostPainted=true;return;} /* real feed already there */
+      var snap=LS.getItem('fx_feed_snap');if(!snap)return;
+      feed.innerHTML=snap;                       /* instant content; real feed.innerHTML= replaces cleanly */
+      ghostPainted=true;
+      var y=parseInt(LS.getItem('fx_feed_y')||'0',10);
+      if(y>0){requestAnimationFrame(function(){try{window.scrollTo(0,y);}catch(e){}});}
+    }catch(e){}
+  }
+  function tryPaint(){var f=document.getElementById('feed');if(f){paintGhost();return true;}return false;}
+  if(!tryPaint()){
+    try{
+      var mo=new MutationObserver(function(){ if(tryPaint()){try{mo.disconnect();}catch(e){}} });
+      mo.observe(document.documentElement,{childList:true,subtree:true});
+      setTimeout(function(){try{mo.disconnect();}catch(e){}},5000);
+    }catch(e){}
+    document.addEventListener('DOMContentLoaded',tryPaint);
+  }
+  function tuneImgs(feed){
+    try{var im=feed.querySelectorAll('img');for(var i=0;i<im.length;i++){var g=im[i];if(g.__fxt)continue;g.__fxt=1;if(!g.getAttribute('loading'))g.setAttribute('loading','lazy');g.setAttribute('decoding','async');}}catch(e){}
+  }
+  function snap(){
+    try{
+      var feed=document.getElementById('feed');if(!feed)return;
+      tuneImgs(feed);
+      var cards=feed.querySelectorAll('.card');
+      if(cards.length<2)return;
+      if(!feed.querySelector('.likebtn'))return;  /* only snapshot a real, interactive feed */
+      var html=feed.innerHTML;
+      if(html.length>240000)return;               /* cap localStorage size */
+      LS.setItem('fx_feed_snap',html);
+    }catch(e){}
+  }
+  function saveY(){try{LS.setItem('fx_feed_y',''+Math.round(window.scrollY||window.pageYOffset||0));}catch(e){}}
+  var syT;window.addEventListener('scroll',function(){clearTimeout(syT);syT=setTimeout(saveY,300);},{passive:true});
+  window.addEventListener('pagehide',function(){snap();saveY();});
+  document.addEventListener('visibilitychange',function(){if(document.hidden){snap();saveY();}});
+  setInterval(snap,3000);
+})();
+</script>
+
 </head>
 <body>
 
