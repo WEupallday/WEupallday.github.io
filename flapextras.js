@@ -539,4 +539,25 @@
   }
   setTimeout(collapseReplies, 700);
   setInterval(collapseReplies, 1400);
-})();
+
+  /* ---------- Capture Google/Apple (OAuth) email onto the account ----------
+     OAuth users already have a verified email in their Supabase session; this fills
+     it onto their flap_users row when it's empty (never overwrites). Password-only
+     users have no session email, so it's a no-op. Non-breaking. */
+  var FX_OAUTH_EMAIL_DONE=false;
+  function fxCaptureOauthEmail(){
+    try{
+      if(FX_OAUTH_EMAIL_DONE) return;
+      var me=window.ME&&window.ME.name; if(!me) return;
+      var c=sb(); if(!c||!c.auth||!c.auth.getUser) return;
+      c.auth.getUser().then(function(r){
+        var em=r&&r.data&&r.data.user&&r.data.user.email;
+        if(!em) return;
+        FX_OAUTH_EMAIL_DONE=true;
+        c.from('flap_users').update({email:String(em).trim().toLowerCase()}).eq('name',me).is('email',null)
+          .then(function(){},function(){});
+      },function(){});
+    }catch(e){}
+  }
+  setTimeout(fxCaptureOauthEmail, 6000);
+  setInterval(function(){ if(!FX_OAUTH_EMAIL_DONE) fxCaptureOauthEmail(); }, 45000);})();
