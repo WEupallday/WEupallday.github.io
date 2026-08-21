@@ -312,8 +312,8 @@
       var cards=document.getElementsByClassName('card');
       for(var i=0;i<cards.length;i++){
         var c=cards[i];
-        fixOneAvatar(c.querySelector('.pname'), c.querySelector('.pava img'));   /* poster avatar */
-        var reps=c.querySelectorAll('.reply');                                    /* reply avatars */
+        fixOneAvatar(c.querySelector('.pname'), c.querySelector('.pava img'));
+        var reps=c.querySelectorAll('.reply');
         for(var j=0;j<reps.length;j++){
           fixOneAvatar(reps[j].querySelector('.rn-link, .rn'), reps[j].querySelector('.rava img'));
         }
@@ -322,4 +322,100 @@
   }
   setInterval(fixAvatars, 1500);
   setTimeout(fixAvatars, 900);
+
+  /* ---------- STORE COSMETICS: Frames, VIP badge, Spotlight Boost ----------
+     These were sold in the store but never wired to render. This connects them:
+     - Frames: apply the equipped frame class (nx-fr-*) to the author's avatar.
+     - VIP badge: show a VIP chip for anyone who owns badge_vip.
+     - Spotlight Boost: pin the buyer's latest flap to the top of the feed with a
+       "Spotlight" label for a few hours (activate_spotlight RPC). */
+  var STCOS_CSS=false;
+  function ensureStCss(){
+    if(STCOS_CSS) return; STCOS_CSS=true;
+    var st=document.createElement('style');
+    st.textContent='.fx-vip{display:inline-flex;align-items:center;gap:3px;margin-left:5px;background:linear-gradient(135deg,#ffd75e,#ff9e00);color:#3a2600;font-weight:800;font-size:9px;letter-spacing:.4px;padding:2px 6px;border-radius:999px;vertical-align:middle;box-shadow:0 1px 3px rgba(0,0,0,.25)}'
+      +'.fx-spot-wrap{border:1px solid #ffcf5a !important;box-shadow:0 0 0 2px rgba(255,207,90,.18)}'
+      +'.fx-spot-ribbon{display:flex;align-items:center;gap:6px;background:linear-gradient(90deg,#ffd75e,#ff9e00);color:#241a00;font-weight:800;font-size:11px;letter-spacing:.4px;padding:5px 12px}'
+      +'.fx-usespot{position:fixed;left:12px;bottom:52px;z-index:2147483000;background:linear-gradient(135deg,#ffd75e,#ff9e00);color:#241a00;border:0;border-radius:999px;padding:8px 13px;font:800 12px -apple-system,Segoe UI,Roboto,Arial;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4)}';
+    document.head.appendChild(st);
+  }
+  var FR_MAP={gold_frame:'nx-fr-gold',frame_galaxy:'nx-fr-galaxy'};
+  var FR_ALL=['nx-fr-gold','nx-fr-galaxy'];
+  var ST_FRAMES={}, ST_VIP={}, ST_SPOT={}, ST_LOADED=false;
+  function loadStoreCos(){
+    var c=sb(); if(!c) return;
+    try{
+      c.from('flap_equipped').select('name,item').eq('slot','Frames').then(function(r){ ST_FRAMES={}; (r.data||[]).forEach(function(x){ if(FR_MAP[x.item]){ var n=String(x.name); ST_FRAMES[n]=FR_MAP[x.item]; ST_FRAMES[n.toLowerCase()]=FR_MAP[x.item]; } }); },function(){});
+      c.from('flap_store_owned').select('name').eq('item','badge_vip').then(function(r){ ST_VIP={}; (r.data||[]).forEach(function(x){ var n=String(x.name); ST_VIP[n]=1; ST_VIP[n.toLowerCase()]=1; }); },function(){});
+      c.from('flap_spotlight').select('name,flap_id,until').then(function(r){ ST_SPOT={}; var now=Date.now(); (r.data||[]).forEach(function(x){ if(new Date(x.until).getTime()>now) ST_SPOT[String(x.flap_id)]={name:x.name,until:x.until}; }); ST_LOADED=true; },function(){});
+    }catch(e){}
+  }
+  function applyStoreCos(){
+    try{
+      ensureStCss();
+      var cards=document.getElementsByClassName('card');
+      for(var i=0;i<cards.length;i++){
+        var c=cards[i];
+        var pn=c.querySelector('.pname'), pv=c.querySelector('.pava');
+        var nm=pn?(pn.textContent||'').trim():'';
+        if(pv && nm){
+          var fr=ST_FRAMES[nm]||ST_FRAMES[nm.toLowerCase()];
+          if(fr && !pv.classList.contains(fr)){ FR_ALL.forEach(function(k){pv.classList.remove(k);}); pv.classList.add(fr); }
+        }
+        if(pn && nm && (ST_VIP[nm]||ST_VIP[nm.toLowerCase()]) && !pn.querySelector('.fx-vip')){
+          var b=document.createElement('span'); b.className='fx-vip'; b.textContent='★ VIP'; pn.appendChild(b);
+        }
+      }
+      pinSpotlights();
+    }catch(e){}
+  }
+  function pinSpotlights(){
+    try{
+      if(!ST_LOADED) return;
+      var feed=document.getElementById('feed'); if(!feed) return;
+      var likebtns=feed.querySelectorAll('.likebtn[data-id]');
+      for(var i=0;i<likebtns.length;i++){
+        var id=likebtns[i].getAttribute('data-id');
+        if(!ST_SPOT[id]) continue;
+        var card=likebtns[i].closest('.card'); if(!card || card.__fxspot) continue;
+        card.__fxspot=1; card.classList.add('fx-spot-wrap');
+        var rib=document.createElement('div'); rib.className='fx-spot-ribbon'; rib.innerHTML='✨ SPOTLIGHT';
+        card.insertBefore(rib, card.firstChild);
+        var composer=feed.querySelector('.card.composer');
+        if(composer){ if(composer.nextSibling!==card) feed.insertBefore(card, composer.nextSibling); }
+        else if(feed.firstChild!==card){ feed.insertBefore(card, feed.firstChild); }
+      }
+    }catch(e){}
+  }
+  loadStoreCos();
+  setInterval(loadStoreCos, 60000);
+  setInterval(applyStoreCos, 1600);
+  setTimeout(applyStoreCos, 1000);
+
+  /* "Use Spotlight" launcher — shown to owners of boost_spotlight */
+  function maybeSpotBtn(){
+    try{
+      var me=window.ME&&window.ME.name; if(!me) return;
+      if(document.getElementById('fxUseSpot')) return;
+      var c=sb(); if(!c) return;
+      c.from('flap_store_owned').select('item').eq('name',me).eq('item','boost_spotlight').then(function(r){
+        if(!(r.data&&r.data.length)) return;
+        if(document.getElementById('fxUseSpot')) return;
+        ensureStCss();
+        var b=document.createElement('button'); b.id='fxUseSpot'; b.className='fx-usespot'; b.innerHTML='✨ Use Spotlight';
+        b.onclick=function(){
+          if(!confirm('Spotlight your latest flap at the top of the feed for 3 hours?')) return;
+          b.disabled=true; b.textContent='…';
+          c.rpc('activate_spotlight',{p_name:me}).then(function(rr){
+            var d=rr.data||{};
+            if(d && d.ok){ toast('✨ Spotlight active for 3 hours!'); b.remove(); loadStoreCos(); }
+            else { toast('Could not spotlight: '+((d&&d.error)||'error'),false); b.disabled=false; b.innerHTML='✨ Use Spotlight'; }
+          },function(e){ toast('Error: '+e.message,false); b.disabled=false; b.innerHTML='✨ Use Spotlight'; });
+        };
+        document.body.appendChild(b);
+      },function(){});
+    }catch(e){}
+  }
+  setTimeout(maybeSpotBtn, 5000);
+  setInterval(maybeSpotBtn, 30000);
 })();
