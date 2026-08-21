@@ -224,7 +224,7 @@
       if(hasText){ (function(c,el){ el.onclick=function(ev){ ev.stopPropagation(); translateCard(c,el); }; })(card,tb); foot.appendChild(tb); }
       // share
       var sbn=footBtn('','Share to Story'); sbn.className='fx-sharebtn'; sbn.setAttribute('aria-label','Share');
-      sbn.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 14V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><path d="M6 12v6a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-6"/></svg>';
+      sbn.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#c9bdf0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 14V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><path d="M6 12v6a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-6"/></svg>';
       (function(c){ sbn.onclick=function(ev){ ev.stopPropagation(); shareCard(c); }; })(card);
       foot.appendChild(sbn);
     }
@@ -235,6 +235,7 @@
   /* ---------- compliant RATE + FEEDBACK bonus (one-time) ---------- */
   var STORE_URL_IOS='itms-apps://itunes.apple.com/app/id0'; // replaced by real link in report/config
   function openRate(){
+    try{ if(window.Capacitor&&window.Capacitor.getPlatform&&window.Capacitor.getPlatform()==='ios') return; }catch(e){}
     if(document.getElementById('fxRateModal')) return;
     var wrap=document.createElement('div'); wrap.id='fxRateModal';
     wrap.style.cssText='position:fixed;inset:0;z-index:2147483601;background:rgba(6,4,12,.72);display:flex;align-items:center;justify-content:center;padding:18px';
@@ -560,4 +561,21 @@
     }catch(e){}
   }
   setTimeout(fxCaptureOauthEmail, 6000);
-  setInterval(function(){ if(!FX_OAUTH_EMAIL_DONE) fxCaptureOauthEmail(); }, 45000);})();
+  setInterval(function(){ if(!FX_OAUTH_EMAIL_DONE) fxCaptureOauthEmail(); }, 45000);
+  /* ---------- FX_IOS_PURCHASE_HIDE: hide remaining Feather-purchase / Whop-redeem surfaces on iOS ---------- */
+  (function(){
+    var isIOS=false; try{ isIOS=!!(window.Capacitor&&window.Capacitor.getPlatform&&window.Capacitor.getPlatform()==='ios'); }catch(e){}
+    if(!isIOS) return;
+    try{ if(window.flapGetFeathers) window.flapGetFeathers=function(){}; }catch(e){}
+    function hb(){
+      try{
+        ['gfX','fcGF'].forEach(function(id){ var e=document.getElementById(id); if(e) e.style.display='none'; });
+        var clk=document.querySelectorAll('[onclick]');
+        for(var i=0;i<clk.length;i++){ if(/flapgetfeathers/i.test(clk[i].getAttribute('onclick')||'')) clk[i].style.display='none'; }
+        var all=document.querySelectorAll('button,a,div,span,section');
+        for(var j=0;j<all.length;j++){ var el=all[j]; if(el.children.length>4) continue; var t=(el.textContent||''); if(t.length<160 && /(get feathers|buy a pack|bought on whop)/i.test(t)){ var box=el.closest('.gfc-foot,.gfc-box,[id^="gf"],[id^="fc"]')||el; box.style.display='none'; } }
+      }catch(e){}
+    }
+    setTimeout(hb,800); setInterval(hb,1400);
+  })();
+})();
