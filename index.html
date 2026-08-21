@@ -7206,5 +7206,22 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   }catch(_){}
 })();
 </script>
+<script>
+/* flapAnimThrottle: pause animations off-screen + when tab hidden -> big CPU/heat reduction, no visual change */
+(function(){
+  try{
+    var st=document.createElement('style');
+    st.textContent='.anim-off,.anim-off *{animation-play-state:paused!important}';
+    document.head.appendChild(st);
+    var io=new IntersectionObserver(function(ents){
+      for(var i=0;i<ents.length;i++){ var e=ents[i]; if(e.isIntersecting) e.target.classList.remove('anim-off'); else e.target.classList.add('anim-off'); }
+    },{rootMargin:'200px 0px'});
+    function scan(){ var cs=document.querySelectorAll('[data-id]'); for(var i=0;i<cs.length;i++){ if(!cs[i].__ao){ cs[i].__ao=1; io.observe(cs[i]); } } }
+    setTimeout(scan,1200); setInterval(scan,4000);
+    var hid=document.createElement('style'); document.head.appendChild(hid);
+    document.addEventListener('visibilitychange',function(){ hid.textContent=document.hidden?'*{animation-play-state:paused!important}':''; });
+  }catch(_){}
+})();
+</script>
 </body>
 </html>
