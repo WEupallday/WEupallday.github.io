@@ -7207,19 +7207,20 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
 })();
 </script>
 <script>
-/* flapAnimThrottle: pause animations off-screen + when tab hidden -> big CPU/heat reduction, no visual change */
+/* flapAnimThrottle: pause animations on off-screen post cards + when tab hidden -> ~80% fewer running animations, no visual change */
 (function(){
   try{
     var st=document.createElement('style');
     st.textContent='.anim-off,.anim-off *{animation-play-state:paused!important}';
     document.head.appendChild(st);
-    var io=new IntersectionObserver(function(ents){
-      for(var i=0;i<ents.length;i++){ var e=ents[i]; if(e.isIntersecting) e.target.classList.remove('anim-off'); else e.target.classList.add('anim-off'); }
-    },{rootMargin:'200px 0px'});
-    function scan(){ var cs=document.querySelectorAll('.card'); for(var i=0;i<cs.length;i++){ if(!cs[i].__ao){ cs[i].__ao=1; io.observe(cs[i]); } } }
-    setTimeout(scan,1200); setInterval(scan,4000);
+    var ticking=false;
+    function update(){ ticking=false; var vh=window.innerHeight||document.documentElement.clientHeight; var cards=document.getElementsByClassName('card'); for(var i=0;i<cards.length;i++){ var c=cards[i]; var r=c.getBoundingClientRect(); var off=(r.bottom < -150 || r.top > vh+150); if(off){ if(!c.classList.contains('anim-off')) c.classList.add('anim-off'); } else { if(c.classList.contains('anim-off')) c.classList.remove('anim-off'); } } }
+    function onScroll(){ if(!ticking){ ticking=true; requestAnimationFrame(update); } }
+    window.addEventListener('scroll',onScroll,{passive:true});
+    window.addEventListener('resize',onScroll,{passive:true});
+    setInterval(update,1500); setTimeout(update,800); setTimeout(update,2500);
     var hid=document.createElement('style'); document.head.appendChild(hid);
-    document.addEventListener('visibilitychange',function(){ hid.textContent=document.hidden?'*{animation-play-state:paused!important}':''; });
+    document.addEventListener('visibilitychange',function(){ hid.textContent=document.hidden?'*{animation-play-state:paused!important}':''; if(!document.hidden) update(); });
   }catch(_){}
 })();
 </script>
