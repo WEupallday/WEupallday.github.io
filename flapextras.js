@@ -277,6 +277,7 @@
   window.flapRate=openRate;
   // one-time subtle launcher, only until claimed
   function maybeNudge(){
+    try{ if(window.Capacitor&&window.Capacitor.getPlatform&&window.Capacitor.getPlatform()==='ios') return; }catch(e){}
     if(localStorage.getItem('fx_rate_done')==='1') return;
     if(document.getElementById('fxRateNudge')) return;
     if(!window.ME||!window.ME.name) return;
@@ -427,6 +428,7 @@
      page) gets a Reply action that opens the flap's own composer prefilled with @name —
      a flat tag that reuses the app's posting. No nested threads. */
   var RCAP=3, PP_CAP=20;
+  var FX_DESKTOP=!!(window.matchMedia&&window.matchMedia('(hover:hover) and (pointer:fine)').matches);
   function realReplies(rc){ return rc.querySelectorAll(':scope > .reply:not(.reply-compose)'); }
   function ensureRcCss(){
     if(document.getElementById('fx-rc-css')) return;
@@ -522,7 +524,7 @@
         rc.__fxrc=1;
         var card=rc.closest?rc.closest('.card'):null;
         var vis=Math.min(reps.length, RCAP);
-        for(var v=0; v<vis; v++){ addReplyAction(reps[v], card||rc); }
+        if(FX_DESKTOP){ for(var v=0; v<vis; v++){ addReplyAction(reps[v], card||rc); } }
         if(reps.length<=RCAP) continue;
         for(var j=RCAP;j<reps.length;j++){ reps[j].style.display='none'; }
         var extra=reps.length-RCAP;
