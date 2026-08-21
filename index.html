@@ -7240,7 +7240,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     try{
       c.rpc('is_device_banned',{p_device:devid}).then(function(r){
         if(r && r.data===true){ blockScreen(); return; }
-        try{ var me=window.ME&&window.ME.name; if(me){ c.rpc('record_device',{p_devid:devid,p_name:me}); } }catch(e){}
+        var rn=0; var ri=setInterval(function(){ rn++; var me=window.ME&&window.ME.name; if(me){ clearInterval(ri); try{ c.rpc('record_device',{p_devid:devid,p_name:me}); }catch(e){} } else if(rn>60){ clearInterval(ri); } },500);
       },function(){});
     }catch(e){}
   }
