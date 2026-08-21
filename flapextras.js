@@ -418,4 +418,48 @@
   }
   setTimeout(maybeSpotBtn, 5000);
   setInterval(maybeSpotBtn, 30000);
+
+  /* ---------- COLLAPSE LONG REPLY THREADS (feed smoothness) ----------
+     A flap with many replies renders every reply live (avatar + text = heat/lag).
+     Show the first RCAP replies; detach the rest from the DOM (real perf win —
+     they leave the render tree) behind a "View N more replies" tap that re-injects
+     them on demand. Runs on an interval so it re-applies after the feed re-renders.
+     Idempotent per .replies node via __fxrc flag. */
+  var RCAP=3;
+  function ensureRcCss(){
+    if(document.getElementById('fx-rc-css')) return;
+    var s=document.createElement('style'); s.id='fx-rc-css';
+    s.textContent='.fx-morereplies{display:block;width:100%;text-align:left;background:none;border:0;color:#b9a3ff;font:700 12.5px -apple-system,Segoe UI,Roboto,Arial;padding:7px 2px 3px;margin-top:2px;cursor:pointer}.fx-morereplies:active{filter:brightness(.82)}';
+    document.head.appendChild(s);
+  }
+  function collapseReplies(){
+    try{
+      ensureRcCss();
+      var conts=document.querySelectorAll('.replies');
+      for(var i=0;i<conts.length;i++){
+        var rc=conts[i];
+        if(rc.__fxrc) continue;
+        var reps=rc.querySelectorAll(':scope > .reply');
+        if(reps.length<=RCAP){ rc.__fxrc=1; continue; }
+        rc.__fxrc=1;
+        var extra=reps.length-RCAP;
+        var stash=[];
+        for(var j=RCAP;j<reps.length;j++){ stash.push(reps[j]); }
+        stash.forEach(function(n){ if(n.parentNode) n.parentNode.removeChild(n); });
+        var link=document.createElement('button');
+        link.type='button'; link.className='fx-morereplies';
+        link.textContent='— View '+extra+' more repl'+(extra===1?'y':'ies')+' —';
+        (function(container,nodes,btn){
+          btn.onclick=function(ev){
+            if(ev){ ev.stopPropagation(); }
+            for(var k=0;k<nodes.length;k++){ container.insertBefore(nodes[k],btn); }
+            btn.remove();
+          };
+        })(rc,stash,link);
+        rc.appendChild(link);
+      }
+    }catch(e){}
+  }
+  setTimeout(collapseReplies, 700);
+  setInterval(collapseReplies, 1400);
 })();
