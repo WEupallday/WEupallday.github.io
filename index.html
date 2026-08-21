@@ -7224,5 +7224,28 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   }catch(_){}
 })();
 </script>
+<script>
+/* flapDeviceBan: unique device id + ban enforcement (fail-open, never blocks on error) */
+(function(){
+  function uuid(){ try{ if(window.crypto&&crypto.randomUUID) return crypto.randomUUID(); }catch(e){} return 'd-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12); }
+  var devid=null;
+  try{ devid=localStorage.getItem('flap_devid'); if(!devid){ devid=uuid(); localStorage.setItem('flap_devid',devid); } }catch(e){ devid=null; }
+  window.__flapDevid=devid;
+  function blockScreen(){
+    try{ document.documentElement.innerHTML='<div style="position:fixed;inset:0;background:#12101c;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;font-family:sans-serif;z-index:2147483647"><div style="font-size:44px;margin-bottom:12px">\ud83d\udeab</div><div style="font-size:20px;font-weight:800;margin-bottom:8px">Access blocked</div><div style="opacity:.8;max-width:340px">This device has been banned from TheFlap for breaking our rules.</div></div>'; }catch(e){}
+    try{ localStorage.removeItem('flap_me'); }catch(e){}
+  }
+  function run(){
+    var c=window.sb; if(!c||!devid){ return; }
+    try{
+      c.rpc('is_device_banned',{p_device:devid}).then(function(r){
+        if(r && r.data===true){ blockScreen(); return; }
+        try{ var me=window.ME&&window.ME.name; if(me){ c.rpc('record_device',{p_devid:devid,p_name:me}); } }catch(e){}
+      },function(){});
+    }catch(e){}
+  }
+  var tries=0; var iv=setInterval(function(){ tries++; if(window.sb){ clearInterval(iv); run(); } else if(tries>40){ clearInterval(iv); } },250);
+})();
+</script>
 </body>
 </html>
