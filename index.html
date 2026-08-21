@@ -1450,6 +1450,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
     <div class="gate-or">or pick a name &amp; password</div>
     <input type="text" id="cName" maxlength="20" placeholder="Your name" autocomplete="off" onkeydown="if(event.key==='Enter')doCreate()">
 <input type="email" id="cEmail" maxlength="80" placeholder="Your email (required)" autocomplete="email" onkeydown="if(event.key==='Enter')doCreate()">
+<div id="cEmailHint" style="font-size:11.5px;color:#9a86d6;margin:5px 2px 4px;line-height:1.4">So we can send you updates and help reset your password if you forget it.</div>
         <input type="password" id="cPass" maxlength="40" placeholder="Choose a password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doCreate()">
     <button class="comp-btn go" type="button" onclick="doCreate()">Create account</button>
     <div class="gate-err" id="createErr"></div>
