@@ -420,18 +420,95 @@
   setTimeout(maybeSpotBtn, 5000);
   setInterval(maybeSpotBtn, 30000);
 
-  /* ---------- COLLAPSE LONG REPLY THREADS (feed smoothness) ----------
-     A flap with many replies renders every reply live (avatar + text = heat/lag).
-     Show the first RCAP replies; detach the rest from the DOM (real perf win —
-     they leave the render tree) behind a "View N more replies" tap that re-injects
-     them on demand. Runs on an interval so it re-applies after the feed re-renders.
-     Idempotent per .replies node via __fxrc flag. */
-  var RCAP=3;
+  /* ---------- LONG THREADS: cap feed + real POST PAGE + reply-to-comment ----------
+     Feed shows the first RCAP replies; the rest are hidden (display:none, so they don't
+     paint or animate — the lag fix). "View N more replies" opens a full-screen post page
+     with the whole thread (capped at PP_CAP with Load more). Every comment (feed + post
+     page) gets a Reply action that opens the flap's own composer prefilled with @name —
+     a flat tag that reuses the app's posting. No nested threads. */
+  var RCAP=3, PP_CAP=20;
+  function realReplies(rc){ return rc.querySelectorAll(':scope > .reply:not(.reply-compose)'); }
   function ensureRcCss(){
     if(document.getElementById('fx-rc-css')) return;
     var s=document.createElement('style'); s.id='fx-rc-css';
-    s.textContent='.fx-morereplies{display:block;width:100%;text-align:center;background:rgba(124,92,255,.16);border:1px solid rgba(150,120,255,.55);color:#eae2ff;font:800 13px -apple-system,Segoe UI,Roboto,Arial;padding:9px 10px;margin-top:7px;border-radius:11px;cursor:pointer;letter-spacing:.2px}.fx-morereplies:active{filter:brightness(.9)}';
+    s.textContent=
+      '.fx-morereplies{display:block;width:100%;text-align:center;background:rgba(124,92,255,.16);border:1px solid rgba(150,120,255,.55);color:#eae2ff;font:800 13px -apple-system,Segoe UI,Roboto,Arial;padding:9px 10px;margin-top:7px;border-radius:11px;cursor:pointer;letter-spacing:.2px}.fx-morereplies:active{filter:brightness(.9)}'
+      +'.fx-pp{position:fixed;inset:0;z-index:2147483000;background:#241035;display:flex;flex-direction:column;overflow:hidden}'
+      +'.fx-pp-hd{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 12px;border-bottom:1px solid #372a55;color:#fff;font-weight:800;font-size:16px;flex:0 0 auto}'
+      +'.fx-pp-back{background:none;border:none;color:#c9a4ff;font-size:22px;line-height:1;cursor:pointer;padding:0 2px}'
+      +'.fx-pp-body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px calc(env(safe-area-inset-bottom,0px) + 28px)}'
+      +'.fx-rreply{color:#b9a3ff;font-weight:700;font-size:11.5px;cursor:pointer;margin-left:9px;white-space:nowrap}'
+      +'.fx-rreply:active{filter:brightness(.85)}'
+      +'.fx-loadmore{display:block;width:100%;text-align:center;background:rgba(124,92,255,.16);border:1px solid rgba(150,120,255,.55);color:#eae2ff;font:800 13px -apple-system,Segoe UI,Roboto,Arial;padding:10px;margin-top:10px;border-radius:11px;cursor:pointer}';
     document.head.appendChild(s);
+  }
+  function replyName(row){ var n=row.querySelector('.rn-link')||row.querySelector('.rn'); return n?n.textContent.trim():''; }
+  function openComposerPrefill(card,name){
+    try{
+      var had=!!card.querySelector('.reply-compose');
+      if(!had){ var rb=card.querySelector('.replybtn'); if(rb) rb.click(); }
+      setTimeout(function(){
+        var c=card.querySelector('.reply-compose'); if(!c) return;
+        var inp=c.querySelector('input,textarea'); if(!inp) return;
+        var tag='@'+name+' ';
+        if(name && inp.value.indexOf(tag)<0){ inp.value=tag+inp.value; }
+        inp.dispatchEvent(new Event('input',{bubbles:true}));
+        try{ inp.focus(); if(inp.setSelectionRange) inp.setSelectionRange(inp.value.length,inp.value.length); }catch(e){}
+        try{ card.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){}
+      }, had?0:190);
+    }catch(e){}
+  }
+  function addReplyAction(row, origCard){
+    if(row.querySelector('.fx-rreply')) return;
+    var name=replyName(row);
+    var a=document.createElement('span'); a.className='fx-rreply'; a.textContent='Reply';
+    a.onclick=function(ev){ ev.stopPropagation(); closePP(); openComposerPrefill(origCard, name); };
+    var rt=row.querySelector('.rtxt')||row;
+    rt.appendChild(a);
+  }
+  function closePP(){ var p=document.getElementById('fx-pp'); if(p) p.remove(); document.documentElement.style.overflow=''; }
+  function openPostPage(card){
+    ensureRcCss(); closePP();
+    var pp=document.createElement('div'); pp.className='fx-pp'; pp.id='fx-pp';
+    var hd=document.createElement('div'); hd.className='fx-pp-hd';
+    var bk=document.createElement('button'); bk.className='fx-pp-back'; bk.setAttribute('aria-label','Back'); bk.innerHTML='&#8592;';
+    bk.onclick=closePP; hd.appendChild(bk);
+    var ti=document.createElement('span'); ti.textContent='Post'; hd.appendChild(ti);
+    pp.appendChild(hd);
+    var body=document.createElement('div'); body.className='fx-pp-body';
+    var clone=card.cloneNode(true);
+    var foot=clone.querySelector('.card-foot'); if(foot) foot.remove();
+    var cComp=clone.querySelector('.reply-compose'); if(cComp) cComp.remove();
+    var cPill=clone.querySelector('.fx-morereplies'); if(cPill) cPill.remove();
+    var cReplies=clone.querySelector('.replies');
+    if(cReplies){
+      cReplies.__fxrc=1;
+      var rows=cReplies.querySelectorAll(':scope > .reply:not(.reply-compose)');
+      for(var i=0;i<rows.length;i++){
+        var row=rows[i]; row.style.display='';
+        var del=row.querySelector('.reply-del'); if(del) del.remove();
+        var ex=row.querySelector('.fx-rreply'); if(ex) ex.remove();
+        if(i<PP_CAP){ addReplyAction(row, card); }
+        else { row.style.display='none'; row.setAttribute('data-fxmore','1'); }
+      }
+      if(rows.length>PP_CAP){
+        var lm=document.createElement('button'); lm.className='fx-loadmore';
+        lm.textContent='Load more replies ('+(rows.length-PP_CAP)+')';
+        lm.onclick=function(){
+          var hidden=cReplies.querySelectorAll(':scope > .reply[data-fxmore="1"]');
+          var n=0;
+          for(var k=0;k<hidden.length && n<PP_CAP;k++){ hidden[k].style.display=''; hidden[k].removeAttribute('data-fxmore'); addReplyAction(hidden[k],card); n++; }
+          var left=cReplies.querySelectorAll(':scope > .reply[data-fxmore="1"]').length;
+          if(left>0){ lm.textContent='Load more replies ('+left+')'; } else { lm.remove(); }
+        };
+        cReplies.appendChild(lm);
+      }
+    }
+    body.appendChild(clone);
+    pp.appendChild(body);
+    document.body.appendChild(pp);
+    document.documentElement.style.overflow='hidden';
+    body.scrollTop=0;
   }
   function collapseReplies(){
     try{
@@ -439,25 +516,22 @@
       var conts=document.querySelectorAll('.replies');
       for(var i=0;i<conts.length;i++){
         var rc=conts[i];
+        if(rc.closest && rc.closest('.fx-pp')){ rc.__fxrc=1; continue; }
         if(rc.__fxrc) continue;
-        var reps=rc.querySelectorAll(':scope > .reply');
-        if(reps.length<=RCAP){ rc.__fxrc=1; continue; }
+        var reps=realReplies(rc);
         rc.__fxrc=1;
+        var card=rc.closest?rc.closest('.card'):null;
+        var vis=Math.min(reps.length, RCAP);
+        for(var v=0; v<vis; v++){ addReplyAction(reps[v], card||rc); }
+        if(reps.length<=RCAP) continue;
+        for(var j=RCAP;j<reps.length;j++){ reps[j].style.display='none'; }
         var extra=reps.length-RCAP;
-        var stash=[];
-        for(var j=RCAP;j<reps.length;j++){ stash.push(reps[j]); }
-        stash.forEach(function(n){ if(n.parentNode) n.parentNode.removeChild(n); });
         var link=document.createElement('button');
         link.type='button'; link.className='fx-morereplies';
         link.textContent='— View '+extra+' more repl'+(extra===1?'y':'ies')+' —';
-        (function(container,nodes,btn){
-          btn.onclick=function(ev){
-            if(ev){ ev.stopPropagation(); }
-            for(var k=0;k<nodes.length;k++){ container.insertBefore(nodes[k],btn); }
-            btn.remove();
-          };
-        })(rc,stash,link);
-        rc.appendChild(link);
+        (function(c){ link.onclick=function(ev){ if(ev){ev.stopPropagation();} openPostPage(c); }; })(card||rc);
+        var comp=rc.querySelector(':scope > .reply-compose');
+        if(comp){ rc.insertBefore(link, comp); } else { rc.appendChild(link); }
       }
     }catch(e){}
   }
