@@ -223,7 +223,8 @@
       var tb=footBtn('🌐','Translate'); tb.className='fx-transbtn';
       if(hasText){ (function(c,el){ el.onclick=function(ev){ ev.stopPropagation(); translateCard(c,el); }; })(card,tb); foot.appendChild(tb); }
       // share
-      var sbn=footBtn('↪️','Share to Story'); sbn.className='fx-sharebtn';
+      var sbn=footBtn('','Share to Story'); sbn.className='fx-sharebtn'; sbn.setAttribute('aria-label','Share');
+      sbn.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 14V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><path d="M6 12v6a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-6"/></svg>';
       (function(c){ sbn.onclick=function(ev){ ev.stopPropagation(); shareCard(c); }; })(card);
       foot.appendChild(sbn);
     }
@@ -429,7 +430,7 @@
   function ensureRcCss(){
     if(document.getElementById('fx-rc-css')) return;
     var s=document.createElement('style'); s.id='fx-rc-css';
-    s.textContent='.fx-morereplies{display:block;width:100%;text-align:left;background:none;border:0;color:#b9a3ff;font:700 12.5px -apple-system,Segoe UI,Roboto,Arial;padding:7px 2px 3px;margin-top:2px;cursor:pointer}.fx-morereplies:active{filter:brightness(.82)}';
+    s.textContent='.fx-morereplies{display:block;width:100%;text-align:center;background:rgba(124,92,255,.16);border:1px solid rgba(150,120,255,.55);color:#eae2ff;font:800 13px -apple-system,Segoe UI,Roboto,Arial;padding:9px 10px;margin-top:7px;border-radius:11px;cursor:pointer;letter-spacing:.2px}.fx-morereplies:active{filter:brightness(.9)}';
     document.head.appendChild(s);
   }
   function collapseReplies(){
