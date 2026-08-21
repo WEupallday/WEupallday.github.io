@@ -1246,5 +1246,47 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
   var n=0; var iv=setInterval(function(){n++; if(document.body){build(); if(n>3)clearInterval(iv);} else if(n>40)clearInterval(iv);},400);
 })();
 </script>
+
+<script>
+/* flapCrownTool — admin Close & Crown a challenge (self-contained) */
+(function(){
+  if(window.__flapCrownTool) return; window.__flapCrownTool=1;
+  function ready(){ return window.sb && window.__adminHash; }
+  var tries=0; var iv=setInterval(function(){ if(ready()){ clearInterval(iv); build(); } else if(++tries>80){ clearInterval(iv); } },500);
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[ch];}); }
+  function build(){
+    var c=window.sb;
+    var box=document.createElement("div"); box.id="flapCrownBox";
+    box.style.cssText="position:fixed;bottom:14px;left:14px;z-index:2147483000;width:252px;background:#12121a;border:1px solid #3a2f5f;border-radius:12px;padding:10px 12px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#fff;box-shadow:0 8px 30px rgba(0,0,0,.5)";
+    box.innerHTML="<div style=\"display:flex;align-items:center;gap:6px;font-weight:800;font-size:13px;margin-bottom:8px\">\ud83c\udfc6 Close &amp; Crown<span id=\"flapCrownMin\" style=\"margin-left:auto;cursor:pointer;opacity:.7;font-weight:600\">\u2013</span></div><div id=\"flapCrownBody\"><select id=\"flapCrownSel\" style=\"width:100%;background:#0c0c14;color:#fff;border:1px solid #3a2f5f;border-radius:8px;padding:7px 8px;font-size:12px;margin-bottom:8px\"><option>Loading\u2026</option></select><button id=\"flapCrownGo\" style=\"width:100%;background:linear-gradient(135deg,#ffd75e,#ff9e00);color:#241a00;font-weight:800;border:0;border-radius:8px;padding:9px;font-size:13px;cursor:pointer\">Close &amp; Crown Winner</button><div id=\"flapCrownMsg\" style=\"font-size:11px;color:#b9aee0;margin-top:7px;line-height:1.4\"></div></div>";
+    document.body.appendChild(box);
+    var sel=box.querySelector("#flapCrownSel"), msg=box.querySelector("#flapCrownMsg");
+    box.querySelector("#flapCrownMin").onclick=function(){ var b=box.querySelector("#flapCrownBody"); b.style.display=(b.style.display==="none"?"block":"none"); };
+    function loadOpen(){ sel.innerHTML="<option>Loading\u2026</option>";
+      c.from("flap_challenges").select("id,title,status,closes_at,reward").order("id",{ascending:false}).limit(50).then(function(r){
+        var rows=(r.data||[]).filter(function(x){ return String(x.status||"open").toLowerCase()!=="closed"; });
+        if(!rows.length){ sel.innerHTML="<option value=\"\">No open challenges</option>"; return; }
+        sel.innerHTML=rows.map(function(x){ var lapsed=x.closes_at&&new Date(x.closes_at).getTime()<Date.now(); return "<option value=\""+esc(x.id)+"\">"+esc(x.title||("Challenge #"+x.id))+" \u2022 "+(x.reward||0)+"\ud83e\udeb6"+(lapsed?" (ended)":"")+"</option>"; }).join("");
+      },function(e){ sel.innerHTML="<option value=\"\">Load error</option>"; }); }
+    loadOpen();
+    box.querySelector("#flapCrownGo").onclick=function(){
+      var cid=sel.value; if(!cid){ msg.style.color="#ffcf6a"; msg.textContent="Pick a challenge first."; return; }
+      var title=sel.options[sel.selectedIndex].text;
+      if(!confirm("Close & crown \""+title+"\"?\nThis picks the most-liked entry, credits the reward Feathers, notifies the winner, and posts the celebration. This cannot be undone.")) return;
+      var h=window.__adminHash&&window.__adminHash();
+      msg.style.color="#b9aee0"; msg.textContent="Crowning\u2026";
+      c.rpc("admin_crown_challenge",{p_admin:"lock",p_pass_hash:h,p_cid:String(cid)}).then(function(r){
+        if(r.error){ msg.style.color="#ff8a8a"; msg.textContent="Error: "+r.error.message; return; }
+        var d=r.data||{};
+        if(d && (d.ok===false||d.error)){ msg.style.color="#ff8a8a"; msg.textContent="Could not crown: "+(d.error||"no eligible entry"); return; }
+        var who=(d&&d.winner_name)?("@"+d.winner_name):(d&&d.winner)?("@"+d.winner):"Winner";
+        var rw=(d&&d.reward!=null)?(" \u2022 +"+d.reward+" Feathers"):"";
+        msg.style.color="#8affa0"; msg.textContent="\ud83c\udfc6 "+who+" crowned"+rw+". Notification + celebration posted.";
+        loadOpen();
+      },function(e){ msg.style.color="#ff8a8a"; msg.textContent="Error: "+e.message; });
+    };
+  }
+})();
+</script>
 </body>
 </html>
