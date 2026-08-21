@@ -286,4 +286,40 @@
     document.body.appendChild(b);
   }
   setTimeout(maybeNudge, 4000);
+
+  /* ---------- LIVE AVATAR FIX ----------
+     Each flap stores a frozen copy of the author's avatar (flaps.avatar_url). When someone
+     changes their profile picture, old posts don't update, and the app's sync attempt can leave
+     some blank — which reads as "my flaps reset." This resolves each post's avatar from the LIVE
+     members map (window.USERS) by author name, so changing your picture instantly updates ALL your
+     past posts everywhere. Display-only, no writes, no data risk. */
+  function liveAvatar(name){
+    try{
+      var U=window.USERS; if(!U||!name) return null;
+      var n=String(name).trim();
+      var u=U[n]||U[n.toLowerCase()];
+      if(u&&u.avatar_url){ var a=String(u.avatar_url).trim(); if(a) return a; }
+    }catch(e){}
+    return null;
+  }
+  function fixOneAvatar(nameEl, img){
+    if(!nameEl||!img) return;
+    var live=liveAvatar((nameEl.textContent||'').trim());
+    if(live && img.getAttribute('data-fxav')!==live){ img.setAttribute('data-fxav',live); if(img.src!==live) img.src=live; }
+  }
+  function fixAvatars(){
+    try{
+      var cards=document.getElementsByClassName('card');
+      for(var i=0;i<cards.length;i++){
+        var c=cards[i];
+        fixOneAvatar(c.querySelector('.pname'), c.querySelector('.pava img'));   /* poster avatar */
+        var reps=c.querySelectorAll('.reply');                                    /* reply avatars */
+        for(var j=0;j<reps.length;j++){
+          fixOneAvatar(reps[j].querySelector('.rn-link, .rn'), reps[j].querySelector('.rava img'));
+        }
+      }
+    }catch(e){}
+  }
+  setInterval(fixAvatars, 1500);
+  setTimeout(fixAvatars, 900);
 })();
