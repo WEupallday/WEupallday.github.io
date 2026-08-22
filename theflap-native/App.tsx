@@ -44,7 +44,7 @@ function Tabs() {
     >
       <Tab.Screen name="Home" component={FeedScreen} />
       <Tab.Screen name="Search" component={SearchScreen} />
-      <Tab.Screen name="Alerts" component={NotificationsScreen} options={{ title: 'Alerts' }} />
+      <Tab.Screen name="Alerts" component={NotificationsScreen} options={{ tabBarLabel: 'Notifications' }} />
       <Tab.Screen name="DMs" component={MessagesScreen} options={{ title: 'DMs' }} />
       <Tab.Screen name="Me" component={ProfileScreen} />
     </Tab.Navigator>
