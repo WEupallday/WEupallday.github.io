@@ -596,4 +596,24 @@
     function onScroll(){ if(!on){ on=true; de.classList.add('fx-scrolling'); } if(t) clearTimeout(t); t=setTimeout(function(){ on=false; de.classList.remove('fx-scrolling'); }, 150); }
     window.addEventListener('scroll', onScroll, {passive:true, capture:true});
     window.addEventListener('touchmove', onScroll, {passive:true, capture:true});
+  })();
+  /* ---------- Feed prefetch: load the next batch before hitting the bottom ----------
+     The 'scroll down -> loading -> glitch' happens because the next 50 flaps only load
+     when you reach the very bottom, so you see the stall + render spike. This calls the
+     app's own (guarded) loadOlderFlaps ~1.6 screens early, so the next batch is already
+     there before you get to it. loadOlderFlaps no-ops if it's already loading or there's
+     nothing more, so calling early is safe. */
+  (function(){
+    if(window.__fxFeedPrefetch) return; window.__fxFeedPrefetch=1;
+    function nearBottom(){
+      var de=document.documentElement;
+      var y=window.scrollY||de.scrollTop||0;
+      var vh=window.innerHeight||de.clientHeight||0;
+      var h=Math.max(de.scrollHeight||0, (document.body&&document.body.scrollHeight)||0);
+      return h>0 && (h-(y+vh)) < vh*1.6;
+    }
+    var pt=null;
+    function onScroll(){ if(pt) return; pt=setTimeout(function(){ pt=null; try{ if(nearBottom() && typeof window.loadOlderFlaps==='function') window.loadOlderFlaps(); }catch(e){} }, 250); }
+    window.addEventListener('scroll', onScroll, {passive:true, capture:true});
+    window.addEventListener('touchmove', onScroll, {passive:true, capture:true});
   })();})();
