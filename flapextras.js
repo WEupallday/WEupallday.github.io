@@ -616,4 +616,17 @@
     function onScroll(){ if(pt) return; pt=setTimeout(function(){ pt=null; try{ if(nearBottom() && typeof window.loadOlderFlaps==='function') window.loadOlderFlaps(); }catch(e){} }, 250); }
     window.addEventListener('scroll', onScroll, {passive:true, capture:true});
     window.addEventListener('touchmove', onScroll, {passive:true, capture:true});
+  })();
+  /* ---------- Selective off-screen unloading (battery/heat) ----------
+     content-visibility:auto lets the browser skip rendering (paint + layout + animations)
+     for feed cards that are off-screen, and resume them as they scroll near the viewport.
+     This is the battery-friendly, browser-native way to 'unload' off-screen components —
+     no background JS observer to drain power, and it does NOT remount (the DOM stays put,
+     rendering is just deferred). Only feed cards; never the composer. contain-intrinsic-size
+     'auto 340px' remembers each card's real height after first render to avoid scroll jump. */
+  (function(){
+    if(window.__fxLazyCards) return; window.__fxLazyCards=1;
+    var s=document.createElement('style'); s.id='fx-lazy-cards';
+    s.textContent='#feed>.card:not(.composer){content-visibility:auto;contain-intrinsic-size:auto 340px}';
+    document.head.appendChild(s);
   })();})();
