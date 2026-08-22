@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../theme';
 import { Flap } from '../lib/flaps';
@@ -30,6 +30,7 @@ function fmtDate(iso: string): string {
 }
 
 function FlapCardBase({ flap }: { flap: Flap }) {
+  const nameColor = flap.color || theme.nameNavy;
   return (
     <View style={styles.card}>
       {/* navy date strip */}
@@ -47,9 +48,13 @@ function FlapCardBase({ flap }: { flap: Flap }) {
         style={styles.body}
       >
         <View style={styles.headRow}>
-          <View style={styles.avatar}><Text style={styles.avatarTxt}>{initials(flap.name)}</Text></View>
+          {flap.avatar_url ? (
+            <Image source={{ uri: flap.avatar_url }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatar}><Text style={styles.avatarTxt}>{initials(flap.name)}</Text></View>
+          )}
           <View style={styles.nameWrap}>
-            <Text style={styles.name} numberOfLines={2}>{flap.name}</Text>
+            <Text style={[styles.name, { color: nameColor }]} numberOfLines={2}>{flap.name}</Text>
           </View>
           <View style={styles.moodbox}>
             <Text style={styles.mlabel}>Mood</Text>
@@ -58,7 +63,11 @@ function FlapCardBase({ flap }: { flap: Flap }) {
           </View>
         </View>
 
-        <Text style={styles.text}>{flap.text}</Text>
+        {!!flap.body && <Text style={styles.text}>{flap.body}</Text>}
+
+        {!!flap.pic_url && (
+          <Image source={{ uri: flap.pic_url }} style={styles.pic} resizeMode="cover" />
+        )}
 
         <View style={styles.foot}>
           <Text style={styles.footBtn}>💬 Flap This! ({flap.likes ?? 0})</Text>
@@ -98,7 +107,7 @@ const styles = StyleSheet.create({
   },
   avatarTxt: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   nameWrap: { flex: 1, paddingHorizontal: 8, paddingTop: 2 },
-  name: { color: theme.nameNavy, fontWeight: 'bold', fontSize: 16 },
+  name: { fontWeight: 'bold', fontSize: 16 },
   moodbox: {
     width: 96, backgroundColor: '#fff', borderWidth: 3, borderColor: theme.red,
     borderRadius: 10, alignItems: 'center', paddingHorizontal: 4, paddingTop: 4, paddingBottom: 6,
@@ -108,6 +117,7 @@ const styles = StyleSheet.create({
   emo: { fontSize: 24, marginTop: 2 },
   mword: { color: theme.red, fontWeight: 'bold', fontSize: 11 },
   text: { color: theme.navy, fontSize: 14, lineHeight: 20, marginTop: 10 },
+  pic: { width: '100%', height: 220, borderRadius: 8, marginTop: 10, backgroundColor: '#0002' },
   foot: {
     flexDirection: 'row', alignItems: 'center', marginTop: 12, gap: 14,
     borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.08)', paddingTop: 8,
