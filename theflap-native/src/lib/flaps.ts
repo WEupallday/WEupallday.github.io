@@ -2,21 +2,24 @@ import { supabase } from './supabase';
 
 // ---------------------------------------------------------------------------
 // SINGLE SOURCE OF TRUTH for the feed query.
-// If a column name differs in the live DB, change it HERE only.
-// Confirm against: Supabase -> Table editor -> `flaps`.
+// Verified against the live `flaps` table:
+//   id, created_at, name, color, avatar_url, mood, body, pic_url, likes
 // ---------------------------------------------------------------------------
 const TABLE = 'flaps';
-const COLS = 'id, name, text, mood, created_at, likes';
+const COLS = 'id, name, body, mood, created_at, likes, avatar_url, pic_url, color';
 const ORDER_COL = 'created_at';
 const PAGE = 30;
 
 export type Flap = {
   id: string | number;
   name: string;
-  text: string;
+  body: string;
   mood: string | null;
   created_at: string;
   likes: number | null;
+  avatar_url?: string | null;
+  pic_url?: string | null;
+  color?: string | null;
 };
 
 // Cursor-based pagination on created_at keeps scroll smooth and avoids the
@@ -33,7 +36,7 @@ export async function fetchFlaps(beforeIso?: string): Promise<Flap[]> {
   return (data || []) as Flap[];
 }
 
-export async function postFlap(name: string, text: string, mood: string): Promise<void> {
-  const { error } = await supabase.from(TABLE).insert({ name, text, mood });
+export async function postFlap(name: string, body: string, mood: string): Promise<void> {
+  const { error } = await supabase.from(TABLE).insert({ name, body, mood });
   if (error) throw new Error(error.message);
 }
