@@ -578,4 +578,22 @@
     }
     setTimeout(hb,800); setInterval(hb,1400);
   })();
-})();
+
+  /* ---------- Smooth fast-scroll + no background reveal ----------
+     Fast flings used to (a) stutter because every animated mood/name effect keeps
+     animating and (b) rubber-band at the ends, revealing the dark background. This
+     pauses all animations/transitions during a scroll (freeing the compositor so the
+     feed paints instead of flashing blank) and locks overscroll so the background
+     can't peek through. Resumes ~150ms after scrolling stops. Never fights the finger. */
+  (function(){
+    if(window.__fxScrollSmooth) return; window.__fxScrollSmooth=1;
+    var s=document.createElement('style'); s.id='fx-scroll-css';
+    s.textContent='.fx-scrolling *{animation-play-state:paused!important;transition:none!important}'
+      +'html,body{overscroll-behavior:none!important}'
+      +'#feed,#fcs2,.fx-pp-body{overscroll-behavior:none!important}';
+    document.head.appendChild(s);
+    var t=null, on=false, de=document.documentElement;
+    function onScroll(){ if(!on){ on=true; de.classList.add('fx-scrolling'); } if(t) clearTimeout(t); t=setTimeout(function(){ on=false; de.classList.remove('fx-scrolling'); }, 150); }
+    window.addEventListener('scroll', onScroll, {passive:true, capture:true});
+    window.addEventListener('touchmove', onScroll, {passive:true, capture:true});
+  })();})();
