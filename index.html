@@ -7322,7 +7322,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
 /* flapHideGoogleIOS: hide Google sign-in inside the iOS app (Apple compliance for live-loading) */
 (function(){
   function isIOSApp(){ try{ return !!(window.Capacitor && Capacitor.getPlatform && Capacitor.getPlatform()==='ios'); }catch(e){ return false; } }
-  var st=document.createElement('style'); st.textContent='.flap-ios-app .gate-google,.flap-ios-app .gate-apple,.flap-ios-app .fcBuy,.flap-ios-app a[href*="whop"],.flap-ios-app #gfX,.flap-ios-app #fcGF{display:none!important}'; document.head.appendChild(st);
+  var st=document.createElement('style'); st.textContent='.flap-ios-app .gate-google,.flap-ios-app .gate-apple,.flap-ios-app .fcBuy,.flap-ios-app a[href*="whop"],.flap-ios-app #gfX,.flap-ios-app #fcGF,.flap-ios-app #rcIn,.flap-ios-app #rcMsg,.flap-ios-app #rcGo,.flap-ios-app .prem-btn,.flap-ios-app .prem-back{display:none!important}'; document.head.appendChild(st);
   function apply(){ try{ if(isIOSApp()) document.documentElement.classList.add('flap-ios-app'); }catch(e){} }
   apply();
   var n=0; var iv=setInterval(function(){ n++; apply(); if(document.documentElement.classList.contains('flap-ios-app')||n>20) clearInterval(iv); },200);
