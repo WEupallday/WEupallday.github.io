@@ -6975,7 +6975,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
           if(ava) ava.classList.remove.apply(ava.classList,FRAME_ALL);
           var oldb=target.querySelector&&target.querySelector('.nx-badge'); if(oldb&&oldb.parentNode) oldb.parentNode.removeChild(oldb);
           if(own){
-            var nc=pickName(own); if(nc) target.classList.add(nc);
+            var nc=pickName(own); if(nc) target.classList.add(nc); var _ncre=/^name_color_([0-9a-f]{6})$/i,_ncx='';for(var _rid in own){if(own[_rid]){var _m=_ncre.exec(String(_rid).trim());if(_m){_ncx='#'+_m[1].toLowerCase();break;}}} target.style.color=(_ncx&&!nc)?_ncx:'';
             var fr=pickFrame(own); if(fr&&ava) ava.classList.add(fr);
             var bg=pickBadges(own); if(bg){ var sp=document.createElement('span'); sp.className='nx-badge'; sp.textContent=bg; target.appendChild(sp); }
           }
