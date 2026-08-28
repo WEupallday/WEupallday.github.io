@@ -6929,7 +6929,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     var FRAME_CLASS={gold_frame:'nx-fr-gold',sparkle_frame:'nx-fr-sparkle',frame_pixel:'nx-fr-pixel',frame_neon:'nx-fr-neon',frame_hearts:'nx-fr-hearts',frame_fire:'nx-fr-fire',frame_ice:'nx-fr-ice',frame_galaxy:'nx-fr-galaxy',frame_royal:'nx-fr-royal',frame_diamond:'nx-fr-diamond'};
     var BADGE_ICON={og_badge:'🏅',badge_vip:'🌟',badge_legend:'🏆',badge_founder:'🛠️',badge_early_bird:'🐦'};
     var EMOJI_CAT={emoji_laugh:'😂',emoji_cry:'😭',emoji_shock:'😱',emoji_angry:'😠',emoji_excited:'🤩',emoji_confused:'😕',emoji_party:'🥳',emoji_love:'😍',emoji_cool:'😎',emoji_wink:'😉',emoji_mindblown:'🤯',emoji_sleepy:'😴',emoji_nerd:'🤓',emoji_smirk:'😏',emoji_skull:'💀',emoji_fire:'🔥',emoji_100:'💯',emoji_clown:'🤡',emoji_ghost:'👻',emoji_robot:'🤖',emoji_pleading:'🥺',emoji_rage:'😡'};
-    window.NX_MOOD_EMOJI=EMOJI_CAT;var RM_BASE=null;function styleFor(rid){ rid=String(rid||'').toLowerCase(); if(/rainbow/.test(rid)) return 'nx-cos-rainbow'; if(/gold|vip|premium/.test(rid)) return 'nx-cos-gold'; if(/neon|electric|aqua|cyan/.test(rid)) return 'nx-cos-neon'; return ''; }
+    window.NX_MOOD_EMOJI=EMOJI_CAT;var RM_BASE=null;function styleFor(rid){ rid=String(rid||'').toLowerCase(); if(!(rid==='rainbow_name'||rid.indexOf('name_')===0)) return ''; if(/rainbow/.test(rid)) return 'nx-cos-rainbow'; if(/gold|vip|premium/.test(rid)) return 'nx-cos-gold'; if(/neon|electric|aqua|cyan/.test(rid)) return 'nx-cos-neon'; return ''; }
     var NAME_ALL=['nx-cos-rainbow','nx-cos-gold','nx-cos-neon','nx-nc-shadow','nx-nc-glow','nx-nc-sunset','nx-nc-ocean'];
     var FRAME_ALL=['nx-fr-gold','nx-fr-sparkle','nx-fr-pixel','nx-fr-neon','nx-fr-hearts','nx-fr-fire','nx-fr-ice','nx-fr-galaxy','nx-fr-royal','nx-fr-diamond'];
     var css=document.createElement('style');
@@ -6956,7 +6956,22 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
       '@keyframes nxRainbow{to{background-position:200% center;}}';
     (document.head||document.documentElement).appendChild(css);
     function nameFromClick(oc){ var m=/showUserProfile\((['"])([\s\S]*?)\1/.exec(oc||''); return m?m[2]:''; }
-    function pickName(own){ var rid; for(rid in own){ if(own[rid]&&NAME_CLASS[rid]) return NAME_CLASS[rid]; } for(rid in own){ if(own[rid]){ var s=styleFor(rid); if(s) return s; } } return ''; }
+    var NX_NC_RE=/^name_color_([0-9a-f]{6})$/i;
+    function pickNameColor(own){ var ks=[]; for(var r in own){ if(own[r]) ks.push(r); } ks.sort();
+      for(var i=0;i<ks.length;i++){ var m=NX_NC_RE.exec(String(ks[i]).trim()); if(m) return '#'+m[1].toLowerCase(); } return ''; }
+    function nxMix(hex,to,t){ function c(h,i){return parseInt(h.substr(1+i*2,2),16);} function h2(v){var x=Math.max(0,Math.min(255,Math.round(v))).toString(16);return x.length<2?'0'+x:x;}
+      return '#'+h2(c(hex,0)+(c(to,0)-c(hex,0))*t)+h2(c(hex,1)+(c(to,1)-c(hex,1))*t)+h2(c(hex,2)+(c(to,2)-c(hex,2))*t); }
+    function nxApplyNameColor(t,hex){ try{ var d=nxMix(hex,'#000000',0.34), l=nxMix(hex,'#ffffff',0.42);
+      t.style.backgroundImage='linear-gradient(90deg,'+d+','+hex+','+l+','+hex+','+d+')';
+      t.style.backgroundSize='200% auto'; t.style.webkitBackgroundClip='text'; t.style.backgroundClip='text';
+      t.style.webkitTextFillColor='transparent'; t.style.color='transparent';
+      t.style.animation='nxRainbow 4s linear infinite'; }catch(e){} }
+    function nxClearNameColor(t){ try{ t.style.backgroundImage=''; t.style.backgroundSize=''; t.style.webkitBackgroundClip='';
+      t.style.backgroundClip=''; t.style.webkitTextFillColor=''; t.style.color=''; t.style.animation=''; }catch(e){} }
+    function pickName(own){ var rid;
+      for(rid in own){ if(own[rid]&&NAME_CLASS[rid]) return NAME_CLASS[rid]; }
+      if(pickNameColor(own)) return '';
+      for(rid in own){ if(own[rid]){ var s=styleFor(rid); if(s) return s; } } return ''; }
     function pickFrame(own){ for(var rid in own){ if(own[rid]&&FRAME_CLASS[rid]) return FRAME_CLASS[rid]; } return ''; }
     function pickBadges(own){ var out=''; for(var rid in own){ if(own[rid]&&BADGE_ICON[rid]) out+=BADGE_ICON[rid]; } return out; }
     function apply(){
@@ -6970,12 +6985,12 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
           var target=(el.querySelector&&el.querySelector('.pname'))||el;
           if(target.getAttribute('data-nxcos')===String(VER)) continue;
           target.setAttribute('data-nxcos',String(VER));
-          target.classList.remove.apply(target.classList,NAME_ALL);
+          target.classList.remove.apply(target.classList,NAME_ALL); nxClearNameColor(target);
           var ava=el.querySelector&&el.querySelector('.pava');
           if(ava) ava.classList.remove.apply(ava.classList,FRAME_ALL);
           var oldb=target.querySelector&&target.querySelector('.nx-badge'); if(oldb&&oldb.parentNode) oldb.parentNode.removeChild(oldb);
           if(own){
-            var nc=pickName(own); if(nc) target.classList.add(nc); var _ncre=/^name_color_([0-9a-f]{6})$/i,_ncx='';for(var _rid in own){if(own[_rid]){var _m=_ncre.exec(String(_rid).trim());if(_m){_ncx='#'+_m[1].toLowerCase();break;}}} target.style.color=(_ncx&&!nc)?_ncx:'';
+            var nc=pickName(own); if(nc) target.classList.add(nc); var _ncx=pickNameColor(own); if(_ncx&&!nc){ nxApplyNameColor(target,_ncx); } else { nxClearNameColor(target); }
             var fr=pickFrame(own); if(fr&&ava) ava.classList.add(fr);
             var bg=pickBadges(own); if(bg){ var sp=document.createElement('span'); sp.className='nx-badge'; sp.textContent=bg; target.appendChild(sp); }
           }
