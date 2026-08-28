@@ -2576,7 +2576,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
   function isReservedName(s){
     var t=_rnNorm(s);
     if(!t) return false;
-    if(isReservedLock(s)) return true;   /* the admin username — nobody else can take lock in any casing/variant */
+    if(isReservedLock(s)) return true; if(/(fuck|fuk|fuq|phuck|fck|motherfuck|shit|shite|bullshit|dipshit|bitch|biatch|cunt|pussy|cocksuck|dickhead|dickhole|dumbass|jackass|asshole|asswipe|whore|slut|skank|faggot|fagot|nigger|nigga|niglet|kike|chink|gook|beaner|wetback|coonass|spick|retard|tranny|twat|wank|jizz|cumshot|blowjob|handjob|rimjob|dildo|gangbang|bukkake|felch|jerkoff|jackoff|porn|molest|pedophile|rapist|buttfuck|titfuck|titties|bastard|goddam|douchebag|shemale|kkk|hitler)/.test(t)) return true;   /* the admin username — nobody else can take lock in any casing/variant */
     if(/flap|admin|support|official|moderator/.test(t)) return true;   /* blocks theflap, flapsupport, flap, admin, support, etc. */
     if(/^(mod|staff|root|owner|team|theteam)$/.test(t)) return true;
     if(DEITY_NAMES.indexOf(t)>-1) return true;   /* deity/sacred-claim names: EXACT normalized match so real names like Godfrey/Abdallah are NOT blocked */
