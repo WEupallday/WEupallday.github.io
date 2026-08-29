@@ -2376,7 +2376,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
     return '<div class="reply"><div class="rava">'+portrait(who)+'</div>'+
       '<div class="rtxt"><span class="rn">'+CAST[who].name+'</span> '+text+'</div></div>';
   }
-  function cardHTML(o){
+  function cardHTML(o){try{var _me=(window.ME&&ME.name?String(ME.name):'').toLowerCase();if(_me&&!window.__urNoticeShown&&window.USERS&&USERS[_me]&&USERS[_me].review_status==='under_review'){window.__urNoticeShown=true;var _b=document.createElement('div');_b.id='urNotice';_b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99990;background:#b3541e;color:#fff;padding:11px 14px;font:600 13px system-ui,sans-serif;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.3);';_b.textContent='Your account is under review. Your posts are hidden from others while our team takes a look - you can still see them here.';document.body.appendChild(_b);}var _rn=(o&&o.name?String(o.name):'').toLowerCase();if(_rn&&_rn!==_me&&!(window.ME&&ME.admin)&&window.USERS&&USERS[_rn]&&USERS[_rn].review_status==='under_review'){return '';}}catch(_e){}
     var h='<div class="card'+(o.pinned?' pinned-card':'')+'"'+(o.liveId?' id="flap-'+o.liveId+'"':'')+'>';
     if(o.pinned)h+='<div class="pinned-tag">📌 Pinned</div>';
     if(o.reflapBy)h+='<div class="reflap-tag">🔁 <b>'+esc(o.reflapBy)+'</b> reflapped '+esc(o.name)+"'s flap</div>";
