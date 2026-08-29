@@ -2674,6 +2674,22 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
       toast('✓ '+name+'\'s time-out was lifted.'); try{ showUserProfile(name); }catch(e){}
     }catch(e){toast('Could not lift the time-out.');}
   }
+  /* Clear an account's automatic 'under review' hold. The hold is set by the DB
+     trigger at 4 distinct reporters in 7 days; it blocks posting and hides the
+     account's flaps until a human releases it here. Matches muteUser/unmuteUser. */
+  var UNDER_REVIEW=[];
+  async function releaseFromReview(i){
+    if(!ME.admin)return;
+    var name=UNDER_REVIEW[i];            /* index, not a quoted name: usernames
+                                            contain apostrophes, emoji and HTML */
+    if(!name)return;
+    try{
+      await sb.from('flap_users').update({review_status:null,review_reason:null,review_at:null}).ilike('name',name);
+      if(USERS[(name||'').toLowerCase()]){var _u=USERS[(name||'').toLowerCase()];_u.review_status=null;_u.review_reason=null;_u.review_at=null;}
+      toast('\u2713 '+name+' was released from review.');
+      try{ showAdmin(); }catch(e){}
+    }catch(e){toast('Could not release \u2014 try again.');}
+  }
   function customMute(name){ var h=prompt('Time out '+name+' for how many HOURS?','12'); if(h===null)return; h=parseFloat(h); if(!(h>0)){toast('Enter a number of hours.');return;} muteUser(name,h); }
   /* called when auto-mod removes a submission. content is NOT posted. */
   async function autoModBlock(kind,text){try{flapNotice('⚠️','Message Blocked','This message violates TheFlap\'s Community Guidelines and cannot be sent.','Got it');}catch(e){}
@@ -3987,6 +4003,19 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
       h+='<div style="padding:2px 2px 10px;"><textarea id="adminVerified" style="width:100%;box-sizing:border-box;min-height:44px;font-family:Verdana,Arial,sans-serif;font-size:12px;padding:8px;border:2px solid var(--card-border);border-radius:8px;">'+esc(verCur)+'</textarea>'+
          '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#1fb6a6,#0e8577);" onclick="saveVerified()">SAVE VERIFIED LIST</button>'+
          '<div style="font-size:10px;color:#889;margin-top:4px;">Usernames here (comma or space separated) get the ✔ badge. You (lock) are always verified.</div></div>';
+      var underRev=us.filter(function(u){return u&&u.review_status==='under_review';});
+      UNDER_REVIEW=underRev.map(function(u){return u.name;});
+      h+='<div class="pc-flaps-h">\u23F8 Under Review ('+underRev.length+')</div>';
+      if(!underRev.length){h+='<div style="font-size:11px;color:#2a8a2a;margin-bottom:10px;">No accounts under review. \uD83C\uDF89</div>';}
+      else{h+=underRev.map(function(u,ui){
+        return '<div style="font-size:12px;padding:7px 8px;margin-bottom:6px;border:2px solid var(--card-border);border-radius:8px;">'+
+               '<b>'+esc(u.name)+'</b>'+
+               '<div style="font-size:10.5px;color:#889;margin-top:2px;">'+esc(u.review_reason||'automatic hold')+
+               (u.review_at?(' \u00b7 '+new Date(u.review_at).toLocaleString()):'')+'</div>'+
+               '<div style="font-size:10.5px;color:#889;margin-top:2px;">Cannot post; their flaps are hidden from the feed.</div>'+
+               '<button class="you-update" type="button" style="margin-top:6px;width:100%;background:linear-gradient(180deg,#1fb6a6,#0e8577);" onclick="releaseFromReview('+ui+')">RELEASE FROM REVIEW</button>'+
+               '</div>';
+      }).join('');}
       h+='<div class="pc-flaps-h">⚑ Reports ('+reports.length+')</div>';
       if(!reports.length){h+='<div style="font-size:11px;color:#2a8a2a;margin-bottom:10px;">No open reports right now. 🎉</div>';}
       else{h+=reports.map(function(r){
