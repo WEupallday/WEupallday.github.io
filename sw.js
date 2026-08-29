@@ -2,7 +2,7 @@
    The shell (index.html + versioned scripts + icons) is served from cache immediately for a
    native, no-white-flash open, then refreshed silently in the background so the next launch is fresh.
    Cross-origin requests (Supabase API, CDNs) are NEVER cached. Bump CACHE to roll old caches out. */
-const CACHE = 'theflap-v44';
+const CACHE = 'theflap-v45';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/challenges.js?v=17', '/flapextras.js?v=1'];
 
 self.addEventListener('install', (e) => {
@@ -28,6 +28,11 @@ self.addEventListener('fetch', (e) => {
   const isHTML = req.mode === 'navigate' || accept.includes('text/html');
 
   if (isHTML) {
+      /* Real multi-page routes (admin.html, terms.html, privacy.html) must load their OWN page, not the cached app shell. */
+      if (sameOrigin && url.pathname !== '/' && url.pathname !== '/index.html') {
+        e.respondWith(fetch(req).then((res) => res).catch(() => caches.match(req)));
+        return;
+      }
     /* STALE-WHILE-REVALIDATE: paint cached shell instantly, refresh in the background. */
     e.respondWith((async () => {
       const cache = await caches.open(CACHE);
