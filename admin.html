@@ -1347,7 +1347,9 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
   var iv=setInterval(function(){
     tries++;
     var tn=document.getElementById('tabNav');
-    var loggedIn=!!(client() && tn && tn.offsetParent!==null);
+    var bt=document.body.innerText||'';
+    var pastLogin = bt.indexOf('Sign in with the admin account')<0 && bt.indexOf('ADMIN NAME')<0;
+    var loggedIn=!!(client() && (pastLogin || (tn && tn.offsetParent!==null)));
     if(loggedIn){ var p=document.getElementById('urv-panel'); if(p){ p.style.display='block'; wire(); loadURV(); } clearInterval(iv); }
     if(tries>600) clearInterval(iv);
   },1000);
