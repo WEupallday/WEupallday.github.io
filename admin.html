@@ -1089,7 +1089,7 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
       (window.crypto||window.msCrypto).getRandomValues(a);
       var temp=''; for(var i=0;i<10;i++){ temp+=CS.charAt(a[i]%CS.length); }
       window.__pendReset=window.__pendReset||{}; window.__pendReset[id]={who:who, temp:temp};
-      var body="No worries! We got you. Your temporary password is: "+temp+"  Use this to get back into your account, then change your password once you're logged in. Stay Breezy 🐥";
+      var body="Hello! 👋 We have just confirmed your account ✅\n\nThanks so much for being patient — we really appreciate you. 💛\n\nYour reset password is:  "+temp+"  \n\nLog in with it, then change it anytime in your Settings.\n\n\n— TheFlap Support\n\nStay breezy.\n 🐥";
       if(el){ el.value=body; el.focus(); try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){} }
       if(st){ st.innerHTML='<span class="tk-muted">🔑 Draft ready below with a fresh temporary password. Review it, then press <b>📨 Send reply</b> — that resets @'+esc(who)+'\'s password and sends this message. <b>Nothing has changed yet.</b></span>'; }
       toast('Draft ready — review it, then press Send reply.');
