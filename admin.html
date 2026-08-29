@@ -1288,5 +1288,70 @@ unverify:async function(name){var r=await sb.from('flap_users').update({verified
   }
 })();
 </script>
-<button onclick="var m=document.getElementById('flapPwMsg');m.style.display='flex';document.getElementById('flapPwIn').focus();" style="position:fixed;right:16px;bottom:16px;z-index:99998;background:linear-gradient(#33b06d,#279257);color:#fff;border:0;border-radius:999px;padding:12px 18px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(39,146,87,.4);font-family:system-ui,sans-serif;">&#128273; Reset message</button><div id="flapPwMsg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:center;justify-content:center;padding:16px;font-family:system-ui,sans-serif;"><div style="background:#fff;border-radius:16px;max-width:440px;width:100%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.4);box-sizing:border-box;"><div style="font-size:17px;font-weight:800;color:#3a2a16;">&#129718; Password Reset Message</div><div style="font-size:12px;color:#8a795f;margin:2px 0 12px;">Type the reset password, then Copy.</div><input id="flapPwIn" type="text" autocomplete="off" spellcheck="false" placeholder="paste reset password..." oninput="flapPwRender()" style="width:100%;font-size:16px;font-family:monospace;padding:11px 13px;border:1.5px solid #efe3cd;border-radius:11px;outline:none;box-sizing:border-box;"><div id="flapPwPrev" style="white-space:pre-wrap;line-height:1.5;font-size:14px;background:#fbf6ec;border:1px solid #efe3cd;border-radius:12px;padding:14px;margin-top:12px;min-height:120px;color:#2a2115;"></div><div style="display:flex;gap:10px;margin-top:14px;"><button onclick="flapPwCopy(this)" style="flex:1;background:linear-gradient(#33b06d,#279257);color:#fff;border:0;border-radius:999px;padding:12px;font-weight:800;cursor:pointer;">&#128203; Copy message</button><button onclick="document.getElementById('flapPwMsg').style.display='none';" style="background:#f2ece1;color:#7a6a52;border:0;border-radius:999px;padding:12px 16px;font-weight:700;cursor:pointer;">Close</button></div></div></div><script>function flapPwBuild(){var p=(document.getElementById('flapPwIn').value||'').trim()||'____________';return "Hello! 👋 We've just confirmed your account ✅\n\nThanks so much for being patient — we really appreciate you. 💛\n\nYour reset password is:  "+p+"\n\nLog in with it, then change it anytime in your Settings.\n\n\n— TheFlap Support\n\nStay breezy.\n🐦";}function flapPwRender(){document.getElementById('flapPwPrev').textContent=flapPwBuild();}function flapPwCopy(b){var t=flapPwBuild();function ok(){b.textContent='✅ Copied!';setTimeout(function(){b.innerHTML='&#128203; Copy message';},1500);}try{navigator.clipboard.writeText(t).then(ok,function(){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}ta.remove();ok();});}catch(e){}}setTimeout(flapPwRender,0);</script></body>
+<button onclick="var m=document.getElementById('flapPwMsg');m.style.display='flex';document.getElementById('flapPwIn').focus();" style="position:fixed;right:16px;bottom:16px;z-index:99998;background:linear-gradient(#33b06d,#279257);color:#fff;border:0;border-radius:999px;padding:12px 18px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(39,146,87,.4);font-family:system-ui,sans-serif;">&#128273; Reset message</button><div id="flapPwMsg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:center;justify-content:center;padding:16px;font-family:system-ui,sans-serif;"><div style="background:#fff;border-radius:16px;max-width:440px;width:100%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.4);box-sizing:border-box;"><div style="font-size:17px;font-weight:800;color:#3a2a16;">&#129718; Password Reset Message</div><div style="font-size:12px;color:#8a795f;margin:2px 0 12px;">Type the reset password, then Copy.</div><input id="flapPwIn" type="text" autocomplete="off" spellcheck="false" placeholder="paste reset password..." oninput="flapPwRender()" style="width:100%;font-size:16px;font-family:monospace;padding:11px 13px;border:1.5px solid #efe3cd;border-radius:11px;outline:none;box-sizing:border-box;"><div id="flapPwPrev" style="white-space:pre-wrap;line-height:1.5;font-size:14px;background:#fbf6ec;border:1px solid #efe3cd;border-radius:12px;padding:14px;margin-top:12px;min-height:120px;color:#2a2115;"></div><div style="display:flex;gap:10px;margin-top:14px;"><button onclick="flapPwCopy(this)" style="flex:1;background:linear-gradient(#33b06d,#279257);color:#fff;border:0;border-radius:999px;padding:12px;font-weight:800;cursor:pointer;">&#128203; Copy message</button><button onclick="document.getElementById('flapPwMsg').style.display='none';" style="background:#f2ece1;color:#7a6a52;border:0;border-radius:999px;padding:12px 16px;font-weight:700;cursor:pointer;">Close</button></div></div></div><script>function flapPwBuild(){var p=(document.getElementById('flapPwIn').value||'').trim()||'____________';return "Hello! 👋 We've just confirmed your account ✅\n\nThanks so much for being patient — we really appreciate you. 💛\n\nYour reset password is:  "+p+"\n\nLog in with it, then change it anytime in your Settings.\n\n\n— TheFlap Support\n\nStay breezy.\n🐦";}function flapPwRender(){document.getElementById('flapPwPrev').textContent=flapPwBuild();}function flapPwCopy(b){var t=flapPwBuild();function ok(){b.textContent='✅ Copied!';setTimeout(function(){b.innerHTML='&#128203; Copy message';},1500);}try{navigator.clipboard.writeText(t).then(ok,function(){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}ta.remove();ok();});}catch(e){}}setTimeout(flapPwRender,0);</script>
+<!-- under-review release panel (owner moderation) -->
+<div id="urv-panel" style="display:none;position:fixed;top:14px;left:14px;z-index:99999;width:262px;background:#101d34;border:2px solid #f5c542;border-radius:12px;padding:10px 12px;font-family:-apple-system,Segoe UI,Arial,sans-serif;color:#e8eef7;box-shadow:0 8px 28px rgba(0,0,0,.45);">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+    <div style="font-weight:700;font-size:13px;">&#9208; Under Review <span id="urv-count" style="color:#f5c542;"></span></div>
+    <button id="urv-min" style="background:none;border:0;color:#9db4d6;font-size:17px;cursor:pointer;line-height:1;">&#8211;</button>
+  </div>
+  <div id="urv-body">
+    <div id="urv-list" style="font-size:12px;max-height:340px;overflow:auto;">Loading&#8230;</div>
+    <button id="urv-refresh" style="margin-top:8px;width:100%;padding:5px;border:0;border-radius:6px;background:#274a86;color:#fff;font-weight:700;cursor:pointer;">&#8635; Refresh</button>
+  </div>
+</div>
+<script>
+(function(){
+  function esc(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function client(){
+    try{ if(typeof sb!=='undefined' && sb) return sb; }catch(e){}
+    if(window.__urvSb) return window.__urvSb;
+    if(window.supabase && window.supabase.createClient){ window.__urvSb = window.supabase.createClient('https://zclappstgkjebltkdzlq.supabase.co','sb_publishable_fn7Fzyx9B95U8FY_5cSO3Q_Mn43ce1H'); return window.__urvSb; }
+    return null;
+  }
+  async function loadURV(){
+    var list=document.getElementById('urv-list'); var db=client(); if(!list||!db) return;
+    try{
+      var q=await db.from('flap_users').select('name,review_status,review_reason,review_at').eq('review_status','under_review').order('review_at',{ascending:false}).limit(200);
+      var us=(q&&q.data)||[];
+      var c=document.getElementById('urv-count'); if(c) c.textContent='('+us.length+')';
+      if(!us.length){ list.innerHTML='<div style="color:#54d67f;padding:4px 0;">No accounts under review &#127881;</div>'; return; }
+      list.innerHTML=us.map(function(u){
+        return '<div style="border:1px solid #24406a;border-radius:8px;padding:6px 7px;margin-bottom:6px;">'
+          +'<b>'+esc(u.name)+'</b>'
+          +'<div style="font-size:10px;color:#8aa;margin:2px 0;">'+esc(u.review_reason||'automatic hold')+(u.review_at?(' &#183; '+new Date(u.review_at).toLocaleString()):'')+'</div>'
+          +'<button class="urv-rel" data-nm="'+encodeURIComponent(u.name||'')+'" style="width:100%;padding:5px;border:0;border-radius:6px;background:linear-gradient(180deg,#1fb6a6,#0e8577);color:#fff;font-weight:700;cursor:pointer;">RELEASE FROM REVIEW</button>'
+          +'</div>';
+      }).join('');
+      Array.prototype.forEach.call(list.querySelectorAll('.urv-rel'),function(b){
+        b.addEventListener('click',async function(){
+          var nm=decodeURIComponent(b.getAttribute('data-nm'));
+          if(!confirm('Release '+nm+' from review? They will be able to post again and their flaps return to the feed.')) return;
+          b.disabled=true; b.textContent='Releasing…';
+          try{
+            var d=client();
+            await d.from('flap_users').update({review_status:null,review_reason:null,review_at:null}).eq('name',nm);
+            try{ if(typeof toast==='function') toast('\u2713 '+nm+' released from review.'); }catch(e){}
+            loadURV();
+          }catch(e){ b.disabled=false; b.textContent='RELEASE FROM REVIEW'; alert('Could not release \u2014 try again.'); }
+        });
+      });
+    }catch(e){ list.innerHTML='<div style="color:#e58;">Could not load review list.</div>'; }
+  }
+  function wire(){
+    var r=document.getElementById('urv-refresh'); if(r) r.addEventListener('click',loadURV);
+    var m=document.getElementById('urv-min'), body=document.getElementById('urv-body');
+    if(m&&body) m.addEventListener('click',function(){ var hid=body.style.display==='none'; body.style.display=hid?'block':'none'; m.textContent=hid?'\u2013':'+'; });
+  }
+  var tries=0;
+  var iv=setInterval(function(){
+    tries++;
+    var tn=document.getElementById('tabNav');
+    var loggedIn=!!(client() && tn && tn.offsetParent!==null);
+    if(loggedIn){ var p=document.getElementById('urv-panel'); if(p){ p.style.display='block'; wire(); loadURV(); } clearInterval(iv); }
+    if(tries>600) clearInterval(iv);
+  },1000);
+})();
+</script>
+</body>
 </html>
