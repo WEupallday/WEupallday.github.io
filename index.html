@@ -6990,16 +6990,16 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
       '.nx-nc-glow{color:#ffffff!important;text-shadow:0 0 6px #7cc8ff,0 0 12px #3d8bff,0 0 2px #fff;font-weight:800;}'+
       '.nx-nc-sunset{background:linear-gradient(90deg,#ff512f,#f09819,#ffcf6b);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent!important;color:transparent!important;font-weight:800;}'+
       '.nx-nc-ocean{background:linear-gradient(90deg,#2193b0,#6dd5ed,#00e5ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent!important;color:transparent!important;font-weight:800;}'+
-      '.pava.nx-fr-gold{box-shadow:0 0 0 2px #fff,0 0 0 4px #f6c700,0 0 8px 2px rgba(246,199,0,.6);}'+
-      '.pava.nx-fr-sparkle{box-shadow:0 0 0 2px #fff,0 0 0 4px #d9a7ff,0 0 10px 2px rgba(217,167,255,.7);}'+
-      '.pava.nx-fr-pixel{box-shadow:0 0 0 3px #2b6cff;}'+
-      '.pava.nx-fr-neon{box-shadow:0 0 0 2px #00ffff,0 0 10px 2px rgba(0,255,255,.8);}'+
-      '.pava.nx-fr-hearts{box-shadow:0 0 0 3px #ff5fa2,0 0 8px 1px rgba(255,95,162,.6);}'+
-      '.pava.nx-fr-fire{box-shadow:0 0 0 2px #ff7a00,0 0 10px 2px rgba(255,90,0,.75);}'+
-      '.pava.nx-fr-ice{box-shadow:0 0 0 2px #7fdfff,0 0 10px 2px rgba(120,200,255,.7);}'+
-      '.pava.nx-fr-galaxy{box-shadow:0 0 0 2px #7a5cff,0 0 12px 2px rgba(122,92,255,.8);}'+
-      '.pava.nx-fr-royal{box-shadow:0 0 0 2px #fff,0 0 0 4px #d4af37,0 0 10px 2px rgba(212,175,55,.7);}'+
-      '.pava.nx-fr-diamond{box-shadow:0 0 0 2px #eaffff,0 0 0 4px #9fe8ff,0 0 14px 3px rgba(150,230,255,.85);}'+
+      '.nx-fr-gold{box-shadow:0 0 0 2px #fff,0 0 0 4px #f6c700,0 0 8px 2px rgba(246,199,0,.6);}'+
+      '.nx-fr-sparkle{box-shadow:0 0 0 2px #fff,0 0 0 4px #d9a7ff,0 0 10px 2px rgba(217,167,255,.7);}'+
+      '.nx-fr-pixel{box-shadow:0 0 0 3px #2b6cff;}'+
+      '.nx-fr-neon{box-shadow:0 0 0 2px #00ffff,0 0 10px 2px rgba(0,255,255,.8);}'+
+      '.nx-fr-hearts{box-shadow:0 0 0 3px #ff5fa2,0 0 8px 1px rgba(255,95,162,.6);}'+
+      '.nx-fr-fire{box-shadow:0 0 0 2px #ff7a00,0 0 10px 2px rgba(255,90,0,.75);}'+
+      '.nx-fr-ice{box-shadow:0 0 0 2px #7fdfff,0 0 10px 2px rgba(120,200,255,.7);}'+
+      '.nx-fr-galaxy{box-shadow:0 0 0 2px #7a5cff,0 0 12px 2px rgba(122,92,255,.8);}'+
+      '.nx-fr-royal{box-shadow:0 0 0 2px #fff,0 0 0 4px #d4af37,0 0 10px 2px rgba(212,175,55,.7);}'+
+      '.nx-fr-diamond{box-shadow:0 0 0 2px #eaffff,0 0 0 4px #9fe8ff,0 0 14px 3px rgba(150,230,255,.85);}'+
       '.nx-badge{margin-left:3px;font-size:.85em;letter-spacing:1px;vertical-align:baseline;-webkit-text-fill-color:initial!important;color:initial!important;}'+
       '.nx-cos-rainbow .flap-prem-mini,.nx-cos-gold .flap-prem-mini,.nx-nc-sunset .flap-prem-mini,.nx-nc-ocean .flap-prem-mini{-webkit-text-fill-color:initial!important;color:initial!important;}'+
       '@keyframes nxRainbow{to{background-position:200% center;}}';
@@ -7035,7 +7035,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
           if(target.getAttribute('data-nxcos')===String(VER)) continue;
           target.setAttribute('data-nxcos',String(VER));
           target.classList.remove.apply(target.classList,NAME_ALL); nxClearNameColor(target);
-          var ava=el.querySelector&&el.querySelector('.pava');
+          var ava=el.querySelector&&el.querySelector('.pava,.rava');
           if(ava) ava.classList.remove.apply(ava.classList,FRAME_ALL);
           var oldb=target.querySelector&&target.querySelector('.nx-badge'); if(oldb&&oldb.parentNode) oldb.parentNode.removeChild(oldb);
           if(own){
@@ -7392,5 +7392,5 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   var n=0; var iv=setInterval(function(){ n++; apply(); if(document.documentElement.classList.contains('flap-ios-app')||n>20) clearInterval(iv); },200);
 })();
 </script>
-</body>
+<script>window.recForgotEmailSupport=function(){var n=(document.getElementById("rfpName")||{}).value||"";var p=(document.getElementById("rfpProof")||{}).value||"";var b="Hi TheFlap Support,\n\nI forgot my password and want it reset.\n\nMy username: "+n+"\n\nProof this account is mine: "+p+"\n\nExamples of proof (please include or attach at least one):\n- A screenshot of me logged into the account\n- The email linked to my account\n- My Premium or Feathers purchase receipt\n- A screenshot of my profile or posts only I would have\n\nI understand this cannot be processed without proof of ownership.\n\nThanks!";var h="mailto:theflapsupport@gmail.com?subject="+encodeURIComponent("Password reset request - TheFlap")+"&body="+encodeURIComponent(b);try{window.location.href=h;}catch(e){}};window.recOpenForgot=function(){var ov=document.getElementById("fpOv");if(ov){ov.style.display="flex";return;}ov=document.createElement("div");ov.id="fpOv";ov.style.cssText="position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;";ov.innerHTML='<div style="background:#fff;color:#111;max-width:430px;width:100%;border-radius:16px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.3);max-height:90vh;overflow:auto;font-family:inherit;"><div style="font-size:19px;font-weight:800;margin-bottom:8px;">Reset your password</div><div style="font-size:14px;color:#444;margin-bottom:12px;">To keep accounts safe, we reset passwords by email, and only after you prove the account is yours.</div><label style="font-size:13px;font-weight:700;display:block;margin:8px 0 4px;">Your username</label><input id="rfpName" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:10px;font-size:14px;"><label style="font-size:13px;font-weight:700;display:block;margin:12px 0 4px;">Your proof of ownership</label><textarea id="rfpProof" rows="3" placeholder="Describe your proof (and attach a screenshot to the email)" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:10px;font-size:14px;resize:vertical;"></textarea><div style="font-size:12.5px;color:#555;background:#f4f7ff;border:1px solid #e0e8ff;border-radius:10px;padding:10px;margin:10px 0;"><b>Proof of ownership can be:</b><br>- A screenshot of you logged into the account<br>- The email linked to your account<br>- Your Premium or Feathers purchase receipt<br>- A screenshot of your profile or posts only you would have</div><div style="font-size:13px;color:#a00;font-weight:700;margin-bottom:10px;">You must include proof - without it, we cannot reset your password.</div><button onclick="recForgotEmailSupport()" style="width:100%;padding:12px;border:0;border-radius:10px;background:#2f7ac9;color:#fff;font-size:15px;font-weight:800;cursor:pointer;">Email Support with proof</button><div style="font-size:12.5px;color:#666;text-align:center;margin-top:10px;">Or email theflapsupport@gmail.com yourself with your username and proof.</div><div style="text-align:center;margin-top:12px;"><a href="#" onclick="document.getElementById(&quot;fpOv&quot;).style.display=&quot;none&quot;;return false;" style="color:#888;font-size:13px;">Close</a></div></div>';ov.addEventListener("click",function(e){if(e.target===ov)ov.style.display="none";});document.body.appendChild(ov);};</script></body>
 </html>
