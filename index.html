@@ -11,7 +11,7 @@
   var isApp = !!(window.Capacitor) || /[?&]app=1/.test(location.search) || /(theflap-?app|capacitor)/i.test(navigator.userAgent);
   /* Home-screen / bookmark PWA (iOS `navigator.standalone`, or `display-mode: standalone` on
      Android/desktop PWAs) is an APP context too — force the compact app layout + auto-hide top
-     bar there even if the width check somehow doesn't (e.g. iPad standalone > 760px). This does
+     bar there even if the width check somehow doesn't (e.g. iPad standalone > 760px)h. This does
      NOT flip native-app (below), so the PWA keeps its Google sign-in. */
   var isStandalone=false; try{ isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone===true; }catch(_e){}
   /* the compact, island-safe layout now applies in the app AND on phone-width browsers.
@@ -6810,7 +6810,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
   function nxComposer(){
     return '<div class="nx-kv"><b>Your entry</b>'
       +'<textarea id="nxCapText" placeholder="Say something about your entry…" style="width:100%;margin-top:8px;min-height:56px;border-radius:10px;border:1px solid #2b57b8;background:#0b1f52;color:#fff;padding:8px;font-family:inherit;font-size:13px;box-sizing:border-box;"></textarea>'
-      +'<label style="display:block;margin:8px 0 4px;font-size:12px;color:#cfe0ff;">🎤 Add your talent video — mp4/mov/webm, up to 50MB. Free to enter.</label>'
+      +'<label style="display:block;margin:8px 0 4px;font-size:12px;color:#cfe0ff;">🎤 Add your talent video — mp4/mov/webm, up to 200MB. Free to enter.</label>'
       +'<input id="nxCapImg" type="file" accept="video/*" capture style="font-size:12px;color:#cfe0ff;max-width:100%;">'
       +'<div style="margin-top:10px;display:flex;gap:8px;align-items:center;"><button class="nx-j done" style="flex:1;margin:0;width:auto;" onclick="nxDoSubmit()">Post entry</button>'
       +'<button class="nx-lin" onclick="nxCancelCompose()">Cancel</button></div></div>';
@@ -6825,7 +6825,7 @@ wrapSUP();setTimeout(wrapSUP,1500);function premNameFromClick(oc){var m=/showUse
     if(!file){ toast('Pick or record a video first \ud83c\udfac'); return; }
     var okType=/(mp4|mov|quicktime|webm|m4v|3gpp)/i;
     if(!okType.test(file.type||'') && !/\.(mp4|mov|webm|m4v|3gp)$/i.test(file.name||'')){ toast('Use an mp4, mov or webm video.'); return; }
-    if(file.size > 52428800){ toast('That video is over 50MB \u2014 trim it a little.'); return; }
+    if(file.size > 209715200){ toast('That video is over 200MB \u2014 trim it a little.'); return; }
     var me=meName(); if(!me){ toast('Log in first to enter the challenge.'); return; }
     var btn=document.querySelector('.nx-kv .nx-j.done'); if(btn){ btn.disabled=true; btn.textContent='Uploading\u2026'; }
     var ext=((file.name||'').split('.').pop()||'mp4').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5)||'mp4';
