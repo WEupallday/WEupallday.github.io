@@ -1909,12 +1909,24 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
      ################################################################ */
   var CONFIG={
     SUPABASE_URL:"https://zclappstgkjebltkdzlq.supabase.co",
-    SUPABASE_ANON_KEY:"sb_publishable_L95otZGV4uKlnfCwjoc7OQ_gWm1ObqD",
+    SUPABASE_ANON_KEY:"sb_publishable_5W3tMe80Huoxr9srCiH-DA_E-y1uj0Q",
     INVITE_CODE:"",                   /* not used — signup is open */
     ADMIN_CODE:""                     /* not used — admin is silently tied to the "lock" account */
   };
 
   var sb=null, ONLINE=false, ME={name:"",admin:false}, myFlapCount=0;
+  /* ===== hardened API (2026-09-16): every write that touches an account goes through a server-verified RPC.
+     ME.token is the session token minted by user_login_pw / user_signup / oauth_signin; it is persisted with ME. ===== */
+  function meTok(){ return (ME&&ME.token)||''; }
+  async function rpcOk(fn,args){ var r=await sb.rpc(fn,args); if(r.error) throw r.error; if(r.data&&r.data.ok===false) throw new Error(r.data.reason||'failed'); return r.data; }
+  function meFromLogin(d,extra){ var m={name:d.name,admin:((d.name||'').toLowerCase()==='lock')||!!d.admin,pic:d.avatar_url||null,handle:d.handle||'',email:d.email||'',token:d.token||''}; if(extra)for(var k in extra)m[k]=extra[k]; return m; }
+  /* admin config rows (::ticker:: ::verified:: ::mods:: ::announce:: ::pinned:: ::poll:: ::features:: ::badgedefs:: ::badgegrants::) — replace in place */
+  async function senSet(kind,body){ return rpcOk('sentinel_write',{p_name:ME.name,p_hash:meTok(),p_kind:kind,p_body:String(body==null?'':body)}); }
+  async function senUpd(id,body){ return rpcOk('sentinel_update',{p_name:ME.name,p_hash:meTok(),p_id:Number(id),p_body:String(body==null?'':body)}); }
+  async function senDel(id){ return rpcOk('sentinel_delete',{p_name:ME.name,p_hash:meTok(),p_id:Number(id)}); }
+  async function adminUser(target,action,arg){ return rpcOk('admin_user_action',{p_admin:ME.name,p_hash:meTok(),p_target:target,p_action:action,p_arg:(arg==null?null:String(arg))}); }
+  async function adminRemove(kind,id){ return rpcOk('admin_remove_content',{p_admin:ME.name,p_hash:meTok(),p_kind:kind,p_id:String(id)}); }
+  async function profilePatch(patch){ return rpcOk('user_update_profile',{p_name:ME.name,p_hash:meTok(),p_patch:patch}); }
   /* ===== resilient session storage: keep you logged in across reloads =====
      saves to BOTH localStorage and a 1-year cookie, and restores from either,
      so a wiped store in one place doesn't log you out. */
@@ -2601,7 +2613,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
         ME.handle=r.data.handle||'';
         if(!ME.handle){
           var h=await genUniqueHandle(ME.name);
-          var up=await sb.from('flap_users').update({handle:h}).eq('name',r.data.name);
+          var up=await sb.rpc('user_rename',{p_name:ME.name,p_hash:meTok(),p_new_name:null,p_new_handle:h}); if(up&&up.data&&up.data.ok===false)up.error=up.data;
           if(!up.error){ ME.handle=h; if(USERS[r.data.name.toLowerCase()])USERS[r.data.name.toLowerCase()].handle=h; toast('Your handle is @'+h+' — you can change it in your profile.'); }
         }
       }
@@ -2620,11 +2632,11 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
   async function banUser(name){
     if(!ME.admin)return;
     if(!confirm('Permanently ban '+name+'? They will be locked out of TheFlap.'))return;
-    try{ await sb.from('flap_users').update({banned:true}).ilike('name',name); if(USERS[(name||'').toLowerCase()])USERS[(name||'').toLowerCase()].banned=true; toast('🔨 '+name+' is banned.'); try{closeProfile();}catch(e){} }catch(e){toast('Could not ban — try again.');}
+    try{ await adminUser(name,'ban'); if(USERS[(name||'').toLowerCase()])USERS[(name||'').toLowerCase()].banned=true; toast('🔨 '+name+' is banned.'); try{closeProfile();}catch(e){} }catch(e){toast('Could not ban — try again.');}
   }
   async function unbanUser(name){
     if(!ME.admin)return;
-    try{ await sb.from('flap_users').update({banned:false}).ilike('name',name); if(USERS[(name||'').toLowerCase()])USERS[(name||'').toLowerCase()].banned=false; toast('♻ '+name+' un-banned.'); try{closeProfile();}catch(e){} }catch(e){toast('Could not un-ban.');}
+    try{ await adminUser(name,'unban'); if(USERS[(name||'').toLowerCase()])USERS[(name||'').toLowerCase()].banned=false; toast('♻ '+name+' un-banned.'); try{closeProfile();}catch(e){} }catch(e){toast('Could not un-ban.');}
   }
 
   /* ================= AUTO-MODERATION + TIME-OUTS (mutes) =================
@@ -2659,7 +2671,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
     if(!ME.admin)return;
     var until=new Date(Date.now()+hours*3600*1000).toISOString();
     try{
-      await sb.from('flap_users').update({muted_until:until}).ilike('name',name);
+      await adminUser(name,'mute',Math.round(hours*60));
       if(USERS[(name||'').toLowerCase()])USERS[(name||'').toLowerCase()].muted_until=until;
       var label=hours>=168?'7 days':(hours>=24?(Math.round(hours/24)+' day(s)'):hours+' hour(s)');
       toast('⏳ '+name+' is timed out for '+label+'.');
@@ -2669,7 +2681,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
   async function unmuteUser(name){
     if(!ME.admin)return;
     try{
-      await sb.from('flap_users').update({muted_until:null}).ilike('name',name);
+      await adminUser(name,'unmute');
       if(USERS[(name||'').toLowerCase()])USERS[(name||'').toLowerCase()].muted_until=null;
       toast('✓ '+name+'\'s time-out was lifted.'); try{ showUserProfile(name); }catch(e){}
     }catch(e){toast('Could not lift the time-out.');}
@@ -2684,7 +2696,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
                                             contain apostrophes, emoji and HTML */
     if(!name)return;
     try{
-      await sb.from('flap_users').update({review_status:null,review_reason:null,review_at:null}).ilike('name',name);
+      await adminUser(name,'clear_review');
       if(USERS[(name||'').toLowerCase()]){var _u=USERS[(name||'').toLowerCase()];_u.review_status=null;_u.review_reason=null;_u.review_at=null;}
       toast('\u2713 '+name+' was released from review.');
       try{ showAdmin(); }catch(e){}
@@ -2696,7 +2708,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
     var name=ME.name||'someone', snippet=String(text).slice(0,200);
     try{ await sb.from('flap_reports').insert({reporter:'auto-mod',reason:'[AUTO-MOD removed a '+kind+'] '+snippet,target_type:'automod',target_name:name,resolved:false}); }catch(e){}
     try{ discordPing('automod',name,'🚨 auto-mod removed a '+kind+' from '+name+': "'+snippet+'"'); }catch(e){}
-    try{ var lc=name.toLowerCase(); var cur=((USERS[lc]||{}).violations)||0; await sb.from('flap_users').update({violations:cur+1}).ilike('name',name); if(USERS[lc])USERS[lc].violations=cur+1; }catch(e){}
+    try{ var lc=name.toLowerCase(); var cur=((USERS[lc]||{}).violations)||0; /* violations are counted server-side by the report pipeline now */ if(USERS[lc])USERS[lc].violations=cur+1; }catch(e){}
     showViolationPopup(kind,snippet);
   }
   var APPEAL_CTX=null;
@@ -2814,16 +2826,17 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
       if(pass.length<4){err.textContent='Password needs at least 4 characters.';return;}
       err.textContent='checking…';
       try{
-        var hash=await sha256('flapsalt:'+name.toLowerCase()+':'+pass);
-        var res=await sb.from('flap_users').select('*').ilike('name',name).maybeSingle();
+        var dev=null; try{ dev=detectDevice(); }catch(e){}
+        var res=await sb.from('flap_users').select('name').ilike('name',name).maybeSingle();
         if(res.error)throw res.error;
         if(res.data){
           /* existing account — password must match */
-          if(res.data.pass_hash!==hash){err.textContent='Wrong password for '+res.data.name+'. (Names are one-per-person!)';return;}
-          if(res.data.banned){err.textContent='This account has been banned. Email theflapsupport@gmail.com if you think this is a mistake.';return;}
-          ME.name=res.data.name;
-          ME.pic=res.data.avatar_url||null;
-          ME.handle=res.data.handle||'';
+          var lg=await sb.rpc('user_login_pw',{p_login:res.data.name,p_pass:pass,p_device:dev}); var ld=(lg&&lg.data)||{};
+          if(lg.error||!ld.ok){ if(ld.reason==='banned'){err.textContent='This account has been banned. Email theflapsupport@gmail.com if you think this is a mistake.';return;} err.textContent='Wrong password for '+res.data.name+'. (Names are one-per-person!)';return;}
+
+          ME=meFromLogin(ld);
+
+
           toast('Welcome back, '+ME.name+'!');
           try{await ensureHandle();}catch(eh){}
         }else{
@@ -2832,9 +2845,11 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
           var newName=name.slice(0,20);
           err.textContent='creating your account…';
           var newHandle=await genUniqueHandle(newName);
-          var ins=await sb.from('flap_users').insert({name:newName,pass_hash:hash,avatar_url:null,handle:newHandle,device:detectDevice()}).select('*').maybeSingle();
-          if(ins.error)throw ins.error;
-          var newRow=(ins&&ins.data)?ins.data:{name:newName,avatar_url:null,handle:newHandle};
+          var su=await sb.rpc('user_signup',{p_name:newName,p_pass:pass,p_email:null,p_handle:newHandle,p_device:dev}); var sd=(su&&su.data)||{};
+          if(su.error||!sd.ok){ err.textContent=(sd.reason==='name_taken')?'That name is taken.':(sd.reason==='device_banned'?'This device is blocked.':'Could not create your account — try again.'); return; }
+          var ins={data:{name:sd.name,avatar_url:null,handle:sd.handle||newHandle,email:null,token:sd.token}};
+
+          var newRow=ins.data; ME.token=sd.token;
           try{ discordPing('join',newRow.name); }catch(e5){}   /* ping the admin's Discord on a real new signup */
           try{ notifyFlap('lock',newRow.name+' just joined TheFlap! 🎉'); }catch(e5){}
           try{ if((newRow.name||'').toLowerCase()!=='lock') await sb.from('flap_follows').insert({follower:newRow.name,following:'lock'}); }catch(e5){}   /* new members auto-follow the official account */
@@ -2884,18 +2899,19 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
     if(!pass){ err.textContent='Enter your password.'; return; }
     err.textContent='checking…';
     try{
-      var res=await sb.from('flap_users').select('*').ilike('name',name).maybeSingle();
+      var res=await sb.from('flap_users').select('name').ilike('name',name).maybeSingle();
       if(res.error)throw res.error;
-      if(!res.data){ try{ var _byH=await sb.from('flap_users').select('*').ilike('handle',name).maybeSingle(); if(!_byH.error&&_byH.data) res.data=_byH.data; }catch(_e){} }
+      if(!res.data){ try{ var _byH=await sb.from('flap_users').select('name').ilike('handle',name).maybeSingle(); if(!_byH.error&&_byH.data) res.data=_byH.data; }catch(_e){} }
       if(!res.data){
         /* NO account with that name — do NOT create anything. Offer the create screen. */
         err.innerHTML='No account found for “'+esc(name)+'”. <a class="gate-create-link" style="display:inline;padding:0;border:none;background:none;text-decoration:underline;" onclick="showCreate(\''+esc(name).replace(/\x27/g,'')+'\')">Create one? →</a>';
         return;
       }
-      var hash=await sha256('flapsalt:'+res.data.name.toLowerCase()+':'+pass);
-      if(res.data.pass_hash!==hash){ err.textContent='Wrong password for '+res.data.name+'. Try again.'; return; }
-      if(res.data.banned){ err.textContent='This account has been banned. Email theflapsupport@gmail.com if this is a mistake.'; return; }
-      ME.name=res.data.name; ME.pic=res.data.avatar_url||null; ME.handle=res.data.handle||'';
+      var dev=null; try{ dev=detectDevice(); }catch(e){}
+      var lg=await sb.rpc('user_login_pw',{p_login:res.data.name,p_pass:pass,p_device:dev}); var ld=(lg&&lg.data)||{};
+      if(lg.error||!ld.ok){ if(ld.reason==='banned'){ err.textContent='This account has been banned. Email theflapsupport@gmail.com if this is a mistake.'; return; } if(ld.reason==='device_banned'){ err.textContent='This device is blocked.'; return; } err.textContent='Wrong password for '+res.data.name+'. Try again.'; return; }
+
+      ME=meFromLogin(ld);
       err.textContent=''; toast('Welcome back, '+ME.name+'!');
       try{await ensureHandle();}catch(eh){}
       enterAppAfterLogin();
@@ -2924,11 +2940,13 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
         return;
       }
       var newName=name.slice(0,20);
-      var hash=await sha256('flapsalt:'+newName.toLowerCase()+':'+pass);
+      var dev=null; try{ dev=detectDevice(); }catch(e){}
       var newHandle=await genUniqueHandle(newName);
-      var ins=await sb.from('flap_users').insert({email:fxEmail,name:newName,pass_hash:hash,avatar_url:null,handle:newHandle,device:detectDevice()}).select('*').maybeSingle();
-      if(ins.error)throw ins.error;
-      var newRow=(ins&&ins.data)?ins.data:{name:newName,avatar_url:null,handle:newHandle};
+      var su=await sb.rpc('user_signup',{p_name:newName,p_pass:pass,p_email:fxEmail,p_handle:newHandle,p_device:dev}); var sd=(su&&su.data)||{};
+      if(su.error||!sd.ok){ err.textContent=(sd.reason==='email_taken')?'That email already has an account — sign in instead.':(sd.reason==='name_taken'?'That name is taken.':(sd.reason==='device_banned'?'This device is blocked.':'Could not create your account — try again.')); return; }
+      var ins={data:{name:sd.name,avatar_url:null,handle:sd.handle||newHandle,email:sd.email||fxEmail,token:sd.token}};
+
+      var newRow=ins.data; ME.token=sd.token;
       try{ discordPing('join',newRow.name); }catch(e5){}
       try{ notifyFlap('lock',newRow.name+' just joined TheFlap! 🎉'); }catch(e5){}
       try{ if((newRow.name||'').toLowerCase()!=='lock') await sb.from('flap_follows').insert({follower:newRow.name,following:'lock'}); }catch(e5){}
@@ -3057,12 +3075,14 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
     var oldName=OB.row.name;
     try{
       if(ONLINE&&sb){
-        var upd={handle:OB.handle,avatar_url:picUrl};
-        if(OB.name&&OB.name.toLowerCase()!==(oldName||'').toLowerCase())upd.name=OB.name;
-        await sb.from('flap_users').update(upd).ilike('name',oldName);
+        var tok=(OB.row&&OB.row.token)||meTok(); var nm=(OB.row&&OB.row.name)||oldName;
+        try{ if(picUrl) await sb.rpc('user_update_profile',{p_name:nm,p_hash:tok,p_patch:{avatar_url:picUrl}}); }catch(e){}
+        var newNm=(OB.name&&OB.name.toLowerCase()!==(oldName||'').toLowerCase())?OB.name:null;
+        var rn=await sb.rpc('user_rename',{p_name:nm,p_hash:tok,p_new_name:newNm,p_new_handle:(OB.handle&&OB.handle!==(OB.row.handle||''))?OB.handle:null});
+        if(rn&&rn.data&&rn.data.ok===false){ if(rn.data.reason==='name_taken'||rn.data.reason==='name_limit'){ OB.name=oldName; } if(rn.data.reason==='handle_taken'||rn.data.reason==='handle_limit'){ OB.handle=OB.row.handle||''; } }
       }
     }catch(e){}
-    ME={name:(OB.name||oldName),admin:((OB.name||oldName||'').toLowerCase()==='lock'),pic:picUrl||null,handle:OB.handle,email:OB.row.email||''};
+    ME={name:(OB.name||oldName),admin:((OB.name||oldName||'').toLowerCase()==='lock'),pic:picUrl||null,handle:OB.handle,email:OB.row.email||'',token:(OB.row&&OB.row.token)||meTok()};
     document.getElementById('onboard').classList.add('hidden');
     toast('Welcome to TheFlap, '+ME.name+'! 🎉');
     enterAppAfterLogin();
@@ -3139,18 +3159,19 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
 
   /* --- verify a flap account password client-side (identical rule to doLogin) --- */
   async function verifyFlapPassword(name, pass){
-    var res = await sb.from('flap_users').select('*').ilike('name', name).maybeSingle();
+    var res = await sb.from('flap_users').select('name').ilike('name', name).maybeSingle();
     if (res.error) throw res.error;
     if (!res.data) return { ok:false, reason:'nouser' };
-    var hash = await sha256('flapsalt:' + res.data.name.toLowerCase() + ':' + pass);
-    if (res.data.pass_hash !== hash) return { ok:false, reason:'badpass', row:res.data };
-    if (res.data.banned) return { ok:false, reason:'banned', row:res.data };
-    return { ok:true, row:res.data };
+    var lg = await sb.rpc('user_login_pw', { p_login: res.data.name, p_pass: pass, p_device: null }); var d = (lg && lg.data) || {};
+    if (lg.error || !d.ok) return { ok:false, reason:(d.reason === 'banned' ? 'banned' : 'badpass'), row:res.data };
+    return { ok:true, row:{ name:d.name, avatar_url:d.avatar_url||null, handle:d.handle||'', email:d.email||'', token:d.token } };
+
+
   }
 
   /* --- write a link. Tries MODE 1 (edge, server-verified). Falls back to MODE 2
          (safe email mapping) only after the password was ALREADY verified. --- */
-  async function writeLink(name, pass, idn){
+  async function writeLink(name, pass, idn, tok){
     /* MODE 1: ownership verified server-side by pass_hash, writes flap_oauth_links */
     try {
       await flapAuthCall('link', { name:name, pass:pass, provider:idn.provider, sub:idn.sub, email:idn.email });
@@ -3160,14 +3181,15 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
          Password was already verified by the caller. Reuse the existing email
          mapping, but NEVER clobber a different email already on the account. */
       try {
-        var cur = await sb.from('flap_users').select('name,email').ilike('name', name).maybeSingle();
-        var curEmail = (cur && cur.data && (cur.data.email||'')).toLowerCase();
-        if (idn.email && (!curEmail || curEmail === idn.email)) {
-          /* guard: make sure this email is not already on a DIFFERENT account */
-          var other = await sb.from('flap_users').select('name').ilike('email', idn.email).neq('name', (cur&&cur.data&&cur.data.name)||name).maybeSingle();
-          if (other && other.data) { throw new Error('That ' + provLabel(idn.provider) + ' account is already linked to another TheFlap account.'); }
-          await sb.from('flap_users').update({ email: idn.email }).ilike('name', name);
-        }
+        var se = await sb.rpc('user_set_email', { p_name: name, p_hash: tok || meTok(), p_email: idn.email || null });
+        if (se.error || (se.data && se.data.ok === false)) { throw new Error('That ' + provLabel(idn.provider) + ' account is already linked to another TheFlap account.'); }
+
+
+
+
+
+
+
         return { mode:2 };
       } catch (e2) { throw e2; }
     }
@@ -3211,35 +3233,44 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
       if (ME && ME.name) { GRET_RUNNING = false; return; }
 
       /* (1) already linked? (resolve by sub — survives Supabase identity-merge) */
-      var linkRow = null;
-      try { var lk = await sb.from('flap_oauth_links').select('*').eq('sub', idn.sub).maybeSingle(); linkRow = lk && lk.data; } catch (e) { linkRow = null; }
-      if (linkRow && linkRow.name) {
-        var ur = await sb.from('flap_users').select('*').ilike('name', linkRow.name).maybeSingle();
-        var urow = ur && ur.data;
-        if (urow) {
-          if (urow.banned) { try { sb.auth.signOut(); } catch (_) {} toast('This account has been banned.'); GRET_RUNNING = false; return; }
-          toast('Welcome back, ' + urow.name + '!');
-          ME = { name:urow.name, admin:((urow.name||'').toLowerCase()==='lock'), pic:urow.avatar_url||null, handle:urow.handle||'', email:urow.email||email };
-          enterAppAfterLogin();
-          return;
-        }
-      }
-
-      if (!email) { GRET_RUNNING = false; return; }
-
-      /* (2) email matches an existing account -> log in (unchanged behavior) + persist link */
-      var ex = await sb.from('flap_users').select('*').ilike('email', email).maybeSingle();
-      var row = ex && ex.data;
-      if (row) {
-        if (row.banned) { try { sb.auth.signOut(); } catch (_) {} toast('This account has been banned.'); GRET_RUNNING = false; return; }
-        toast('Welcome back, ' + row.name + '!');
-        ME = { name:row.name, admin:((row.name||'').toLowerCase()==='lock'), pic:row.avatar_url||null, handle:row.handle||'', email:email };
+      var os = await sb.rpc('oauth_signin', { p_provider: idn.provider, p_sub: idn.sub, p_email: email || null, p_name: null, p_create: false }); var od = (os && os.data) || {};
+      if (od.ok) {
+        toast('Welcome back, ' + od.name + '!');
+        ME = meFromLogin(od);
         enterAppAfterLogin();
-        /* best-effort: server authorizes this link because the OAuth email == the
-           account's on-file email (verified inside the edge fn via access_token). */
-        try { flapAuthCall('link_by_email', { provider:idn.provider, sub:idn.sub, email:email, access_token:sess.access_token }); } catch (_) {}
         return;
       }
+      if (od.reason === 'banned') { try { sb.auth.signOut(); } catch (_) {} toast('This account has been banned.'); GRET_RUNNING = false; return; }
+      if (od.reason !== 'unknown') { GRET_RUNNING = false; return; }   /* identity could not be verified server-side */
+      if (!email) email = od.email || '';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
       /* (3) not recognized -> nudge (prevents silent duplicates) */
       OAUTH_PENDING_IDN = idn;
@@ -3283,10 +3314,10 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
         else err.textContent = 'Wrong password. Try again.';
         return;
       }
-      try { await writeLink(v.row.name, pass, idn); }
+      try { await writeLink(v.row.name, pass, idn, v.row.token); }
       catch (le) { err.textContent = (le && le.message) ? le.message : 'Could not link — try again.'; return; }
       /* sign in to the now-linked account */
-      ME = { name:v.row.name, admin:((v.row.name||'').toLowerCase()==='lock'), pic:v.row.avatar_url||null, handle:v.row.handle||'', email:v.row.email||idn.email };
+      ME = { name:v.row.name, admin:((v.row.name||'').toLowerCase()==='lock'), pic:v.row.avatar_url||null, handle:v.row.handle||'', email:v.row.email||idn.email, token:v.row.token };
       try { document.getElementById('onAsk').style.display = 'none'; document.getElementById('onDone').classList.add('on'); document.getElementById('onDoneName').textContent = '@' + (v.row.handle || v.row.name); document.getElementById('onDoneProv').textContent = provLabel(idn.provider); } catch (e) {}
       setTimeout(function(){ hideOauthNudge(); enterAppAfterLogin(); }, 1200);
     } catch (e) { err.textContent = 'Could not reach the server — try again.'; }
@@ -3306,11 +3337,15 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
       var email = idn.email;
       var base = (gname || (email ? email.split('@')[0] : '') || 'flapper').slice(0, 20);
       var tryName = base, k = 1;
-      while (true) { var c = await sb.from('flap_users').select('name').ilike('name', tryName).maybeSingle(); if (!c || !c.data) break; k++; tryName = base.slice(0, 17) + k; }
-      var handle = await genUniqueHandle(tryName);
-      var randPass = await sha256('oauth:' + (email || idn.sub) + ':' + Math.random().toString(36));
-      var ins = await sb.from('flap_users').insert({ name:tryName, pass_hash:randPass, avatar_url:gpic||null, handle:handle, email:email||null, device:detectDevice() }).select('*').maybeSingle();
-      var row = (ins && ins.data) ? ins.data : { name:tryName, avatar_url:gpic, handle:handle, email:email };
+      var os2 = await sb.rpc('oauth_signin', { p_provider: idn.provider, p_sub: idn.sub, p_email: email || null, p_name: base, p_create: true }); var od2 = (os2 && os2.data) || {};
+      if (!od2.ok) { toast(od2.reason === 'banned' ? 'This account has been banned.' : 'Could not create your account — try again.'); return; }
+      if (gpic && !od2.avatar_url) { try { await sb.rpc('user_update_profile', { p_name: od2.name, p_hash: od2.token, p_patch: { avatar_url: gpic } }); } catch (e) {} }
+      var row = { name: od2.name, avatar_url: od2.avatar_url || gpic || null, handle: od2.handle || '', email: od2.email || email, token: od2.token };
+      ME.token = od2.token;
+
+
+
+
       try { discordPing('join', row.name); } catch (e) {}
       try { notifyFlap('lock', row.name + ' just joined TheFlap! 🎉'); } catch (e) {}
       try { if ((row.name || '').toLowerCase() !== 'lock') await sb.from('flap_follows').insert({ follower:row.name, following:'lock' }); } catch (e) {}
@@ -3332,7 +3367,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
       if (r && r.data) { r.data.forEach(function(x){ links[x.provider] = x.email || ''; }); }
     } catch (e) {
       /* MODE 2 (no table yet): infer from the account email */
-      try { var u = await sb.from('flap_users').select('email').ilike('name', ME.name).maybeSingle(); if (u && u.data && u.data.email) { links._email = u.data.email; } } catch (e2) {}
+      if (ME.email) { links._email = ME.email; }
     }
     function paint(prov, stEl, actEl){
       var e = links[prov];
@@ -3382,7 +3417,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
     try {
       var v = await verifyFlapPassword(ME.name, pass);
       if (!v.ok) { err.textContent = (v.reason === 'badpass') ? 'Wrong password.' : 'Could not verify — try again.'; return; }
-      await writeLink(ME.name, pass, idn);
+      await writeLink(ME.name, pass, idn, v.row.token);
       closeLinkConfirm();
       toast(provLabel(idn.provider) + ' connected ✓');
       try { sessionStorage.removeItem('flap_link_intent'); } catch (e) {}
@@ -3402,7 +3437,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
       try { await flapAuthCall('unlink', { name: ME.name, pass: pass, provider: prov }); }
       catch (e) {
         /* MODE 2: clear the email mapping only if it belongs to this provider's identity */
-        try { await sb.from('flap_users').update({ email: null }).ilike('name', ME.name); } catch (e2) {}
+        try { await sb.rpc('user_set_email', { p_name: ME.name, p_hash: meTok(), p_email: null }); } catch (e2) {}
       }
       toast(provLabel(prov) + ' disconnected');
       settingsRenderConnections();
@@ -3431,7 +3466,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
   /* ============ presence heartbeat (powers the online-now count) ============ */
   async function heartbeat(){
     if(ONLINE&&ME.name){
-      try{await sb.from('flap_users').update({last_seen:new Date().toISOString()}).eq('name',ME.name);}catch(e){}
+      try{ if(meTok()) await profilePatch({last_seen:true}); }catch(e){}
       markPresentToday();
     }
   }
@@ -3456,7 +3491,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
         set.push(today);
         var seen={}; set=set.filter(function(v){ v=(v||'').trim(); if(!v||seen[v])return false; seen[v]=1; return true; }).sort();
         if(set.length>180) set=set.slice(set.length-180);
-        await sb.from('flap_users').update({active_days:set.join(',')}).ilike('name',ME.name);
+        await profilePatch({active_days:set.join(',')});
       }
       MY_ACTIVE_DAYS=set;
     }catch(e){ MY_PRESENCE_DATE=null; }   /* let it retry later */
@@ -3546,13 +3581,13 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
   }
   async function pickBanner(k){
     renderBannerPicker(k);
-    try{ await sb.from('flap_users').update({banner:k}).ilike('name',SET.row.name); SET.row.banner=k; toast('Banner updated! 🎨'); }
+    try{ await profilePatch({banner:k}); SET.row.banner=k; toast('Banner updated! 🎨'); }
     catch(e){ toast('Could not save banner.'); }
   }
   async function saveBio(){
     var v=(document.getElementById('setBio').value||'').slice(0,160);
     var hint=document.getElementById('setBioHint'), btn=document.getElementById('setBioSave'); btn.classList.add('disabled');
-    try{ await sb.from('flap_users').update({bio:v}).ilike('name',SET.row.name); SET.row.bio=v; hint.className='set-hint good'; hint.textContent='✓ Saved!'; }
+    try{ await profilePatch({bio:v}); SET.row.bio=v; hint.className='set-hint good'; hint.textContent='✓ Saved!'; }
     catch(e){ hint.className='set-hint bad'; hint.textContent='Could not save.'; }
     btn.classList.remove('disabled');
   }
@@ -3561,7 +3596,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
     var l2=(document.getElementById('setLink2').value||'').trim();
     var v=[l1,l2].filter(Boolean).join('\n');
     var hint=document.getElementById('setLinkHint'), btn=document.getElementById('setLinkSave'); btn.classList.add('disabled');
-    try{ await sb.from('flap_users').update({links:v}).ilike('name',SET.row.name); SET.row.links=v; hint.className='set-hint good'; hint.textContent='✓ Saved!'; }
+    try{ await profilePatch({links:v}); SET.row.links=v; hint.className='set-hint good'; hint.textContent='✓ Saved!'; }
     catch(e){ hint.className='set-hint bad'; hint.textContent='Could not save.'; }
     btn.classList.remove('disabled');
   }
@@ -3587,17 +3622,18 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
       var chk=await sb.from('flap_users').select('name').ilike('name',newName).limit(1);
       if(chk&&chk.data&&chk.data.length){ hint.className='set-hint bad'; hint.textContent='That username isn’t available — pick another.'; btn.classList.remove('disabled'); return; }
       var oldName=SET.row.name;
-      var up=await sb.from('flap_users').update({name:newName, name_changes:((SET.row.name_changes||0)+1)}).ilike('name',oldName).select('*').maybeSingle();
+      var up=await sb.rpc('user_rename',{p_name:oldName,p_hash:meTok(),p_new_name:newName,p_new_handle:null});
+      if(up&&up.data&&up.data.ok===false){ hint.className='set-hint bad'; hint.textContent=(up.data.reason==='name_limit')?'You have used all your name changes.':'That username isn’t available — pick another.'; btn.classList.remove('disabled'); return; }
       if(up&&up.error) throw up.error;
-      try{ await sb.from('flaps').update({name:newName}).ilike('name',oldName); }catch(e){}          /* keep post attribution */
-      try{ await sb.from('flap_replies').update({name:newName}).ilike('name',oldName); }catch(e){}
-      try{ await sb.from('flap_follows').update({follower:newName}).ilike('follower',oldName); }catch(e){}
-      try{ await sb.from('flap_follows').update({following:newName}).ilike('following',oldName); }catch(e){}
-      try{ await sb.from('flap_notifs').update({recipient:newName}).ilike('recipient',oldName); }catch(e){}
-      try{ await sb.from('flap_notifs').update({actor:newName}).ilike('actor',oldName); }catch(e){}
-      try{ await sb.from('push_subs').update({name:newName}).ilike('name',oldName); }catch(e){}
-      try{ var _bg=await sb.from('flaps').select('id,body').eq('name','::badgegrants::').order('id',{ascending:false}).limit(1); if(_bg.data&&_bg.data[0]){ var _gr={}; try{_gr=JSON.parse(_bg.data[0].body)||{};}catch(e){} var _oL=oldName.toLowerCase(), _nL=newName.toLowerCase(); if(_gr[_oL]){ var _mg=(_gr[_nL]||[]).concat(_gr[_oL]); var _sn={},_o=[]; _mg.forEach(function(x){ if(!_sn[x]){_sn[x]=1;_o.push(x);} }); _gr[_nL]=_o; delete _gr[_oL]; await sb.from('flaps').update({body:JSON.stringify(_gr)}).eq('id',_bg.data[0].id); if(window.CUSTOM_GRANTS){CUSTOM_GRANTS=_gr;} } } }catch(e){}
-      try{ await sb.from('flap_poll').update({name:newName}).ilike('name',oldName); }catch(e){}
+
+
+
+
+
+
+
+
+
       SET.row.name=newName; SET.row.name_changes=(SET.row.name_changes||0)+1;
       ME.name=newName; ME.admin=((newName||'').toLowerCase()==='lock'); try{localStorage.setItem('flap_lastname',newName);}catch(e){} saveSession(ME);
       hint.className='set-hint good'; hint.textContent='✓ Saved!';
@@ -3617,7 +3653,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
     try{
       var chk=await sb.from('flap_users').select('name').ilike('handle',newH).limit(1);
       if(chk&&chk.data&&chk.data.length){ hint.className='set-hint bad'; hint.textContent='@'+newH+' is taken.'; btn.classList.remove('disabled'); return; }
-      var up=await sb.from('flap_users').update({handle:newH, handle_changes:((SET.row.handle_changes||0)+1)}).ilike('name',SET.row.name).select('*').maybeSingle();
+      var up=await sb.rpc('user_rename',{p_name:SET.row.name,p_hash:meTok(),p_new_name:null,p_new_handle:newH}); if(up&&up.data&&up.data.ok===false){ hint.className='set-hint bad'; hint.textContent=(up.data.reason==='handle_limit')?'You have used all your handle changes.':'@'+newH+' is taken.'; btn.classList.remove('disabled'); return; }
       if(up&&up.error) throw up.error;
       SET.row.handle=newH; SET.row.handle_changes=(SET.row.handle_changes||0)+1;
       ME.handle=newH;
@@ -3635,7 +3671,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
       var up=await sb.storage.from('pics').upload(path,blob,{contentType:'image/jpeg',upsert:false});
       if(up.error) throw up.error;
       var url=sb.storage.from('pics').getPublicUrl(path).data.publicUrl;
-      await sb.from('flap_users').update({avatar_url:url}).ilike('name',SET.row.name);
+      await profilePatch({avatar_url:url});
       SET.row.avatar_url=url; ME.pic=url; saveSession(ME);
       bigA.innerHTML='<img src="'+esc(url)+'" alt="">';
       try{ initMe(); }catch(e){} try{ loadFeed(); }catch(e){}
@@ -3775,7 +3811,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
       var defs=[]; try{ defs=JSON.parse(r.data[0].body)||[]; }catch(e){}
       var changed=false;
       defs.forEach(function(b){ if(b.id===id && !b.soldAt){ b.soldAt=new Date().toISOString(); changed=true; } });
-      if(changed){ await sb.from('flaps').update({body:JSON.stringify(defs)}).eq('id',r.data[0].id); CUSTOM_BADGES=defs; }
+      if(changed){ CUSTOM_BADGES=defs; } /* soldAt is stamped server-side by badge_claim */
     }catch(e){}
   }
   function dropCardsInner(){
@@ -3819,8 +3855,10 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
       if(d.startsAt && Date.now()<Date.parse(d.startsAt)){ toast('This drop hasn’t started yet.'); return; }
       if(d.limit){ var count=0; Object.keys(grants).forEach(function(u){ if((grants[u]||[]).indexOf(d.id)>-1)count++; }); if(count>=d.limit){ renderDrops(); toast('Sold out — all '+d.limit+' claimed!'); return; } }
       grants[lc]=grants[lc]||[]; grants[lc].push(d.id);
-      if(rowId) await sb.from('flaps').update({body:JSON.stringify(grants)}).eq('id',rowId);
-      else await sb.from('flaps').insert({name:'::badgegrants::',body:JSON.stringify(grants),mood:'flappy',likes:0});
+      var bc=await sb.rpc('badge_claim',{p_name:ME.name,p_hash:meTok(),p_badge_id:String(id)}); var bd=(bc&&bc.data)||{};
+      if(bc.error||!bd.ok){ var why=bd.reason||''; toast(why==='already'?'You already have this badge! 🏅':why==='sold_out'?'Sold out — all claimed!':why==='ended'?'This drop has ended.':why==='not_started'?'This drop hasn’t started yet.':'Could not claim — try again.'); renderDrops(); return; }
+      grants=bd.grants||grants;
+
       CUSTOM_GRANTS=grants;
       if(d.limit){ var fc=0; Object.keys(grants).forEach(function(u){ if((grants[u]||[]).indexOf(d.id)>-1)fc++; }); if(fc>=d.limit && !d.soldAt){ stampSoldAt(d.id); } }
       renderDrops();
@@ -3879,7 +3917,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
     try{
       var u=null,posts=[];
       if(ONLINE){
-        var _nm=String(name), _esc=_nm.replace(/([%_\\])/g,'\\$1'); var ur=await sb.from('flap_users').select('*').eq('name',_nm).maybeSingle(); if(!(ur&&ur.data)){ var _u2=await sb.from('flap_users').select('*').ilike('name',_esc).limit(1); if(_u2&&_u2.data&&_u2.data[0]) ur={data:_u2.data[0]}; } if(!(ur&&ur.data)){ try{ var _c=window.USERS&&window.USERS[_nm.toLowerCase()]; if(_c) ur={data:_c}; }catch(_e){} }
+        var _nm=String(name), _esc=_nm.replace(/([%_\\])/g,'\\$1'); var ur=await sb.from('flap_users').select('name,handle,avatar_url,bio,banner,links,banned,muted_until,verified,premium,premium_cfg,premium_until,created_at,last_seen,active_days,name_changes,handle_changes,review_status,wheel_unlimited').eq('name',_nm).maybeSingle(); if(!(ur&&ur.data)){ var _u2=await sb.from('flap_users').select('name,handle,avatar_url,bio,banner,links,banned,muted_until,verified,premium,premium_cfg,premium_until,created_at,last_seen,active_days,name_changes,handle_changes,review_status,wheel_unlimited').ilike('name',_esc).limit(1); if(_u2&&_u2.data&&_u2.data[0]) ur={data:_u2.data[0]}; } if(!(ur&&ur.data)){ try{ var _c=window.USERS&&window.USERS[_nm.toLowerCase()]; if(_c) ur={data:_c}; }catch(_e){} }
         u=ur.data;
         if(!u){   /* no such account — refuse to open a ghost profile; no Follow/Report/Block, nothing created */
           box.innerHTML='<div class="pc-strip"><span>Not found</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div>'+
@@ -3954,7 +3992,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
     box.innerHTML='<div class="pc-strip"><span>👑 Admin Panel</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body">loading…</div>';
     document.getElementById('profModal').classList.add('open');
     try{
-      var us=[];{var _uf=0,_upg=1000;while(true){var _ur=await sb.from('flap_users').select('*').order('created_at',{ascending:false}).range(_uf,_uf+_upg-1);var _ud=(_ur&&_ur.data)||[];us=us.concat(_ud);if(_ud.length<_upg)break;_uf+=_upg;if(_uf>20000)break;}}
+      var us=[];{var _uf=0,_upg=1000;while(true){var _ur=await sb.from('flap_users').select('name,handle,avatar_url,bio,banner,links,banned,muted_until,verified,premium,premium_cfg,premium_until,created_at,last_seen,active_days,name_changes,handle_changes,review_status,wheel_unlimited').order('created_at',{ascending:false}).range(_uf,_uf+_upg-1);var _ud=(_ur&&_ur.data)||[];us=us.concat(_ud);if(_ud.length<_upg)break;_uf+=_upg;if(_uf>20000)break;}}
       var fl=(await sb.from('flaps').select('id,name').limit(1000)).data||[];
       var rc=await sb.from('flap_replies').select('*',{count:'exact',head:true});
       var reports=[];try{reports=(await sb.from('flap_reports').select('*').eq('resolved',false).order('id',{ascending:false})).data||[];}catch(e){}
@@ -4105,7 +4143,7 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
   function closeDelModal(){ var m=document.getElementById('delModal'); if(m)m.classList.remove('open'); }
   /* keep a running tally of deleted accounts in a hidden ::delcount:: sentinel row so the admin site can show it */
   async function bumpDelCount(){
-    if(!ONLINE)return;
+    return; /* the admin-delete-account edge function keeps the ::delcount:: tally now */
     try{
       var ex=await sb.from('flaps').select('id,body').eq('name','::delcount::').order('id',{ascending:false}).limit(1);
       if(ex.data&&ex.data[0]){ var n=(parseInt(ex.data[0].body,10)||0)+1; await sb.from('flaps').update({body:String(n)}).eq('id',ex.data[0].id); }
@@ -4119,14 +4157,15 @@ a:active,button:active{filter:brightness(.85);}    /* snappy tap feedback */
     toast('Deleting your account…');
     if(ONLINE){
       try{
-        await sb.from('flaps').delete().ilike('name',name);
-        await sb.from('flap_replies').delete().ilike('name',name);
-        try{await sb.from('flap_notifs').delete().eq('recipient',name);}catch(e){}
-        try{await sb.from('flap_notifs').delete().eq('actor',name);}catch(e){}
-        try{await sb.from('push_subs').delete().eq('name',name);}catch(e){}
-        try{await sb.from('flap_blocks').delete().eq('blocker',name);}catch(e){}
-        await sb.from('flap_users').delete().ilike('name',name);
-        try{await bumpDelCount();}catch(e){}
+        var dr=await sb.functions.invoke('admin-delete-account',{body:{action:'self',name:name,pass_hash:meTok(),confirm:'DELETE'}});
+        if(dr&&dr.error){ toast('Could not delete your account — please try again.'); return; }
+
+
+
+
+
+
+
       }catch(e){}
     }
     clearSession();
@@ -4157,7 +4196,7 @@ function flapCelebrate(icon,title,sub){ try{ var w=document.getElementById('cele
   }
   async function resolveTicket(id){
     if(!ME.admin)return;
-    try{ await sb.from('flaps').delete().eq('id',id); }catch(e){}
+    try{ await senDel(id); }catch(e){}
     showAdmin();
   }
   window.submitReport=async function(reason){
@@ -4202,20 +4241,20 @@ function flapCelebrate(icon,title,sub){ try{ var w=document.getElementById('cele
   async function modDeletePost(postId,reportId){
     if(!ME.admin)return;
     if(!confirm('Delete this flap for everyone?'))return;
-    try{await sb.from('flaps').delete().eq('id',postId);}catch(e){}
+    try{await adminRemove('flap',postId);}catch(e){}
     try{await sb.from('flap_reports').update({resolved:true}).eq('id',reportId);}catch(e){}
     loadFeed();showAdmin();toast('Flap deleted.');
   }
   async function adminDeleteFlap(id){
     if(!ME.admin)return;
     if(!confirm('Delete this flap (and its photo) for everyone?'))return;
-    try{await sb.from('flaps').delete().eq('id',id);}catch(e){}
+    try{await adminRemove('flap',id);}catch(e){}
     await loadFeed();showAdmin();toast('Flap deleted.');
   }
   async function adminRemovePhoto(id){
     if(!ME.admin)return;
     if(!confirm('Remove just the photo from this flap? The text stays.'))return;
-    try{await sb.from('flaps').update({pic_url:null}).eq('id',id);}catch(e){}
+    try{await adminRemove('photo',id);}catch(e){}
     await loadFeed();showAdmin();toast('Photo removed.');
   }
 
@@ -4275,7 +4314,7 @@ function flapCelebrate(icon,title,sub){ try{ var w=document.getElementById('cele
       if(up.error)throw up.error;
       ME.pic=sb.storage.from('pics').getPublicUrl(path).data.publicUrl;
       saveSession(ME);
-      try{await sb.from('flap_users').update({avatar_url:ME.pic}).eq('name',ME.name);}catch(e3){}
+      try{await profilePatch({avatar_url:ME.pic});}catch(e3){}
       initMe();
       toast('Real pic uploaded! It follows your account now.');
     }catch(err){toast('Upload failed — check your connection and try again.');}
@@ -4353,7 +4392,7 @@ function flapCelebrate(icon,title,sub){ try{ var w=document.getElementById('cele
         MY_REFLAPS_OPT[key]={on:false,t:Date.now()}; delete MY_REFLAPS[key];
         if(REFLAP_COUNTS[key])REFLAP_COUNTS[key]=Math.max(0,REFLAP_COUNTS[key]-1);
         renderLive();
-        if(rid!==true){ try{await sb.from('flaps').delete().eq('id',rid);}catch(e){} }
+        if(rid!==true){ try{await sb.rpc('flap_delete_own',{p_name:ME.name,p_hash:meTok(),p_id:Number(rid)});}catch(e){} }
         await loadFeed(); delete MY_REFLAPS_OPT[key]; toast('Reflap removed.'); return;
       }
       var o=null;
@@ -4728,7 +4767,7 @@ function notifText(n){
   async function savePushToken(token,plat){
     if(!ONLINE||!window.sb||!ME.name||!token)return;
     var pfx=(plat==='android')?'fcm:':'apns:';
-    try{ await sb.from('push_subs').upsert({name:ME.name,endpoint:pfx+token,p256dh:(plat||'ios'),auth:''},{onConflict:'endpoint'}); }catch(e){}
+    try{ await sb.from('push_subs').delete().eq('endpoint',pfx+token); await sb.from('push_subs').insert({name:ME.name,endpoint:pfx+token,p256dh:(plat||'ios'),auth:''}); }catch(e){}
   }
   /* the device token can arrive BEFORE the user logs in — re-save it once we know who they are */
   function flushPushToken(){ try{ if(window.__pushToken && ME.name) savePushToken(window.__pushToken, window.__pushPlat||'ios'); }catch(e){} }
@@ -4747,7 +4786,7 @@ function notifText(n){
       }
       var j=sub.toJSON();
       if(j&&j.keys){
-        await sb.from('push_subs').upsert({name:ME.name,endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth},{onConflict:'endpoint'});
+        await sb.from('push_subs').delete().eq('endpoint',j.endpoint); await sb.from('push_subs').insert({name:ME.name,endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth});
       }
     }catch(e){}
   }
@@ -4878,9 +4917,9 @@ function notifText(n){
     try{
       var ex=await sb.from('flaps').select('id').eq('name','::ticker::').order('id',{ascending:false}).limit(1);
       if(!ex.error && ex.data && ex.data[0]){
-        await sb.from('flaps').update({body:text}).eq('id',ex.data[0].id);
+        await senSet('ticker',text);
       }else{
-        await sb.from('flaps').insert({name:'::ticker::',body:text,mood:'flappy',likes:0});
+        await senSet('ticker',text);
       }
       setTicker(text);
       toast('📢 Ticker updated for everyone!');
@@ -4930,8 +4969,8 @@ function notifText(n){
     var body=list.join(', ');
     try{
       var ex=await sb.from('flaps').select('id').eq('name','::verified::').order('id',{ascending:false}).limit(1);
-      if(ex.data&&ex.data[0]){ await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id); }
-      else { await sb.from('flaps').insert({name:'::verified::',body:body,mood:'flappy',likes:0}); }
+      if(ex.data&&ex.data[0]){ await senSet('verified',body); }
+      else { await senSet('verified',body); }
       await loadVerified();
       loadFeed();
       toast('✔ Verified list updated!');
@@ -4958,8 +4997,8 @@ function notifText(n){
     var body=Object.keys(MODS).join(', ');
     try{
       var ex=await sb.from('flaps').select('id').eq('name','::mods::').order('id',{ascending:false}).limit(1);
-      if(ex.data&&ex.data[0]){ await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id); }
-      else { await sb.from('flaps').insert({name:'::mods::',body:body,mood:'flappy',likes:0}); }
+      if(ex.data&&ex.data[0]){ await senSet('mods',body); }
+      else { await senSet('mods',body); }
       toast(making?('🛡 '+name+' is now a moderator!'):(name+' is no longer a moderator.'));
       try{ showUserProfile(name); }catch(e){}
     }catch(e){ toast('Could not update — try again.'); }
@@ -5034,7 +5073,7 @@ function notifText(n){
   window.annAsk=function(i){ if(!ME.name){try{requireAuth();}catch(e){}return;} if(myVote!==null)return; ANN_CONFIRM=i; try{renderLive();}catch(e){} };
   window.annCancel=function(){ ANN_CONFIRM=null; try{renderLive();}catch(e){} };
   window.annVote=function(i){ if(!ME.name){try{requireAuth();}catch(e){}return;} if(myVote!==null)return; ANN_CONFIRM=null; myVote=i; pollVotes[i]=(pollVotes[i]||0)+1; try{renderLive();}catch(e){} if(ONLINE&&ME.name){ try{ sb.from('flap_poll').upsert({poll_id:(Number(window.POLL_START_MS)||0),name:ME.name,choice:i},{onConflict:'poll_id,name'}).then(function(){ try{loadPoll().then(function(){try{renderLive();}catch(e){}});}catch(e){} }); }catch(e){} } try{toast('Vote counted! \ud83d\uddf3\ufe0f');}catch(e){} };
-  async function annSetState(state){ if(!ME.admin)return; try{ var lines=String(ANNOUNCE_TXT||'').split(/\n/); lines[0]='[[SOUNDVOTE:'+state+']]'; var body=lines.join('\n'); var ex=await sb.from('flaps').select('id').eq('name','::announce::').order('id',{ascending:false}).limit(1); if(ex.data&&ex.data[0]) await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id); ANNOUNCE_TXT=body; try{renderLive();}catch(e){} toast(state==='CLOSED'?'\ud83d\udd12 Voting closed.':'\ud83d\udd13 Voting re-opened.'); }catch(e){toast('Could not update — retry.');} }
+  async function annSetState(state){ if(!ME.admin)return; try{ var lines=String(ANNOUNCE_TXT||'').split(/\n/); lines[0]='[[SOUNDVOTE:'+state+']]'; var body=lines.join('\n'); var ex=await sb.from('flaps').select('id').eq('name','::announce::').order('id',{ascending:false}).limit(1); await senSet('announce',body); ANNOUNCE_TXT=body; try{renderLive();}catch(e){} toast(state==='CLOSED'?'\ud83d\udd12 Voting closed.':'\ud83d\udd13 Voting re-opened.'); }catch(e){toast('Could not update — retry.');} }
   window.annClose=function(){ annSetState('CLOSED'); };
   window.annReopen=function(){ annSetState('OPEN'); };
   async function saveAnnounce(){
@@ -5042,8 +5081,8 @@ function notifText(n){
     var ta=document.getElementById('adminAnnounce'); var body=ta?String(ta.value||'').trim():'';
     try{
       var ex=await sb.from('flaps').select('id').eq('name','::announce::').order('id',{ascending:false}).limit(1);
-      if(ex.data && ex.data[0]){ await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id); }
-      else { await sb.from('flaps').insert({name:'::announce::',body:body,mood:'flappy',likes:0}); }
+      if(ex.data && ex.data[0]){ await senSet('announce',body); }
+      else { await senSet('announce',body); }
       ANNOUNCE_TXT=body; if(ADMIN_DATA)ADMIN_DATA.annCur=body;
       await loadFeed();
       toast(body?'📢 Announcement posted to the top!':'Announcement cleared.');
@@ -5059,8 +5098,8 @@ function notifText(n){
     var cur=String(id), newVal=(PINNED_ID===cur)?'':cur;
     try{
       var ex=await sb.from('flaps').select('id').eq('name','::pinned::').order('id',{ascending:false}).limit(1);
-      if(ex.data && ex.data[0]){ await sb.from('flaps').update({body:newVal}).eq('id',ex.data[0].id); }
-      else { await sb.from('flaps').insert({name:'::pinned::',body:newVal,mood:'flappy',likes:0}); }
+      if(ex.data && ex.data[0]){ await senSet('pinned',newVal); }
+      else { await senSet('pinned',newVal); }
       PINNED_ID=newVal||null;
       await loadFeed();
       toast(newVal?'📌 Pinned to the top!':'Unpinned.');
@@ -5095,8 +5134,8 @@ function notifText(n){
     var body=[q,o1,o2,o3,'MANUAL',String(Date.now())].join('␟');   /* stamp the time so this admin pick holds until the next midnight, then auto-rotation resumes */
     try{
       var ex=await sb.from('flaps').select('id').eq('name','::poll::').order('id',{ascending:false}).limit(1);
-      if(!ex.error && ex.data && ex.data[0]) await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id);
-      else await sb.from('flaps').insert({name:'::poll::',body:body,mood:'flappy',likes:0});
+      if(!ex.error && ex.data && ex.data[0]) await senSet('poll',body);
+      else await senSet('poll',body);
       try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){}   /* new poll -> fresh votes (update, since delete is RLS-locked) */
       POLL={q:q,opts:[o1,o2,o3]}; POLL_START_MS=Date.now(); POLL_CUR_INDEX=-1; myVote=null; pollVotes=[0,0,0]; renderPoll(); loadPoll();
       toast('🗳️ Poll updated for everyone!');
@@ -5112,8 +5151,8 @@ function notifText(n){
     var body=[p.q,p.opts[0],p.opts[1],p.opts[2],'MANUAL',String(Date.now()),String(idx)].join('␟');
     try{
       var ex=await sb.from('flaps').select('id').eq('name','::poll::').order('id',{ascending:false}).limit(1);
-      if(!ex.error && ex.data && ex.data[0]) await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id);
-      else await sb.from('flaps').insert({name:'::poll::',body:body,mood:'flappy',likes:0});
+      if(!ex.error && ex.data && ex.data[0]) await senSet('poll',body);
+      else await senSet('poll',body);
       try{await sb.from('flap_poll').update({choice:-1}).gte('choice',0);}catch(e){}
       POLL={q:p.q,opts:p.opts.slice()}; POLL_START_MS=Date.now(); POLL_CUR_INDEX=idx; myVote=null; pollVotes=[0,0,0];
       ['adminPollQ','adminPollO1','adminPollO2','adminPollO3'].forEach(function(id,k){var el=document.getElementById(id); if(el)el.value=(k===0?p.q:p.opts[k-1]);});
@@ -5229,7 +5268,7 @@ function notifText(n){
       document.getElementById('youCount').textContent=myFlapCount;
       /* members list — powers real photos everywhere + the banner */
       var _needU=(manual||!USERS_LOADED_AT||(Date.now()-USERS_LOADED_AT>300000)||!USERS||!Object.keys(USERS).length); if(_needU) try{
-        var _uall=[],_uf=0,_upg=1000,_uerr=null;while(true){var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at,handle,device,banned,muted_until,violations,verified,premium,premium_cfg,premium_until').order('created_at',{ascending:false}).range(_uf,_uf+_upg-1);if(um.error){_uerr=um.error;break;}var _ud=um.data||[];_uall=_uall.concat(_ud);if(_ud.length<_upg)break;_uf+=_upg;if(_uf>20000)break;}
+        var _uall=[],_uf=0,_upg=1000,_uerr=null;while(true){var um=await sb.from('flap_users').select('name,avatar_url,last_seen,created_at,handle,banned,muted_until,verified,premium,premium_cfg,premium_until').order('created_at',{ascending:false}).range(_uf,_uf+_upg-1);if(um.error){_uerr=um.error;break;}var _ud=um.data||[];_uall=_uall.concat(_ud);if(_ud.length<_upg)break;_uf+=_upg;if(_uf>20000)break;}
         if(!_uerr){USERS={};_uall.forEach(function(u){USERS[u.name.toLowerCase()]=u;});}
       }catch(eu){} if(_needU){ USERS_LOADED_AT=Date.now(); }
       try{ if(ME.name&&USERS[ME.name.toLowerCase()]){ ME.handle=USERS[ME.name.toLowerCase()].handle||ME.handle||''; } }catch(eh){}
@@ -5288,7 +5327,7 @@ function notifText(n){
     if(!confirm('Delete this reply? This can’t be undone.'))return;
     if(REPLIES[fid])REPLIES[fid]=REPLIES[fid].filter(function(x){return x.id!==rid;});
     renderLive();
-    if(ONLINE){ try{ var q=sb.from('flap_replies').delete().eq('id',rid); if(!ME.admin && !ME.mod)q=q.gte('created_at', new Date(Date.now()-DELETE_WINDOW_MS).toISOString()); await q; }catch(e){} }
+    if(ONLINE){ try{ if(ME.admin) await adminRemove('reply',rid); else await sb.rpc('reply_delete_own',{p_name:ME.name,p_hash:meTok(),p_id:Number(rid)}); }catch(e){} }
     toast('Reply deleted.');
   }
   var SENDING_REPLIES={};
@@ -5405,14 +5444,14 @@ function notifText(n){
     if(btn.classList.contains('liked'))return;
     btn.classList.add('liked'); markLiked(id); haptic('Light');
     n++;btn.textContent='✔ Flapped! ('+n+')';btn.setAttribute('data-n',n);
-    if(ONLINE){try{await sb.from('flaps').update({likes:n}).eq('id',id);}catch(e){}}
+    if(ONLINE){try{await sb.rpc('flap_like',{p_post:Number(id),p_name:ME.name,p_hash:meTok(),p_on:true});}catch(e){}}
     addNotif(ownerOf(id),ME.name,'like',id,'');   /* notify the post's owner */
     toast('You flapped it!');
   }
   async function delLive(id){
     if(!ME.admin && !ME.mod)return;
     if(!confirm('Delete this flap for everyone?'))return;
-    if(ONLINE){try{await sb.from('flaps').delete().eq('id',id);}catch(e){}}
+    if(ONLINE){try{ if(ME.admin) await adminRemove('flap',id); else await sb.rpc('flap_delete_own',{p_name:ME.name,p_hash:meTok(),p_id:Number(id)}); }catch(e){}}
     loadFeed();
     toast('Deleted.');
   }
@@ -5421,7 +5460,7 @@ function notifText(n){
     if(!ME.name)return;
     if(!ME.admin && !withinDelWindow(createdMs)){ toast('This flap is older than '+DELETE_WINDOW_MIN+' min — it can no longer be deleted.'); return; }
     if(!confirm('Delete this flap? You can only delete your own flaps within '+DELETE_WINDOW_MIN+' minutes of posting — after that it stays up.'))return;
-    if(ONLINE){ try{ var q=sb.from('flaps').delete().eq('id',id); if(!ME.admin)q=q.gte('created_at', new Date(Date.now()-DELETE_WINDOW_MS).toISOString()); await q; }catch(e){} }
+    if(ONLINE){ try{ if(ME.admin) await adminRemove('flap',id); else await sb.rpc('flap_delete_own',{p_name:ME.name,p_hash:meTok(),p_id:Number(id)}); }catch(e){} }
     loadFeed(); toast('Deleted.');
   }
 
@@ -5712,7 +5751,7 @@ function notifText(n){
   function personaAva(p){ return svgAvatar(p.c1,p.c2,(p.name[0]||'?').toUpperCase()); }
   async function postAsPersonaBody(p,body){
     if(!ONLINE){toast('Offline — can’t seed right now.');return;}
-    try{ await sb.from('flap_users').upsert({name:p.name,avatar_url:personaAva(p),last_seen:new Date().toISOString()},{onConflict:'name'}); }catch(e){}
+    /* persona accounts already exist; flap_users is server-managed now */
     try{ await sb.from('flaps').insert({name:p.name,avatar_url:personaAva(p),mood:p.mood||'happy',body:body,likes:Math.floor(Math.random()*4)}); }catch(e){}
     try{await loadFeed();}catch(e){}
   }
@@ -5784,7 +5823,7 @@ function notifText(n){
     box.innerHTML='<div class="pc-strip hq-strip"><span>👑 TheFlap HQ</span><span class="pc-x" onclick="closeProfile()">✕ close</span></div><div class="pc-body" style="padding:26px;text-align:center;color:#12357a;">loading your HQ…</div>';
     document.getElementById('profModal').classList.add('open');
     try{
-      var us=(await sb.from('flap_users').select('*').order('created_at',{ascending:false})).data||[];
+      var us=(await sb.from('flap_users').select('name,handle,avatar_url,bio,banner,links,banned,muted_until,verified,premium,premium_cfg,premium_until,created_at,last_seen,active_days,name_changes,handle_changes,review_status,wheel_unlimited').order('created_at',{ascending:false})).data||[];
       var flAll=(await sb.from('flaps').select('id,name,body,pic_url,mood,created_at').order('id',{ascending:false}).limit(400)).data||[];
       var rc=await sb.from('flap_replies').select('*',{count:'exact',head:true});
       var repliesRecent=[]; try{repliesRecent=(await sb.from('flap_replies').select('*').order('id',{ascending:false}).limit(60)).data||[];}catch(e){}
@@ -5934,8 +5973,8 @@ function notifText(n){
     list = has ? list.filter(function(x){return x.toLowerCase()!==low;}) : list.concat([name]);
     var body=list.join(', ');
     try{ var ex=await sb.from('flaps').select('id').eq('name','::verified::').order('id',{ascending:false}).limit(1);
-      if(ex.data&&ex.data[0]) await sb.from('flaps').update({body:body}).eq('id',ex.data[0].id);
-      else await sb.from('flaps').insert({name:'::verified::',body:body,mood:'flappy',likes:0});
+      if(ex.data&&ex.data[0]) await senSet('verified',body);
+      else await senSet('verified',body);
     }catch(e){}
     if(ADMIN_DATA)ADMIN_DATA.verCur=body;
     try{await loadVerified();}catch(e){}
@@ -5945,13 +5984,13 @@ function notifText(n){
     if(!ME.admin)return;
     if((name||'').toLowerCase()==='lock'){toast("Can't remove the admin account.");return;}
     if(!confirm('Remove '+name+' and delete all their flaps & replies? This cannot be undone.'))return;
-    try{ await sb.from('flaps').delete().ilike('name',name); await sb.from('flap_replies').delete().ilike('name',name); await sb.from('flap_users').delete().ilike('name',name); }catch(e){}
+    try{ var dr=await sb.functions.invoke('admin-delete-account',{body:{action:'admin',admin:ME.name,admin_hash:meTok(),target:name}}); if(!dr||dr.error||!(dr.data&&dr.data.ok)){ toast('Could not remove '+name+'.'); return; } }catch(e){ toast('Could not remove '+name+'.'); return; }
     toast('Removed '+name+'.'); try{await loadFeed();}catch(e){} showAdmin();
   }
   async function adminDeleteReply(id){
     if(!ME.admin)return;
     if(!confirm('Delete this reply for everyone?'))return;
-    try{await sb.from('flap_replies').delete().eq('id',id);}catch(e){}
+    try{await adminRemove('reply',id);}catch(e){}
     try{await loadFeed();}catch(e){} showAdmin(); toast('Reply deleted.');
   }
 
@@ -5971,8 +6010,8 @@ function notifText(n){
   async function setSocialLive(on){
     if(!ME.admin)return;
     try{ var ex=await sb.from('flaps').select('id').eq('name','::features::').order('id',{ascending:false}).limit(1);
-      if(ex.data&&ex.data[0]) await sb.from('flaps').update({body:on?'on':'off'}).eq('id',ex.data[0].id);
-      else await sb.from('flaps').insert({name:'::features::',body:on?'on':'off',mood:'flappy',likes:0});
+      if(ex.data&&ex.data[0]) await senSet('features',on?'on':'off');
+      else await senSet('features',on?'on':'off');
     }catch(e){}
     FEATURES.social=on; applyFeatureFlags();
     toast(on?'🚀 Friends & Messaging is LIVE for everyone!':'Friends & Messaging turned off.');
@@ -5999,7 +6038,7 @@ function notifText(n){
     if(st==='friends'){toast('Already friends!');return;}
     if(st==='sent'){toast('Request already sent.');return;}
     if(st==='incoming'){return acceptFriend(name);}
-    try{ await sb.from('flaps').insert({name:'::friend::',body:ME.name+PSEP+name+PSEP+'pending',mood:'flappy',likes:0}); }catch(e){}
+    try{ await senSet('friend',ME.name+PSEP+name+PSEP+'pending'); }catch(e){}
     try{addNotif(name,ME.name,'friend',null,'sent you a friend request');}catch(e){}
     await loadFriends(); toast('Friend request sent to '+name+'!'); openSocial(SOCIAL_TAB, true);
   }
@@ -6007,7 +6046,7 @@ function notifText(n){
     if(!requireAuth())return; var me=(ME.name||'').toLowerCase(),o=(name||'').toLowerCase();
     var row=FRIENDS_ROWS.find(function(f){return f.a.toLowerCase()===o&&f.b.toLowerCase()===me&&f.status==='pending';});
     if(!row){toast('No pending request from '+name+'.');return;}
-    try{ await sb.from('flaps').update({body:row.a+PSEP+row.b+PSEP+'accepted'}).eq('id',row.id); }catch(e){}
+    try{ await senUpd(row.id,row.a+PSEP+row.b+PSEP+'accepted'); }catch(e){}
     try{addNotif(name,ME.name,'friend',null,'accepted your friend request');}catch(e){}
     await loadFriends(); toast("You're now friends with "+name+"!"); openSocial('friends', true);
   }
@@ -6015,7 +6054,7 @@ function notifText(n){
     var me=(ME.name||'').toLowerCase(),o=(name||'').toLowerCase();
     var row=FRIENDS_ROWS.find(function(f){var a=f.a.toLowerCase(),b=f.b.toLowerCase();return (a===me&&b===o)||(a===o&&b===me);});
     if(!row)return; if(!confirm('Remove '+name+' as a friend?'))return;
-    try{ await sb.from('flaps').delete().eq('id',row.id); }catch(e){}
+    try{ await senDel(row.id); }catch(e){}
     await loadFriends(); openSocial(SOCIAL_TAB, true);
   }
   async function loadDM(name){
@@ -6032,8 +6071,8 @@ function notifText(n){
     var key=ME.name+PSEP+other, now=Date.now();
     try{
       var r=await sb.from('flaps').select('id').eq('name','::dmread::').ilike('body',key+PSEP+'%').limit(1);
-      if(r.data&&r.data[0]) await sb.from('flaps').update({body:key+PSEP+now}).eq('id',r.data[0].id);
-      else await sb.from('flaps').insert({name:'::dmread::',body:key+PSEP+now,mood:'flappy',likes:0});
+      if(r.data&&r.data[0]) await senUpd(r.data[0].id,key+PSEP+now);
+      else await senSet('dmread',key+PSEP+now);
     }catch(e){}
   }
   async function otherLastRead(other){
@@ -6067,7 +6106,7 @@ function notifText(n){
       th.insertAdjacentHTML('beforeend','<div class="dm-line mine"><span class="dm-ava">'+myAva()+'</span><span class="dm-bub">'+dmText(text)+'</span></div>');
       th.scrollTop=th.scrollHeight; }
     if(inp)inp.focus();
-    try{ await sb.from('flaps').insert({name:'::dm::',body:ME.name+PSEP+name+PSEP+text,mood:'flappy',likes:0}); }catch(e){}
+    try{ await senSet('dm',ME.name+PSEP+name+PSEP+text); }catch(e){}
     try{addNotif(name,ME.name,'dm',null,text.slice(0,60));}catch(e){}
   }
   /* refresh just the message bubbles (keeps your compose box + focus) so replies arrive live */
@@ -6183,7 +6222,13 @@ function notifText(n){
     var m;
     try{m=JSON.parse(saved);}catch(e){return;}
     if(!m||!m.name)return;
-    ME={name:m.name,admin:(m.name||'').toLowerCase()==='lock',pic:m.pic||null};
+    ME={name:m.name,admin:(m.name||'').toLowerCase()==='lock',pic:m.pic||null,handle:m.handle||'',email:m.email||'',token:m.token||''};
+    /* no token (pre-hardening session) or an expired one → back to the sign-in screen */
+    (async function(){ try{ if(!ONLINE||!sb) return; if(!ME.token){ clearSession(); location.reload(); return; }
+      var r=await sb.rpc('user_session',{p_name:ME.name,p_token:ME.token}); var d=(r&&r.data)||{};
+      if(r.error) return; /* network hiccup: stay signed in */
+      if(!d.ok||d.banned){ clearSession(); toast(d.banned?'This account has been banned.':'Your session expired — please sign in again.'); setTimeout(function(){location.reload();},1200); return; }
+      ME.pic=d.avatar_url||ME.pic; ME.handle=d.handle||ME.handle; ME.email=d.email||ME.email; saveSession(ME); }catch(e){} })();
     /* mark logged-in FIRST so nothing below can leave you on the sign-in screen */
     document.getElementById('gate').classList.add('hidden');
     try{initMe();}catch(e){/* profile UI failed to draw — you're still logged in */}
@@ -6329,13 +6374,13 @@ document.addEventListener('touchmove',function(e){
       if(!(window.sb)){ msg.textContent='Server not reachable.'; return; }
       msg.textContent='Checking\u2026';
       try{
-        var r=await sb.from('flap_users').select('name,pass_hash').ilike('name',ME.name).maybeSingle();
-        if(!r||!r.data){ msg.textContent='Account not found.'; return; }
-        var curHash=await pwHash(r.data.name, cur);
-        if(r.data.pass_hash!==curHash){ msg.className='rec-msg bad'; msg.textContent='Current password is wrong.'; return; }
-        var newHash=await pwHash(r.data.name, nw);
-        var up=await sb.from('flap_users').update({pass_hash:newHash}).ilike('name',ME.name);
-        if(up&&up.error) throw up.error;
+        var r=await sb.rpc('user_change_password',{p_name:ME.name,p_cred:meTok(),p_old_pass:cur,p_new_pass:nw}); var d=(r&&r.data)||{};
+        if(r.error||!d.ok){ msg.className='rec-msg bad'; msg.textContent=(d.reason==='badpass')?'Current password is wrong.':(d.reason==='unauthorized'?'Please sign out and back in, then retry.':'Could not update \u2014 try again.'); return; }
+
+
+
+
+
         msg.className='rec-msg good'; msg.textContent='\u2705 Password updated!';
         setTimeout(recClose, 1200);
       }catch(e){ msg.className='rec-msg bad'; msg.textContent='Could not update \u2014 try again.'; }
@@ -6352,7 +6397,7 @@ document.addEventListener('touchmove',function(e){
     window.recDisconnectGoogle=async function(){
       if(!(window.ME&&ME.name&&window.sb)) return;
       try{
-        await sb.from('flap_users').update({email:null}).ilike('name',ME.name);
+        await rpcOk('user_set_email',{p_name:ME.name,p_hash:meTok(),p_email:null});
         if(window.SET&&SET.row) SET.row.email='';
         if(window.ME) ME.email='';
         recToast('Google disconnected.');
@@ -6373,12 +6418,13 @@ document.addEventListener('touchmove',function(e){
       try{ sessionStorage.removeItem('flap_link'); }catch(e){}
       try{ history.replaceState({}, document.title, location.pathname); }catch(e){}
       try{
-        var ex=await sb.from('flap_users').select('name').ilike('email',email).maybeSingle();
-        if(ex&&ex.data && String(ex.data.name).toLowerCase()!==String(link).toLowerCase()){
+        var se=await sb.rpc('user_set_email',{p_name:link,p_hash:meTok(),p_email:email}); var sd=(se&&se.data)||{};
+        if(se.error||!sd.ok){
+
           try{ sb.auth.signOut(); }catch(e){}
           recToast('That Google account is already linked to another user.'); return;
         }
-        await sb.from('flap_users').update({email:email}).ilike('name',link);
+
         if(window.ME&&ME.name&&ME.name.toLowerCase()===String(link).toLowerCase()) ME.email=email;
         if(window.SET&&SET.row) SET.row.email=email;
         try{ sb.auth.signOut(); }catch(e){}   /* keep app on name/pass session; the email link lives in flap_users */
@@ -6390,7 +6436,7 @@ document.addEventListener('touchmove',function(e){
     window.recRenderSecurity=async function(){
       var host=el('recSecBox'); if(!host) return;
       var email=''; try{ if(window.SET&&SET.row&&SET.row.email) email=SET.row.email; }catch(e){}
-      if(!email && window.sb && window.ME && ME.name){ try{ var r=await sb.from('flap_users').select('email').ilike('name',ME.name).maybeSingle(); if(r&&r.data&&r.data.email){ email=r.data.email; if(window.SET&&SET.row)SET.row.email=email; } }catch(e){} }
+      if(!email && window.sb && window.ME && ME.name){ email=ME.email||''; if(email&&window.SET&&SET.row)SET.row.email=email; }
       var linked = !!email;
       host.innerHTML=
         '<div class="rec-sec-t">\ud83d\udd12 Password &amp; Recovery</div>'
@@ -6429,13 +6475,13 @@ document.addEventListener('touchmove',function(e){
       if(!(window.sb)){ msg.textContent='Server not reachable.'; return; }
       msg.textContent='Looking\u2026';
       try{
-        var r=await sb.from('flap_users').select('name,email').ilike('name',name).maybeSingle();
+        var r=await sb.from('flap_users').select('name').ilike('name',name).maybeSingle();
         if(!r||!r.data){ msg.className='rec-msg bad'; msg.textContent='No account found with that username.'; return; }
-        window._recName=r.data.name; var email=r.data.email||'';
+        window._recName=r.data.name; var email='the email on file';
         var opts='<div class="rec-msg good">Account found: <b>'+String(r.data.name).replace(/</g,'')+'</b></div>';
         opts+='<button class="rec-btn" onclick="recForgotGoogle()">\ud83d\udd11 Recover with Google</button>';
-        if(email){ opts+='<button class="rec-btn" onclick="recForgotEmail(\''+String(email).replace(/[^a-zA-Z0-9@._-]/g,'')+'\')">\ud83d\udce7 Email me a 6-digit code</button>'; }
-        else { opts+='<div class="rec-alt">No recovery email on file. Use Google (if you linked it) or email <b>theflapsupport@gmail.com</b>.</div>'; }
+        opts+='<button class="rec-btn" onclick="recForgotEmail(\'the email on file\')">\ud83d\udce7 Email me a 6-digit code</button>';
+        opts+='<div class="rec-alt">No recovery email on file? Use Google (if you linked it) or email <b>theflapsupport@gmail.com</b>.</div>';
         recOpen('Reset your password', opts);
       }catch(e){ msg.className='rec-msg bad'; msg.textContent='Could not reach the server.'; }
     };
@@ -6553,7 +6599,7 @@ var NX_STORE_PREFIX='https://zclappstgkjebltkdzlq.supabase.co/storage/v1/object/
 function nxOwnStorage(u){try{u=String(u||'').trim();return u.indexOf(NX_STORE_PREFIX)===0&&u.length>NX_STORE_PREFIX.length;}catch(e){return false;}}
 function cfgOf(n){try{var u=USERS[low(n)];if(u&&u.premium_cfg){return (typeof u.premium_cfg==='string')?JSON.parse(u.premium_cfg||'{}'):u.premium_cfg;}}catch(e){}return {};}
 async function fetchCfg(n){try{var r=await sb.from('flap_users').select('premium,premium_cfg').ilike('name',n).limit(1);var row=r.data&&r.data[0];if(row){if(USERS[low(n)]){USERS[low(n)].premium=row.premium;USERS[low(n)].premium_cfg=row.premium_cfg;}return {premium:!!row.premium,cfg:(typeof row.premium_cfg==='string'?JSON.parse(row.premium_cfg||'{}'):(row.premium_cfg||{}))};}}catch(e){}return {premium:isPremium(n),cfg:cfgOf(n)};}
-async function saveCfg(cfg){var me=ME_();if(!me)return false;try{var r=await sb.from('flap_users').update({premium_cfg:cfg}).eq('name',me).select('name');if(USERS[low(me)])USERS[low(me)].premium_cfg=cfg;return (r.data||[]).length>0;}catch(e){return false;}}
+async function saveCfg(cfg){var me=ME_();if(!me)return false;try{var r=await sb.rpc('user_update_profile',{p_name:me,p_hash:meTok(),p_patch:{premium_cfg:cfg}});if(r.error||!(r.data&&r.data.ok))return false;if(USERS[low(me)])USERS[low(me)].premium_cfg=cfg;return true;}catch(e){return false;}}
 function shell(capHtml){var b=document.createElement('div');b.className='prem-back';var c=document.createElement('div');c.className='prem-card';c.innerHTML='<button class="prem-x">✕</button>'+capHtml;b.appendChild(c);document.body.appendChild(b);c.querySelector('.prem-x').onclick=function(){b.remove();};b.addEventListener('click',function(e){if(e.target===b)b.remove();});return {back:b,card:c};}
 var SECTIONS=[['Profile Customization',[['🖼️','Upload Your Own Banner'],['🎨','Custom Profile Animations'],['🌈','RGB / Custom Profile Colors'],['👑','Premium Profile Frame'],['✨','Decorative Profile Effects']]],['Premium Status',[['🏆','Premium Supporter Badge'],['🏅','Exclusive Premium Badges']]],['Premium Tools',[['📊','Profile Analytics'],['🚀','Early Access to New Features'],['📌','Featured / Highlighted Post'],['⚡','Priority Support']]]];
 window.openPremiumUpgrade=function(){var FEAT=['Custom banner, colors & themes','Profile frames & effects','Supporter + exclusive badges','Profile analytics & featured post','Early access + priority support'];var rows='<div style="padding:12px 18px 2px;">'+FEAT.map(function(f){return '<div style="display:flex;gap:9px;font-size:13.5px;margin-bottom:9px;"><span style="color:#f5c542;font-weight:800;">✓</span><span>'+f+'</span></div>';}).join('')+'</div>';
