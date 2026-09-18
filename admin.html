@@ -38,9 +38,11 @@
   .statstrip .s.danger b{color:#ff9a86;}
   /* sticky tab nav */
   nav.tabs{position:sticky;top:83px;z-index:18;display:flex;gap:6px;flex-wrap:wrap;background:#0d1f3d;border-bottom:1px solid #24406e;padding:8px 12px;}
-  nav.tabs button{background:#152a4a;border:1px solid #24406e;color:#bcd0ee;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:bold;cursor:pointer;}
+  nav.tabs button{background:#152a4a;border:1px solid #24406e;color:#bcd0ee;border-radius:9px;padding:9px 14px;font-size:14px;font-weight:bold;cursor:pointer;}
+  nav.tabs button.on{background:#f5820a;border-color:#f5820a;color:#fff;}
+  .m-sub{font-size:11px;color:#8aa;margin-top:2px;}
+  @media (max-width:520px){ nav.tabs{gap:5px;padding:8px} nav.tabs button{padding:8px 10px;font-size:13px} .acts .btn{margin:3px 4px 3px 0} }
   nav.tabs button:hover{background:#1d3career;background:#1d385f;}
-  nav.tabs button.on{background:linear-gradient(180deg,var(--blue),var(--blue-d));color:#fff;border-color:#3b7fd0;}
   .badgecard{background:#0c1836;border:1.5px solid #2f5aa0;border-radius:10px;padding:12px;margin:10px 0;}
   .badgecard .bc-h{display:flex;align-items:center;gap:9px;}
   .badgecard .bc-ic{font-size:22px;}
@@ -402,8 +404,8 @@ try{window.__adminHash=function(){try{return ADMIN_HASH;}catch(e){return null;}}
   function strip(n,label,cls){return '<span class="s'+(cls?' '+cls:'')+'"><b>'+fmtN(n)+'</b> '+label+'</span>';}
 
   /* ---------- tab nav ---------- */
-  var TABS=[['controls','⚙️ Controls'],['broadcast','📣 Broadcast'],['members','👥 Members'],['badges','🏅 Badges'],['store','&#129718; Store'],['moderation','🛡️ Moderation'],['messages','💬 Messages'],['support','🎫 Support'],['stats','📊 Stats'],['staff','👤 Staff']];
-  var TAB_SEC={controls:'__owner__',broadcast:'__owner__',members:'__owner__',badges:'__owner__',messages:'__owner__',stats:'__owner__',staff:'__owner__',moderation:'moderation',support:'support'};
+  var TABS=[['controls','Controls'],['members','Members'],['bans','Bans'],['review','Under review'],['moderation','Reports'],['support','Support'],['messages','Messages'],['broadcast','Broadcast'],['badges','Badges'],['store','Store & Challenges'],['stats','Stats'],['staff','Staff']];
+  var TAB_SEC={controls:'__owner__',broadcast:'__owner__',members:'__owner__',badges:'__owner__',messages:'__owner__',stats:'__owner__',staff:'__owner__',moderation:'moderation',support:'support',bans:'moderation',review:'moderation'};
   function tabAllowed(k){ if(isOwner())return true; var need=TAB_SEC[k]; if(!need||need==='__owner__')return false; return can(need); }
   function renderTabs(){
     $('tabNav').innerHTML=TABS.filter(function(t){return tabAllowed(t[0]);}).map(function(t){return '<button class="'+(TAB===t[0]?'on':'')+'" onclick="ADMIN.tab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');
@@ -412,12 +414,14 @@ try{window.__adminHash=function(){try{return ADMIN_HASH;}catch(e){return null;}}
     var h='';
     if(!tabAllowed(TAB)){ TAB=isOwner()?'controls':'support'; renderTabs(); }
     if(TAB==='staff')h=secStaff();
-    else if(TAB==='controls')h=secControls();
+    else if(TAB==='controls'){h=secControls(); setTimeout(function(){ try{ ADMIN.trendLoad(); }catch(e){} },50);}
     else if(TAB==='broadcast')h=secBroadcast();
     else if(TAB==='members')h=secMembers();
     else if(TAB==='badges')h=secBadges();
     else if(TAB==='store')h=secStore();
     else if(TAB==='moderation')h=secModeration();
+    else if(TAB==='bans'){h=secBans(); setTimeout(function(){ try{ ADMIN.loadBans(); }catch(e){} },30);}
+    else if(TAB==='review'){h=secReview(); setTimeout(function(){ try{ ADMIN.loadReview(); }catch(e){} },30);}
     else if(TAB==='messages')h=secMessages();
     else if(TAB==='support')h=secSupport();
     else h=secStats();
@@ -527,6 +531,16 @@ try{window.__adminHash=function(){try{return ADMIN_HASH;}catch(e){return null;}}
     h+='<button class="btn del wfull" onclick="ADMIN.clearAnnounce()">Clear announcement</button>';
     h+='<div class="hint">Shows an official card above the pinned flap for everyone. First line = bold title.</div>';
 
+    h+='<div class="subhead">🔥 Trending Now</div>';
+    h+='<div id="trendState" class="hint">loading…</div>';
+    h+='<input class="inp" id="trendFlap" placeholder="Flap id to force as Trending Now (e.g. 194528)" inputmode="numeric">';
+    h+='<button class="btn blue wfull" style="margin-bottom:6px;" onclick="ADMIN.trendForce(\'me\')">🔥 Force + push ONLY to me (demo)</button>';
+    h+='<button class="btn green wfull" style="margin-bottom:6px;" onclick="ADMIN.trendForce(\'all\')">🔥 Force + push to the audience</button>';
+    h+='<button class="btn wfull" style="margin-bottom:6px;" onclick="ADMIN.trendTick()">↻ Recompute now (real engagement)</button>';
+    h+='<input class="inp" id="trendTest" placeholder="Test recipients, comma-separated (empty = everyone)">';
+    h+='<button class="btn wfull" onclick="ADMIN.trendSaveCfg()">Save test recipients</button>';
+    h+='<div class="hint">One flap is picked every 10 min by real engagement velocity (likes + replies + reflaps, recent-weighted). When it changes, members get a "🔥 Trending Now" push that opens the flap. While test recipients are set, pushes go ONLY to those names — clear the box to go live for everyone.</div>';
+
     h+='<div class="subhead">📢 Scrolling ticker</div>';
     h+='<textarea class="inp" id="cTicker">'+esc(d.tickerCur||'')+'</textarea>';
     h+='<button class="btn green wfull" onclick="ADMIN.saveTicker()">Save ticker for everyone</button>';
@@ -580,7 +594,7 @@ try{window.__adminHash=function(){try{return ADMIN_HASH;}catch(e){return null;}}
     var acts='<button class="btn gold" onclick="ADMIN.toggleVerified(\'' + nm + '\')">'+(isVer?'Unverify':'Verify')+'</button>';
     if(lc!==ADMIN_ACCOUNT){
       acts+= muted?'<button class="btn blue" onclick="ADMIN.liftMute(\'' + nm + '\')">Lift time-out</button>':'<button class="btn" onclick="ADMIN.mute(\'' + nm + '\',1)">1h</button><button class="btn" onclick="ADMIN.mute(\'' + nm + '\',24)">24h</button><button class="btn" onclick="ADMIN.mute(\'' + nm + '\',168)">7d</button><button class="btn" onclick="ADMIN.muteCustom(\'' + nm + '\')">Custom</button>';
-      acts+= u.banned?'<button class="btn green" onclick="ADMIN.unban(\'' + nm + '\')">Un-ban</button>':'<button class="btn" onclick="ADMIN.verify(\'' + nm + '\')">✓ Verify</button><button class="btn" onclick="ADMIN.unverify(\'' + nm + '\')">Unverify</button><button class="btn red" onclick="ADMIN.ban(\'' + nm + '\')">Ban</button>';
+      acts+= u.banned?'<button class="btn green" onclick="ADMIN.gotoBan(\'' + nm + '\')">Banned · manage</button>':'<button class="btn del" onclick="ADMIN.gotoBan(\'' + nm + '\')">Ban…</button><button class="btn" onclick="ADMIN.verify(\'' + nm + '\')">✓ Verify</button><button class="btn" onclick="ADMIN.unverify(\'' + nm + '\')">Unverify</button><button class="btn red" onclick="ADMIN.ban(\'' + nm + '\')">Ban</button>';
       acts+='<button class="btn blue" onclick="ADMIN.resetPassword(\'' + nm + '\')">🔑 Reset password</button>';
       acts+='<button class="btn purple" onclick="ADMIN.manageBadges(\'' + nm + '\')">🏅 Badges</button>';acts+='<button class="btn" style="background:linear-gradient(180deg,#f0a91c,#c9740a)" onclick="ADMIN.grantFeathers(\'' + nm + '\')">🪶 Feathers</button>';acts+='<button class="btn" style="background:linear-gradient(180deg,#8a68e0,#5b3fb0)" onclick="ADMIN.grantPremium(\'' + nm + '\')">⭐ Premium</button>';
       acts+='<button class="btn" style="background:linear-gradient(180deg,#b06a2a,#7d4413)" onclick="ADMIN.resetAccount(\'' + nm + '\')">♻ Reset account</button>';
@@ -591,12 +605,32 @@ try{window.__adminHash=function(){try{return ADMIN_HASH;}catch(e){return null;}}
   function secMembers(){
     var d=DATA;
     var h='<div class="sec"><h2>👥 Member management ('+fmtN(d.counts.members)+' members · '+fmtN(d.counts.accounts)+' accounts) <button class="refresh" onclick="ADMIN.reload()">↻ refresh</button></h2>';
-    h+='<div class="hint">Verify, time out, ban, or remove members. Removing deletes their flaps &amp; replies too. Loads 50 at a time.</div>';h+='<div style="margin:6px 0 10px"><button class="btn" style="background:linear-gradient(180deg,#18b6c9,#0e93a4)" onclick="ADMIN.makeCode()">🎟 Make redeem code (Whop)</button></div>';
+    h+='<div class="hint">Verify, time out, reset passwords, or remove members. Bans live in the Bans tab. Loads 50 at a time.</div>';
+    h+='<div class="subhead">Password reset message</div><div class="mem-tools"><input class="inp" id="pwMsgIn" placeholder="Type the temporary password, then Copy" autocomplete="off" spellcheck="false" oninput="ADMIN.pwMsgRender()"><button class="btn green" onclick="ADMIN.pwMsgCopy(this)">Copy message</button></div><div id="pwMsgPrev" class="muted" style="white-space:pre-wrap;line-height:1.45;font-size:12px;margin:6px 0 12px;"></div>';h+='<div style="margin:6px 0 10px"><button class="btn" style="background:linear-gradient(180deg,#18b6c9,#0e93a4)" onclick="ADMIN.makeCode()">🎟 Make redeem code (Whop)</button></div>';
     h+='<div class="mem-tools"><input class="inp" id="memSearch" placeholder="🔎 Search members by name…" value="'+esc(MEM_SEARCH)+'" oninput="ADMIN.memSearchInput(this.value)" autocomplete="off" autocapitalize="off" spellcheck="false" style="margin-bottom:0;flex:1;min-width:150px;"><select class="inp" id="memSort" onchange="ADMIN.memSort(this.value)" style="margin-bottom:0;width:auto;"><option value="new"'+(MEM_SORT==='new'?' selected':'')+'>Newest → Oldest</option><option value="old"'+(MEM_SORT==='old'?' selected':'')+'>Oldest → Newest</option></select></div>';
     h+='<div id="memList"><div class="mem-loading">⏳ Loading members…</div></div>';
     h+='<div id="memPager" class="mem-pager"></div>';
     h+='</div>';
     setTimeout(function(){ try{ ADMIN._memFetch(); }catch(e){} }, 0);
+    return h;
+  }
+  /* ---------- BANS (the ONE ban control) ---------- */
+  var BAN_PREFILL='';
+  function secBans(){
+    var h='<div class="sec"><h2>Bans <button class="refresh" onclick="ADMIN.loadBans()">↻ refresh</button></h2>';
+    h+='<div class="hint">One place for bans. Account ban blocks sign-in and posting everywhere (app + web) and hides their flaps. Device ban also blocks new accounts from that phone.</div>';
+    h+='<div class="mem-tools" style="margin-bottom:8px"><input class="inp" id="banName" placeholder="Exact username or @handle" value="'+esc(BAN_PREFILL)+'" autocomplete="off" autocapitalize="off"></div>';
+    h+='<div class="acts" style="margin-bottom:12px"><button class="btn del" onclick="ADMIN.banByName()">Ban account</button><button class="btn" style="background:linear-gradient(180deg,#8f1d1d,#5a0f0f)" onclick="ADMIN.banDevicesByName()">Ban account + devices</button><button class="btn green" onclick="ADMIN.unbanByName()">Un-ban</button></div>';
+    h+='<div id="banMsg" class="muted"></div>';
+    h+='<div class="subhead">Currently banned</div><div id="banList"><div class="mem-loading">Loading…</div></div></div>';
+    BAN_PREFILL='';
+    return h;
+  }
+  /* ---------- UNDER REVIEW (auto-hold release) ---------- */
+  function secReview(){
+    var h='<div class="sec"><h2>Under review <button class="refresh" onclick="ADMIN.loadReview()">↻ refresh</button></h2>';
+    h+='<div class="hint">Accounts the auto-review system paused after several reports. Releasing lets them post again and returns their flaps to the feed.</div>';
+    h+='<div id="reviewList"><div class="mem-loading">Loading…</div></div></div>';
     return h;
   }
   /* ---------- MODERATION ---------- */
@@ -922,7 +956,7 @@ try{window.__adminHash=function(){try{return ADMIN_HASH;}catch(e){return null;}}
       try{ for(var i=0;i<rows.length;i+=500){ var chunk=rows.slice(i,i+500); var r=await sb.from('flap_notifs').insert(chunk); if(!r||!r.error)bellOk+=chunk.length; } }catch(e){}
       var pushOk=0;
       for(var j=0;j<info.pushNames.length;j++){
-        try{ await fetch(SUPABASE_URL+'/functions/v1/send-push',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_ANON_KEY,'apikey':SUPABASE_ANON_KEY},body:JSON.stringify({recipient:info.pushNames[j],title:title||'TheFlap 🐦',body:body})}); pushOk++; }catch(e){}
+        try{ await fetch(SUPABASE_URL+'/functions/v1/send-push',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_ANON_KEY,'apikey':SUPABASE_ANON_KEY},body:JSON.stringify({recipient:info.pushNames[j],title:title||'TheFlap',body:body})}); pushOk++; }catch(e){}
         if(j%10===9) await new Promise(function(rs){setTimeout(rs,120);});
       }
       try{ await sb.from('flaps').insert({name:'::broadcast::', body:JSON.stringify({title:title,body:body,target:target,bell:bellOk,push:pushOk,ts:new Date().toISOString(),by:(ADMIN_ACCOUNT||'admin')})}); }catch(e){}
@@ -949,8 +983,6 @@ try{window.__adminHash=function(){try{return ADMIN_HASH;}catch(e){return null;}}
     viewFlap:function(id){ try{ window.open('/index.html?openflap='+id,'_blank'); }catch(e){} },
     viewProfile:function(n){ try{ window.open('/index.html?profile='+encodeURIComponent(n),'_blank'); }catch(e){} },
     warnUser:async function(name){ name=(name||'').trim(); if(!name)return; var why=prompt('Warning to show '+name+' as a Community Notice:','Your recent activity broke a House Rule. Please keep it kind. 💛'); if(why==null||why==='')return; try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:why.slice(0,200)}); }catch(e){} try{ fetch(SUPABASE_URL+'/functions/v1/send-push',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_ANON_KEY,'apikey':SUPABASE_ANON_KEY},body:JSON.stringify({recipient:name,title:'TheFlap ⚠️',body:'You have a Community Notice',url:'/'})}); }catch(e){} try{ adminLog(name,'Warned (community notice): '+why.slice(0,80)); }catch(e){} toast('⚠️ Warning sent to '+name+'.'); },
-    muteUser24:async function(name){ name=(name||'').trim(); if(!name)return; if(!confirm('Mute '+name+' for 24 hours? They can read but not post.'))return; var until=new Date(Date.now()+86400000).toISOString(); try{ await adminUser(name,'mute',24*60); }catch(e){ toast('Mute failed.'); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'You have been muted for 24 hours for breaking a House Rule. You can still read TheFlap.'}); }catch(e){} try{ adminLog(name,'Muted 24h'); }catch(e){} toast('🔇 '+name+' muted 24h.'); ADMIN.refreshMembers(); },
-    banUser:async function(name){ name=(name||'').trim(); if(!name)return; if(!confirm('BAN '+name+'? They will be blocked from the app.'))return; try{ await adminUser(name,'ban'); }catch(e){ toast('Ban failed.'); return; } try{ adminLog(name,'Banned'); }catch(e){} toast('🚫 '+name+' banned.'); ADMIN.refreshMembers(); },
     resolveReport:async function(id){ var _mk=sessionStorage.getItem('flap_modpw'); if(!_mk){toast('Unlock reports first.');return;} try{ await fetch(SUPABASE_URL+'/functions/v1/hyper-processor',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify({admin:'lock',password:_mk,action:'update',id:id,resolved:true})}); }catch(e){} toast('Resolved.'); ADMIN.refreshReports(); },
     modToggleSel:function(id,on){ if(on)MOD_SEL[id]=1; else delete MOD_SEL[id]; ADMIN._modBar(); },
     modSelectAll:function(on){ var cks=document.querySelectorAll('.mod-ck'); Array.prototype.forEach.call(cks,function(c){ c.checked=on; var id=c.getAttribute('data-id'); if(on)MOD_SEL[id]=1; else delete MOD_SEL[id]; }); ADMIN._modBar(); },
@@ -973,6 +1005,17 @@ try{window.__adminHash=function(){try{return ADMIN_HASH;}catch(e){return null;}}
     mute:async function(name,hours){ name=(name||'').trim(); if(!name)return; var lbl=(hours>=168?'7 days':(hours>=24?Math.round(hours/24)+' day(s)':hours+' hour(s)')); var until=new Date(Date.now()+hours*3600*1000).toISOString(); var r; try{ r=await sb.rpc('admin_user_action',{p_admin:ADMIN_NAME,p_hash:ADMIN_HASH,p_target:name,p_action:'mute',p_arg:String(Math.round(hours*60))}); }catch(e){ toast('Timeout failed — try again.'); return; } if(r&&r.error){ toast('Timeout failed: '+(r.error.message||'').slice(0,50)); return; } if(!r.data||!r.data.ok){ toast((r.data&&r.data.reason==='no_user')?('⚠ No member exactly named "'+name+'" — nothing changed.'):'Timeout failed: '+((r.data&&r.data.reason)||'error')); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'You have been timed out for '+lbl+' for breaking a House Rule. You can still read TheFlap, but posting, replies, and messages are paused until it ends.'}); }catch(e){} try{ adminLog(name,'Timed out '+lbl); }catch(e){} toast('⏳ '+name+' timed out for '+lbl+' ✓'); ADMIN.refreshMembers(); },
     muteCustom:function(name){var h=prompt('Time out '+name+' for how many HOURS?','12');if(h===null)return;h=parseFloat(h);if(!(h>0)){toast('Enter a number of hours.');return;}ADMIN.mute(name,h);},
     liftMute:async function(name){ name=(name||'').trim(); if(!name)return; var r; try{ r=await sb.rpc('admin_user_action',{p_admin:ADMIN_NAME,p_hash:ADMIN_HASH,p_target:name,p_action:'unmute'}); }catch(e){ toast('Could not lift — try again.'); return; } if(r&&r.error){ toast('Failed: '+(r.error.message||'').slice(0,50)); return; } if(!r.data||!r.data.ok){ toast((r.data&&r.data.reason==='no_user')?('⚠ No member exactly named "'+name+'".'):'Failed: '+((r.data&&r.data.reason)||'error')); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'Your time-out has been lifted. Welcome back — please keep it kind. 💛'}); }catch(e){} try{ adminLog(name,'Time-out lifted'); }catch(e){} toast('✓ Time-out lifted for '+name+' ✓'); ADMIN.refreshMembers(); },
+    gotoBan:function(name){ BAN_PREFILL=name||''; TAB='bans'; renderTabs(); renderTab(); },
+    _banTarget:function(){ var n=(($('banName')||{}).value||'').trim(); if(!n){ toast('Enter a username.'); } return n; },
+    banByName:async function(){ var n=ADMIN._banTarget(); if(!n)return; if(!confirm('Ban '+n+'? They will be locked out of the app and the website.'))return; await ADMIN.ban(n); ADMIN.loadBans(); },
+    unbanByName:async function(){ var n=ADMIN._banTarget(); if(!n)return; await ADMIN.unban(n); ADMIN.loadBans(); },
+    banDevicesByName:async function(){ var n=ADMIN._banTarget(); if(!n)return; if(!confirm('Ban '+n+' AND every device they have used? New accounts from those phones will be blocked too.'))return; await ADMIN.ban(n); var msg=$('banMsg'); try{ var r=await sb.rpc('admin_member_devices',{p_admin:'lock',p_pass_hash:ADMIN_HASH,p_name:n.replace(/^@/,'')}); var d=r.data; if(!d||!d.ok){ msg.textContent='Device lookup not authorized (owner only).'; return; } var devs=(d.devices||[]).filter(function(x){return !x.banned;}); if(!devs.length){ msg.textContent='No unbanned device on record for '+n+' (they must have opened the app once).'; ADMIN.loadBans(); return; } var done=0; for(var i=0;i<devs.length;i++){ try{ await sb.rpc('admin_ban_device',{p_admin:'lock',p_pass_hash:ADMIN_HASH,p_device:devs[i].devid,p_reason:'admin: '+n}); done++; }catch(e){} } msg.textContent='Banned '+done+' device(s) for '+n+'.'; }catch(e){ msg.textContent='Device ban failed — try again.'; } ADMIN.loadBans(); },
+    loadBans:async function(){ var el=$('banList'); if(!el)return; try{ var r=await sb.from('flap_users').select('name,handle,avatar_url').eq('banned',true).order('name').limit(300); var rows=r.data||[]; if(!rows.length){ el.innerHTML='<div class="empty">Nobody is banned right now.</div>'; return; } el.innerHTML=rows.map(function(u){ return '<div class="mem"><span class="ava">'+(u.avatar_url?'<img src="'+esc(u.avatar_url)+'" alt="">':initials(u.name))+'</span><div class="m-name"><b>'+esc(u.name)+'</b>'+(u.handle?' <span class="m-handle">@'+esc(u.handle)+'</span>':'')+'</div><div class="acts"><button class="btn green" onclick="ADMIN.unban(\''+esq(u.name)+'\');setTimeout(ADMIN.loadBans,400)">Un-ban</button></div></div>'; }).join(''); }catch(e){ el.innerHTML='<div class="empty">Could not load the ban list.</div>'; } },
+    loadReview:async function(){ var el=$('reviewList'); if(!el)return; try{ var r=await sb.from('flap_users').select('name,handle,avatar_url,review_status').eq('review_status','under_review').order('name').limit(300); var rows=r.data||[]; if(!rows.length){ el.innerHTML='<div class="empty">No accounts under review.</div>'; return; } el.innerHTML=rows.map(function(u){ return '<div class="mem"><span class="ava">'+(u.avatar_url?'<img src="'+esc(u.avatar_url)+'" alt="">':initials(u.name))+'</span><div class="m-name"><b>'+esc(u.name)+'</b>'+(u.handle?' <span class="m-handle">@'+esc(u.handle)+'</span>':'')+'<div class="m-sub">automatic hold after multiple reports</div></div><div class="acts"><button class="btn green" onclick="ADMIN.releaseReview(\''+esq(u.name)+'\')">Release from review</button><button class="btn del" onclick="ADMIN.gotoBan(\''+esq(u.name)+'\')">Ban…</button></div></div>'; }).join(''); }catch(e){ el.innerHTML='<div class="empty">Could not load the review list.</div>'; } },
+    releaseReview:async function(name){ if(!confirm('Release '+name+' from review? They can post again and their flaps return to the feed.'))return; try{ var r=await sb.rpc('admin_user_action',{p_admin:ADMIN_NAME,p_hash:ADMIN_HASH,p_target:name,p_action:'clear_review'}); if(r.error||!(r.data&&r.data.ok)){ toast('Could not release: '+((r.data&&r.data.reason)||(r.error&&r.error.message)||'error')); return; } toast(name+' released from review.'); }catch(e){ toast('Could not release — try again.'); } ADMIN.loadReview(); },
+    pwMsgBuild:function(){ var p=(($('pwMsgIn')||{}).value||'').trim()||'____________'; return "Hello! We have just confirmed your account.\n\nThanks so much for being patient — we really appreciate you.\n\nYour reset password is:  "+p+"\n\nLog in with it, then change it anytime in your Settings.\n\nIf you have any alt accounts, please delete them — TheFlap is one account per person.\n\n— TheFlap Support"; },
+    pwMsgRender:function(){ var el=$('pwMsgPrev'); if(el) el.textContent=ADMIN.pwMsgBuild(); },
+    pwMsgCopy:function(b){ var t=ADMIN.pwMsgBuild(); function ok(){ b.textContent='Copied'; setTimeout(function(){ b.textContent='Copy message'; },1500); } try{ navigator.clipboard.writeText(t).then(ok,function(){ var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} ta.remove(); ok(); }); }catch(e){} },
     ban:async function(name){ name=(name||'').trim(); if(!name)return; if(!confirm('Ban '+name+'? They will be locked out of the app.'))return; var r; try{ r=await sb.rpc('admin_user_action',{p_admin:ADMIN_NAME,p_hash:ADMIN_HASH,p_target:name,p_action:'ban'}); }catch(e){ toast('Ban failed — try again.'); return; } if(r&&r.error){ toast('Ban failed: '+(r.error.message||'').slice(0,50)); return; } if(!r.data||!r.data.ok){ toast((r.data&&r.data.reason==='no_user')?('⚠ No member exactly named "'+name+'" — nobody was banned.'):'Ban failed: '+((r.data&&r.data.reason)||'error')); return; } /* the server sends the ban notice */ try{ adminLog(name,'Banned'); }catch(e){} toast('🔨 '+name+' banned ✓'); ADMIN.refreshMembers(); },
 grantFeathers:async function(name){ name=(name||'').trim(); if(!name)return; var amtS=prompt('Grant Feathers to '+name+'\n\nAmount (e.g. 4000 for the $9.99 pack). Use a negative number to deduct:'); if(amtS==null)return; var amt=parseInt(amtS,10); if(!amt){toast('Enter a whole number.');return;} var reason=prompt('Reason (saved to the admin log):','Whop purchase — Feather pack')||''; if(!ADMIN_HASH){toast('Please sign out and sign back in, then try again.');return;} var r; try{ r=await sb.rpc('admin_feather_grant',{p_admin:ADMIN_ACCOUNT,p_pass_hash:ADMIN_HASH,p_name:name,p_amount:amt,p_reason:reason}); }catch(e){ toast('Grant failed — try again.'); return; } if(r.error){ toast('Grant failed: '+(r.error.message||'').slice(0,60)); return; } var dd=r.data; if(!dd||!dd.ok){ toast('Grant failed: '+((dd&&dd.error==='auth')?'admin auth — sign out & back in':((dd&&dd.error)||'error'))); return; } try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:(amt>0?('🪶 '+amt+' Feathers were added to your account. Enjoy!'):('Your Feather balance was adjusted by '+amt+'.'))}); }catch(e){} try{ adminLog(name,'Granted '+amt+' Feathers (new balance '+dd.balance+')'+(reason?' — '+reason:'')); }catch(e){} toast('🪶 '+(amt>0?'Granted ':'Adjusted ')+amt+' Feathers to '+name+' (balance '+dd.balance+').'); },grantPremium:async function(name){ name=(name||'').trim(); if(!name)return; var mS=prompt('Grant TheFlap Premium to '+name+'\n\nHow many months? (enter 0 to REMOVE Premium)','1'); if(mS==null)return; var m=parseInt(mS,10); if(isNaN(m)){toast('Enter a whole number.');return;} var upd,msg; if(m<=0){ upd={premium:false,premium_until:null}; msg='Premium removed from '+name+'.'; } else { var until=new Date(Date.now()+m*31*86400000).toISOString(); upd={premium:true,premium_until:until}; msg='⭐ Premium granted to '+name+' for '+m+' month(s).'; } var r; try{ r=await sb.rpc('admin_user_action',{p_admin:ADMIN_NAME,p_hash:ADMIN_HASH,p_target:name,p_action:'premium',p_arg:String(m<=0?0:m)}); }catch(e){ toast('Failed — try again.'); return; } if(r&&r.error){toast('Failed: '+(r.error.message||'').slice(0,60));return;} if(!r.data||!r.data.ok){toast((r.data&&r.data.reason==='no_user')?('⚠ No member exactly named "'+name+'".'):('Failed: '+((r.data&&r.data.reason)||'error')));return;} if(m>0){ try{ await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',excerpt:'⭐ TheFlap Premium is now active on your account. Thanks for supporting TheFlap!'}); }catch(e){} } try{ adminLog(name,(m>0?('Premium granted '+m+'mo'):'Premium removed')); }catch(e){} toast(msg); loadAll(); },makeCode:async function(){ if(!ADMIN_HASH){toast('Sign out and back in first.');return;} var fS=prompt('Redeem code \u2014 how many Feathers? (0 for none)','4000'); if(fS==null)return; var f=parseInt(fS,10)||0; var pS=prompt('How many months of Premium? (0 for none)','0'); if(pS==null)return; var p=parseInt(pS,10)||0; if(!f&&!p){toast('Set Feathers or Premium.');return;} var note=prompt('Note (optional, e.g. Whop order #):','')||''; var code=(prompt('Code text (leave blank to auto-generate):','')||'').trim(); if(!code){ code='FLAP-'; var cs='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; for(var i=0;i<6;i++){code+=cs[Math.floor(Math.random()*cs.length)];} } var r; try{ r=await sb.rpc('admin_make_code',{p_admin:ADMIN_ACCOUNT,p_pass_hash:ADMIN_HASH,p_code:code,p_feathers:f,p_premium_months:p,p_note:note}); }catch(e){ toast('Failed \u2014 try again.'); return; } if(r.error){toast('Failed: '+(r.error.message||'').slice(0,50));return;} var dd=r.data; if(!dd||!dd.ok){toast('Failed: '+((dd&&dd.error==='exists')?'that code already exists':((dd&&dd.error==='auth')?'admin auth \u2014 sign out & back in':((dd&&dd.error)||'error'))));return;} try{ adminLog('(redeem code)','Created '+dd.code+' \u2014 '+f+'F '+p+'mo'+(note?' \u2014 '+note:'')); }catch(e){} try{ await navigator.clipboard.writeText(dd.code); }catch(e){} window.prompt('\u2705 Code created & copied to clipboard. Give this to the customer:', dd.code); },verify:async function(name){var r=await sb.rpc('admin_user_action',{p_admin:ADMIN_NAME,p_hash:ADMIN_HASH,p_target:name,p_action:'verify'});if(r.error){toast('⚠ '+r.error.message);return;}if(!r.data||!r.data.ok){toast((r.data&&r.data.reason==='no_user')?('⚠ No member exactly named '+name):('⚠ '+((r.data&&r.data.reason)||'failed')));return;}try{await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'notice',body:'✓ Your account is now verified on TheFlap.',created_at:new Date().toISOString()});}catch(e){}try{adminLog('verify',name);}catch(e){}toast('✓ '+name+' is now verified.');ADMIN.refreshMembers();},
 unverify:async function(name){var r=await sb.rpc('admin_user_action',{p_admin:ADMIN_NAME,p_hash:ADMIN_HASH,p_target:name,p_action:'unverify'});if(r.error){toast('⚠ '+r.error.message);return;}if(!r.data||!r.data.ok){toast((r.data&&r.data.reason==='no_user')?('⚠ No member exactly named '+name):('⚠ '+((r.data&&r.data.reason)||'failed')));return;}try{adminLog('unverify',name);}catch(e){}toast('Verification removed from '+name+'.');ADMIN.refreshMembers();},
@@ -984,6 +1027,10 @@ unverify:async function(name){var r=await sb.rpc('admin_user_action',{p_admin:AD
       if(!dr||dr.error||!(dr.data&&dr.data.ok)){ toast('❌ Could not remove '+name+' — '+((dr&&dr.error&&(dr.error.message||dr.error))||'server error')); return; }
       toast('Removed '+name+'.');ADMIN.refreshMembers();
     },
+    trendLoad:async function(){ var el=$('trendState'); if(!el)return; try{ var r=await sb.rpc('admin_trending_cfg',{p_admin:ADMIN_NAME,p_hash:ADMIN_HASH}); var d=r.data||{}; if(!d.ok){ el.textContent='Not authorized.'; return; } var st=d.state||{}, cf=d.cfg||{}; var body=''; if(st.flap_id){ try{ var f=await sb.from('flaps').select('name,body').eq('id',st.flap_id).maybeSingle(); if(f.data) body=' — '+esc(f.data.name)+': “'+esc(String(f.data.body||'').slice(0,70))+'”'; }catch(e){} } el.innerHTML=(st.flap_id?('Current: flap <b>#'+st.flap_id+'</b>'+body+' · score '+(st.score||0)+' · changed '+(st.changed_at?new Date(st.changed_at).toLocaleString():'—')+(st.forced_by?' · forced by '+esc(st.forced_by):'')):'Nothing trending right now.')+'<br>Push: '+(cf.push_enabled?'on':'off')+' · min score '+cf.min_score+' · window '+cf.window_minutes+' min · cooldown '+cf.push_cooldown_min+' min · test recipients: '+((cf.test_recipients||[]).join(', ')||'<i>none (live for everyone)</i>'); var ti=$('trendTest'); if(ti&&!ti.value) ti.value=(cf.test_recipients||[]).join(', '); }catch(e){ el.textContent='Could not load trending state.'; } },
+    trendForce:async function(mode){ var id=parseInt(($('trendFlap').value||'').trim(),10); if(!id){toast('Enter a flap id.');return;} if(mode==='all'&&!confirm('Force flap #'+id+' as Trending Now and push to the audience (or the test recipients if set)?'))return; try{ var r=await sb.rpc('admin_trending_force',{p_admin:ADMIN_NAME,p_hash:ADMIN_HASH,p_flap_id:id,p_notify:mode}); var d=r.data||{}; if(r.error||!d.ok){ toast('Failed: '+((d&&d.reason)||(r.error&&r.error.message)||'error')); return; } toast('🔥 Flap #'+id+' is Trending Now — pushed to '+d.pushed_to+' recipient(s).'); ADMIN.trendLoad(); }catch(e){ toast('Failed — try again.'); } },
+    trendTick:async function(){ try{ var r=await sb.rpc('admin_trending_tick',{p_admin:ADMIN_NAME,p_hash:ADMIN_HASH}); var d=r.data||{}; if(!d.ok){ toast('Failed.'); return; } var t=d.tick||{}; toast(t.changed?('🔥 New trending flap #'+t.trending+' (score '+t.score+') — pushed to '+t.pushed_to):('Top flap #'+(t.trending||'none')+' (score '+(t.score||0)+') — unchanged')); ADMIN.trendLoad(); }catch(e){ toast('Failed — try again.'); } },
+    trendSaveCfg:async function(){ var list=(($('trendTest').value||'').split(/[,\n]+/).map(function(x){return x.trim();}).filter(Boolean)); try{ var r=await sb.rpc('admin_trending_cfg',{p_admin:ADMIN_NAME,p_hash:ADMIN_HASH,p_patch:{test_recipients:list}}); if(r.data&&r.data.ok){ toast(list.length?('Test mode: pushes only to '+list.join(', ')):'Live: trending pushes go to everyone.'); } else toast('Failed.'); ADMIN.trendLoad(); }catch(e){ toast('Failed — try again.'); } },
     saveAnnounce:async function(){var v=($('cAnnounce').value||'').trim();await setSen('::announce::',v);toast(v?'📢 Announcement posted.':'Announcement cleared.');loadAll();},
     clearAnnounce:async function(){await setSen('::announce::','');toast('Announcement cleared.');loadAll();},
     saveTicker:async function(){await setSen('::ticker::',($('cTicker').value||'').trim());toast('Ticker saved.');loadAll();},
@@ -1023,7 +1070,7 @@ unverify:async function(name){var r=await sb.rpc('admin_user_action',{p_admin:AD
       for(var i=0;i<rows.length;i++){ var hay=rows[i].getAttribute('data-search')||''; var vis=!q||hay.indexOf(q)>-1; rows[i].style.display=vis?'':'none'; if(vis)shown++; }
       var none=$('memNone'); if(none)none.style.display=(q&&shown===0)?'block':'none';
     },
-    resetPassword:async function(name){ if(!isOwner()){toast('Owner only.');return;}if(!name){toast('No user selected.');return;}if(!confirm('Send a temporary password to '+name+'? Only do this for a genuine forgotten-password request.'))return;try{var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';var temp='';var rnd=crypto.getRandomValues(new Uint32Array(8));for(var i=0;i<8;i++){temp+=chars[rnd[i]%chars.length];}var hash=await sha256('flapsalt:'+String(name).toLowerCase()+':'+temp);var up=await sb.rpc('admin_user_action',{p_admin:ADMIN_NAME,p_hash:ADMIN_HASH,p_target:name,p_action:'reset_password',p_arg:temp});if(up.error){toast('⚠ Reset failed: '+up.error.message);return;}if(!up.data||!up.data.ok){toast((up.data&&up.data.reason==='no_user')?('⚠ No member exactly named '+name):('⚠ Reset failed: '+((up.data&&up.data.reason)||'error')));return;}var msg='Hello! 👋 We have just confirmed your account ✅\n\nThanks so much for being patient — we really appreciate you. 💛\n\nYour reset password is:  '+temp+' — \n\nLog in with it, then change it anytime in your Settings.\n\nIf you have any alt accounts, please delete them — TheFlap is one account per person. 🙏\n\n— TheFlap Support\n\nStay breezy.\n 🐥';var ni=await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'support',excerpt:msg,seen:false});if(ni.error){toast('⚠ Password reset, but message failed to send: '+ni.error.message);return;}try{if(window.adminLog)adminLog('reset-pw',name);}catch(e){};(function(){window.__lastTemp=temp;var h='<h3 style="margin:0 0 8px">🔑 Temporary password</h3>'+'<div class="hint" style="margin-bottom:10px">Temporary password for @'+esc(name)+' — copy it and send it to them.</div>'+'<input id="tpwIn" readonly style="width:100%;box-sizing:border-box;font:18px monospace;letter-spacing:3px;padding:12px;border-radius:8px;border:1px solid #2e5290;background:#0f2340;color:#fff;text-align:center" />'+'<div style="display:flex;gap:8px;margin-top:12px"><button id="tpwCopy" class="btn" style="background:#1f8f4d">📋 Copy</button><button class="btn" onclick="closeModal()">Done</button></div>'+'<div id="tpwMsg" class="muted" style="margin-top:8px;font-size:12px">This panel stays open until you close it.</div>';openModal(h);try{var _i=document.getElementById('tpwIn');if(_i){_i.value=window.__lastTemp;_i.focus();_i.select();}var _b=document.getElementById('tpwCopy');if(_b){_b.addEventListener('click',function(){var v=(document.getElementById('tpwIn')||{}).value||window.__lastTemp;function ok(){var m=document.getElementById('tpwMsg');if(m)m.textContent='Copied! ✓ Send it to @'+name+'.';}function fb(){try{var el=document.getElementById('tpwIn');el.focus();el.select();document.execCommand('copy');ok();}catch(e){var m=document.getElementById('tpwMsg');if(m)m.textContent='Select the text and press Ctrl+C to copy.';}}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(msg).then(ok,fb);}else{fb();}});}}catch(e){}})();try{if(window.loadAll)ADMIN.refreshMembers();}catch(e){}}catch(e){toast('⚠ Reset error: '+String(e).slice(0,80));}},
+    resetPassword:async function(name){ if(!isOwner()){toast('Owner only.');return;}if(!name){toast('No user selected.');return;}if(!confirm('Send a temporary password to '+name+'? Only do this for a genuine forgotten-password request.'))return;try{var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';var temp='';var rnd=crypto.getRandomValues(new Uint32Array(8));for(var i=0;i<8;i++){temp+=chars[rnd[i]%chars.length];}var hash=await sha256('flapsalt:'+String(name).toLowerCase()+':'+temp);var up=await sb.rpc('admin_user_action',{p_admin:ADMIN_NAME,p_hash:ADMIN_HASH,p_target:name,p_action:'reset_password',p_arg:temp});if(up.error){toast('⚠ Reset failed: '+up.error.message);return;}if(!up.data||!up.data.ok){toast((up.data&&up.data.reason==='no_user')?('⚠ No member exactly named '+name):('⚠ Reset failed: '+((up.data&&up.data.reason)||'error')));return;}var msg='Hello! 👋 We have just confirmed your account ✅\n\nThanks so much for being patient — we really appreciate you. 💛\n\nYour reset password is:  '+temp+' — \n\nLog in with it, then change it anytime in your Settings.\n\nIf you have any alt accounts, please delete them — TheFlap is one account per person. 🙏\n\n— TheFlap Support\n\nStay breezy.';var ni=await sb.from('flap_notifs').insert({recipient:name,actor:'TheFlap',kind:'support',excerpt:msg,seen:false});if(ni.error){toast('⚠ Password reset, but message failed to send: '+ni.error.message);return;}try{if(window.adminLog)adminLog('reset-pw',name);}catch(e){};(function(){window.__lastTemp=temp;var h='<h3 style="margin:0 0 8px">🔑 Temporary password</h3>'+'<div class="hint" style="margin-bottom:10px">Temporary password for @'+esc(name)+' — copy it and send it to them.</div>'+'<input id="tpwIn" readonly style="width:100%;box-sizing:border-box;font:18px monospace;letter-spacing:3px;padding:12px;border-radius:8px;border:1px solid #2e5290;background:#0f2340;color:#fff;text-align:center" />'+'<div style="display:flex;gap:8px;margin-top:12px"><button id="tpwCopy" class="btn" style="background:#1f8f4d">📋 Copy</button><button class="btn" onclick="closeModal()">Done</button></div>'+'<div id="tpwMsg" class="muted" style="margin-top:8px;font-size:12px">This panel stays open until you close it.</div>';openModal(h);try{var _i=document.getElementById('tpwIn');if(_i){_i.value=window.__lastTemp;_i.focus();_i.select();}var _b=document.getElementById('tpwCopy');if(_b){_b.addEventListener('click',function(){var v=(document.getElementById('tpwIn')||{}).value||window.__lastTemp;function ok(){var m=document.getElementById('tpwMsg');if(m)m.textContent='Copied! ✓ Send it to @'+name+'.';}function fb(){try{var el=document.getElementById('tpwIn');el.focus();el.select();document.execCommand('copy');ok();}catch(e){var m=document.getElementById('tpwMsg');if(m)m.textContent='Select the text and press Ctrl+C to copy.';}}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(msg).then(ok,fb);}else{fb();}});}}catch(e){}})();try{if(window.loadAll)ADMIN.refreshMembers();}catch(e){}}catch(e){toast('⚠ Reset error: '+String(e).slice(0,80));}},
     supOpenCat:function(k){SUP_CAT=k;SUP_SEL={};renderTab();},
     supBack:function(){SUP_CAT=null;SUP_SEL={};renderTab();},
     supSort:function(v){SUP_SORT=v;renderTab();},
@@ -1087,7 +1134,7 @@ unverify:async function(name){var r=await sb.rpc('admin_user_action',{p_admin:AD
       (window.crypto||window.msCrypto).getRandomValues(a);
       var temp=''; for(var i=0;i<10;i++){ temp+=CS.charAt(a[i]%CS.length); }
       window.__pendReset=window.__pendReset||{}; window.__pendReset[id]={who:who, temp:temp};
-      var body="Hello! 👋 We have just confirmed your account ✅\n\nThanks so much for being patient — we really appreciate you. 💛\n\nYour reset password is:  "+temp+"  \n\nLog in with it, then change it anytime in your Settings.\n\nIf you have any alt accounts, please delete them — TheFlap is one account per person. 🙏\n\n— TheFlap Support\n\nStay breezy.\n 🐥";
+      var body="Hello! 👋 We have just confirmed your account ✅\n\nThanks so much for being patient — we really appreciate you. 💛\n\nYour reset password is:  "+temp+"  \n\nLog in with it, then change it anytime in your Settings.\n\nIf you have any alt accounts, please delete them — TheFlap is one account per person. 🙏\n\n— TheFlap Support\n\nStay breezy.";
       if(el){ el.value=body; el.focus(); try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){} }
       if(st){ st.innerHTML='<span class="tk-muted">🔑 Draft ready below with a fresh temporary password. Review it, then press <b>📨 Send reply</b> — that resets @'+esc(who)+'\'s password and sends this message. <b>Nothing has changed yet.</b></span>'; }
       toast('Draft ready — review it, then press Send reply.');
@@ -1213,144 +1260,6 @@ unverify:async function(name){var r=await sb.rpc('admin_user_action',{p_admin:AD
   /* no session persistence — the admin password is required on every visit */
 })();
 </script>
-<script>
-/* flapBanDeviceTool: ban a repeat offender device by username */
-(function(){
-  function build(){
-    if(document.getElementById('banDevTool'))return;
-    var box=document.createElement('div'); box.id='banDevTool';
-    box.style.cssText='position:fixed;right:14px;bottom:14px;z-index:99999;background:#1b1830;border:1px solid #3a3560;border-radius:12px;padding:10px;width:230px;font-family:sans-serif;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.4)';
-    box.innerHTML='<div style="font-weight:800;font-size:13px;margin-bottom:6px">\ud83d\udeab Ban Device</div><input id="banDevName" placeholder="username" style="width:100%;box-sizing:border-box;padding:7px;border-radius:8px;border:1px solid #444;background:#12101c;color:#fff;margin-bottom:6px;font-size:13px"><button id="banDevGo" style="width:100%;padding:8px;border:none;border-radius:8px;background:#e0245e;color:#fff;font-weight:800;cursor:pointer;font-size:13px">Ban their device</button><div id="banDevMsg" style="font-size:11px;opacity:.8;margin-top:6px"></div>';
-    document.body.appendChild(box); document.getElementById('banDevGo').onclick=go;
-  }
-  function go(){
-    var msg=document.getElementById('banDevMsg');
-    var name=(document.getElementById('banDevName').value||'').trim();
-    if(!name){msg.textContent='Enter a username.';return;}
-    var h=(window.__adminHash&&window.__adminHash())||null; var c=window.sb;
-    if(!h){msg.textContent='Log in as admin first.';return;}
-    if(!c){msg.textContent='Not ready.';return;}
-    msg.textContent='Looking up device\u2026';
-    c.rpc('admin_member_devices',{p_admin:'lock',p_pass_hash:h,p_name:name}).then(function(r){
-      var d=r&&r.data; if(!d||!d.ok){msg.textContent='Not authorized or error.';return;}
-      var devs=d.devices||[]; if(!devs.length){msg.textContent='No device recorded for '+name+' yet \u2014 they must open the app once.';return;}
-      var toBan=devs.filter(function(x){return !x.banned;});
-      if(!toBan.length){msg.textContent='Already banned ('+devs.length+' device(s)).';return;}
-      var done=0;
-      toBan.forEach(function(x){ c.rpc('admin_ban_device',{p_admin:'lock',p_pass_hash:h,p_device:x.devid,p_reason:'admin: '+name}).then(function(){ done++; if(done===toBan.length){ msg.textContent='\u2705 Banned '+toBan.length+' device(s) for '+name; } }); });
-    },function(){msg.textContent='Server error.';});
-  }
-  var n=0; var iv=setInterval(function(){n++; if(document.body){build(); if(n>3)clearInterval(iv);} else if(n>40)clearInterval(iv);},400);
-})();
-</script>
 
-<script>
-/* flapCrownTool — admin Close & Crown a challenge (self-contained) */
-(function(){
-  if(window.__flapCrownTool) return; window.__flapCrownTool=1;
-  function ready(){ return window.sb && window.__adminHash; }
-  var tries=0; var iv=setInterval(function(){ if(ready()){ clearInterval(iv); build(); } else if(++tries>80){ clearInterval(iv); } },500);
-  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[ch];}); }
-  function build(){
-    var c=window.sb;
-    var box=document.createElement("div"); box.id="flapCrownBox";
-    box.style.cssText="position:fixed;bottom:14px;left:14px;z-index:2147483000;width:252px;background:#12121a;border:1px solid #3a2f5f;border-radius:12px;padding:10px 12px;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#fff;box-shadow:0 8px 30px rgba(0,0,0,.5)";
-    box.innerHTML="<div style=\"display:flex;align-items:center;gap:6px;font-weight:800;font-size:13px;margin-bottom:8px\">\ud83c\udfc6 Close &amp; Crown<span id=\"flapCrownMin\" style=\"margin-left:auto;cursor:pointer;opacity:.7;font-weight:600\">\u2013</span></div><div id=\"flapCrownBody\"><select id=\"flapCrownSel\" style=\"width:100%;background:#0c0c14;color:#fff;border:1px solid #3a2f5f;border-radius:8px;padding:7px 8px;font-size:12px;margin-bottom:8px\"><option>Loading\u2026</option></select><button id=\"flapCrownGo\" style=\"width:100%;background:linear-gradient(135deg,#ffd75e,#ff9e00);color:#241a00;font-weight:800;border:0;border-radius:8px;padding:9px;font-size:13px;cursor:pointer\">Close &amp; Crown Winner</button><div id=\"flapCrownMsg\" style=\"font-size:11px;color:#b9aee0;margin-top:7px;line-height:1.4\"></div></div>";
-    document.body.appendChild(box);
-    var sel=box.querySelector("#flapCrownSel"), msg=box.querySelector("#flapCrownMsg");
-    box.querySelector("#flapCrownMin").onclick=function(){ var b=box.querySelector("#flapCrownBody"); b.style.display=(b.style.display==="none"?"block":"none"); };
-    function loadOpen(){ sel.innerHTML="<option>Loading\u2026</option>";
-      c.from("flap_challenges").select("id,title,status,closes_at,reward").order("id",{ascending:false}).limit(50).then(function(r){
-        var rows=(r.data||[]).filter(function(x){ return String(x.status||"open").toLowerCase()!=="closed"; });
-        if(!rows.length){ sel.innerHTML="<option value=\"\">No open challenges</option>"; return; }
-        sel.innerHTML=rows.map(function(x){ var lapsed=x.closes_at&&new Date(x.closes_at).getTime()<Date.now(); return "<option value=\""+esc(x.id)+"\">"+esc(x.title||("Challenge #"+x.id))+" \u2022 "+(x.reward||0)+"\ud83e\udeb6"+(lapsed?" (ended)":"")+"</option>"; }).join("");
-      },function(e){ sel.innerHTML="<option value=\"\">Load error</option>"; }); }
-    loadOpen();
-    box.querySelector("#flapCrownGo").onclick=function(){
-      var cid=sel.value; if(!cid){ msg.style.color="#ffcf6a"; msg.textContent="Pick a challenge first."; return; }
-      var title=sel.options[sel.selectedIndex].text;
-      if(!confirm("Close & crown \""+title+"\"?\nThis picks the most-liked entry, credits the reward Feathers, notifies the winner, and posts the celebration. This cannot be undone.")) return;
-      var h=window.__adminHash&&window.__adminHash();
-      msg.style.color="#b9aee0"; msg.textContent="Crowning\u2026";
-      c.rpc("admin_crown_challenge",{p_admin:"lock",p_pass_hash:h,p_cid:String(cid)}).then(function(r){
-        if(r.error){ msg.style.color="#ff8a8a"; msg.textContent="Error: "+r.error.message; return; }
-        var d=r.data||{};
-        if(d && (d.ok===false||d.error)){ msg.style.color="#ff8a8a"; msg.textContent="Could not crown: "+(d.error||"no eligible entry"); return; }
-        var who=(d&&d.winner_name)?("@"+d.winner_name):(d&&d.winner)?("@"+d.winner):"Winner";
-        var rw=(d&&d.reward!=null)?(" \u2022 +"+d.reward+" Feathers"):"";
-        msg.style.color="#8affa0"; msg.textContent="\ud83c\udfc6 "+who+" crowned"+rw+". Notification + celebration posted.";
-        loadOpen();
-      },function(e){ msg.style.color="#ff8a8a"; msg.textContent="Error: "+e.message; });
-    };
-  }
-})();
-</script>
-<button onclick="var m=document.getElementById('flapPwMsg');m.style.display='flex';document.getElementById('flapPwIn').focus();" style="position:fixed;right:16px;bottom:16px;z-index:99998;background:linear-gradient(#33b06d,#279257);color:#fff;border:0;border-radius:999px;padding:12px 18px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(39,146,87,.4);font-family:system-ui,sans-serif;">&#128273; Reset message</button><div id="flapPwMsg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:center;justify-content:center;padding:16px;font-family:system-ui,sans-serif;"><div style="background:#fff;border-radius:16px;max-width:440px;width:100%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.4);box-sizing:border-box;"><div style="font-size:17px;font-weight:800;color:#3a2a16;">&#129718; Password Reset Message</div><div style="font-size:12px;color:#8a795f;margin:2px 0 12px;">Type the reset password, then Copy.</div><input id="flapPwIn" type="text" autocomplete="off" spellcheck="false" placeholder="paste reset password..." oninput="flapPwRender()" style="width:100%;font-size:16px;font-family:monospace;padding:11px 13px;border:1.5px solid #efe3cd;border-radius:11px;outline:none;box-sizing:border-box;"><div id="flapPwPrev" style="white-space:pre-wrap;line-height:1.5;font-size:14px;background:#fbf6ec;border:1px solid #efe3cd;border-radius:12px;padding:14px;margin-top:12px;min-height:120px;color:#2a2115;"></div><div style="display:flex;gap:10px;margin-top:14px;"><button onclick="flapPwCopy(this)" style="flex:1;background:linear-gradient(#33b06d,#279257);color:#fff;border:0;border-radius:999px;padding:12px;font-weight:800;cursor:pointer;">&#128203; Copy message</button><button onclick="document.getElementById('flapPwMsg').style.display='none';" style="background:#f2ece1;color:#7a6a52;border:0;border-radius:999px;padding:12px 16px;font-weight:700;cursor:pointer;">Close</button></div></div></div><script>function flapPwBuild(){var p=(document.getElementById('flapPwIn').value||'').trim()||'____________';return "Hello! 👋 We've just confirmed your account ✅\n\nThanks so much for being patient — we really appreciate you. 💛\n\nYour reset password is:  "+p+"\n\nLog in with it, then change it anytime in your Settings.\n\nIf you have any alt accounts, please delete them — TheFlap is one account per person. 🙏\n\n— TheFlap Support\n\nStay breezy.\n🐦";}function flapPwRender(){document.getElementById('flapPwPrev').textContent=flapPwBuild();}function flapPwCopy(b){var t=flapPwBuild();function ok(){b.textContent='✅ Copied!';setTimeout(function(){b.innerHTML='&#128203; Copy message';},1500);}try{navigator.clipboard.writeText(t).then(ok,function(){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}ta.remove();ok();});}catch(e){}}setTimeout(flapPwRender,0);</script>
-<!-- under-review release panel (owner moderation) -->
-<div id="urv-panel" style="display:none;position:fixed;top:14px;left:14px;z-index:99999;width:262px;background:#101d34;border:2px solid #f5c542;border-radius:12px;padding:10px 12px;font-family:-apple-system,Segoe UI,Arial,sans-serif;color:#e8eef7;box-shadow:0 8px 28px rgba(0,0,0,.45);">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-    <div style="font-weight:700;font-size:13px;">&#9208; Under Review <span id="urv-count" style="color:#f5c542;"></span></div>
-    <button id="urv-min" style="background:none;border:0;color:#9db4d6;font-size:17px;cursor:pointer;line-height:1;">&#8211;</button>
-  </div>
-  <div id="urv-body">
-    <div id="urv-list" style="font-size:12px;max-height:340px;overflow:auto;">Loading&#8230;</div>
-    <button id="urv-refresh" style="margin-top:8px;width:100%;padding:5px;border:0;border-radius:6px;background:#274a86;color:#fff;font-weight:700;cursor:pointer;">&#8635; Refresh</button>
-  </div>
-</div>
-<script>
-(function(){
-  function esc(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  function client(){
-    try{ if(typeof sb!=='undefined' && sb) return sb; }catch(e){}
-    if(window.__urvSb) return window.__urvSb;
-    if(window.supabase && window.supabase.createClient){ window.__urvSb = window.supabase.createClient('https://zclappstgkjebltkdzlq.supabase.co','sb_publishable_5W3tMe80Huoxr9srCiH-DA_E-y1uj0Q'); return window.__urvSb; }
-    return null;
-  }
-  async function loadURV(){
-    var list=document.getElementById('urv-list'); var db=client(); if(!list||!db) return;
-    try{
-      var q=await db.from('flap_users').select('name,review_status').eq('review_status','under_review').order('name').limit(200);
-      var us=(q&&q.data)||[];
-      var c=document.getElementById('urv-count'); if(c) c.textContent='('+us.length+')';
-      if(!us.length){ list.innerHTML='<div style="color:#54d67f;padding:4px 0;">No accounts under review &#127881;</div>'; return; }
-      list.innerHTML=us.map(function(u){
-        return '<div style="border:1px solid #24406a;border-radius:8px;padding:6px 7px;margin-bottom:6px;">'
-          +'<b>'+esc(u.name)+'</b>'
-          +'<div style="font-size:10px;color:#8aa;margin:2px 0;">'+esc(u.review_reason||'automatic hold')+(u.review_at?(' &#183; '+new Date(u.review_at).toLocaleString()):'')+'</div>'
-          +'<button class="urv-rel" data-nm="'+encodeURIComponent(u.name||'')+'" style="width:100%;padding:5px;border:0;border-radius:6px;background:linear-gradient(180deg,#1fb6a6,#0e8577);color:#fff;font-weight:700;cursor:pointer;">RELEASE FROM REVIEW</button>'
-          +'</div>';
-      }).join('');
-      Array.prototype.forEach.call(list.querySelectorAll('.urv-rel'),function(b){
-        b.addEventListener('click',async function(){
-          var nm=decodeURIComponent(b.getAttribute('data-nm'));
-          if(!confirm('Release '+nm+' from review? They will be able to post again and their flaps return to the feed.')) return;
-          b.disabled=true; b.textContent='Releasing…';
-          try{
-            var d=client();
-            var h=(window.__adminHash&&window.__adminHash())||''; var rr=await d.rpc('admin_user_action',{p_admin:'lock',p_hash:h,p_target:nm,p_action:'clear_review'}); if(rr.error||!(rr.data&&rr.data.ok)) throw new Error('rpc');
-            try{ if(typeof toast==='function') toast('\u2713 '+nm+' released from review.'); }catch(e){}
-            loadURV();
-          }catch(e){ b.disabled=false; b.textContent='RELEASE FROM REVIEW'; alert('Could not release \u2014 try again.'); }
-        });
-      });
-    }catch(e){ list.innerHTML='<div style="color:#e58;">Could not load review list.</div>'; }
-  }
-  function wire(){
-    var r=document.getElementById('urv-refresh'); if(r) r.addEventListener('click',loadURV);
-    var m=document.getElementById('urv-min'), body=document.getElementById('urv-body');
-    if(m&&body) m.addEventListener('click',function(){ var hid=body.style.display==='none'; body.style.display=hid?'block':'none'; m.textContent=hid?'\u2013':'+'; });
-  }
-  var tries=0;
-  var iv=setInterval(function(){
-    tries++;
-    var tn=document.getElementById('tabNav');
-    var bt=document.body.innerText||'';
-    var pastLogin = bt.indexOf('Sign in with the admin account')<0 && bt.indexOf('ADMIN NAME')<0;
-    var loggedIn=!!(client() && (pastLogin || (tn && tn.offsetParent!==null)));
-    if(loggedIn){ var p=document.getElementById('urv-panel'); if(p){ p.style.display='block'; wire(); loadURV(); } clearInterval(iv); }
-    if(tries>600) clearInterval(iv);
-  },1000);
-})();
-</script>
-<script>(function(){function bm(p){return "Hello! 👋 We have just confirmed your account ✅\n\nThanks so much for being patient — we really appreciate you. 💛\n\nYour reset password is:  "+p+"\n\nLog in with it, then change it anytime in your Settings.\n\nIf you have any alt accounts, please delete them — TheFlap is one account per person. 🙏\n\n— TheFlap Support\n\nStay breezy.\n🐦";}function enh(){try{var el=document.querySelector('input#tpwIn');if(!el)return;var p=(el.value||window.__lastTemp||'').trim();if(!p)return;var ta=document.createElement('textarea');el.removeAttribute('id');ta.id='tpwIn';ta.readOnly=true;ta.value=bm(p);ta.style.cssText='width:100%;min-height:180px;font:13px/1.5 system-ui,sans-serif;padding:11px;border-radius:12px;border:1px solid #2c4a7a;background:#0f1830;color:#e8eef7;white-space:pre-wrap;box-sizing:border-box;';el.parentNode.insertBefore(ta,el.nextSibling);el.style.display='none';}catch(e){}}try{new MutationObserver(enh).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}document.addEventListener('click',function(){setTimeout(enh,80);},true);})();</script></body>
+<script>(function(){function bm(p){return "Hello! 👋 We have just confirmed your account ✅\n\nThanks so much for being patient — we really appreciate you. 💛\n\nYour reset password is:  "+p+"\n\nLog in with it, then change it anytime in your Settings.\n\nIf you have any alt accounts, please delete them — TheFlap is one account per person. 🙏\n\n— TheFlap Support\n\nStay breezy.";}function enh(){try{var el=document.querySelector('input#tpwIn');if(!el)return;var p=(el.value||window.__lastTemp||'').trim();if(!p)return;var ta=document.createElement('textarea');el.removeAttribute('id');ta.id='tpwIn';ta.readOnly=true;ta.value=bm(p);ta.style.cssText='width:100%;min-height:180px;font:13px/1.5 system-ui,sans-serif;padding:11px;border-radius:12px;border:1px solid #2c4a7a;background:#0f1830;color:#e8eef7;white-space:pre-wrap;box-sizing:border-box;';el.parentNode.insertBefore(ta,el.nextSibling);el.style.display='none';}catch(e){}}try{new MutationObserver(enh).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}document.addEventListener('click',function(){setTimeout(enh,80);},true);})();</script></body>
 </html>

@@ -8,3 +8,30 @@ ios/
 android/
 # local secrets (do NOT commit)
 src/lib/secrets.local.ts
+
+# ---- secrets: never commit (added 2026-09-17 security pass) ----
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.pem
+*.key
+*.keystore
+*.jks
+*.mobileprovision
+credentials.json
+**/credentials.json
+*service-account*.json
+*service_account*.json
+*serviceAccount*.json
+play-service-account*.json
+firebase-adminsdk*.json
+supabase/.temp/
+supabase/.env
+.eas/
+eas-credentials*.json
+*.secret
+secrets.local.*
+# Firebase CLIENT config (google-services.json / GoogleService-Info.plist) is intentionally NOT ignored:
+# it holds public identifiers only and EAS Build uploads only non-ignored files.
