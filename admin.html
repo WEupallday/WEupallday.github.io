@@ -162,6 +162,32 @@
   .tk-fail{color:#ff8f8f}
   .tk-warn{color:#ffcf6b}
   .tk-muted{color:#8fb0c9}
+
+  /* ===== Payments & Balances views (added 2026-09-18) ===== */
+  .pv-summary{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .pv-chip{background:#0c1836;border:1.5px solid #2f5aa0;border-radius:10px;padding:6px 12px;font-size:12px;color:#9db4d6}
+  .pv-chip b{color:#eaf1ff;font-size:15px;margin-right:4px}
+  .pv-chip.bad{border-color:#c0392b;background:#2a1014;color:#ff9aa6}
+  .pv-chip.bad b{color:#ff9aa6}
+  .pv-wrap{overflow:auto;max-height:70vh;border:1.5px solid #23407a;border-radius:10px;margin-top:8px}
+  .pv-table{width:100%;border-collapse:collapse;font-size:12.5px}
+  .pv-table th{position:sticky;top:0;background:#0b1631;color:#9db4d6;text-align:left;font-weight:700;padding:8px 10px;border-bottom:1.5px solid #23407a;white-space:nowrap}
+  .pv-table td{padding:7px 10px;border-bottom:1px solid #14224a;color:#dfe8fb;vertical-align:top}
+  .pv-table tr:hover td{background:#0d1a3a}
+  .pv-row.bad td{background:rgba(192,57,43,.16)}
+  .pv-row.bad:hover td{background:rgba(192,57,43,.24)}
+  .pv-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+  .pv-badge.ok{background:#0f3a22;color:#4fd188;border:1px solid #1c7a42}
+  .pv-badge.bad{background:#3a1014;color:#ff8a97;border:1px solid #c0392b}
+  .pv-badge.warn{background:#3a2e0c;color:#f5c542;border:1px solid #a8871f}
+  .pv-badge.muted{background:#182a52;color:#9db4d6;border:1px solid #2f5aa0}
+  .pv-src{font-size:11px;color:#7f97c4}
+  .pv-mono{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#7f97c4;word-break:break-all}
+  .pv-user{font-weight:700;color:#eaf1ff}
+  .pv-num{font-variant-numeric:tabular-nums;font-weight:700}
+  .pv-note{font-size:11px;color:#ff9aa6;margin-top:2px}
+  .pv-more{margin:10px 0;text-align:center}
+
 </style>
 </head>
 <body>
@@ -404,8 +430,8 @@ try{window.__adminHash=function(){try{return ADMIN_HASH;}catch(e){return null;}}
   function strip(n,label,cls){return '<span class="s'+(cls?' '+cls:'')+'"><b>'+fmtN(n)+'</b> '+label+'</span>';}
 
   /* ---------- tab nav ---------- */
-  var TABS=[['controls','Controls'],['members','Members'],['bans','Bans'],['review','Under review'],['moderation','Reports'],['support','Support'],['messages','Messages'],['broadcast','Broadcast'],['badges','Badges'],['store','Store & Challenges'],['stats','Stats'],['staff','Staff']];
-  var TAB_SEC={controls:'__owner__',broadcast:'__owner__',members:'__owner__',badges:'__owner__',messages:'__owner__',stats:'__owner__',staff:'__owner__',moderation:'moderation',support:'support',bans:'moderation',review:'moderation'};
+  var TABS=[['controls','Controls'],['members','Members'],['bans','Bans'],['review','Under review'],['moderation','Reports'],['support','Support'],['messages','Messages'],['broadcast','Broadcast'],['badges','Badges'],['store','Store & Challenges'],['stats','Stats'],['payments','Payments'],['balances','Balances'],['staff','Staff']];
+  var TAB_SEC={controls:'__owner__',broadcast:'__owner__',members:'__owner__',badges:'__owner__',messages:'__owner__',stats:'__owner__',payments:'__owner__',balances:'__owner__',staff:'__owner__',moderation:'moderation',support:'support',bans:'moderation',review:'moderation'};
   function tabAllowed(k){ if(isOwner())return true; var need=TAB_SEC[k]; if(!need||need==='__owner__')return false; return can(need); }
   function renderTabs(){
     $('tabNav').innerHTML=TABS.filter(function(t){return tabAllowed(t[0]);}).map(function(t){return '<button class="'+(TAB===t[0]?'on':'')+'" onclick="ADMIN.tab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');
@@ -424,6 +450,8 @@ try{window.__adminHash=function(){try{return ADMIN_HASH;}catch(e){return null;}}
     else if(TAB==='review'){h=secReview(); setTimeout(function(){ try{ ADMIN.loadReview(); }catch(e){} },30);}
     else if(TAB==='messages')h=secMessages();
     else if(TAB==='support')h=secSupport();
+    else if(TAB==='payments'){h=secPayments(); setTimeout(function(){ try{ ADMIN.loadPayments(); }catch(e){} },30);}
+    else if(TAB==='balances'){h=secBalances(); setTimeout(function(){ try{ ADMIN.loadBalances(true); }catch(e){} },30);}
     else h=secStats();
     $('panel').innerHTML=h;
     if(TAB==='broadcast'){ try{ ADMIN.loadBroadcastLog(); }catch(e){} }
@@ -616,6 +644,37 @@ try{window.__adminHash=function(){try{return ADMIN_HASH;}catch(e){return null;}}
   }
   /* ---------- BANS (the ONE ban control) ---------- */
   var BAN_PREFILL='';
+  
+  function pvWhen(v){ if(!v) return ''; var d=new Date(v); if(isNaN(d.getTime())) return esc(String(v)); var diff=Date.now()-d.getTime(); var s=Math.floor(Math.abs(diff)/1000); var fut=diff<0; var rel; if(s<60)rel='just now'; else if(s<3600)rel=Math.floor(s/60)+'m'; else if(s<86400)rel=Math.floor(s/3600)+'h'; else if(s<2592000)rel=Math.floor(s/86400)+'d'; else rel=d.toLocaleDateString(); if(rel!=='just now'&&s>=60)rel=fut?('in '+rel):(rel+' ago'); return '<span title="'+esc(d.toLocaleString())+'">'+esc(rel)+'</span>'; }
+  function secPayments(){
+    var h='<div class="sec"><h2>&#128179; Payments <button class="refresh" onclick="ADMIN.loadPayments()">&#8635; refresh</button></h2>';
+    h+='<div class="hint">Every in-app purchase across Apple and Android (Whop): feather packs and Premium. <b>Fulfillment</b> shows whether the feathers were actually credited / Premium actually granted. Anything paid but not delivered is flagged <b style="color:#ff8a97">red</b> &mdash; use the &ldquo;Needs attention&rdquo; filter to see only those.</div>';
+    h+='<div id="paySummary" class="pv-summary"></div>';
+    h+='<div class="mem-tools" style="flex-wrap:wrap;gap:8px;margin:6px 0">';
+    h+='<input class="inp" id="paySearch" placeholder="Search username&hellip;" autocomplete="off" autocapitalize="off" oninput="ADMIN.payRender()">';
+    h+='<select class="inp" id="payFilter" onchange="ADMIN.payRender()"><option value="all">All statuses</option><option value="issues">&#9888; Needs attention</option><option value="delivered">Delivered</option><option value="expired">Expired / lapsed</option></select>';
+    h+='<select class="inp" id="paySource" onchange="ADMIN.payRender()"><option value="all">All sources</option><option value="apple">Apple</option><option value="whop">Android / Whop</option></select>';
+    h+='<select class="inp" id="payKind" onchange="ADMIN.payRender()"><option value="all">Feathers + Premium</option><option value="feathers">Feathers only</option><option value="premium">Premium only</option></select>';
+    h+='</div>';
+    h+='<div id="payList" class="pv-wrap"><div class="loading">Loading transactions&hellip;</div></div>';
+    h+='</div>';
+    return h;
+  }
+  function secBalances(){
+    var h='<div class="sec"><h2>&#129718; Feather balances <button class="refresh" onclick="ADMIN.loadBalances(true)">&#8635; refresh</button></h2>';
+    h+='<div class="hint">Current feather balance for every account. Search by username and sort by balance.</div>';
+    h+='<div class="mem-tools" style="flex-wrap:wrap;gap:8px;margin:6px 0">';
+    h+='<input class="inp" id="balSearch" placeholder="Search username&hellip; (Enter)" autocomplete="off" autocapitalize="off" onkeydown="if(event.key===&#39;Enter&#39;)ADMIN.loadBalances(true)">';
+    h+='<select class="inp" id="balSort" onchange="ADMIN.loadBalances(true)"><option value="balance:desc">Balance &mdash; high to low</option><option value="balance:asc">Balance &mdash; low to high</option><option value="updated:desc">Recently updated</option><option value="name:asc">Username A&ndash;Z</option></select>';
+    h+='<button class="btn" onclick="ADMIN.loadBalances(true)">Search</button>';
+    h+='</div>';
+    h+='<div id="balSummary" class="pv-summary"></div>';
+    h+='<div id="balList" class="pv-wrap"><div class="loading">Loading balances&hellip;</div></div>';
+    h+='<div id="balMoreWrap" class="pv-more"></div>';
+    h+='</div>';
+    return h;
+  }
+
   function secBans(){
     var h='<div class="sec"><h2>Bans <button class="refresh" onclick="ADMIN.loadBans()">↻ refresh</button></h2>';
     h+='<div class="hint">One place for bans. Account ban blocks sign-in and posting everywhere (app + web) and hides their flaps. Device ban also blocks new accounts from that phone.</div>';
@@ -863,6 +922,83 @@ try{window.__adminHash=function(){try{return ADMIN_HASH;}catch(e){return null;}}
         if(cbox)cbox.innerHTML=h2||'No challenges yet.';
       }catch(e){ if(cbox)cbox.innerHTML='Could not load challenges.'; }
     },
+    
+    loadPayments:async function(){
+      var el=$('payList'); if(el) el.innerHTML='<div class="loading">Loading transactions&hellip;</div>';
+      var au=ADMIN._adminAuth(); if(!au){ if(el)el.innerHTML='<div class="empty">Please sign out and back in.</div>'; return; }
+      var dr; try{ dr=await sb.functions.invoke('admin-payments',{body:{action:'transactions',admin:au.a,admin_hash:au.h}}); }catch(e){ dr={error:e}; }
+      if(!dr||dr.error||!(dr.data&&dr.data.ok)){ if(el)el.innerHTML='<div class="empty">Could not load payments &mdash; '+esc((dr&&dr.error&&(dr.error.message||dr.error))||(dr&&dr.data&&dr.data.error)||'server error')+'</div>'; return; }
+      ADMIN._payAll=dr.data.transactions||[];
+      ADMIN.payRender();
+    },
+    payRender:function(){
+      var all=ADMIN._payAll||[];
+      var q=(($('paySearch')&&$('paySearch').value)||'').trim().toLowerCase();
+      var f=($('payFilter')&&$('payFilter').value)||'all';
+      var src=($('paySource')&&$('paySource').value)||'all';
+      var kind=($('payKind')&&$('payKind').value)||'all';
+      var issues=0,delivered=0,expired=0;
+      all.forEach(function(t){ if(t.fulfillment==='FAILED'||t.fulfillment==='PENDING')issues++; else if(t.fulfillment==='delivered')delivered++; else if(t.fulfillment==='expired')expired++; });
+      var view=all.filter(function(t){
+        if(q && String(t.user||'').toLowerCase().indexOf(q)<0) return false;
+        if(src!=='all' && t.source!==src) return false;
+        if(kind==='feathers' && !((t.feathers||0)>0)) return false;
+        if(kind==='premium' && !t.premium) return false;
+        if(f==='issues' && !(t.fulfillment==='FAILED'||t.fulfillment==='PENDING')) return false;
+        if(f==='delivered' && t.fulfillment!=='delivered') return false;
+        if(f==='expired' && t.fulfillment!=='expired') return false;
+        return true;
+      });
+      var sum=$('paySummary');
+      if(sum){ sum.innerHTML='<div class="pv-chip"><b>'+fmtN(all.length)+'</b>transactions</div><div class="pv-chip"><b>'+fmtN(delivered)+'</b>delivered</div><div class="pv-chip'+(issues?' bad':'')+'"><b>'+fmtN(issues)+'</b>need attention</div><div class="pv-chip"><b>'+fmtN(expired)+'</b>expired</div>'; }
+      var el=$('payList'); if(!el)return;
+      if(!view.length){ el.innerHTML='<div class="empty">No transactions match.</div>'; return; }
+      var body=view.map(function(t){
+        var bad=(t.fulfillment==='FAILED'||t.fulfillment==='PENDING');
+        var badge = t.fulfillment==='delivered' ? '<span class="pv-badge ok">delivered</span>' : t.fulfillment==='expired' ? '<span class="pv-badge muted">expired</span>' : t.fulfillment==='PENDING' ? '<span class="pv-badge warn">pending</span>' : '<span class="pv-badge bad">FAILED</span>';
+        var what = (t.premium && (t.feathers||0)>0) ? 'Premium + '+fmtN(t.feathers)+' feathers' : t.premium ? 'Premium' : (fmtN(t.feathers||0)+' feathers');
+        var prod = t.product?('<div class="pv-src">'+esc(t.product)+'</div>'):'';
+        var note = (bad && t.note)?('<div class="pv-note">'+esc(t.note)+'</div>'):'';
+        var exp = t.expires_at?('<div class="pv-src">until '+pvWhen(t.expires_at)+'</div>'):'';
+        return '<tr class="pv-row'+(bad?' bad':'')+'"><td>'+pvWhen(t.created_at)+'</td><td><span class="pv-user">'+esc(t.user==null?'—':t.user)+'</span></td><td><span class="pv-badge muted">'+esc(t.source==='whop'?'Whop':'Apple')+'</span></td><td>'+esc(what)+prod+'</td><td>'+badge+note+exp+'</td><td class="pv-mono">'+esc(t.txn==null?'':t.txn)+'</td></tr>';
+      }).join('');
+      el.innerHTML='<table class="pv-table"><thead><tr><th>When</th><th>User</th><th>Source</th><th>Purchase</th><th>Fulfillment</th><th>Transaction</th></tr></thead><tbody>'+body+'</tbody></table>';
+    },
+    loadBalances:async function(reset){
+      var el=$('balList');
+      var st=ADMIN._balState;
+      if(reset||!st){ st={offset:0,limit:100,rows:[],total:0}; if(el)el.innerHTML='<div class="loading">Loading balances&hellip;</div>'; }
+      ADMIN._balState=st;
+      var sortSel=($('balSort')&&$('balSort').value)||'balance:desc';
+      var parts=sortSel.split(':'); var sort=parts[0], dir=parts[1]||'desc';
+      var search=(($('balSearch')&&$('balSearch').value)||'').trim();
+      var au=ADMIN._adminAuth(); if(!au){ if(el)el.innerHTML='<div class="empty">Please sign out and back in.</div>'; return; }
+      var dr; try{ dr=await sb.functions.invoke('admin-payments',{body:{action:'balances',admin:au.a,admin_hash:au.h,search:search,sort:sort,dir:dir,limit:st.limit,offset:st.offset}}); }catch(e){ dr={error:e}; }
+      if(!dr||dr.error||!(dr.data&&dr.data.ok)){ if(el)el.innerHTML='<div class="empty">Could not load balances &mdash; '+esc((dr&&dr.error&&(dr.error.message||dr.error))||(dr&&dr.data&&dr.data.error)||'server error')+'</div>'; return; }
+      var newRows=dr.data.rows||[];
+      st.rows = st.offset ? (st.rows||[]).concat(newRows) : newRows;
+      st.total = dr.data.total||st.rows.length;
+      ADMIN._balRender();
+    },
+    _balRender:function(){
+      var st=ADMIN._balState||{rows:[],total:0}; var rows=st.rows||[];
+      var searching=((($('balSearch')&&$('balSearch').value)||'').trim())?true:false;
+      var sum=$('balSummary'); if(sum){ sum.innerHTML='<div class="pv-chip"><b>'+fmtN(st.total)+'</b>accounts'+(searching?' match':'')+'</div><div class="pv-chip">showing <b>'+fmtN(rows.length)+'</b></div>'; }
+      var el=$('balList'); if(!el)return;
+      if(!rows.length){ el.innerHTML='<div class="empty">No accounts found.</div>'; }
+      else{
+        var body=rows.map(function(u){
+          var prem = u.premium?'<span class="pv-badge ok">Premium</span>':(u.premium_until?'<span class="pv-badge muted">lapsed</span>':'<span class="pv-src">&mdash;</span>');
+          var ban = u.banned?' <span class="pv-badge bad">banned</span>':'';
+          return '<tr class="pv-row"><td><span class="pv-user">'+esc(u.name)+'</span>'+ban+'</td><td class="pv-num">'+fmtN(u.balance||0)+'</td><td>'+prem+(u.premium_until?'<div class="pv-src">until '+pvWhen(u.premium_until)+'</div>':'')+'</td><td>'+pvWhen(u.updated_at)+'</td></tr>';
+        }).join('');
+        el.innerHTML='<table class="pv-table"><thead><tr><th>User</th><th>Balance</th><th>Premium</th><th>Updated</th></tr></thead><tbody>'+body+'</tbody></table>';
+      }
+      var mw=$('balMoreWrap');
+      if(mw){ if(rows.length<st.total){ mw.innerHTML='<button class="btn" onclick="ADMIN.balMore()">Load more ('+fmtN(st.total-rows.length)+' left)</button>'; } else { mw.innerHTML=''; } }
+    },
+    balMore:function(){ var st=ADMIN._balState; if(!st)return; st.offset=(st.rows||[]).length; ADMIN.loadBalances(false); },
+
     _adminAuth:function(){ if(!ADMIN_HASH){ toast('Please sign out and back in first.'); return null; } return {a:ADMIN_NAME,h:ADMIN_HASH}; },
     storePrice:async function(item){ var au=ADMIN._adminAuth(); if(!au)return; var el=$('p_'+item); var price=parseInt(el&&el.value,10); if(isNaN(price)||price<0){toast('Enter a valid price.');return;} var cur=(await sb.from('flap_store_items').select('*').eq('item',item).maybeSingle()).data; if(!cur){toast('Item not found.');return;} var r=await sb.rpc('admin_store_save',{p_admin:au.a,p_pass_hash:au.h,p_item:item,p_category:cur.category,p_label:cur.label,p_price:price,p_sort:cur.sort}); if(r.data&&r.data.ok){toast('Price updated.');}else{toast('Failed: '+((r.data&&r.data.error)||(r.error&&r.error.message)||'error'));} ADMIN.loadStore(); },
     storeSave:async function(){ var au=ADMIN._adminAuth(); if(!au)return; var item=($('stoItem').value||'').trim(); var cat=($('stoCat').value||'').trim(); var label=($('stoLabel').value||'').trim(); var price=parseInt($('stoPrice').value,10); var sort=parseInt($('stoSort').value,10); if(!item||!cat||!label||isNaN(price)){toast('Fill item, category, label and price.');return;} if(isNaN(sort))sort=100; var r=await sb.rpc('admin_store_save',{p_admin:au.a,p_pass_hash:au.h,p_item:item,p_category:cat,p_label:label,p_price:price,p_sort:sort}); if(r.data&&r.data.ok){toast('Saved.'); ['stoItem','stoCat','stoLabel','stoPrice','stoSort'].forEach(function(id){var e=$(id); if(e)e.value='';});}else{toast('Failed: '+((r.data&&r.data.error)||'error'));} ADMIN.loadStore(); },
